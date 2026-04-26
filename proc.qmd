@@ -1,0 +1,106 @@
+# Descarga de datos
+
+Utilizamos paquete de python "bcn_scraper" de desarrollo propio para desacargar de forma programática los datos tramitación de la ley 21.735. El paquete desambigüa número de ley o de boletín, descargando automáticamente los documentos de tramitaciones, apilando los datos en un dataframe, y limpiando el xml para obtener el texto plano de cada trámite.
+
+```{python}
+#| eval: false
+from bcn_scraper.wrapper import historia_dataframe_from_ley_o_boletin
+
+df = historia_dataframe_from_ley_o_boletin(numero_ley="21735", clean_text=True)
+
+df.to_csv("data/datos_bcn_raw.csv", index=False, sep = ";")
+```
+
+# Test de datos
+
+Para evaluar la efectividad del paquete, se revisó manualmente cada trámite contra el disponible en la Biblioteca del Congreso Nacional, y se verificó que el texto limpio correspondiera al texto original. Sumado a esto, se hizo una revisión de cada documento en la tramitación de la ley, para evaluar su relevancia para el análisis del discurso parlamentario. Se identificaron los trámites que contienen contenido discursivo significativo, y se apuntó la información relevante para los cambios que fue sufriendo el proyecto.
+
+```{python}
+#| eval: false
+
+import pandas as pd
+from pathlib import Path
+
+data = pd.read_csv("data/datos_bcn_raw.csv", sep = ";")
+
+# Subset de datos pertinentes para revisión manual
+data_subset = data[["tramite_titulo", "tramite_fecha", "tramite_bajada", "tramite_contenido_html", "tramite_texto"]]
+
+print(data["tramite_contenido_html"][0][:500])
+
+output_dir_xml = Path("data/tramites_xml")
+output_dir_xml.mkdir(exist_ok=True)
+
+for numero, contenido_xml in enumerate(data["tramite_contenido_html"], start=1):
+    output_path = output_dir / f"tramite_{numero:03}.xml"
+    output_path.write_text(str(contenido_xml), encoding="utf-8")
+
+output_dir = Path("data/tramites_txt")
+output_dir.mkdir(exist_ok=True)
+
+for numero, texto in enumerate(data["tramite_texto"], start=1):
+    output_path = output_dir / f"tramite_{numero:03}.txt"
+    output_path.write_text(str(texto), encoding="utf-8")
+```
+
+## Primer Trámite Constitucional: Cámara de Diputados (2022/11/07 - 2024/01/24)
+
+- 1.1 Mensaje inicial (2022/11/07): xml y texto limpio revisados. Mensaje inicial del presidente de la república y primera versión de la ley. **Relevancia alta** para el análisis, especialmente el discurso inicial que contiene la justificación de la ley.
+
+- Informes asociados (2022/11/07): [Informe Financiero](data/informes/informe_financiero.pdf), [Informe de Sustentabilidad de los Fondos de Cesantía](data/informes/informe_sustentabilidad_fondos_cesantia.pdf), [Informe de Impacto Regulatorio](data/informes/informe_impacto_regulatorio.pdf), [Informe Técnico](data/informes/informe_tecnico.pdf)
+
+- 1.2 Oficio a la Corte Suprema (2022/11/04): xml y texto limpio revisados. Se solicita un análisis de constitucionalidad de la ley a la corte suprema, es un documento técnico, sin contenido discursivo significativo. **Relevancia baja/nula para el análisis.**
+
+- [Informe del Consejo Consultivo Previsional (2022/11/28)](data/informes/informe_consejo_consultivo.pdf)
+
+- 1.3 Oficio de la corte suprema (2023/01/11): xml y texto limpio revisados. Realiza un análisis de la constitucionalidad de la ley, pero es un documento técnico, sin contenido discursivo significativo. Se eliminará del análisis.
+
+- **Nota: entre el proyecto inicial y el trámite 1.4 hubieron modificaciones al proyecto de ley, muchas de las cuáles el presidente revierte. Hay que encontrarlas.**
+
+- 1.4 Oficio indicaciones del ejecutivo (2023/12/21): xml y texto limpio revisados. Realiza modificaciones al proyecto realizado, principalmente intercambiando administradoras de fondos de pensiones por Inversores de Pensiones. Netamente para el análisis del discurso, este documento tiene una **relevancia baja/nula**, pero se debe considerar para el artículo como un evento de la tramitación de **alta relevancia**. Informe asociado: [Informe Financiero Sustitutivo](data/informes/informe_financiero_sustitutivo.pdf.pdf)
+
+- 1.5 Oficio indicaciones del ejecutivo (2024/01/09): xml y texto limpio revisados. Retira el anterior oficio de indicaciones, y añade el Sistema de Información de Pensiones, retrocediendo con muchas de las propuestas de la reforma. **Relevancia baja/nula para el análisis, pero alta relevancia para el artículo.** Informe asociado: [Informe Financiero Complementario](data/informes/informe_financiero_complementario.pdf)
+
+- 1.6 Oficio indicaciones del ejecutivo (2024/01/10): xml y texto limpio revisados. Retira y formula indicaciones al proyecto de ley (principalmente establece por ley una Comisión de Usuarios del Sistema de Pensiones). **Relevancia baja/nula para el análisis, relevancia media para el artículo.** Informe asociado: [Informe Financiero Complementario](data/informes/informe_financiero_complementario_2.pdf)
+
+- 1.7 Informe de Comisión de Trabajo Cámara de Diputados (2024/01/15): xml y texto limpio revisados. Contiene un resumen de las sesiones, los asistentes a ellas, mucha información técnica, y los resultados del informe (e.g., votaciones), pero no aporta contenido discursivo significativo. **Relevancia baja/nula para el análisis, relevancia alta para el procesamiento de los videos de sesiones.**
+
+**Nota: Hay que encontrar (y transcribir) los videos de las sesiones de esta comisión y las siguientes.**
+
+- 1.8 Oficio indicaciones del ejecutivo (2024/01/15): xml y texto limpio revisados. Retira y formula indicaciones al proyecto de ley. Establece la cotización adicional del 6% entre 3% a las cuentas individuales y otro 3% a solidaridad intergeneracional. **Relevancia baja/nula para el análisis, relevancia alta para el artículo.** Informe asociado: [Informe Financiero Complementario](data/informes/informe_financiero_complementario_3.pdf)
+
+- 1.9 Oficio indicaciones del ejecutivo (2024/01/19): xml y texto limpio revisados. Retira y formula indicaciones al proyecto de ley (principalmente en aplica un incremento gradual al aumento de la PGU). **Relevancia baja/nula para el análisis, relevancia baja para el artículo.** Informe asociado: [Informe Financiero Complementario](data/informes/informe_financiero_complementario_4.pdf)
+
+- 1.10 Informe de Comisión de Hacienda Cámara de Diputados (2024/01/22): xml y texto limpio revisados. Contiene un resumen de las sesiones, los asistentes a ellas, mucha información técnica, y los resultados del informe (e.g., votaciones), pero no aporta contenido discursivo significativo. **Relevancia baja/nula para el análisis, relevancia alta para el procesamiento de los videos de sesiones.**
+
+- 1.11 Oficio indicaciones del ejecutivo (2024/01/22): xml y texto limpio revisados. Retira y formula indicaciones al proyecto de ley (principalmente, establece límites a las comisiones). **Relevancia baja/nula para el análisis, relevancia media para el artículo.** Informe asociado: [Informe Financiero Complementario](data/informes/informe_financiero_complementario_5.pdf)
+
+- 1.12 Discusión en Sala (2024/01/23): xml y texto limpio revisados. Contiene el discurso de los parlamentarios en la discusión en sala, con un alto contenido discursivo significativo. **Relevancia alta para el análisis.**
+
+- 1.13 Discusión en Sala (2024/01/24): xml y texto limpio revisados. Contiene el discurso de los parlamentarios en la discusión en sala, con un alto contenido discursivo significativo. **Relevancia alta para el análisis.**
+
+- 1.14 Oficio de Cámara Origen a Cámara Revisora (2024/01/24): xml y texto limpio revisados. Entrega del proyecto de ley aprobado al Senado. **Relevancia baja/nula para el análisis, puede llegar a tener relevancia para el artículo.**
+
+
+
+# Filtrado de trámites irrelevantes
+
+Para el análisis final, solo necesitaremos los trámites que contengan contenido discursivo significativo, por ejemplo, los diarios de sesión y el mensaje inicial. Otros documentos, como los oficios, son méramente técnicos y no aportan a la investigación.
+
+```{python}
+
+```
+
+# Identificación de sesiones en comisiones técnicas
+
+# Descarga de videos de sesiones en SenadoTV y cámara de diputados
+
+# Reconocimiento automático de hablantes (ASR)
+
+# Matching manual con personas reales
+
+# Identificación de hablantes
+
+# Dataframe a formato long y lógica de chunking
+
+# 

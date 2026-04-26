@@ -1,0 +1,128 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "50fc4663",
+   "metadata": {},
+   "source": [
+    "# Descarga de datos\n",
+    "\n",
+    "Utilizamos paquete de python \"bcn_scraper\" de desarrollo propio para desacargar de forma programática los datos tramitación de la ley 21.735. El paquete desambigüa número de ley o de boletín, descargando automáticamente los documentos de tramitaciones, apilando los datos en un dataframe, y limpiando el xml para obtener el texto plano de cada trámite."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "5cadc5a2",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#| eval: false\n",
+    "from bcn_scraper.wrapper import historia_dataframe_from_ley_o_boletin\n",
+    "\n",
+    "df = historia_dataframe_from_ley_o_boletin(numero_ley=\"21735\", clean_text=True)\n",
+    "\n",
+    "df.to_csv(\"data/datos_bcn_1.csv\", index=False, sep = \";\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b5b7ea76",
+   "metadata": {},
+   "source": [
+    "# Test de datos\n",
+    "\n",
+    "Para confiar en el paquete, se revisó manualmente cada trámite contra el disponible en la Biblioteca del Congreso Nacional, y se verificó que el texto limpio correspondiera al texto original."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "d5856e5d",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<div class=\"item\" fecha=\"2022-11-07\" parteDocumento=\"\" refersTo=\"http://datos.bcn.cl/ontologies/bcn-bills#IngresoProyectoDeLey\" tipoDocumento=\"http://datos.bcn.cl/ontologies/bcn-resources#Mensaje\" tramitacion=\"http://datos.bcn.cl/recurso/cl/proyecto-de-ley/15480-13/tramitacion/4\" uriDocumento=\"http://datos.bcn.cl/recurso/cl/documento/706791\"><h2 id=\"h2_1_1\" numero=\"1.1. \">1.1. Mensaje</h2><p class=\"sub-headding\">Fecha 07 de noviembre, 2022. Mensaje en Sesión 92. Legislatura 370.</p><span><p>  ME\n"
+     ]
+    }
+   ],
+   "source": [
+    "import pandas as pd\n",
+    "from pathlib import Path\n",
+    "\n",
+    "data = pd.read_csv(\"data/datos_bcn_1.csv\", sep = \";\")\n",
+    "\n",
+    "# Subset de datos pertinentes para revisión manual\n",
+    "data_subset = data[[\"tramite_titulo\", \"tramite_fecha\", \"tramite_bajada\", \"tramite_contenido_html\", \"tramite_texto\"]]\n",
+    "\n",
+    "print(data[\"tramite_contenido_html\"][0][:500])\n",
+    "\n",
+    "output_dir = Path(\"data\")\n",
+    "output_dir.mkdir(exist_ok=True)\n",
+    "\n",
+    "for numero, contenido_xml in enumerate(data[\"tramite_contenido_html\"], start=1):\n",
+    "    output_path = output_dir / f\"tramite_{numero:03}.xml\"\n",
+    "    output_path.write_text(str(contenido_xml), encoding=\"utf-8\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7b78a19f",
+   "metadata": {},
+   "source": [
+    "Resúmen de revisión manual:\n",
+    "- 1.1 Mensaje inicial: revisado. Mensaje inicial del presidente de la república, se mantendrá en el análisis. Informe asociado: [data/informes/informe_financiero_1.pdf](data/informes/informe_financiero_1.pdf)\n",
+    "- 1.2 Oficio a la corte suprema: revisado. Se solicita un análisis de constitucionalidad de la ley, pero es un documento técnico, sin contenido discursivo significativo. Se eliminará del análisis.\n",
+    "- 1.3 Oficio de la corte suprema: revisado. Realiza un análisis de la constitucionalidad de la ley, pero es un documento técnico, sin contenido discursivo significativo. Se eliminará del análisis.\n",
+    "- 1.4 Oficio indicaciones del ejecutivo: revisado. Realiza modificaciones al proyecto realizado, principalmente intercambiando administradoras de fondos de pensiones por Inversores de Pensiones. Pese a ser un documento técnico (no hay discurso político), se debe considerar en el análisis ya que es un evento importante.\n",
+    "- 1.5 \n",
+    "# Filtrado de trámites irrelevantes\n",
+    "\n",
+    "Para el análisis final, solo necesitaremos los trámites que contengan contenido discursivo significativo, por ejemplo, los diarios de sesión y el mensaje inicial. Otros documentos, como los oficios, son méramente técnicos y no aportan a la investigación."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7d6b6f34",
+   "metadata": {},
+   "source": [
+    "# Descarga de videos SenadoTV y cámara de diputados\n",
+    "\n",
+    "# Reconocimiento automático de hablantes (ASR)\n",
+    "\n",
+    "# Matching manual con personas reales\n",
+    "\n",
+    "# Identificación de hablantes\n",
+    "\n",
+    "# Dataframe a formato long y lógica de chunking\n",
+    "\n",
+    "# "
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3",
+   "path": "/home/ismaelaguayob/Documents/personal/thesis/.venv/share/jupyter/kernels/python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.14.3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
