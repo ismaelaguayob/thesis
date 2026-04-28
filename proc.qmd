@@ -28,27 +28,15 @@ Para evaluar la efectividad del paquete, se revisó manualmente cada trámite co
 
 import pandas as pd
 from pathlib import Path
+from bcn_scraper.akoma_speech import add_speech_content
 
 data = pd.read_csv("data/datos_bcn_akn.csv", sep = ";")
 
-# Subset de datos pertinentes para revisión manual
-data_subset = data[["tramite_titulo", "tramite_fecha", "tramite_bajada", "tramite_contenido_html", "tramite_texto"]]
+data_speech = add_speech_content(data, as_json = True)
 
-print(data["tramite_contenido_html"][0][:500])
+data_speech.to_json("data/datos_bcn_akn_speech.json", orient="records", force_ascii=False, indent=4)
 
-output_dir_xml = Path("data/tramites_xml")
-output_dir_xml.mkdir(exist_ok=True)
-
-for numero, contenido_xml in enumerate(data["tramite_contenido_html"], start=1):
-    output_path = output_dir_xml / f"tramite_{numero:03}.xml"
-    output_path.write_text(str(contenido_xml), encoding="utf-8")
-
-output_dir = Path("data/tramites_txt")
-output_dir.mkdir(exist_ok=True)
-
-for numero, texto in enumerate(data["tramite_texto"], start=1):
-    output_path = output_dir / f"tramite_{numero:03}.txt"
-    output_path.write_text(str(texto), encoding="utf-8")
+dic_12 = data_speech["speech_content"][11]
 ```
 
 # Línea de tiempo y revisión de datos ley 21.735
@@ -144,6 +132,27 @@ La inconstitucionalidad fue solicitada también por más de un cuarto de los dip
 ## Sexto trámite constitucional: Promulgación de Ley en Diaro Oficial (2025/03/20 - 2025/03/20)
 
 - 6.1 Publicación en Diario Oficial (2025/03/20): xml y texto limpio revisados. Publicación de la ley en el diario oficial, con el texto final aprobado por el Tribunal Constitucional. **Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.**
+
+```{python}
+# Subset de datos pertinentes para revisión manual
+data_subset = data[["tramite_titulo", "tramite_fecha", "tramite_bajada", "tramite_contenido_html", "tramite_texto"]]
+
+print(data["tramite_contenido_html"][0][:500])
+
+output_dir_xml = Path("data/tramites_xml")
+output_dir_xml.mkdir(exist_ok=True)
+
+for numero, contenido_xml in enumerate(data["tramite_contenido_html"], start=1):
+    output_path = output_dir_xml / f"tramite_{numero:03}.xml"
+    output_path.write_text(str(contenido_xml), encoding="utf-8")
+
+output_dir = Path("data/tramites_txt")
+output_dir.mkdir(exist_ok=True)
+
+for numero, texto in enumerate(data["tramite_texto"], start=1):
+    output_path = output_dir / f"tramite_{numero:03}.txt"
+    output_path.write_text(str(texto), encoding="utf-8")
+```
 
 # Filtrado de trámites irrelevantes
 
