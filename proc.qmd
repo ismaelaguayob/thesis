@@ -5,10 +5,18 @@ Utilizamos paquete de python "bcn_scraper" de desarrollo propio para desacargar 
 ```{python}
 #| eval: false
 from bcn_scraper.wrapper import historia_dataframe_from_ley_o_boletin
+from bcn_scraper.akoma_ntoso import debug_akoma_ntoso_errors
 
-df = historia_dataframe_from_ley_o_boletin(numero_ley="21735", clean_text=True)
+df = historia_dataframe_from_ley_o_boletin(numero_ley="21735", clean_text=True, fetch_akn=True)
 
-df.to_csv("data/datos_bcn_akn.csv", index=False, sep = ";")
+df_debugged = debug_akoma_ntoso_errors(
+    df,
+    timeout = 90,
+    max_attempts = 3,
+    backoff_seconds= 2.0
+    )
+
+df_debugged.to_csv("data/datos_bcn_akn.csv", index=False, sep = ";")
 ```
 
 # Test de datos
@@ -21,7 +29,7 @@ Para evaluar la efectividad del paquete, se revisó manualmente cada trámite co
 import pandas as pd
 from pathlib import Path
 
-data = pd.read_csv("data/datos_bcn_raw.csv", sep = ";")
+data = pd.read_csv("data/datos_bcn_akn.csv", sep = ";")
 
 # Subset de datos pertinentes para revisión manual
 data_subset = data[["tramite_titulo", "tramite_fecha", "tramite_bajada", "tramite_contenido_html", "tramite_texto"]]
@@ -42,6 +50,8 @@ for numero, texto in enumerate(data["tramite_texto"], start=1):
     output_path = output_dir / f"tramite_{numero:03}.txt"
     output_path.write_text(str(texto), encoding="utf-8")
 ```
+
+# Línea de tiempo y revisión de datos ley 21.735
 
 ## Primer Trámite Constitucional: Cámara de Diputados (2022/11/07 - 2024/01/24)
 
@@ -78,6 +88,8 @@ for numero, texto in enumerate(data["tramite_texto"], start=1):
 - 1.12 Discusión en Sala (2024/01/23): xml y texto limpio revisados. Contiene el discurso de los parlamentarios en la discusión en sala, con un alto contenido discursivo significativo. **Relevancia alta para el análisis.**
 
 - 1.13 Discusión en Sala (2024/01/24): xml y texto limpio revisados. Contiene el discurso de los parlamentarios en la discusión en sala, con un alto contenido discursivo significativo. **Relevancia alta para el análisis.**
+
+**Nota: Acá se rechazó el artículo 2, que establecía el 6 % (no sé exactamente qué proporción)**
 
 - 1.14 Oficio de Cámara Origen a Cámara Revisora (2024/01/24): xml y texto limpio revisados. Entrega del proyecto de ley aprobado luego de las discusiones y comisiones técnicas al Senado. **Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.**
 
