@@ -6,6 +6,7 @@ Utilizamos paquete de python "bcn_scraper" de desarrollo propio para desacargar 
 #| eval: false
 from bcn_scraper.wrapper import historia_dataframe_from_ley_o_boletin
 from bcn_scraper.akoma_ntoso import debug_akoma_ntoso_errors
+from bcn_scraper import collect_unlabeled_speaker_candidates
 
 df = historia_dataframe_from_ley_o_boletin(numero_ley="21735", clean_text=True, fetch_akn=True)
 
@@ -22,22 +23,6 @@ df_debugged.to_csv("data/datos_bcn_akn.csv", index=False, sep = ";")
 # Test de datos
 
 Para evaluar la efectividad del paquete, se revisó manualmente cada trámite contra el disponible en la Biblioteca del Congreso Nacional, y se verificó que el texto limpio correspondiera al texto original. Sumado a esto, se hizo una revisión de cada documento en la tramitación de la ley, para evaluar su relevancia para el análisis del discurso parlamentario. Se identificaron los trámites que contienen contenido discursivo significativo, y se apuntó la información relevante para los cambios que fue sufriendo el proyecto.
-
-```{python}
-#| eval: false
-
-import pandas as pd
-from pathlib import Path
-from bcn_scraper.akoma_speech import add_speech_content
-
-data = pd.read_csv("data/datos_bcn_akn.csv", sep = ";")
-
-data_speech = add_speech_content(data, as_json = True)
-
-data_speech.to_json("data/datos_bcn_akn_speech.json", orient="records", force_ascii=False, indent=4)
-
-dic_12 = data_speech["speech_content"][11]
-```
 
 # Línea de tiempo y revisión de datos ley 21.735
 
@@ -83,9 +68,8 @@ dic_12 = data_speech["speech_content"][11]
 
 ## Segundo trámite constitucional: Senado (2025/01/22 - 2025/01/29)
 
-p. 293 requerimiento de inconstitucionalidad:
-15 de enero de 2025: Se recibió el Oficio N° 312-372 del Presidente de
-la República, que formuló 176 páginas de indicaciones al proyecto.
+p. 293-468 requerimiento de inconstitucionalidad:
+- 15 de enero de 2025: Se recibió el [Oficio N° 312-372 del Presidente de la República](data/informes/indicaciones_presidente.pdf), que formuló 176 páginas de indicaciones al proyecto.
 
 - 2.1 Informe de Comisión de Trabajo Senado (2025/01/22): xml y texto limpio revisados. Contiene un resumen de las sesiones, los asistentes a ellas, mucha información técnica, y los resultados del informe (votaciones, cambios al proyecto), pero no aporta contenido discursivo significativo. **Relevancia baja/nula para el análisis, relevancia alta para el procesamiento de los videos de sesiones, relevancia alta para generar línea de tiempo de cambios del proyecto.**
 
@@ -115,7 +99,7 @@ Oficio N° 018-372 (presidente no ejerce facultad de veto).
 
 - 4.3 Oficio al Tribunal Constitucional (2025/02/10): xml y texto limpio revisados. Requerimiento de inconstitucionalidad de artículos por incumplimiento. **Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.**
 
-- [Requerimiento de inconstitucionalidad](data/informes/requerimiento_inconstitucionalidad.pdf). **Relevante para el análisis y para la línea de tiempo.** Se declara que indicaciones del presidente van en contra de objetivos del proyecto (refuerzo de la libertad de elección, disminución del riesgo individual y eficiencia del sistema). Se declara que la cámara baja tuvo tiempo insuficiente para analizar el proyecto, ya que el tercer trámite constitucional duró menos de 24 horas y no se realizaron sesiones de comisión técnica. Principalmente el capítulo 1 tiene mucho contenido discursivo, en adelante es justificación técnica de la inconstitucionalidad. **Firmado por el diputado Roberto Arrroyo Muñoz. 
+- [Requerimiento de inconstitucionalidad](data/informes/requerimiento_inconstitucionalidad.pdf). **Relevante para el análisis y para la línea de tiempo.** Se declara que indicaciones del presidente van en contra de objetivos del proyecto (refuerzo de la libertad de elección, disminución del riesgo individual y eficiencia del sistema) y se realizaron muy pronto a la finalización de la tramitación. Se declara que la cámara baja tuvo tiempo insuficiente para analizar el proyecto, ya que el tercer trámite constitucional duró menos de 24 horas y no se realizaron sesiones de comisión técnica. Principalmente el capítulo 1 tiene mucho contenido discursivo, en adelante es justificación técnica de la inconstitucionalidad. **Firmado por el diputado Roberto Arrroyo Muñoz.
 
 La inconstitucionalidad fue solicitada también por más de un cuarto de los diputados: Roberto Arroyo Muñoz, Yovana Ahumada Palma, René Alinco Bustos, Jaime Araya Guerrero, Cristián Araya Lerdo de Tejada, Chiara Barchiesi Chávez, Bernardo Berger Fett, Sergio Bobadilla Muñoz, Álvaro Carter Fernández, Sofía Cid Versalovic, Sara Concha Smith, Gonzalo De la Carrera Correa, Catalina Del Real Mihovilovic, Jorge Durán Espinoza, Camila Flores Oporto, Mauro González Villarroel, Juan Irarrázaval Rossel, Pamela Jiles Moreno, Harry Jürgensen Rundshagen, Johannes Kaiser Barents-Von Hohenhagen, Cristian Labbé Martínez, Enrique Lee Flores, Christian Matheson Villán, José Carlos Meza Pereira, Benjamín Moreno Bascur, Francesca Muñoz González, Gloria Naveillan Arriagada, Víctor Alejandro Pino Fuentes, Jorge Rathgeb Schifferli, Gaspar Rivas Sánchez, Agustín Romero Leiva, Leonidas Romero Sáez, Luis Sánchez Ossa, Stephan Schubert Rubio, Hotuiti Teao Drago, Renzo Trisotti Martínez, Cristóbal Urruticoechea Ríos y Sebastián Videla Castillo.
 
@@ -132,6 +116,73 @@ La inconstitucionalidad fue solicitada también por más de un cuarto de los dip
 ## Sexto trámite constitucional: Promulgación de Ley en Diaro Oficial (2025/03/20 - 2025/03/20)
 
 - 6.1 Publicación en Diario Oficial (2025/03/20): xml y texto limpio revisados. Publicación de la ley en el diario oficial, con el texto final aprobado por el Tribunal Constitucional. **Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.**
+
+# Filtrado y descarga de trámites irrelevantes
+
+Para el análisis final, solo necesitaremos los trámites que contengan contenido discursivo significativo, por ejemplo, los diarios de sesión y el mensaje inicial. Otros documentos, como los oficios, son méramente técnicos y no aportan a la investigación.
+
+```{python}
+#| eval: false
+import pandas as pd
+from pathlib import Path
+data = pd.read_csv("data/datos_bcn_akn.csv", sep = ";")
+
+data_analysis = data[
+    data["title"].str.contains("Discusión en Sala|Mensaje|Informe", case=False, na=False)
+]
+```
+
+# Procesamiento de datos
+
+Extraemos el discurso desde los diarios de sesión, dividido por párrafo y separado por hablante. Los datos ya están en su gran mayoría identificados, ya que estamos utilizando los identificadores de hablantes y tipos de intervenciones presentes en el Akoma Ntoso de la Biblioteca del Congreso Nacional. Para esto, utilizamos la función `add_speech_content`.
+
+Sin embargo, parte del discurso no está etiquetado, principalmente el discurso de los ministros, que no son parlamentarios, y por lo tanto no están etiquetados como hablantes en el Akoma Ntoso. Para esto, se hace un proceso de normalización del discurso, donde se identifican los fragmentos de texto que corresponden a cada ministro, y se les asigna manualmente un identificador de hablante específico para cada uno, generando el mismo esquema para ambas participaciones. Para esto, se utiliza la función `normalize_speech_content`.
+
+```{python}
+import json
+import pyarrow
+import pandas as pd
+from bcn_scraper import add_speech_content, normalize_speech_content, collect_unlabeled_speaker_candidates
+
+data_speech = add_speech_content(data_analysis)
+
+data_normalized = normalize_speech_content(
+    data_speech,
+    split_transcription_events=True,
+    clean_labeled=True,
+    external_speakers={
+        "JARA": {
+            "speaker": "Jeannette Jara",
+            "speaker_id": "PersonaExt1",
+            "speaker_href": "https://es.wikipedia.org/wiki/Jeannette_Jara",
+            "role": "Ministra del Trabajo y Previsión Social",
+        },
+        "MARCEL": {
+            "speaker": "Mario Marcel",
+            "speaker_id": "PersonaExt2",
+            "speaker_href": "https://es.wikipedia.org/wiki/Mario_Marcel",
+            "role": "Ministro de Hacienda",
+        },
+        "CIFUENTES": {
+            "speaker_id": "per0"
+        },
+        "GARCIA": {
+            "speaker_id": "PersonaAut9"
+        }
+    },
+)
+
+data_normalized.to_parquet("data/datos_normalizados.parquet", index=False)
+
+candidates = collect_unlabeled_speaker_candidates(data_normalized)
+
+dict_normalized = data_normalized.to_dict(orient="records")
+
+#file_name = Path("data/datos_normalizados.json")
+
+#with open(file_name, 'w', encoding='utf-8') as f:
+#    json.dump(dict_normalized, f, ensure_ascii=False, indent=4)
+```
 
 ```{python}
 # Subset de datos pertinentes para revisión manual
@@ -152,14 +203,6 @@ output_dir.mkdir(exist_ok=True)
 for numero, texto in enumerate(data["tramite_texto"], start=1):
     output_path = output_dir / f"tramite_{numero:03}.txt"
     output_path.write_text(str(texto), encoding="utf-8")
-```
-
-# Filtrado de trámites irrelevantes
-
-Para el análisis final, solo necesitaremos los trámites que contengan contenido discursivo significativo, por ejemplo, los diarios de sesión y el mensaje inicial. Otros documentos, como los oficios, son méramente técnicos y no aportan a la investigación.
-
-```{python}
-
 ```
 
 # Identificación de sesiones en comisiones técnicas
