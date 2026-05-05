@@ -1,62 +1,105 @@
-# Metodología: Discourse Network Análisis
+---
+title: "Reporte de Avance: Metodología, evaluación de datos y extración masiva de la Biblioteca del Congreso Nacional"
+author:
+  - name: "Ismael Aguayo"
+    orcid: "0009-0002-4056-8242"
+navbar:
+  title: false
+  background: transparent
+  right: []
+format:
+  html: 
+    toc: true
+    toc-location: left
+    toc-depth: 4
+    toc-title: "Índice"
+    number-sections: true
+    number-depth: 4
+    code-fold: true
+    css: styles.css
+    theme:
+      light: cosmo
+      dark: darkly
+    code-link: true
+    title-block-banner: true
+    smooth-scroll: true
+editor: visual
+execute: 
+  echo: false
+  warning: false
+comments:
+  hypothesis: 
+    theme: classic
+    openSidebar: false
+bibliography: references.bib
+csl: apa.csl
+link-citations: true
+lang: es
+---
 
-## Variables:
+## Resumen metodológico
 
-- **Actores:** Organizaciones o sujetos. Deben definirse de forma clara antes de empezar a analizar.
+Aunque aún no definida por completo, la metodología escogida nos otorga los supuestos relevantes para extraer y limpiar los datos de forma que sean útiles posteriormente. Tentativamente, utilizaremos **Discourse Network Analysis** [@leifeld_discourse_2017], que entiende el discurso como un fenómeno de red, ya que las declaraciones de los actores son interdependientes entre sí, de forma temporal y transversal, y comúnmente están dirigidas hacia otros actores, lo que constituye una **acción relacional.** El DNA combina técnicas de análisis de contenido discursivo, análisis descriptivo de redes y análisis inferencial de redes para describir las estructuras de los discursos políticos y comprender sus procesos generativos. Esta técnica permite capturar la agrupación de actores (**coaliciones**), la agrupación temporal (**ciclos de atención**) y la agrupación en torno a conceptos (**frames**). Esto nos permitirá, entre otras cosas, evaluar el nivel de cooperación y conflicto y la polarización en el debate, entender sistemáticamente como el poder da forma al discurso, y tomar en consideración el tiempo y la competencia entre coaliciones opuestas al analizar los conceptos teóricos que nos interesan. El mayor potencial que tiene esta perspectiva para nuestra investigación es lograr transformar el debate, por naturaleza no estructurado y disperso, en contenido con estructura clara y analizable, para atacar de forma efectiva las hipótesis y preguntas que nos interesan. Sumado a esto, el DNA ofrece categorías y variables claras y delimitadas, perfectas para realizar un análisis con Inteligencia Aumentada como el que propone esta investigación.
 
-- **Conceptos:** puede ser tanto afirmaciones sobre políticas (perspectiva de advocacy coalitions) o justificaciones/narrativas (probablemente más adecuado en nuestro caso de estudio).
+### Variables:
 
-- **Acuerdo: acuerdo o desacuerdo**
+La unidad básica de análisis en el DNA es una declaración **(statement).** Se compone de las siguientes variables:
 
-- **Tiempo:** Puede definirse de forma discreta o continua, dependiendo de si se van a utilizar técnicas inferenciales más complejas.
+- **Actores:** Organizaciones o sujetos. Deben definirse de forma clara antes de empezar a analizar. En este caso, utilizaremos a los sujetos, añadiendo la organización (comúnmente el partido) como una categoría adicional de análisis a posteriori.
 
-Permite estudiar las coaliciones y su transformación a lo largo del tiempo. Esto posibilita evaluar el nivel de cooperación, el grado de polarización, los ciclos de atención a los problemas sociales, y define una forma sistemática de analizar como el poder le da forma al discurso.
+- **Conceptos:** puede ser tanto afirmaciones sobre políticas (desde la perspectiva de las *advocacy coalitions*) o justificaciones/narrativas (desde la perspectiva de las *discourse coalitions*). Para nuestra investigación, probablemente utilizaremos *discourse coalitions*, pero es algo que queda por definir y requiere de una teoría auxiliar para ser operacionalizado.
 
-Hay diferentes formas de codificar (se ajustan a la teoría y al problema) y aún debo estudiar los métodos avanzados inferenciales del análisis de redes que esta perspectiva emplea. Pero la forma más básica es así:
+- **Acuerdo:** Relación de acuerdo entre el actor y el concepto. Es un calificador dicotómico, tomando valor 1 si el actor se refiere al concepto de forma afirmatoria, y 2 si el actor rechaza el concepto o usa una connotación negativa. Es una distinción crucial, ya que los actores usualmente discuten los mismos conceptos, pero con un posicionamiento diferente o muchas veces opuesto. Metodologías como el análisis de tópicos no serían capaces de capturar esta complejidad.
 
-**Actor -\> acuerdo -\> concepto (en un time step)**
+- **Tiempo:** El momento en que la declaración se emite. Por el momento, la estamos operacionalizando de dos formas:
+
+  1.  Utilizamos el día de la discusión para temporalizar cada debate entre sí.
+
+  2.  Utilizamos un time step discreto interno a cada debate, para capturar posibles influencias entre actores o referencias a otras declaraciones (t=1, t=2, ..., t=n).
+
+### Ejemplo de codificación
+
+Existen métodos inferenciales que aún no he explorado (y pueden llegar a influenciar el procedimiento), pero por el momento esta sería la forma más básica de codificación:
+
+**Actor -\> acuerdo -\> concepto (en un time step específico)**
 
 Para nuestro caso podría ser:
 
 Johannes Kayser -\> Desacuerdo -\> Solidaridad Intergeneracional
 
-Y:
+O también:
 
-Johannes Kayser -\> Acuerdo -\> El Estado se roba el dinero
+Johannes Kayser -\> Acuerdo -\> Estado ineficiente
 
-En último término, esto permite construir grafos y analizar el dinamismo de las coaliciones (aún sin pasar a métodos complejos), como en este ejemplo del análisis del discurso en torno a las pensiones en alemania:
-
-![](images/paste-3.png)
-
-# Descarga de datos
-
-Utilizamos paquete de python "bcn_scraper" de desarrollo propio para desacargar de forma programática los datos tramitación de la ley 21.735. El paquete desambigüa número de ley o de boletín, descargando automáticamente los documentos de tramitaciones, apilando los datos en un dataframe, y limpiando el xml para obtener el texto plano de cada trámite.
+Una posibilidad es construir diccionarios de conceptos análogos a nuestras categorías teóricas, como en este ejemplo muy simplificado:
 
 ```{python}
 #| eval: false
-from bcn_scraper.wrapper import historia_dataframe_from_ley_o_boletin
-from bcn_scraper.akoma_ntoso import debug_akoma_ntoso_errors
-from bcn_scraper import collect_unlabeled_speaker_candidates
-
-df = historia_dataframe_from_ley_o_boletin(numero_ley="21735", clean_text=True, fetch_akn=True)
-
-df_debugged = debug_akoma_ntoso_errors(
-    df,
-    timeout = 90,
-    max_attempts = 3,
-    backoff_seconds= 2.0
-    )
-
-df_debugged.to_csv("data/datos_bcn_akn.csv", index=False, sep = ";")
+market_justice = ["capitalización individual", "ineficiencia del Estado", "administración privada", "administraciones de fondos de pensiones", "mérito personal"]
+political_justice = ["sistema de reparto", "solidaridad intergeneracional", "administración estatal", "derecho a pensiones dignas"]
 ```
 
-# Test de datos
+Esta es una forma muy simplificada (y por desarrollarse), ya que en realidad debería ser más parecido a esto:
 
-Para evaluar la efectividad del paquete, se revisó manualmente cada trámite contra el disponible en la Biblioteca del Congreso Nacional, y se verificó que el texto limpio correspondiera al texto original. Sumado a esto, se hizo una revisión de cada documento en la tramitación de la ley, para evaluar su relevancia para el análisis del discurso parlamentario. Se identificaron los trámites que contienen contenido discursivo significativo, y se apuntó la información relevante para los cambios que fue sufriendo el proyecto.
+```{python}
+#| eval: false
+market_justice = {
+    "AFP": ["administradoras de fondos de pensiones", "administradoras actuales", "administración privada de las pensiones"]
+}
+political_justice = {
+    "sistema de reparto": ["el sistema anterior", "... ejemplos"]
+}
+```
 
-# Línea de tiempo y revisión de datos ley 21.735
+En último término, esto permite construir grafos y analizar el dinamismo de los clusters de forma descriptiva (aún sin utilizar métodos más avanzados), como en este ejemplo del análisis del discurso en torno a las pensiones en Alemania [@leifeld_reconceptualizing_2013]:
 
-## Primer Trámite Constitucional: Cámara de Diputados (2022/11/07 - 2024/01/24)
+![](images/paste-3.png)
+
+## Línea de tiempo y revisión de datos ley 21.735
+
+Se revisó la calidad de los datos extraídos (más adelante en el documento) y el contenido de cada documento, para identificar cuáles contienen información discursiva relevante para analizar y caracterizar temporalmente eventos relevantes en la historia de la ley.
+
+### Primer Trámite Constitucional: Cámara de Diputados (2022/11/07 - 2024/01/24)
 
 - 1.1 Mensaje inicial (2022/11/07): xml y texto limpio revisados. Mensaje inicial del presidente de la república y primera versión de la ley. **Relevancia alta** para el análisis, especialmente el discurso inicial que contiene la justificación de la ley.
 
@@ -78,7 +121,7 @@ Para evaluar la efectividad del paquete, se revisó manualmente cada trámite co
 
 - 1.7 Informe de Comisión de Trabajo Cámara de Diputados (2024/01/15): xml y texto limpio revisados. Contiene un resumen de las sesiones, los asistentes a ellas, mucha información técnica, y los resultados del informe (votaciones, cambios al proyecto), pero no aporta contenido discursivo significativo. **Relevancia baja/nula para el análisis, relevancia alta para el procesamiento de los videos de sesiones, relevancia alta para generar línea de tiempo de cambios del proyecto.**
 
-**Nota: Hay que encontrar (y transcribir) los videos de las sesiones de esta comisión y las siguientes.**
+**Nota: Hay que encontrar (y transcribir) los videos de las sesiones de esta comisión y las siguientes. Las actas existentes están neutralizadas y no mantienen bien la dirección y tono de los statements.**
 
 - 1.8 Oficio indicaciones del ejecutivo (2024/01/15): xml y texto limpio revisados. Retira y formula indicaciones al proyecto de ley. Establece la cotización adicional del 6% entre 3% a las cuentas individuales y otro 3% a solidaridad intergeneracional. **Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.** Informe asociado: [Informe Financiero Complementario](data/informes/informe_financiero_complementario_3.pdf)
 
@@ -96,7 +139,7 @@ Para evaluar la efectividad del paquete, se revisó manualmente cada trámite co
 
 - 1.14 Oficio de Cámara Origen a Cámara Revisora (2024/01/24): xml y texto limpio revisados. Entrega del proyecto de ley aprobado luego de las discusiones y comisiones técnicas al Senado. **Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.**
 
-## Segundo trámite constitucional: Senado (2025/01/22 - 2025/01/29)
+### Segundo trámite constitucional: Senado (2025/01/22 - 2025/01/29)
 
 p\. 293-468 requerimiento de inconstitucionalidad: - 15 de enero de 2025: Se recibió el [Oficio N° 312-372 del Presidente de la República](data/informes/indicaciones_presidente.pdf), que formuló 176 páginas de indicaciones al proyecto.
 
@@ -112,13 +155,13 @@ p\. 293-468 requerimiento de inconstitucionalidad: - 15 de enero de 2025: Se rec
 
 - 2.6 Oficio de la Corte Suprema a la Comisión (2025/01/29): xml y texto limpio revisados. Realiza un análisis de la constitucionalidad de la ley, principalmente las últimas modificaciones realizadas en respuesta al último informe de la corte suprema. **Relevancia baja/nula para el análisis.**
 
-## Tercer trámite constitucional: Cámara de Diputados (2025/01/29 - 2025/01/29)
+### Tercer trámite constitucional: Cámara de Diputados (2025/01/29 - 2025/01/29)
 
 - 3.1 Discusión en Sala (2025/01/29): xml y texto limpio revisados (xml Akoma Ntoso buggeado). Contiene el discurso de los parlamentarios en la discusión en sala, con un alto contenido discursivo significativo. Discusión donde se revisan y discuten los cambios realizados por el Senado y el proyecto final para aprobarlo de forma definitiva. **Relevancia alta para el análisis.**
 
 - 3.2 Oficio de Cámara Revisora a Cámara Origen (2025/01/29): xml y texto limpio revisados. Aprobación de modificaciones realizadas por el Senado. **Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.**
 
-## Cuarto trámite constitucional: Tribunal Constitucional (2025/01/29 - 2025/03/07)
+### Cuarto trámite constitucional: Tribunal Constitucional (2025/01/29 - 2025/03/07)
 
 - 4.1 Oficio de Cámara de Origen al Ejecutivo (2025/01/29): xml y texto limpio revisados. Envío del proyecto de ley aprobado por ambas cámaras al ejecutivo para su promulgación, consulta de facultad de veto. **Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.**
 
@@ -138,17 +181,41 @@ La inconstitucionalidad fue solicitada también por más de un cuarto de los dip
 
 - 4.5 Oficio del Tribunal Constitucional (2025/03/07): xml y texto limpio revisados. Sentenceia del Tribunal Constitucional. Declara constitucional todo lo consultado. **Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.**
 
-## Quinto trámite constitucional: Trámite de Finalización, Cámara de Diputados (2025/03/11 - 2025/03/11)
+### Quinto trámite constitucional: Trámite de Finalización, Cámara de Diputados (2025/03/11 - 2025/03/11)
 
 - 5.1 Oficio de Cámara de Origen al Ejecutivo (2025/03/11): xml y texto limpio revisados. Envío del proyecto finalizado para firma del presidente. **Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.**
 
-## Sexto trámite constitucional: Promulgación de Ley en Diaro Oficial (2025/03/20 - 2025/03/20)
+### Sexto trámite constitucional: Promulgación de Ley en Diaro Oficial (2025/03/20 - 2025/03/20)
 
 - 6.1 Publicación en Diario Oficial (2025/03/20): xml y texto limpio revisados. Publicación de la ley en el diario oficial, con el texto final aprobado por el Tribunal Constitucional. **Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.**
 
-# Filtrado y descarga de trámites irrelevantes
+## Procesamiento de datos
 
-Para el análisis final, solo necesitaremos los trámites que contengan contenido discursivo significativo, por ejemplo, los diarios de sesión y el mensaje inicial. Otros documentos, como los oficios, son méramente técnicos y no aportan a la investigación.
+### Descarga de datos
+
+Utilizamos el paquete de python `bcn_scraper` de desarrollo propio para descargar de forma automatizada los datos tramitación de la ley 21.735, y procesar los datos para obtener el discurso de forma limpia, normalizada y enriquecida. En primer lugar, descargamos todos los datos de la tramitación ingresando el número de ley. La función nos otorga un dataframe con todos los documentos de cada trámite y metadatos como la fecha, número de trámite y URL de cada documento. Este bloque de código demora un tiempo considerable, ya que se descargan los documentos y el Akoma Ntoso (AKN) de cada trámite, y se procesan para obtener el texto limpio. Específicamente para el AKN, se requirió desarrollar una función para reintentar la descarga con un mayor tiempo de espera, ya que solían presentar errores.
+```{python}
+#| eval: false
+from bcn_scraper.wrapper import historia_dataframe_from_ley_o_boletin
+from bcn_scraper.akoma_ntoso import debug_akoma_ntoso_errors
+from bcn_scraper import collect_unlabeled_speaker_candidates
+
+df = historia_dataframe_from_ley_o_boletin(numero_ley="21735", clean_text=True, fetch_akn=True)
+
+# Implementa reintentos sobre filas con errores
+df_debugged = debug_akoma_ntoso_errors(
+    df,
+    timeout = 90,
+    max_attempts = 3,
+    backoff_seconds= 2.0
+    )
+
+df_debugged.to_csv("data/datos_bcn_akn.csv", index=False, sep = ";")
+```
+
+### Filtrado de trámites irrelevantes
+
+Para el análisis final, solo necesitaremos los trámites que contengan contenido discursivo significativo, por ejemplo, los diarios de sesión y el mensaje inicial. Otros documentos, como los oficios, son méramente técnicos y no aportan a la investigación. A continuación, obtenemos un dataframe con solo los trámites relevantes.
 
 ```{python}
 #| eval: false
@@ -161,11 +228,41 @@ data_analysis = data[
 ]
 ```
 
-# Procesamiento de datos
+### Extracción y normalización de datos discursivos
 
-Extraemos el discurso desde los diarios de sesión, dividido por párrafo y separado por hablante. Los datos ya están en su gran mayoría identificados, ya que estamos utilizando los identificadores de hablantes y tipos de intervenciones presentes en el Akoma Ntoso de la Biblioteca del Congreso Nacional. Para esto, utilizamos la función `add_speech_content`.
+Extraemos el discurso desde los diarios de sesión, dividido por párrafo y separado por hablante. Los datos ya están en su gran mayoría etiquetados, ya que estamos utilizando los identificadores de hablantes y tipos de intervenciones presentes en el Akoma Ntoso (AKN) de la Biblioteca del Congreso Nacional. Para esto, utilizamos la función `add_speech_content`.
 
-Sin embargo, parte del discurso no está etiquetado, principalmente el discurso de los ministros, que no son parlamentarios, y por lo tanto no están etiquetados como hablantes en el Akoma Ntoso. Para esto, se hace un proceso de normalización del discurso, donde se identifican los fragmentos de texto que corresponden a cada ministro, y se les asigna manualmente un identificador de hablante específico para cada uno, generando el mismo esquema para ambas participaciones. Para esto, se utiliza la función `normalize_speech_content`.
+A continuación, se muestra un ejemplo de un documento AKN que fue procesado:
+
+```{xml}
+<!-- Metadata al principio documento con id del diputado. Luego nos será de gran utilidad. -->
+<meta>
+<references source="#org149">
+<TLCPerson id="per67" showAs="hector ulloa aguilera" href="http://datos.bcn.cl/recurso/persona/5212"/>
+<references</>
+<meta/>
+
+<!-- Una participación al azar como ejemplo -->
+<debateSection name="Participacion" refersTo="#per67" id="akn704142-po1-ds3-ds10" bcn:uriTipoParticipacion="#Intervencion" bcn:uriRol="#editorIdDiputado">
+<p id="akn704142-po1-ds3-ds10-p392">La señora HERTZ, doña Carmen (Vicepresidenta).-</p>
+<p id="akn704142-po1-ds3-ds10-p393"/>
+<p id="akn704142-po1-ds3-ds10-p394"> Tiene la palabra el diputado Héctor Ulloa . </p>
+<p id="akn704142-po1-ds3-ds10-p395"/>
+<p id="akn704142-po1-ds3-ds10-p396">El señor ULLOA.-</p>
+<p id="akn704142-po1-ds3-ds10-p397"/>
+<p id="akn704142-po1-ds3-ds10-p398">
+Señora Presidenta, llevamos años de rotundos fracasos en materia previsional, y este es el tercer intento de tener un mínimo común para avanzar en pensiones dignas para nuestros adultos mayores.
+</p>
+<!-- ... -->
+<p id="akn704142-po1-ds3-ds10-p407">
+Por eso, estimados colegas, hoy hago un llamado a la empatía. Muy pronto veremos el debate de las isapres. Hoy nos dicen “Con tu platita, no”; pero las isapres dicen “Con tu platita, sí”. Por eso hago un llamado a la empatía. Somos cotizantes privilegiados dentro del sistema, pero la realidad…
+</p>
+<p id="akn704142-po1-ds3-ds10-p408">-Aplausos.</p>
+<p id="akn704142-po1-ds3-ds10-p409"/>
+</debateSection>
+```
+
+Sin embargo, parte del discurso no está etiquetado, principalmente el discurso de los ministros, que no son parlamentarios, y por lo tanto no cuentan con identificador ni etiquetas en el Akoma Ntoso. Para esto, se realizó un proceso de normalización del discurso, donde se identifican los fragmentos de texto no etiquetados, y se genera la misma estructura presente en las demás intervenciones. Además, se identificaron eventos como los preámbulos (cuando se le da la palabra al hablante) y los eventos como aplausos o manifestaciones de las tribunas, etiquetandolos y dividiendolos de la intervención. Se utiliza la función `normalize_speech_content`.
 
 ```{python}
 
@@ -175,11 +272,7 @@ from bcn_scraper import add_speech_content, normalize_speech_content, collect_un
 
 data_speech = add_speech_content(data_analysis)
 
-data_normalized = normalize_speech_content(
-    data_speech,
-    split_transcription_events=True,
-    clean_labeled=True,
-    external_speakers={
+external_speakers_dict = {
         "JARA": {
             "speaker": "Jeannette Jara",
             "speaker_id": "PersonaExt1",
@@ -195,26 +288,143 @@ data_normalized = normalize_speech_content(
         "CIFUENTES": {
             "speaker_id": "per0"
         },
+    }
+
+dict_session_24 = {
+        # Discusión Senado 2.4
+        "ALLENDE": {
+            "speaker_id": "PersonaAut7"
+        },
+        "ARAVENA": {
+            "speaker_id": "PersonaAut11"
+        },   
+        "ARAYA": {
+            "speaker_id": "PersonaAut5"
+        },
+        "CHAHUAN": {
+            "speaker_id": "PersonaAut43"
+        },
+        "CRUZ COKE": {
+            "speaker_id": "PersonaAut39"
+        },
+        "EBENSPERGER": {
+            "speaker_id": "PersonaAut14"
+        },
         "GARCIA": {
             "speaker_id": "PersonaAut9"
-        }
-    },
+        },
+        "GUZMAN": {
+            "speaker": "Raul Guzmán Uribe",
+            "speaker_id": "PersonaExt3",
+            "speaker_href": "NA",
+            "role": "Secretario General del Senado"
+        },
+        "INSULZA": {
+            "speaker_id": "PersonaAut25"
+        },
+        "KUSANOVIC": {
+            "speaker_id": "PersonaAut20"
+        },
+        "LAGOS": {
+            "speaker_id": "PersonaAut34"
+        },
+        "MOREIRA": {
+            "speaker_id": "PersonaAut12"
+        },
+        "NUNEZ": {
+            "speaker_id": "PersonaAut15"
+        },
+        "OSSANDON": {
+            "speaker_id": "PersonaAut87"
+        },
+        "PROHENS": {
+            "speaker_id": "PersonaAut33"
+        },
+        "PROVOSTE": {
+            "speaker_id": "PersonaAut40"
+        },
+        "WALKER": {
+            "speaker_id": "PersonaAut6"
+        },
+}
+
+data_normalized = normalize_speech_content(
+    data_speech,
+    split_transcription_events=True,
+    clean_labeled=True,
+    external_speakers=external_speakers_dict,
 )
 
+dict_normalized = data_normalized.to_dict(orient="records")
+
+# Identificación de parlamentarios externos o no etiquetados
+candidates = collect_unlabeled_speaker_candidates(data_normalized)
+
+speech_df_full = pd.read_parquet("data/speech_df_full.parquet")
+```
+
+Así quedan los datos (simplificados) luego de normalizarlos, con el ejemplo de la intervención de Jeanette Jara que no estaba etiquetada en el AKN:
+
+```{python}
+
+{
+ 'kind': 'participation', 
+ 'time_step': 26, 
+ 'speaker_id': 'PersonaExt1', 
+ 'speaker': 'Jeannette Jara', 
+ 'speaker_href': 'https://es.wikipedia.org/wiki/Jeannette_Jara', 
+ 'role': 'Ministra del Trabajo y Previsión Social'
+ 'content': ['Señora Presidenta, quiero partir este importante día, en que se pone en el centro este debate previsional, esta sentida demanda ciudadana que lleva tanto tiempo pendiente en nuestro país, saludando cordial y fraternalmente la presencia de todas las fuerzas políticas representadas en el Congreso Nacional, a través de las diputadas y los diputados de la república, quienes tienen un rol y una labor muy importante en representar a sus electores, en una democracia que debería salir fortalecida después de este debate, que ha sido de tan largo aliento, donde hemos estado más de una década tratando de hacernos cargo de la insuficiencia de un sistema de pensiones que tiene a la mayoría de los pensionados del país viviendo en condiciones muy precarias, de mucha necesidad y angustia.', 
+'...',
+'Por eso, el gobierno del Presidente Gabriel Boric ha presentado hoy, en palabras del ministro de Hacienda, Mario Marcel , las ideas centrales del proyecto de cumplimiento tributario, para combatir la evasión y la elusión…']
+}
+
+{
+ 'kind': 'transcription_event', 
+ 'time_step': 27, 
+ 'type': 'Transcription event', 
+ 'content': ['(Aplausos)']
+}
+```
+
+## Extracción de datos de parlamentarios
+
+Luego, se extrayeron los datos relevantes de los parlamentarios, estructurándolos en un dataframe. Se tomaron dos estrategias:
+
+- Para los parlamentarios etiquetados en el AKN, se obtuvieron los datos desde la misma plataforma.
+
+- Para los parlamentarios no etiquetados, se proporcionó un link de Wikipedia, obteniendo luego exactamente los mismos datos.
+
+BCN tiene una gran base de datos no estructurada. Una página de parlamentario se ve asi. Tomamos el mismo ejemplo que se mostró más arriba:
+
+![](images/paste-4.png)Se accedió al formato JSON de esta misma plataforma, extrayendo todos los datos relevantes, como el género, el partido y la edad. En algunos casos, como en el del partido, fue necesario acceder a dos URL adicionales luego de esta. El siguiente bloque de código puede demorar mucho tiempo (\~30 minutos). Solo se extrayó la última militancia de cada parlamentario por el largo tiempo de espera.
+
+```{python}
 parliamentarians = build_parliamentarian_table(data_normalized, include_all_militancies=False, fetch_militancy_dates=False, timeout=30, max_attempts=1)
 
-parliamentarians_debug = debug_parliamentarian_data_errors(
+# Función para reintentar con más tiempo en los casos con errores
+parliamentarians_full = debug_parliamentarian_data_errors(
     parliamentarians,
     include_all_militancies=False, fetch_militancy_dates=False,
     timeout=60,
     max_attempts=5,
     backoff_seconds=3,
 )
+# Guardamos en parquet
+parliamentarians_full.to_parquet("data/parliamentarians.parquet")
+```
+
+## Dataframe consolidado
+
+```{python}
+parliamentarians = pd.read_parquet("data/parliamentarians.parquet")
 
 speech_df = build_speech_analysis_dataframe(
     data_normalized,
     parliamentarians=parliamentarians_debug,
 )
+
+# Incluye intervenciones como aplausos, abucheos y preámbulos
 
 speech_df_full = build_speech_analysis_dataframe(
     data_normalized,
@@ -223,44 +433,9 @@ speech_df_full = build_speech_analysis_dataframe(
     include_preambles=True,
     include_unresolved=True,
 )
-
-candidates = collect_unlabeled_speaker_candidates(data_normalized)
-
-dict_normalized = data_normalized.to_dict(orient="records")
-
-parliamentarians_debug.to_parquet("data/parliamentarians.parquet")
-
 speech_df.to_parquet("data/speech_df.parquet")
 
 speech_df_full.to_parquet("data/speech_df_full.parquet")
-
-
-
-#file_name = Path("data/datos_normalizados.json")
-
-#with open(file_name, 'w', encoding='utf-8') as f:
-#    json.dump(dict_normalized, f, ensure_ascii=False, indent=4)
-```
-
-```{python}
-# Subset de datos pertinentes para revisión manual
-data_subset = data[["tramite_titulo", "tramite_fecha", "tramite_bajada", "tramite_contenido_html", "tramite_texto"]]
-
-print(data["tramite_contenido_html"][0][:500])
-
-output_dir_xml = Path("data/tramites_xml")
-output_dir_xml.mkdir(exist_ok=True)
-
-for numero, contenido_xml in enumerate(data["tramite_contenido_html"], start=1):
-    output_path = output_dir_xml / f"tramite_{numero:03}.xml"
-    output_path.write_text(str(contenido_xml), encoding="utf-8")
-
-output_dir = Path("data/tramites_txt")
-output_dir.mkdir(exist_ok=True)
-
-for numero, texto in enumerate(data["tramite_texto"], start=1):
-    output_path = output_dir / f"tramite_{numero:03}.txt"
-    output_path.write_text(str(texto), encoding="utf-8")
 ```
 
 # Identificación de sesiones en comisiones técnicas
