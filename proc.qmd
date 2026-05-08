@@ -69,7 +69,7 @@ Johannes Kayser -\> Desacuerdo -\> Solidaridad Intergeneracional
 
 O también:
 
-Johannes Kayser -\> Acuerdo -\> Estado ineficiente
+**Johannes Kayser -\> Acuerdo -\> Estado ineficiente**
 
 Una posibilidad es construir diccionarios de conceptos análogos a nuestras categorías teóricas, como en este ejemplo muy simplificado:
 
@@ -194,6 +194,7 @@ La inconstitucionalidad fue solicitada también por más de un cuarto de los dip
 ### Descarga de datos
 
 Utilizamos el paquete de python `bcn_scraper` de desarrollo propio para descargar de forma automatizada los datos tramitación de la ley 21.735, y procesar los datos para obtener el discurso de forma limpia, normalizada y enriquecida. En primer lugar, descargamos todos los datos de la tramitación ingresando el número de ley. La función nos otorga un dataframe con todos los documentos de cada trámite y metadatos como la fecha, número de trámite y URL de cada documento. Este bloque de código demora un tiempo considerable, ya que se descargan los documentos y el Akoma Ntoso (AKN) de cada trámite, y se procesan para obtener el texto limpio. Específicamente para el AKN, se requirió desarrollar una función para reintentar la descarga con un mayor tiempo de espera, ya que solían presentar errores.
+
 ```{python}
 #| eval: false
 from bcn_scraper.wrapper import historia_dataframe_from_ley_o_boletin
@@ -272,7 +273,25 @@ from bcn_scraper import add_speech_content, normalize_speech_content, collect_un
 
 data_speech = add_speech_content(data_analysis)
 
-external_speakers_dict = {
+
+
+data_normalized = normalize_speech_content(
+    data_speech,
+    split_transcription_events=True,
+    clean_labeled=True
+)
+
+# Podemos convertir a diccionario el dataframe para revisar las intervenciones
+dict_normalized = data_normalized.to_dict(orient="records")
+```
+
+Hay intervenciones que no están etiquetadas, especialmente las de hablantes no pertenecientes al congreso (ministros, secretario general) y también intervenciones extra oficiales, como las interrupciones que suceden mucho a lo largo de las sesiones. Para diagnosticar esto, generamos la función `collect_unlabeled_speaker_candidates`, y permitimos un nuevo parámetro dentro de `normalize_speech_content` para entregar un diccionario. Este último puede contener tanto datos manualmente ingresados como los ids de los parlamentarios para realizar un matching automático.
+
+```{python}
+# Identificación de parlamentarios externos o no etiquetados
+candidates = collect_unlabeled_speaker_candidates(data_normalized)
+
+ministers = {
         "JARA": {
             "speaker": "Jeannette Jara",
             "speaker_id": "PersonaExt1",
@@ -284,7 +303,11 @@ external_speakers_dict = {
             "speaker_id": "PersonaExt2",
             "speaker_href": "https://es.wikipedia.org/wiki/Mario_Marcel",
             "role": "Ministro de Hacienda",
-        },
+        }
+
+    }
+
+dict_session_12 = {
         "CIFUENTES": {
             "speaker_id": "per0"
         },
@@ -348,19 +371,18 @@ dict_session_24 = {
         },
 }
 
-data_normalized = normalize_speech_content(
+external_speakers_dict = ministers | dict_session_12 | dict_session_24
+
+data_normalized_full = normalize_speech_content(
     data_speech,
     split_transcription_events=True,
     clean_labeled=True,
-    external_speakers=external_speakers_dict,
+    external_speakers = external_speakers_dict,
 )
 
-dict_normalized = data_normalized.to_dict(orient="records")
+dict_normalized_full = data_normalized_full.to_dict(orient="records")
 
-# Identificación de parlamentarios externos o no etiquetados
-candidates = collect_unlabeled_speaker_candidates(data_normalized)
-
-speech_df_full = pd.read_parquet("data/speech_df_full.parquet")
+candidates_full = collect_unlabeled_speaker_candidates(data_normalized_full)
 ```
 
 Así quedan los datos (simplificados) luego de normalizarlos, con el ejemplo de la intervención de Jeanette Jara que no estaba etiquetada en el AKN:
@@ -416,19 +438,21 @@ parliamentarians_full.to_parquet("data/parliamentarians.parquet")
 
 ## Dataframe consolidado
 
+Por último, podemos aplanar el dataframe con todas las intervenciones discursivas para que nos sirva en el análisis.
+
 ```{python}
 parliamentarians = pd.read_parquet("data/parliamentarians.parquet")
 
 speech_df = build_speech_analysis_dataframe(
-    data_normalized,
-    parliamentarians=parliamentarians_debug,
+    data_normalized_full,
+    parliamentarians=parliamentarians,
 )
 
 # Incluye intervenciones como aplausos, abucheos y preámbulos
 
 speech_df_full = build_speech_analysis_dataframe(
     data_normalized,
-    parliamentarians=parliamentarians_debug,
+    parliamentarians=parliamentarians,
     include_transcription_events=True,
     include_preambles=True,
     include_unresolved=True,
