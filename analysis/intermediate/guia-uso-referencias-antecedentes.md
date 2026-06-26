@@ -87,6 +87,7 @@ No priorizar aquí:
 
 - Gaffney (2025): no trabaja persistencia institucional de largo plazo.
 - Taylor-Gooby et al. (2019): más útil para economía moral ciudadana que robustez institucional.
+- Choi et al. (2026) y Zhao y Zhang (2026): no tratan robustez neoliberal, pensiones ni welfare; reservar para 2.2 o metodología como ejemplos de institucionalismo discursivo computacional.
 
 ### 2.2. Discurso como poder, coaliciones y hegemonía
 
@@ -107,6 +108,8 @@ Fuentes periféricas/reserva:
 - Robertson (2026): poder de élites tecnocráticas para instalar paradigmas de incentivos; buen apoyo comparado para poder ideacional top-down.
 - Bril-Mascarenhas y Maillet (2019): aporta coaliciones empresariales y poder estructural/instrumental, pero su lugar principal está en 2.1 o sección chilena.
 - Ring et al. (2020): útil para dimensión interactiva del discurso y comunidades epistémicas; probablemente rinde más en 2.3.
+- Choi et al. (2026): puede usarse como ejemplo de medición longitudinal de estructuración discursiva y estabilización de marcos interpretativos.
+- Zhao y Zhang (2026): puede usarse como ejemplo de cómo el discurso produce efectos institucionales observables sobre la implementación de políticas.
 
 No priorizar aquí:
 
@@ -203,6 +206,14 @@ Estas fuentes pueden aparecer en más de una sección porque cumplen funciones d
   - 2.3: expertos como actores estratégicos de legitimación.
   - Repetición justificada si se usa para conectar coaliciones y tecnocracia.
 
+- Choi et al. (2026):
+  - 2.2 o metodología: ejemplo de medición computacional longitudinal de estructuración discursiva.
+  - Repetición justificada solo si se separa claramente el aporte sustantivo del aporte metodológico.
+
+- Zhao y Zhang (2026):
+  - 2.2 o metodología: ejemplo de efectos cuantificables del discurso sobre implementación de políticas.
+  - Repetición justificada si se usa para reforzar la relación ideas-instituciones, no como ejemplo de welfare.
+
 ## Fuentes periféricas o descartadas para los antecedentes actuales
 
 “Descartada” aquí no significa inútil; significa que no parece necesaria para la versión compacta de antecedentes si ya se usan las fuentes core. Pueden recuperarse para introducción, metodología, discusión o revisión ampliada.
@@ -212,6 +223,10 @@ Estas fuentes pueden aparecer en más de una sección porque cumplen funciones d
 - Robertson (2026): periférica. Aporta sobre poder ideacional de élites y paradigmas tecnocráticos en beneficios sociales, pero no es pensiones. Puede servir como apoyo en 2.2/2.3 si falta evidencia sobre experticia top-down.
 
 - King (2024): periférica-core para 2.2. No es pensiones, pero es útil para mostrar institucionalismo discursivo aplicado empíricamente a política social. Usarla si se quiere fortalecer el puente teórico-metodológico del poder ideacional.
+
+- Choi et al. (2026): periférica-metodológica. No pertenece al campo de pensiones ni welfare, pero es valiosa como ejemplo de institucionalismo discursivo con corpus digital, modelado de temas y análisis temporal. Puede sostener una frase metodológica o un ejemplo de institucionalización discursiva.
+
+- Zhao y Zhang (2026): periférica-metodológica. No trata política social, pero aporta evidencia fuerte de que el discurso puede funcionar como institución de gobierno con efectos observables en implementación. Útil como puente entre institucionalismo discursivo y medición computacional.
 
 - Béland (2019): periférica-core para 2.1/2.2. Es pensiones y narrativas, pero si el espacio es limitado puede quedar como apoyo secundario porque ya hay fuentes más directamente alineadas con coaliciones y justificación.
 
@@ -230,6 +245,7 @@ Estas fuentes pueden aparecer en más de una sección porque cumplen funciones d
 - Zhang et al. (2025): reservar para discusión teórica más amplia sobre poder ideacional fuera de pensiones.
 - Robertson (2026): reservar para discusión sobre élites tecnocráticas y alternativas políticas invisibilizadas.
 - King (2024): usar solo si 2.2 necesita una aplicación empírica no previsional del institucionalismo discursivo.
+- Choi et al. (2026) y Zhao y Zhang (2026): usar con moderación porque no son fuentes sobre pensiones/welfare. Su valor está en demostrar la plausibilidad empírica y computacional del institucionalismo discursivo, no en sustentar el argumento sustantivo sobre seguridad social.
 
 ## Ruta de escritura recomendada
 
@@ -238,7 +254,7 @@ Para mantener la revisión compacta:
 1. En 1.1, usar 5-6 fuentes como máximo: Kohli, Taylor-Gooby, Anderson, Ring, Costa, Väänänen y Liukko.
 2. En 1.2, usar Castillo, Blum, Sachweh, Gaffney y/o Hagelund. No repetir Taylor-Gooby salvo que sea necesario.
 3. En 2.1, centrar en Madariaga, Bril-Mascarenhas y Maillet, Schmidt, Rozas-Bugueño y Maillet, y Väänänen y Liukko.
-4. En 2.2, centrar en Leifeld, King, Lee, Rozas-Bugueño y Maillet, Costa y Béland.
+4. En 2.2, centrar en Leifeld, King, Lee, Rozas-Bugueño y Maillet, Costa y Béland. Choi et al. y Zhao y Zhang pueden reservarse para metodología si el texto queda sobrecargado.
 5. En 2.3, centrar en Gaffney, Costa, Ring, Väänänen y Liukko, Xiarchogiannopoulou, Garber, Lee y Mulligan.
 6. En sección 3, priorizar fuentes chilenas: Madariaga, Bril-Mascarenhas y Maillet, Garber, Rozas-Bugueño y Maillet, Castillo.
 
