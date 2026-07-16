@@ -1,0 +1,47 @@
+El presente informe evalúa el manuscrito *Resiliencia de la capitalización individual: Mapeando redes discursivas de justicia social en el debate previsional chileno*, a partir de su versión entregada para revisión. La evaluación se concentra en tres dimensiones: introducción, antecedentes y metodología. Además, se considera si la versión actual responde adecuadamente a los comentarios formulados en la entrega anterior.
+
+# Abstract
+
+Bien, pero el argumento no queda muy claro en esta frase, reformular: "El argumento central sostiene que la resiliencia de la capitalización  individual depende, en parte, de su capacidad para ordenar discursivamente los límites de la 
+reforma,..."
+
+# Introducción
+
+La introducción ha mejorado de forma sustantiva respecto de la versión anterior. Ahora el texto logra situar con mayor claridad el problema de investigación en torno a la persistencia de la capitalización individual en el debate previsional chileno, y lo vincula de manera más directa con la tensión entre justicia de mercado, justicia política y legitimación discursiva. También se aprecia un avance importante en la delimitación del objeto de estudio, que ya no aparece diluido en un marco demasiado general sobre Estado de bienestar, sino anclado en la reforma previsional chilena de 2022-2025 y en el debate legislativo asociado.
+
+En este punto, el manuscrito sí responde mejor a los comentarios de la entrega anterior: la pregunta de investigación está formulada de modo más explícito, el argumento central ya no queda sólo sugerido, y el párrafo final de la introducción entrega una orientación más nítida sobre el diseño del estudio. 
+
+Con todo, todavía conviene afinar la introducción en tres aspectos. Primero, el problema de investigación podría formularse con mayor precisión analítica, distinguiendo entre la persistencia institucional del sistema previsional y la persistencia discursiva de ciertas justificaciones que lo sostienen. Segundo, el argumento central gana fuerza si se presenta menos como una conclusión anticipada y más como una hipótesis a ser evaluada empíricamente. En particular, sería útil explicitar qué significa exactamente que la capitalización individual muestre "resiliencia" y mediante qué indicadores discursivos se observará esa resiliencia. Y tercero, y lo más importante, las hipótesis no aparecen bien delimitadas entre sí. Dado que no se explica cómo se relacionará el análisis con el esquema CARIN, aparece algo tautológico hablar de visiones normativas, repertorios estratégicos, y lógicas de asignación, como si fueran cosas totalemente distintas. Tal vez lo son, pero para ello cada una de ellas debería estar claramente definida y diferenciada. De todas maneros comento más sobre esto en la sección de antecedentes.
+
+En cuanto a aspectos menores, es necesario detallar acrónimos (como CARIN) y explicar brevemente la relevancia de ciertos conceptos (como merecimiento) para que el lector no especializado pueda seguir la argumentación. 
+
+# Antecedentes
+
+La sección de antecedentes también muestra un avance significativo. A diferencia de la entrega anterior, el texto ya no se percibe como una revisión ensayística demasiado amplia, sino como un esfuerzo por organizar la literatura en torno a un eje sustantivo más claro: la disputa entre concepciones de justicia social y su traducción en el debate previsional chileno. La distinción entre justicia de mercado y justicia política funciona bien como punto de entrada, y la inclusión de la literatura sobre legitimación discursiva, coaliciones y estrategias de justificación fortalece el andamiaje teórico del trabajo.
+
+El objeto de estudio aparece mejor definido que antes, y eso es importante. Sin embargo, la sección aún puede ganar en foco. Algunas subsecciones siguen acumulando referencias sin cerrar del todo el argumento que conecta literatura, vacío empírico e hipótesis. En particular, la parte histórica sobre Chile y la discusión contextual de la reforma debieran conducir con mayor economía hacia las hipótesis centrales, en vez de abrir frentes analíticos demasiado amplios. También sería conveniente reducir repeticiones entre el marco teórico general, la caracterización del caso chileno y la discusión sobre las coaliciones discursivas. Da la impresión de que no se va avanzando secuencialmente desde lo más general hacia lo más específico, sino que siguen apareciendo temas y conceptos que no se sabe bien si son algo más contextual o si van a ser utilizados como variables de análisis. Desde ese punto de vista, el texto aparece como exigente para el lector, quien debe hacer el trabajo de ir organizando las ideas y relacionando conceptos.
+
+En términos de evaluación del avance previo, aquí el manuscrito corrigió parcialmente una de las observaciones más importantes: ya no parte de un marco abstracto que deja el objeto difuso, y ahora sí ordena el estado del arte de forma más pertinente. No obstante, todavía falta una síntesis más explícita al final de cada bloque, para que el lector vea con claridad qué vacío empírico o qué laguna teórica justifica cada hipótesis. En su estado actual, la sección es sólida, pero todavía puede transformarse en una argumentación más compacta y menos acumulativa.
+
+Y también en esta sección aparecen problemas con las hipótesis. Tienen más detalle que en la introducción, pero no queda claro cómo serán contrastadas con la información empírica. Por ejemplo, en H1, se habla izquierda=justicia política y derecha=justicia de mercado, pero la verdad es que esto no es algo específico al tema de pensiones, sino que es algo muy general, y que se podría contrastar de maneramás simple con otras metodologías. En H2, decir que algo es híbrido pero a la vez diferenciado no permite avanzar mucho en clarificar qué es lo que se está buscando. H3 tampoco es algo exclusivo ni al tema de pensiones, ni tampoco al enfoque metodológico particular. En H4 justicia de mercado ya no se asocia a criterios de merecimiento, sino a "mérito, propiedad privada y capitalización". Por lo tanto, hay mucha confusión conceptual y de operacionalización de las hipótesis, que requiere ser resuelta para que el manuscrito pueda avanzar hacia una memoria de título más clara y evaluable.
+
+# Metodología
+
+La metodología está bastante mejor resuelta que en la entrega anterior. El manuscrito describe con claridad el corpus de datos, la unidad de análisis, las variables principales y la estrategia de análisis. En particular, se entiende bien que el estudio trabaja con las sesiones legislativas y técnicas de la tramitación de la Ley N° 21.735, que la unidad analítica son las declaraciones, y que el análisis se apoya en análisis de redes discursivas, codificación asistida por modelos de lenguaje y modelamiento estadístico posterior.
+
+También es positivo que la exposición metodológica ya no se limite a enumerar herramientas, sino que explique cómo se articulan entre sí: extracción y limpieza de datos, codificación de actores y conceptos, validación manual, y luego análisis descriptivo y modelamiento de patrones discursivos. Esto responde de manera bastante directa a la observación previa sobre la necesidad de explicar cómo quedará conformada la base de datos y qué tipo de resultados se esperan obtener.
+
+Aun así, persisten dos problemas. Primero, la sección sigue usando bastante jerga técnica, y en algunos tramos la densidad metodológica puede dificultar la lectura para un evaluador no especializado en análisis computacional de discurso. Segundo, la justificación del uso de LLM y de modelos multinivel podría simplificarse un poco para no perder de vista la pregunta sociológica de fondo. La metodología es robusta, pero el manuscrito ganaría mucho si explicara más brevemente qué produce cada etapa del análisis y por qué esa secuencia es la más adecuada para responder la pregunta de investigación.
+
+# Consideración sobre la entrega anterior
+
+En general, la nueva versión sí atiende varios de los comentarios formulados. El avance más claro está en la reorientación del título, la mejor delimitación del objeto de estudio, la incorporación de un abstract y una estructura metodológica más legible. También se corrigió en parte el problema de partir desde un marco demasiado general y luego descender bruscamente a la técnica.
+
+Lo que aún queda pendiente es consolidar la coherencia interna entre problema, antecedentes, hipótesis y método. En la versión actual todavía hay momentos en que el texto acumula más conceptos y complejidad de lo necesario, y más bien juega en contra ya que va entorpeciendo el flujo del argumento. El desafío siguiente es convertir ese buen avance en una narración más breve, secuencial, y más explícitamente evaluable.
+
+# Síntesis
+
+El manuscrito presenta un avance importante y, en comparación con la entrega anterior, ahora tiene una arquitectura mucho más sólida. La introducción está mejor encaminada, los antecedentes están mejor organizados y la metodología es comprensible en su diseño general. La principal tarea pendiente no es de contenido bruto, sino de depuración: afinar el problema de investigación, compactar los antecedentes y simplificar la exposición metodológica para que el argumento central se lea con mayor nitidez. Y principalmente, trabajar las hipótesis para que sean más claras, diferenciadas y evaluables, de modo que el lector pueda entender cómo se contrastarán con la evidencia empírica.
+
+Nota: 6.8
+
