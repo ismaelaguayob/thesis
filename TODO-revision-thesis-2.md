@@ -52,11 +52,11 @@ El texto alterna entre la persistencia institucional de la capitalización indiv
 - [ ] Distinguir explícitamente dos fenómenos:
 
   - **persistencia institucional:** continuidad de la capitalización individual en el diseño aprobado;
-  - **robustez discursiva o ideacional:** capacidad de ciertos principios para conservar centralidad, delimitar alternativas aceptables o ser adoptados por actores de otras coaliciones.
+  - **robustez ideacional:** capacidad de las ideas cognitivas y normativas que sustentan una política para adaptarse y conservarse frente a cambios en los actores y en el entorno, permitiendo modificaciones sin alterar su orientación básica (Migone et al., 2024).
 
-- [ ] Delimitar la inferencia principal de la tesis a la **robustez discursiva/ideacional**.
+- [ ] Delimitar la inferencia principal de la tesis a la **robustez ideacional** y utilizar el discurso legislativo como fuente de indicadores empíricos, no como fundamento de un concepto adicional.
 - [ ] Explicar que el resultado institucional de la Ley N.º 21.735 funciona como contexto y desenlace del proceso, pero que el objeto observado directamente son las declaraciones legislativas.
-- [ ] Definir “robustez discursiva” mediante indicadores observables. Como mínimo, evaluar:
+- [ ] Operacionalizar la robustez ideacional mediante indicadores discursivos observables. Como mínimo, evaluar:
 
   1. permanencia o centralidad de principios asociados a la capitalización individual;
   2. adopción de esos principios por actores inicialmente reformistas;
@@ -64,15 +64,15 @@ El texto alterna entre la persistencia institucional de la capitalización indiv
   4. continuidad o expansión de esos patrones entre etapas legislativas.
 
 - [ ] Definir también evidencia contraria: pérdida de centralidad, aislamiento de esos principios en el bloque promercado o expansión transversal de una solidaridad no condicionada.
-- [ ] Usar consistentemente uno de los términos —preferentemente **robustez discursiva** o **robustez ideacional**— y explicar su relación con la expresión más amplia “resiliencia de la capitalización individual” utilizada en el título.
+- [ ] Usar consistentemente **robustez ideacional** como concepto teórico con referencia a Migone et al. (2024) y **estructuración discursiva** como el proceso observable mediante el cual ciertas ideas organizan el debate (Hajer, 1997). No introducir la tipología de poder ideacional en el argumento central mientras sus dimensiones no sean operacionalizadas por separado.
 
 ## Decisión de alcance recomendada
 
-Mantener el corpus actual y formular una conclusión sobre robustez discursiva. Para sostener una explicación fuerte de resiliencia institucional sería necesario ampliar el diseño y comparar sistemáticamente el proyecto inicial, las indicaciones, las versiones intermedias y la ley finalmente aprobada.
+Mantener el corpus actual y formular una conclusión sobre la robustez ideacional observada mediante el discurso legislativo. Para sostener una explicación fuerte de resiliencia institucional sería necesario ampliar el diseño y comparar sistemáticamente el proyecto inicial, las indicaciones, las versiones intermedias y la ley finalmente aprobada.
 
 ## Borrador orientativo del argumento
 
-> La investigación evalúa si la capitalización individual exhibe robustez discursiva durante la tramitación de la reforma. Se considerará evidencia de esa robustez que los principios asociados a la propiedad de los fondos, la correspondencia contributiva, la capitalización y la sostenibilidad financiera conserven centralidad o sean incorporados por actores reformistas, incluso cuando estos defiendan mecanismos de solidaridad.
+> La investigación evalúa la robustez ideacional de los principios que legitiman la capitalización individual durante la tramitación de la reforma. Siguiendo a Migone et al. (2024), se considerará evidencia de esa robustez que las ideas asociadas a la propiedad de los fondos, la correspondencia contributiva, la capitalización y la sostenibilidad financiera conserven su orientación, se adapten frente a la incorporación de mecanismos solidarios y sean adoptadas por actores reformistas.
 
 ## Criterio de cierre
 
@@ -115,7 +115,7 @@ El manuscrito presenta las visiones normativas, los órdenes de justificación, 
 | Concepción de justicia | ¿Qué principio normativo general se invoca? | Justicia de mercado/política; mundos mercantil, industrial o cívico | Interpretación normativa de las posiciones |
 | Merecimiento | ¿Quién debe recibir qué y bajo qué condiciones? | Necesidad, reciprocidad, esfuerzo, control, identidad, actitud | Análisis CARIN de declaraciones distributivas |
 | Estrategia de legitimación | ¿Cómo se presenta el argumento como aceptable? | Racionalización, autorización, moralización, narrativización, normalización | Comparación de formas de justificar |
-| Robustez discursiva | ¿Qué patrón temporal o relacional constituye el resultado? | Centralidad, difusión entre coaliciones, subordinación de solidaridad | Evaluación de la hipótesis temporal |
+| Robustez ideacional | ¿Las ideas se conservan y adaptan sin alterar la orientación básica de la política? | Permanencia, adaptación y difusión entre coaliciones | Evaluación de la hipótesis temporal con indicadores discursivos |
 
 - [ ] Definir si “justicia de mercado/política” será:
 
@@ -174,7 +174,7 @@ La pregunta actual combina descripción de repertorios con una inferencia sobre 
 
 ### Borrador orientativo
 
-> **Pregunta central:** ¿Cómo se articulan las posiciones previsionales, las concepciones de justicia y las estrategias de legitimación entre las coaliciones del debate legislativo de 2022–2025, y en qué medida su evolución muestra robustez discursiva de la capitalización individual?
+> **Pregunta central:** ¿Cómo se articulan las posiciones previsionales, las concepciones de justicia y las estrategias de legitimación entre las coaliciones del debate legislativo de 2022–2025, y en qué medida su evolución evidencia la robustez ideacional de los principios que legitiman la capitalización individual?
 
 > **Subpregunta 1:** ¿Qué coaliciones se forman en torno a posiciones sustantivas sobre el diseño previsional?
 
@@ -366,7 +366,9 @@ El orden final puede conservar parte de la numeración actual, pero debe hacer v
 
 **Referencia:** líneas 123–129.
 
-- [ ] Introducir aquí la distinción entre persistencia institucional y robustez discursiva.
+- [ ] Introducir aquí la distinción entre persistencia institucional y robustez ideacional, anclando esta última en Migone et al. (2024).
+- [ ] Mantener en esta sección únicamente la delimitación del alcance: la persistencia institucional como contexto y la robustez ideacional como fenómeno analizado mediante permanencia, adaptación y difusión de ideas.
+- [ ] Reservar la explicación de la estructuración discursiva para la sección 2.2, después de presentar el marco de Hajer (1997).
 - [ ] Eliminar repeticiones entre los párrs. 3 y 4 sobre el papel legitimador de las ideas.
 - [ ] Finalizar con la definición observable que utilizará la investigación.
 
@@ -377,6 +379,8 @@ El orden final puede conservar parte de la numeración actual, pero debe hacer v
 - [ ] Concentrar la sección en el mecanismo relacional que justifica el DNA.
 - [ ] Diferenciar la hegemonía como estructuración discursiva de la institucionalización en la ley.
 - [ ] Explicar que las coaliciones se identificarán por congruencia discursiva y no se asumirán idénticas a los bloques partidarios.
+- [ ] Cerrar la sección distinguiendo las funciones de robustez ideacional y estructuración discursiva: la primera describe conservación y adaptación; la segunda, la capacidad de organizar el debate.
+- [ ] No reintroducir la tipología de poder ideacional mientras no sea operacionalizada como una dimensión separada.
 - [ ] Cerrar con la expectativa relacional que conduce a H1.
 
 ### Sección 2.3: estrategias de legitimación
@@ -577,7 +581,7 @@ La frase central es abstracta y presenta la robustez como conclusión antes de d
 ## Tareas
 
 - [ ] Reemplazar “El argumento central sostiene…” por “El estudio evalúa si…” o una formulación equivalente.
-- [ ] Incluir en una frase los indicadores principales de robustez discursiva.
+- [ ] Incluir en una frase los indicadores discursivos principales de robustez ideacional.
 - [ ] No afirmar simultáneamente que existen tres coaliciones y que su existencia será evaluada.
 - [ ] Definir CARIN brevemente o eliminar el acrónimo del abstract si no es necesario para comunicar el aporte.
 - [ ] Simplificar el detalle técnico: DNA, asistencia de LLM y estrategia temporal son suficientes; no es imprescindible mencionar todos los modelos.
@@ -592,7 +596,7 @@ La frase central es abstracta y presenta la robustez como conclusión antes de d
 
 ## Borrador orientativo de la frase observada
 
-> El estudio evalúa si la capitalización individual exhibe robustez discursiva cuando sus principios institucionales conservan centralidad y son incorporados por actores reformistas, incluso cuando estos defienden mecanismos de solidaridad.
+> El argumento central, sometido a evaluación empírica, plantea que las ideas que legitiman la capitalización individual exhiben robustez ideacional durante la tramitación: conservan su orientación general, se difunden más allá del bloque promercado y se adaptan para incorporar mecanismos solidarios sin abandonar el núcleo del modelo. La continuidad institucional constituye el contexto que motiva el estudio, no un resultado cuyo efecto ideacional será estimado.
 
 ## Criterio de cierre
 
@@ -642,7 +646,7 @@ La frase central es abstracta y presenta la robustez como conclusión antes de d
 
 ## Fase A: decisiones analíticas
 
-- [ ] 1. Delimitar resiliencia institucional y robustez discursiva.
+- [ ] 1. Delimitar persistencia institucional y robustez ideacional.
 - [ ] 2. Construir el mapa de dimensiones conceptuales.
 - [ ] 3. Reformular pregunta e hipótesis.
 - [ ] 4. Eliminar la circularidad del diseño.
@@ -668,7 +672,7 @@ La frase central es abstracta y presenta la robustez como conclusión antes de d
 
 La revisión estará completa cuando se cumplan simultáneamente las siguientes condiciones:
 
-- [ ] La persistencia institucional y la robustez discursiva están claramente diferenciadas.
+- [ ] La persistencia institucional y la robustez ideacional están claramente diferenciadas.
 - [ ] “Resiliencia” posee indicadores observables y condiciones de refutación.
 - [ ] Posiciones previsionales, justicia, CARIN y estrategias de legitimación tienen funciones analíticas distintas.
 - [ ] Las coaliciones no se construyen con las mismas variables que después se usan para caracterizarlas o explicarlas.
