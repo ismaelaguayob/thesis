@@ -85,6 +85,20 @@ Mantener el corpus actual y formular una conclusión sobre la robustez ideaciona
 **Prioridad:** crítica  
 **Dependencia:** debe resolverse antes de formular el libro de códigos y las hipótesis definitivas.
 
+**Estado:** resuelto en el plano conceptual y en la Introducción y los antecedentes. Su traducción al libro de códigos se realizará cuando se intervenga la Metodología.
+
+## Resolución adoptada
+
+| Nivel | Pregunta | Función en el estudio |
+|---|---|---|
+| Afirmación justificativa específica | ¿Qué se apoya o rechaza y por qué? | Forma los vínculos actor-concepto y permite detectar coaliciones por congruencia. |
+| Justicia de mercado/política | ¿Qué orientación normativa general expresa el patrón de afirmaciones? | Categoría interpretativa de nivel superior; no forma coaliciones por sí sola. |
+| CARIN | ¿Quién merece protección, cuánto y bajo qué condiciones? | Identifica afirmaciones distributivas que forman parte de la red y contribuyen a definir coaliciones; no constituye una hipótesis ni un resultado independiente. |
+| Estrategia de legitimación | ¿Cómo se presenta una afirmación como aceptable? | Compara racionalización, autorización, moralización, narrativización y normalización. |
+| Robustez ideacional | ¿Qué afirmaciones permanecen, se adaptan y se difunden? | Evalúa el cambio temporal sin inferir el efecto causal de las ideas sobre la persistencia institucional. |
+
+Las categorías específicas del caso tampoco son equivalentes: propiedad y capitalización son principios institucionales; solidaridad es una idea normativa polisémica; y sostenibilidad financiera es una idea cognitiva sobre viabilidad. El recurso a consecuencias financieras puede realizar una estrategia de racionalización, pero la sostenibilidad no es en sí misma una estrategia. Boltanski se elimina del esquema conceptual para evitar una capa clasificatoria redundante.
+
 ## Problema que se debe corregir
 
 El manuscrito presenta las visiones normativas, los órdenes de justificación, los criterios CARIN, las estrategias de legitimación y las posiciones previsionales como dimensiones diferentes, pero no establece con suficiente precisión la relación entre ellas. En H4, además, “justicia de mercado” se equipara a mérito, propiedad y capitalización, aunque estos elementos corresponden a niveles analíticos diferentes.
@@ -107,37 +121,26 @@ El manuscrito presenta las visiones normativas, los órdenes de justificación, 
 
 ## Tareas
 
-- [ ] Incorporar un mapa conceptual que asigne una función única a cada dimensión:
+- [x] Incorporar el mapa conceptual consignado en la resolución adoptada.
 
-| Nivel analítico | Pregunta que responde | Ejemplos | Uso recomendado |
-|---|---|---|---|
-| Posición previsional | ¿Qué diseño o medida apoya o rechaza el actor? | Cuenta individual, destino de la cotización, solidaridad, administración pública o privada | Construcción de la red y detección de coaliciones |
-| Concepción de justicia | ¿Qué principio normativo general se invoca? | Justicia de mercado/política; mundos mercantil, industrial o cívico | Interpretación normativa de las posiciones |
-| Merecimiento | ¿Quién debe recibir qué y bajo qué condiciones? | Necesidad, reciprocidad, esfuerzo, control, identidad, actitud | Análisis CARIN de declaraciones distributivas |
-| Estrategia de legitimación | ¿Cómo se presenta el argumento como aceptable? | Racionalización, autorización, moralización, narrativización, normalización | Comparación de formas de justificar |
-| Robustez ideacional | ¿Las ideas se conservan y adaptan sin alterar la orientación básica de la política? | Permanencia, adaptación y difusión entre coaliciones | Evaluación de la hipótesis temporal con indicadores discursivos |
+- [x] Definir “justicia de mercado/política” como categoría interpretativa de nivel superior derivada de afirmaciones específicas.
 
-- [ ] Definir si “justicia de mercado/política” será:
-
-  - una variable codificada directamente; o
-  - una categoría interpretativa de nivel superior derivada de códigos más específicos.
-
-- [ ] Evitar utilizar simultáneamente ambas opciones sin una regla de agregación explícita.
-- [ ] Explicar que propiedad individual, capitalización y administración privada son posiciones o principios institucionales, no criterios CARIN.
-- [ ] Desagregar “mérito” cuando aparezca en el libro de códigos:
+- [x] Evitar utilizar simultáneamente una categoría agregada de justicia para formar coaliciones y para caracterizarlas.
+- [x] Explicar que propiedad individual, capitalización y administración privada son posiciones o principios institucionales, no criterios CARIN.
+- [x] Desagregar conceptualmente “mérito” en:
 
   - reciprocidad contributiva;
   - esfuerzo;
   - responsabilidad o control;
   - principio meritocrático general, cuando la declaración no permita una clasificación más específica.
 
-- [ ] Definir si la sostenibilidad financiera será codificada como concepto sustantivo, como racionalización o en ambas dimensiones cuando el texto lo justifique.
-- [ ] Explicar en lenguaje accesible la relevancia de “merecimiento”: reglas morales mediante las cuales se juzga quién merece protección, cuánto y bajo qué condiciones.
-- [ ] Desarrollar CARIN en su primera aparición y aclarar que se utiliza la adaptación de seis criterios de Knotz et al. (2022).
+- [x] Definir la sostenibilidad financiera como idea cognitiva sustantiva y la racionalización como estrategia; ambas pueden coincidir cuando el texto lo justifique.
+- [x] Explicar en lenguaje accesible la relevancia de “merecimiento”: reglas morales mediante las cuales se juzga quién merece protección, cuánto y bajo qué condiciones.
+- [x] Presentar el marco CARIN de cinco criterios de van Oorschot (2000), utilizando las precisiones conceptuales de Knotz et al. (2022) para redactar las categorías, pero sin separar esfuerzo como un código adicional.
 
 ## Criterio de cierre
 
-- [ ] Cada constructo tiene definición, nivel analítico, ejemplos, contraejemplos y una función metodológica que no se superpone con las demás.
+- [x] Cada constructo tiene definición, nivel analítico, ejemplos, contraejemplos y una función analítica que no se superpone con las demás.
 
 ---
 
@@ -145,6 +148,20 @@ El manuscrito presenta las visiones normativas, los órdenes de justificación, 
 
 **Prioridad:** crítica  
 **Dependencias:** requiere haber completado las tareas 1 y 2.
+
+**Estado:** resuelto en la Introducción y en la sección 3. La actualización del Abstract y de las referencias a H1–H4 dentro de la Metodología se aplazó expresamente para una pasada posterior.
+
+## Resolución adoptada
+
+La pregunta central interroga cómo se estructuran las coaliciones a partir de afirmaciones justificativas específicas, qué estrategias emplean y en qué medida su evolución evidencia robustez ideacional. Se desagrega en estructura relacional, caracterización de los repertorios y cambio temporal.
+
+Se conservan tres hipótesis:
+
+1. **H1 — Estructura relacional:** dos polos principales —preservación y transformación de la capitalización individual— y actores de centroizquierda potencialmente mediadores. Una tercera comunidad es un resultado posible, no un supuesto.
+2. **H2 — Estrategias de legitimación:** racionalización y autorización experta asociadas a viabilidad; autorización jurídica y moralización asociadas a propiedad; y moralización/narrativización asociadas a esfuerzo contributivo, necesidad y solidaridad.
+3. **H3 — Robustez ideacional:** permanencia, adopción por actores inicialmente transformadores y adaptación de las afirmaciones que presentan propiedad, correspondencia contributiva, capitalización y sostenibilidad como límites legítimos de la reforma.
+
+CARIN deja de constituir una hipótesis: sus criterios se incorporan al contenido de las afirmaciones distributivas utilizadas para construir la red, pero no se analizan después como un resultado independiente de la pertenencia a una coalición.
 
 ## Problema que se debe corregir
 
@@ -169,67 +186,64 @@ La pregunta actual combina descripción de repertorios con una inferencia sobre 
 
 ## Tareas sobre la pregunta
 
-- [ ] Formular una pregunta central que conecte articulación discursiva y robustez sin anticipar el resultado.
-- [ ] Dividirla en subpreguntas sobre estructura, repertorios y cambio temporal.
+- [x] Formular una pregunta central que conecte articulación discursiva y robustez sin anticipar el resultado.
+- [x] Dividirla en subpreguntas sobre estructura, repertorios y cambio temporal.
 
-### Borrador orientativo
+### Formulación adoptada
 
-> **Pregunta central:** ¿Cómo se articulan las posiciones previsionales, las concepciones de justicia y las estrategias de legitimación entre las coaliciones del debate legislativo de 2022–2025, y en qué medida su evolución evidencia la robustez ideacional de los principios que legitiman la capitalización individual?
+> **Pregunta central:** ¿Cómo se estructuran las coaliciones discursivas a partir de las afirmaciones que justifican la preservación o la transformación de la capitalización individual en el debate legislativo sobre la reforma previsional chilena de 2022–2025, qué estrategias de legitimación emplean sus integrantes y en qué medida la evolución de esas afirmaciones evidencia robustez ideacional?
 
-> **Subpregunta 1:** ¿Qué coaliciones se forman en torno a posiciones sustantivas sobre el diseño previsional?
+> **Subpregunta 1:** ¿Qué comunidades de actores se forman por su congruencia frente a afirmaciones previsionales específicas?
 
-> **Subpregunta 2:** ¿Qué principios de justicia, criterios de merecimiento y estrategias de legitimación caracterizan a cada coalición?
+> **Subpregunta 2:** ¿Qué concepciones de justicia, criterios de merecimiento —cuando corresponda— y estrategias de legitimación caracterizan sus discursos?
 
-> **Subpregunta 3:** ¿Cómo cambian esos repertorios durante la tramitación y en qué medida se observa una adopción transversal de principios asociados a la capitalización individual?
+> **Subpregunta 3:** ¿Cómo cambian esas afirmaciones y sus patrones de articulación durante la tramitación?
 
 ## Tareas sobre las hipótesis
 
-- [ ] Decidir si conviene conservar cuatro hipótesis o utilizar tres hipótesis con subhipótesis. La claridad tiene prioridad sobre mantener el número actual.
-- [ ] Formular expectativas direccionales y especificar qué resultado apoyaría o contradiría cada hipótesis.
-- [ ] Volver las hipótesis específicas del conflicto previsional: destino de la nueva cotización, propiedad de los fondos, administración, solidaridad, universalidad, correspondencia contributiva y sostenibilidad.
+- [x] Utilizar tres hipótesis y eliminar la antigua H3 sobre CARIN.
+- [x] Formular expectativas direccionales y especificar qué resultado contradiría cada hipótesis.
+- [x] Volver las hipótesis específicas del conflicto previsional: propiedad de los fondos, capitalización, solidaridad, correspondencia contributiva, necesidad y sostenibilidad.
 
 ### H1: estructura relacional de las coaliciones
 
-- [ ] Sustituir la equivalencia general “derecha = mercado / izquierda = política” por una expectativa sobre congruencia en posiciones previsionales.
-- [ ] Mantener como expectativa evaluable la existencia de tres comunidades y el papel de puente de la centroizquierda.
-- [ ] Tratar la composición partidaria como resultado a contrastar con las comunidades detectadas, no como definición automática de las coaliciones.
+- [x] Sustituir la equivalencia general “derecha = mercado / izquierda = política” por una expectativa sobre congruencia en afirmaciones previsionales específicas.
+- [x] Formular como expectativa una estructura bipolar y el papel de puente de la centroizquierda; dejar una tercera comunidad como posible resultado empírico.
+- [x] Tratar la composición partidaria como atributo externo de las comunidades detectadas, no como definición automática de las coaliciones.
 
-**Borrador orientativo:**
+**Formulación adoptada:**
 
-> H1: La red de congruencia construida a partir del acuerdo y desacuerdo sobre posiciones sustantivas del diseño previsional presentará tres comunidades principales. Se espera que una comunidad promercado defienda la propiedad individual, la capitalización y la administración privada; una comunidad de izquierda estructural articule solidaridad, universalidad y mayor provisión pública; y una comunidad de centroizquierda ocupe una posición de intermediación entre ambas.
+> H1: La congruencia frente a afirmaciones justificativas específicas producirá una estructura predominantemente bipolar entre la preservación y la transformación de la capitalización individual. Se espera que los actores de centroizquierda ocupen con mayor frecuencia posiciones de intermediación al combinar afirmaciones de ambos polos.
 
 ### H2: estrategias de legitimación
 
-- [ ] Eliminar “repertorios híbridos pero diferenciados” o definir exactamente qué combinaciones se esperan.
-- [ ] Predecir asociaciones concretas entre coalición, posición previsional y estrategia.
+- [x] Eliminar “repertorios híbridos pero diferenciados”.
+- [x] Predecir asociaciones concretas entre tipos de afirmación y estrategias de legitimación.
 
-**Borrador orientativo:**
+**Formulación adoptada:**
 
-> H2: El bloque promercado recurrirá relativamente más a racionalización y autorización al defender sostenibilidad, propiedad y administración privada; la izquierda estructural recurrirá relativamente más a moralización y narrativización al defender solidaridad y universalidad; y la centroizquierda combinará justificaciones técnicas con argumentos de solidaridad focalizada.
+> H2: Las afirmaciones sobre sostenibilidad, factibilidad y efectos proyectados recurrirán relativamente más a racionalización y autorización experta; las afirmaciones sobre propiedad combinarán autorización jurídica y moralización; y las afirmaciones distributivas sobre esfuerzo contributivo, necesidad y solidaridad recurrirán relativamente más a moralización y narrativización. Los actores mediadores combinarán con mayor frecuencia estrategias técnicas y morales.
 
-### H3: criterios de merecimiento
+### Antigua H3: criterios de merecimiento — eliminada
 
-- [ ] Restringir CARIN a declaraciones que efectivamente asignen beneficios, costos o protección a personas o grupos.
-- [ ] Formular la expectativa en términos específicamente previsionales.
-- [ ] Convertir H3 en pregunta exploratoria si el piloto muestra una presencia insuficiente o muy desigual de los criterios CARIN.
+- [x] Restringir CARIN a declaraciones que efectivamente asignen beneficios o protección a personas o grupos.
+- [x] Eliminar la hipótesis independiente y conservar CARIN como dimensión descriptiva de las afirmaciones distributivas.
 
-**Borrador orientativo:**
+**Decisión adoptada:** CARIN no tendrá una hipótesis propia. Sus categorías se utilizarán para describir las reglas de asignación presentes en las afirmaciones distributivas.
 
-> H3: En las declaraciones que justifican la asignación de beneficios previsionales, el bloque promercado enfatizará relativamente más la reciprocidad contributiva, el esfuerzo y el control; la izquierda estructural enfatizará la necesidad; y la centroizquierda combinará necesidad con condiciones contributivas o focalizadas.
+### Nueva H3: robustez temporal
 
-### H4: robustez temporal
+- [x] Reemplazar la equivalencia “justicia de mercado = mérito, propiedad privada y capitalización” por afirmaciones específicas que legitiman la capitalización individual.
+- [x] Establecer indicadores temporales: centralidad, adopción por actores inicialmente transformadores y condicionamiento de la solidaridad.
+- [x] Incluir una condición de refutación.
 
-- [ ] Reemplazar la equivalencia “justicia de mercado = mérito, propiedad privada y capitalización” por el concepto de **principios institucionales alineados con el mercado**.
-- [ ] Establecer indicadores temporales: centralidad, frecuencia, coocurrencia, adopción por otras coaliciones y condicionamiento de la solidaridad.
-- [ ] Incluir una condición de refutación.
+**Formulación adoptada:**
 
-**Borrador orientativo:**
-
-> H4: A medida que avanza la tramitación, los principios institucionales asociados a la propiedad individual, la correspondencia contributiva, la capitalización y la sostenibilidad financiera mantendrán centralidad y aumentarán su presencia en el discurso de actores reformistas. Simultáneamente, las referencias a la solidaridad aparecerán con mayor frecuencia vinculadas a restricciones contributivas, focalizadas o financieras.
+> H3: A través de las etapas de la tramitación, las afirmaciones que presentan la propiedad individual, la correspondencia contributiva, la capitalización y la sostenibilidad financiera como límites legítimos de la reforma conservarán centralidad, serán adoptadas por actores cuyo repertorio inicial favorecía la transformación del sistema y se adaptarán mediante la incorporación de una solidaridad contributiva, focalizada o financieramente restringida.
 
 ## Criterio de cierre
 
-- [ ] Para cada hipótesis se puede identificar: unidad de análisis, variables, dirección esperada, prueba o visualización, evidencia favorable y evidencia contraria.
+- [x] Para cada hipótesis se identifica la unidad de análisis, la dirección esperada y la evidencia contraria. La prueba o visualización concreta se consignará al revisar la Metodología.
 
 ---
 
@@ -238,7 +252,13 @@ La pregunta actual combina descripción de repertorios con una inferencia sobre 
 **Prioridad:** crítica  
 **Dependencias:** requiere las definiciones y las hipótesis revisadas.
 
-## Problema que se debe corregir
+**Estado:** decisión analítica resuelta; aplicación textual en la Metodología aplazada por instrucción. La Introducción y los antecedentes ya utilizan la solución adoptada, pero los pasajes antiguos de las secciones 4.2 y 4.3.2 todavía deben actualizarse.
+
+## Resolución adoptada
+
+La red se construirá con afirmaciones justificativas específicas y su signo de acuerdo o desacuerdo. Las afirmaciones distributivas identificadas mediante CARIN formarán parte de ese contenido, junto con afirmaciones sobre propiedad, solidaridad, sostenibilidad y otros principios previsionales. La circularidad se evita eliminando la antigua hipótesis sobre CARIN y no tratando sus criterios posteriormente como un resultado independiente de la pertenencia a las coaliciones que ayudaron a formar. Las estrategias de legitimación y las categorías agregadas de justicia no se utilizarán para detectar comunidades: las primeras permitirán analizar cómo se justifican las afirmaciones y las segundas interpretar sus patrones. La afiliación partidaria se utilizará como atributo externo de los actores y Boltanski se elimina del esquema de codificación. Con un libro de códigos deductivo y cerrado, el modelo de lenguaje asignará categorías previamente definidas y remitirá los casos ausentes o ambiguos a revisión, en lugar de crear categorías inductivamente.
+
+## Diagnóstico que motivó el cambio
 
 El libro de códigos se construirá con CARIN y mundos comunes, luego esos conceptos se usarán para detectar coaliciones y, finalmente, se modelará la adhesión a CARIN según la coalición. El propio texto reconoce que esto impide tratar el resultado como una prueba independiente.
 
@@ -251,72 +271,40 @@ El libro de códigos se construirá con CARIN y mundos comunes, luego esos conce
 
 ## Tareas
 
-- [ ] Construir la red de coaliciones solamente con **posiciones sustantivas sobre el diseño previsional** y su signo de acuerdo/desacuerdo.
-- [ ] Excluir de la detección inicial de comunidades:
+- [x] Construir la red de coaliciones con **afirmaciones justificativas específicas** y su signo de acuerdo/desacuerdo.
+- [x] Excluir de la detección de comunidades:
 
-  - criterios CARIN;
   - estrategias de legitimación;
   - categorías agregadas de justicia que luego se utilizarán para comparar las coaliciones.
 
-- [ ] Usar CARIN, mundos comunes y estrategias como atributos o resultados para caracterizar las comunidades ya detectadas.
+- [x] Incorporar las afirmaciones distributivas identificadas mediante CARIN a la construcción de la red y la detección de coaliciones.
+- [x] No tratar los criterios CARIN posteriormente como un resultado independiente de la pertenencia a las coaliciones que contribuyeron a formar.
+- [x] Usar las estrategias como atributos para caracterizar cómo se legitiman las afirmaciones, no como insumos para definir comunidades.
+- [x] Usar justicia de mercado/política como interpretación de nivel superior y la afiliación partidaria como atributo externo.
+- [x] Eliminar los mundos comunes de Boltanski del esquema analítico y del futuro libro de códigos.
 - [ ] Decidir cómo se fijará la pertenencia a una coalición para el análisis temporal:
 
   - comunidad detectada en una etapa inicial; o
   - comunidades estimadas separadamente por etapa, analizando migraciones y reconfiguraciones.
 
-- [ ] Presentar los resultados como asociaciones descriptivas cuando la independencia entre predictor y resultado no pueda garantizarse.
-- [ ] Crear antes del análisis una matriz de trazabilidad:
+- [x] Presentar CARIN como caracterización descriptiva y no como prueba independiente de una hipótesis sobre coaliciones.
+- [ ] Crear, al revisar la Metodología, una matriz de trazabilidad definitiva:
 
 | Hipótesis | Unidad de análisis | Variable dependiente | Predictores | Método | Evidencia a favor | Evidencia en contra |
 |---|---|---|---|---|---|---|
-| H1 | Actor/posición | Comunidad o estructura de la red | Acuerdo con posiciones previsionales | DNA y detección de comunidades | Tres comunidades y centroizquierda intermediaria | Otra cantidad/configuración de comunidades |
-| H2 | Declaración | Estrategia de legitimación | Coalición, posición, etapa, tipo de actor | Descriptivos y modelo apropiado | Diferencias direccionales previstas | Distribuciones equivalentes o inversas |
-| H3 | Declaración distributiva | Criterio CARIN | Coalición, posición, etapa | Descriptivos y modelo apropiado | Patrones previstos de reciprocidad/necesidad | Ausencia o inversión del patrón |
-| H4 | Actor/posición/etapa | Adopción o centralidad de principios alineados con el mercado | Coalición y etapa | Redes por etapa y/o modelos temporales | Persistencia y difusión transversal | Pérdida de centralidad o aislamiento |
+| H1 | Actor/afirmación | Comunidad o estructura de la red | Acuerdo/desacuerdo con afirmaciones justificativas | DNA y detección de comunidades | Dos polos y centroizquierda intermediaria | Ausencia de bipolaridad o de intermediación |
+| H2 | Declaración | Estrategia de legitimación | Tipo de afirmación, comunidad, etapa y actor | Descriptivos y modelo apropiado | Asociaciones direccionales previstas | Distribuciones equivalentes o inversas |
+| H3 | Actor/afirmación/etapa | Centralidad, adopción y articulación de afirmaciones | Repertorio inicial del actor y etapa | Redes por etapa y/o modelos temporales | Permanencia, adaptación y adopción por actores inicialmente transformadores | Pérdida de centralidad, aislamiento en defensores iniciales o desplazamiento |
+| Composición CARIN | Declaración distributiva | Criterio de merecimiento incorporado a la red | Afirmación y etapa | Descripción de la composición de la red | Patrones de asignación observados | No corresponde: no es una hipótesis ni un resultado independiente de la coalición |
 
 ## Criterio de cierre
 
-- [ ] Ninguna variable se utiliza simultáneamente para crear una coalición y para demostrar que esa coalición posee ese mismo atributo.
+- [x] La arquitectura incorpora CARIN a la construcción de las coaliciones, pero evita presentarlo después como un resultado independiente explicado por esas mismas coaliciones; estrategias y justicia agregada cumplen funciones separadas.
+- [ ] Reescribir las secciones 4.2 y 4.3.2 para aplicar esta decisión antes de considerar cerrado el diseño metodológico.
 
 ---
 
-# 5. Pilotear y cerrar el libro de códigos
-
-**Prioridad:** alta  
-**Dependencias:** completar las tareas 1–4.
-
-**Pasajes que se deben intervenir después del piloto:**
-
-- `thesis-2.md`, sección 1.2, párr. 5, línea 99: operacionalización cualitativa de CARIN.
-- `thesis-2.md`, sección 4.2, líneas 195–205: unidad y variables.
-- `thesis-2.md`, sección 4.3.1, párrs. 1–3, líneas 211–215: codificación asistida y validación.
-
-## Tareas
-
-- [ ] Seleccionar una muestra piloto estratificada por cámara, etapa legislativa, tipo de actor, partido y tipo de instancia.
-- [ ] Segmentar y codificar manualmente las declaraciones antes de cerrar los prompts y modelos.
-- [ ] Verificar:
-
-  - si CARIN aparece con frecuencia suficiente;
-  - si reciprocidad y esfuerzo pueden distinguirse de manera confiable;
-  - si control y actitud son pertinentes para este corpus;
-  - si una misma declaración puede recibir más de un criterio;
-  - si sostenibilidad funciona como posición, racionalización o ambas según el contexto;
-  - si las cinco estrategias de legitimación se distinguen con ejemplos reales;
-  - si justicia de mercado/política puede codificarse sin una inferencia excesiva.
-
-- [ ] Definir reglas para declaraciones sin criterio CARIN, sin estrategia explícita o con más de una estrategia.
-- [ ] Incorporar al libro de códigos ejemplos positivos, negativos y ambiguos.
-- [ ] Revisar el esquema a partir del piloto y congelar una versión antes de la codificación principal.
-- [ ] Establecer criterios mínimos de calidad y qué ocurrirá si una categoría no alcanza suficiente concordancia.
-
-## Criterio de cierre
-
-- [ ] Las hipótesis corresponden a categorías que efectivamente aparecen en el corpus y pueden codificarse con una confiabilidad defendible.
-
----
-
-# 6. Compactar y volver secuenciales los antecedentes
+# 5. Compactar y volver secuenciales los antecedentes
 
 **Prioridad:** alta  
 **Dependencias:** utilizar el modelo conceptual y las hipótesis ya corregidas.
@@ -358,7 +346,7 @@ El orden final puede conservar parte de la numeración actual, pero debe hacer v
 
 - [ ] Explicar CARIN y merecimiento al inicio, para un lector no especializado.
 - [ ] Distinguir el uso actitudinal tradicional de la adaptación al análisis de declaraciones legislativas.
-- [ ] Delimitar el universo de aplicación: solo declaraciones que justifiquen la asignación de protección, beneficios o costos.
+- [x] Delimitar el universo de aplicación: solo declaraciones que justifiquen la asignación de beneficios o protección.
 - [ ] Reducir la enumeración de antecedentes comparados y concentrarla en la pertinencia para pensiones y para H3.
 - [ ] Cerrar con el vacío preciso: falta conocer cómo las coaliciones legislativas chilenas movilizan criterios de merecimiento en la disputa por la reforma.
 
@@ -416,6 +404,42 @@ Cada subsección debe terminar respondiendo explícitamente:
 
 ---
 
+# 6. Pilotear y cerrar el libro de códigos
+
+**Prioridad:** alta  
+**Dependencias:** completar las tareas 1–4.
+
+**Pasajes que se deben intervenir después del piloto:**
+
+- `thesis-2.md`, sección 1.2, párr. 5, línea 99: operacionalización cualitativa de CARIN.
+- `thesis-2.md`, sección 4.2, líneas 195–205: unidad y variables.
+- `thesis-2.md`, sección 4.3.1, párrs. 1–3, líneas 211–215: codificación asistida y validación.
+
+## Tareas
+
+- [ ] Seleccionar una muestra piloto estratificada por cámara, etapa legislativa, tipo de actor, partido y tipo de instancia.
+- [ ] Segmentar y codificar manualmente las declaraciones antes de cerrar los prompts y modelos.
+- [ ] Verificar:
+
+  - si CARIN aparece con frecuencia suficiente;
+  - si reciprocidad y esfuerzo pueden distinguirse de manera confiable;
+  - si control y actitud son pertinentes para este corpus;
+  - si una misma declaración puede recibir más de un criterio;
+  - si sostenibilidad funciona como posición, racionalización o ambas según el contexto;
+  - si las cinco estrategias de legitimación se distinguen con ejemplos reales;
+  - si justicia de mercado/política puede codificarse sin una inferencia excesiva.
+
+- [ ] Definir reglas para declaraciones sin criterio CARIN, sin estrategia explícita o con más de una estrategia.
+- [ ] Incorporar al libro de códigos ejemplos positivos, negativos y ambiguos.
+- [ ] Revisar el esquema a partir del piloto y congelar una versión antes de la codificación principal.
+- [ ] Establecer criterios mínimos de calidad y qué ocurrirá si una categoría no alcanza suficiente concordancia.
+
+## Criterio de cierre
+
+- [ ] Las hipótesis corresponden a categorías que efectivamente aparecen en el corpus y pueden codificarse con una confiabilidad defendible.
+
+---
+
 # 7. Reescribir la metodología como una secuencia de productos
 
 **Prioridad:** alta  
@@ -455,7 +479,7 @@ La estrategia es robusta, pero la densidad de jerga sobre LLM, validación y mod
   - estrategia de legitimación;
   - tiempo y etapa legislativa.
 
-- [ ] Corregir el punto “Conceptos”, línea 199, para que CARIN y mundos comunes no formen indiscriminadamente la misma lista utilizada para detectar comunidades.
+- [ ] Corregir el punto “Conceptos”, línea 199, para que la red se construya con afirmaciones justificativas específicas; separar CARIN y estrategias como atributos y eliminar los mundos comunes de Boltanski.
 - [ ] Definir si las variables discursivas son de etiqueta única o múltiple.
 
 ## 7.3 Codificación y validación
@@ -532,7 +556,7 @@ La estrategia es robusta, pero la densidad de jerga sobre LLM, validación y mod
 
 - [ ] Incorporar la pregunta y las hipótesis revisadas.
 - [ ] Evitar resumir H2 y H3 como etapas causales —“despliegan repertorios y los aterrizan”— si se analizarán como dimensiones paralelas de las declaraciones.
-- [ ] Presentar H4 como una expectativa temporal refutable.
+- [ ] Presentar la nueva H3 como una expectativa temporal refutable.
 
 ## Párrafo 6, línea 73: diseño y contribuciones
 
@@ -646,10 +670,10 @@ La frase central es abstracta y presenta la robustez como conclusión antes de d
 
 ## Fase A: decisiones analíticas
 
-- [ ] 1. Delimitar persistencia institucional y robustez ideacional.
-- [ ] 2. Construir el mapa de dimensiones conceptuales.
-- [ ] 3. Reformular pregunta e hipótesis.
-- [ ] 4. Eliminar la circularidad del diseño.
+- [x] 1. Delimitar persistencia institucional y robustez ideacional.
+- [x] 2. Construir el mapa de dimensiones conceptuales.
+- [x] 3. Reformular pregunta e hipótesis.
+- [x] 4. Resolver la circularidad del diseño en el plano conceptual. Su aplicación textual queda incorporada a la futura revisión metodológica.
 
 ## Fase B: factibilidad empírica
 

@@ -13,7 +13,7 @@ En este punto, el manuscrito sí responde mejor a los comentarios de la entrega 
 
 Con todo, todavía conviene afinar la introducción en tres aspectos. Primero, el problema de investigación podría formularse con mayor precisión analítica, distinguiendo entre la persistencia institucional del sistema previsional y la persistencia discursiva de ciertas justificaciones que lo sostienen. Segundo, el argumento central gana fuerza si se presenta menos como una conclusión anticipada y más como una hipótesis a ser evaluada empíricamente. En particular, sería útil explicitar qué significa exactamente que la capitalización individual muestre "resiliencia" y mediante qué indicadores discursivos se observará esa resiliencia. Y tercero, y lo más importante, las hipótesis no aparecen bien delimitadas entre sí. Dado que no se explica cómo se relacionará el análisis con el esquema CARIN, aparece algo tautológico hablar de visiones normativas, repertorios estratégicos, y lógicas de asignación, como si fueran cosas totalemente distintas. Tal vez lo son, pero para ello cada una de ellas debería estar claramente definida y diferenciada. De todas maneros comento más sobre esto en la sección de antecedentes.
 
-En cuanto a aspectos menores, es necesario detallar acrónimos (como CARIN) y explicar brevemente la relevancia de ciertos conceptos (como merecimiento) para que el lector no especializado pueda seguir la argumentación. 
+En cuanto a aspectos menores, es necesario detallar acrónimos (como CARIN) y **explicar brevemente la relevancia de ciertos conceptos (como merecimiento)** para que el lector no especializado pueda seguir la argumentación. 
 
 # Antecedentes
 
@@ -44,4 +44,3 @@ Lo que aún queda pendiente es consolidar la coherencia interna entre problema, 
 El manuscrito presenta un avance importante y, en comparación con la entrega anterior, ahora tiene una arquitectura mucho más sólida. La introducción está mejor encaminada, los antecedentes están mejor organizados y la metodología es comprensible en su diseño general. La principal tarea pendiente no es de contenido bruto, sino de depuración: afinar el problema de investigación, compactar los antecedentes y simplificar la exposición metodológica para que el argumento central se lea con mayor nitidez. Y principalmente, trabajar las hipótesis para que sean más claras, diferenciadas y evaluables, de modo que el lector pueda entender cómo se contrastarán con la evidencia empírica.
 
 Nota: 6.8
-
