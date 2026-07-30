@@ -1,54 +1,79 @@
-**Avances:**
+# Seguimiento de comentarios y decisiones
 
-Introducción:
+## Resuelto y aplicado
 
-- Actualización del abstract al sistema de dos polos y actores mediadores
-- Cambio de argumento y pregunta  
-- Mejor formulación del problema de investigación (diferencia entre persistencia institucional y persistencia discursiva).  
-- (intento) de hacer argumento como algo a ser testeado empíricamente
-- Explicación de la relevancia del merecimiento y desarrollo del acrónimo CARIN
+### Argumento e hipótesis
 
-Antecedentes:
+- Se distinguió la persistencia institucional del sistema de la robustez o estructuración de sus justificaciones.
+- Se definió una expectativa de dos polos discursivos principales, con actores de centroizquierda en posiciones potenciales de intermediación. No se espera una tercera coalición.
+- Se reformuló H3 como una expectativa sobre permanencia, difusión y adaptación, sin atribuir causalmente el resultado legislativo a las ideas.
+- Se aclaró que la investigación estudia estructuración discursiva y no institucionalización en el sentido de Hajer.
 
-- Párrafo de síntesis al final de las secciones  
-- Reducción de párrafos y referencias repetitivas y no relevantes para las hipótesis  
-- Cambio hipótesis
-- Fusión de los párrafos repetitivos sobre persistencia ideacional
-- Corrección del ejemplo que diferencia reciprocidad, moralización, racionalización y autorización
+### Conceptos y codificación
 
-Metodología:
+- Se explicó el marco CARIN y su uso como conjunto de nodos conceptuales.
+- Los criterios CARIN se complementarán con categorías justificativas derivadas de la evidencia nacional.
+- Se separaron la prominencia de un concepto y la posición positiva o negativa de los actores frente a él.
+- Se distinguieron la declaración DNA y el fragmento justificativo.
+- Una declaración podrá contener varios fragmentos, pero cada fragmento recibirá una sola estrategia de legitimación.
+- Las estrategias se codificarán después de los conceptos y no intervendrán en la construcción de las coaliciones.
 
-- Se redujo la jerga técnica, en especial incluyendo traducciones al español de conceptos especializados.  
-- Se explica que produce como resultado cada etapa del análisis  
-- Se incluye un diagrama para explicar el flujo completo
+### Redes y coaliciones
 
-**Falta**
+- La red actor–concepto conservará el acuerdo y el desacuerdo.
+- Las posiciones repetidas de un actor ante un concepto se resumirán mediante un balance firmado.
+- La congruencia entre actores aumentará con posiciones coincidentes y disminuirá con posiciones opuestas. Así, mencionar conceptos centrales con connotaciones distintas no producirá una similitud artificial.
+- La detección de comunidades utilizará conjuntamente congruencia y conflicto.
+- La centralidad de intermediación será la medida utilizada para evaluar el papel de puente de actores de centroizquierda.
 
-Introducción:
+### Estrategias de legitimación
 
-- Mejor explicación del uso operativo de CARIN y otros conceptos para crear las redes discursivas  
+- Se definió un logit multinomial multinivel con interceptos aleatorios cruzados de actor y sesión.
+- Los predictores principales serán coalición, partido, tipo de actor y etapa legislativa.
+- Se explicó la secuencia: primero se identifican coaliciones por sus posiciones sustantivas y luego se comparan sus formas de legitimación.
 
-Antecedentes:
+### Medición de H3
 
-- Reducir y revisar parte histórica de Chile para llegar más económicamente a las hipótesis (y sacar conceptos mas “amplios” que conflictúan con el reloj de arena)  
-- Trabajar más las hipótesis, en especial la segunda, que depende del resultado de las coaliciones para comprobarse (por lo que es difícil de anticipar)
+- H3 será cuantitativamente evaluable, pero sus tres dimensiones se informarán por separado.
+- Permanencia se medirá mediante cobertura de actores, balance de posiciones y fuerza relacional de los conceptos.
+- Difusión se medirá fijando las coaliciones observadas en la primera etapa y siguiendo el uso del repertorio de preservación por los actores de la coalición transformadora inicial.
+- Los conceptos ya compartidos en la primera etapa se interpretarán como alcance transversal previo y no como difusión ocurrida durante la tramitación.
+- Adaptación se medirá mediante combinaciones entre solidaridad positiva y restricciones contributivas, focalizadas o financieras.
+- Los resultados centrales de H3 se verificarán mediante lectura cualitativa de las declaraciones que sostengan las conexiones.
+- Se incorporaron antecedentes metodológicos que apoyan la medición de hegemonía, las redes firmadas y la separación entre coaliciones y estrategias.
 
-Metodología:
+## Pendiente para discutir en la reunión
 
-- Simplificar la justificación de LLMs y modelos multinivel  
-- Por qué esta secuencia es la más adecuada.  
-- Chequear bien la metodología, en especial la coherencia de los modelos multinivel de clasificación cruzada, mirar el paper de Tranmer
+1. Decidir si la relación entre coaliciones y estrategias se mantiene como H2 direccional o se formula como Q2.
+2. Evaluar si permanencia, alcance transversal/difusión y adaptación representan adecuadamente la estructuración discursiva de H3.
+3. Decidir si H3 se presenta como una hipótesis general con tres dimensiones o como H3a, H3b y H3c.
+4. Confirmar si es válido fijar las coaliciones de la primera etapa para identificar la dirección de la difusión.
+5. Decidir si la dimensión se denomina «difusión» o «alcance transversal y difusión».
 
-**Ajustes específicos por hacer:**
+## Pendiente en el manuscrito
 
-1. El siguiente párrafo rompe el “reloj de arena”, volviendo a lo más amplio cuando ya estamos en el contexto nacional:
+- Reducir y revisar la sección histórica de Chile para llegar más directamente a las hipótesis.
+- Simplificar la justificación del uso de LLM, conservando el procedimiento de validación necesario.
+- Delimitar las etapas legislativas que se utilizarán en las comparaciones temporales.
+- Definir la unidad textual dentro de la cual se medirán las coocurrencias para adaptación.
+- Revisar el título para reemplazar la referencia a resiliencia por una formulación centrada en robustez o estructuración ideacional.
 
-   1. Esta trayectoria también fundamenta tres familias de contenido específicas del caso, sin tratarlas como categorías del mismo nivel. La *propiedad individual de los fondos* y la *capitalización* son principios institucionales asentados jurídica y políticamente desde la reforma de 1981 [(Alemparte, 2025\)](https://www.zotero.org/google-docs/?1gaRTF). La *solidaridad* es una idea normativa polisémica: puede referir a redistribución colectiva, seguro social, focalización o ayuda condicionada y, por ello, no equivale automáticamente a justicia política (Román Brugnoli & Osorio Gonnet, 2015; Rozas-Bugueño & Maillet, 2024). La *sostenibilidad financiera* es una idea cognitiva sobre la viabilidad presente o futura de una alternativa, no una estrategia de legitimación en sí misma (Ring et al., 2020; Väänänen & Liukko, 2022; Lee & Kim, 2026). Cada familia se desagregará en afirmaciones concretas con las que los actores puedan acordar o discrepar. CARIN caracterizará las afirmaciones que asignen protección según criterios como contribución o necesidad, y las categorías de legitimación identificarán cómo se defiende cada afirmación.
+## Pendiente antes del procesamiento completo de videos
 
-2. Este párrafo (sección 1\) quizás podría contener parte de lo que se aborda en el comentario anterior: 
+- Cerrar una primera versión del libro de códigos.
+- Definir identificadores estables para sesión, intervención, declaración y fragmento.
+- Seleccionar sesiones piloto variadas por cámara, etapa y tipo de instancia.
+- Construir una muestra manual de referencia separando ajuste y evaluación final.
+- Evaluar por separado la extracción de conceptos, la posición, la segmentación de justificaciones y la estrategia.
+- Revisar si varios fragmentos provenientes de una misma intervención requieren considerar esa dependencia en el modelo.
+- Escalar el procesamiento sólo después de revisar los resultados del piloto.
 
-   1. En esta investigación, la justicia de mercado y la justicia política se utilizarán como categorías interpretativas de nivel superior. El punto de partida empírico serán afirmaciones justificativas específicas, como sostener que una cotización debe ingresar a una cuenta individual porque pertenece al trabajador o que debe financiar un seguro social porque los riesgos de la vejez se distribuyen colectivamente. Los patrones de acuerdo y desacuerdo frente a estas afirmaciones permitirán identificar coaliciones; sus combinaciones recurrentes se organizarán e interpretarán desde la tensión entre justicia de mercado y justicia política.
+## Análisis retirados del diseño principal
 
-3. Chequear bien este párrafo en la metodología:
+- Centralidad de autovector.
+- Comparación rutinaria de múltiples algoritmos y normalizaciones de comunidades.
+- Modelo de H2 controlado por concepto.
+- Modelos binarios complementarios para cada dimensión de H3.
+- Análisis de sensibilidad con múltiples cortes temporales.
 
-   1. La evidencia discursiva de robustez ideacional se evaluará mediante tres patrones complementarios: (1) la permanencia de la orientación general de las ideas asociadas a la propiedad individual de los fondos, la correspondencia contributiva, la capitalización y la sostenibilidad financiera; (2) la incorporación creciente de estas ideas en las declaraciones de actores reformistas; y (3) su adaptación para articular la solidaridad con restricciones contributivas, focalizadas o financieras. El desplazamiento de estas ideas, su concentración exclusiva en el bloque promercado o la expansión transversal de argumentos solidarios no condicionados se interpretarán como evidencia contraria a la hipótesis. Este análisis caracterizará la robustez ideacional de los principios que legitiman la capitalización individual dentro del debate legislativo. La persistencia institucional del sistema se mantendrá como contexto del caso y no será modelada como un resultado atribuible a las ideas.
+Estos análisis podrían recuperarse después si los resultados lo exigen, pero no forman parte del diseño comprometido para la reunión ni del plan principal de la tesis.
