@@ -5,7 +5,7 @@ Estado: documento acumulativo en desarrollo
 
 ## Propósito
 
-Este suplemento conserva las decisiones operativas y técnicas que respaldan la metodología de la tesis, pero cuyo detalle interrumpiría la exposición sociológica del manuscrito principal. La primera versión se concentra en la codificación de estrategias de legitimación a nivel de declaración, el contrato de salida esperado del LLM y el tratamiento de casos ambiguos.
+Este suplemento conserva las decisiones operativas y técnicas que respaldan la metodología de la tesis, pero cuyo detalle interrumpiría la exposición sociológica del manuscrito principal. La primera versión reúne la codificación de estrategias de legitimación a nivel de declaración, el contrato de salida esperado del LLM, el tratamiento de casos ambiguos y las decisiones preliminares para la medición de H1 y H3.
 
 El documento se ampliará a medida que avancen el libro de códigos, el piloto y el procesamiento. Los umbrales de aceptación, los ejemplos empíricos definitivos y las versiones completas de los prompts se fijarán después del piloto.
 
@@ -34,6 +34,9 @@ Una intervención puede contener varias declaraciones. Cada declaración puede n
 | `actor_id` | identificador | Actor que formula la declaración. |
 | `concept` | categoría | Concepto del libro de códigos. |
 | `position` | binaria | Apoyo o rechazo frente al concepto. |
+| `explicit_condition` | binaria | Indica si la afirmación supedita el acceso, el monto o el diseño de una prestación a un requisito. |
+| `condition_basis` | categoría o nulo | Concepto del libro de códigos que fundamenta la condición; durante el piloto admite la marca provisional `condicionalidad_no_CARIN`. |
+| `provisional_condition_subtype` | texto o nulo | Descripción normalizada de una condición aún no cubierta por el libro de códigos; sólo se utiliza en el piloto. |
 | `explicit_legitimation` | binaria | Indica si existe al menos un fundamento explícito de legitimación. |
 | `primary_strategy` | categoría o nulo | Estrategia que sostiene el vínculo justificativo central. |
 | `primary_evidence` | texto y offsets o nulo | Evidencia que respalda la estrategia principal. |
@@ -44,6 +47,8 @@ Una intervención puede contener varias declaraciones. Cada declaración puede n
 | `candidate_strategies` | lista | Alternativas plausibles detectadas antes de la revisión. |
 | `review_status` | categoría | `automatic`, `manually_resolved` o `unresolved`. |
 | `review_notes` | texto o nulo | Justificación de la adjudicación manual. |
+
+Durante el piloto se aplicarán tres restricciones adicionales: si `explicit_condition = 0`, `condition_basis` y `provisional_condition_subtype` serán nulos; si `condition_basis = condicionalidad_no_CARIN`, deberá completarse `provisional_condition_subtype` y activarse la revisión manual; y esta marca provisional deberá resolverse antes de fijar el libro de códigos para el procesamiento completo.
 
 ### 2.2 Categorías de estrategia
 
@@ -267,3 +272,88 @@ Las siguientes versiones del suplemento incorporarán gradualmente:
 - especificaciones y diagnósticos de los modelos multinivel;
 - operacionalización completa de H3a, H3b y H3c;
 - registro de cambios introducidos después del piloto.
+
+## 10. Decisión pendiente: intermediación entre coaliciones
+
+La detección de comunidades utilizará la red completa de congruencia y conflicto mediante una implementación que considere relaciones positivas y negativas. Permanece pendiente definir la medida con la que se evaluará si los actores de centroizquierda conectan ambos polos.
+
+### 10.1 Problema de la especificación actual
+
+La centralidad de intermediación estándar se basa en caminos mínimos. Si se calcula sin pesos, utiliza sólo la presencia de las aristas e ignora su signo y magnitud. Las semejanzas firmadas tampoco pueden incorporarse directamente como distancias: los vínculos negativos no representan caminos de conexión y una mayor congruencia positiva debería implicar una distancia menor, no mayor.
+
+Por lo tanto, no se calculará la intermediación directamente sobre los pesos firmados ni sobre sus valores absolutos.
+
+### 10.2 Alternativas bajo evaluación
+
+1. **Intermediación ponderada sobre la subred de congruencia positiva.** Se conservarían sólo los vínculos positivos y su fuerza se transformaría en distancia. Mantiene una medida conocida y requiere un cambio metodológico acotado, pero no incorpora directamente los vínculos negativos y puede discriminar poco si la proyección es muy densa.
+2. **Coeficiente de participación sobre vínculos positivos.** Evaluaría si la fuerza positiva de cada actor se distribuye entre comunidades. Se ajusta directamente a la idea de conexión intercomunitaria, pero depende de la partición detectada y debe acompañarse por la fuerza total para evitar considerar como mediador a un actor con vínculos equilibrados pero débiles.
+3. **Congruencia directa con ambos polos.** Compararía la semejanza de cada actor con los perfiles de preservación y transformación. Es sustantivamente transparente, pero exige construir una medida específica y evitar circularidad entre la definición de los polos y la evaluación de los actores.
+
+### 10.3 Criterio provisional de mínima complejidad
+
+La opción provisional es conservar la centralidad de intermediación, calculándola sólo sobre la subred de congruencia positiva y transformando fuerza en distancia. La red completa de congruencia y conflicto se mantendría para detectar las comunidades. Después se comprobaría descriptivamente que los actores con mayor intermediación tienen vínculos positivos con ambos polos.
+
+Antes de cerrar esta decisión, el piloto deberá examinar:
+
+- si la intermediación presenta variación suficiente;
+- si está dominada por la frecuencia de intervención o la fuerza total;
+- si los actores mejor posicionados se conectan efectivamente con ambas comunidades;
+- y si la densidad de la proyección vuelve la medida poco informativa.
+
+El coeficiente de participación o la congruencia directa se incorporarían sólo si estos diagnósticos muestran que la intermediación positiva no representa adecuadamente la posición mediadora postulada en H1.
+
+## 11. Núcleo teórico y seguimiento temporal de H3
+
+### 11.1 Separación entre perfiles teóricos y comunidades empíricas
+
+H3a y H3b utilizarán un núcleo de preservación definido antes del análisis principal:
+
+- capitalización individual positiva;
+- propiedad individual positiva;
+- reciprocidad contributiva positiva;
+- control positivo;
+- sostenibilidad financiera positiva.
+
+En esta lista, *reciprocidad contributiva* reemplaza a *correspondencia contributiva* para mantener la categoría teórica del marco CARIN. *Control positivo* designa el respaldo a utilizar la responsabilidad atribuida a las personas por su situación previsional como criterio distributivo. Las reglas precisas de inclusión y exclusión de cada concepto-postura se fijarán en el libro de códigos antes del procesamiento completo.
+
+La condicionalidad no integrará el núcleo como concepto unitario. Durante el piloto se registrará como una propiedad de la declaración y su fundamento se codificará, cuando sea posible, mediante los criterios CARIN. Una condición contributiva puede expresar reciprocidad; una exigencia asociada a la responsabilidad por la propia situación puede expresar control; y una focalización basada en insuficiencia material puede expresar necesidad. Por ello, *focalización no CARIN* no se utilizará como categoría general.
+
+Cuando una declaración establezca explícitamente una condición pero su fundamento no pueda asignarse justificadamente a un criterio existente, se activará la marca provisional `condicionalidad_no_CARIN` y se conservará una descripción breve de su subtipo. Esta marca servirá para reunir y comparar casos durante el piloto; no se incorporará automáticamente como nodo de la red ni como componente de H3. Sólo un patrón recurrente, internamente coherente y teóricamente interpretable dará lugar a una nueva categoría en el libro de códigos antes del procesamiento completo.
+
+Las comunidades se detectarán sin imponerles inicialmente las etiquetas de preservación o transformación. Después se compararán sus perfiles con el núcleo anterior y con el perfil teórico de transformación. Los conceptos compartidos, inesperados o aparentemente contradictorios se conservarán como resultados y no se incorporarán automáticamente a la definición de ninguno de los perfiles.
+
+Esta separación evita que la comunidad empírica utilizada para clasificar a los actores determine también qué conceptos contarán posteriormente como evidencia de permanencia o difusión.
+
+### 11.2 H3a: permanencia
+
+La permanencia se evaluará exclusivamente sobre el núcleo teórico fijo. Para cada componente se observarán:
+
+- cobertura entre actores activos;
+- balance entre apoyo y rechazo;
+- fuerza de las conexiones con los demás componentes del núcleo.
+
+Las conexiones entre el núcleo y solidaridad positiva se reservarán para H3c. Otros conceptos empíricamente relevantes podrán describirse, pero no se sumarán como indicadores de H3a.
+
+### 11.3 H3b: cohorte inicial y movimiento de actores
+
+La primera detección de comunidades se conservará como referencia para identificar la cohorte inicialmente orientada a la transformación. Fijar esa clasificación permite responder una pregunta direccional: si quienes partieron más alejados del núcleo de preservación comienzan posteriormente a utilizarlo.
+
+Esta fijación no supone que la pertenencia sea inmutable. Las comunidades se volverán a estimar en cada etapa y el movimiento de los actores se informará como resultado complementario. La distinción es:
+
+- **cohorte inicial fija:** define desde dónde se evalúa la trayectoria;
+- **pertenencia dinámica:** describe hacia dónde se desplazan los actores;
+- **núcleo teórico fijo:** define qué contenidos se transfieren.
+
+La difusión se observará en los actores activos de la cohorte inicial mediante el uso posterior de conceptos-postura del núcleo, su amplitud dentro de éste y la diversidad partidaria y organizacional alcanzada. El criterio mínimo para distinguir una adopción sustantiva de una mención aislada se fijará después del piloto y antes del procesamiento completo.
+
+Los actores que aparezcan por primera vez después de la etapa inicial no integrarán la cohorte direccional principal, porque no existe una posición inicial observada. Su uso del núcleo se reportará separadamente como expansión de alcance.
+
+Si la primera etapa no produce comunidades claramente alineables con los perfiles teóricos, no se forzarán las etiquetas de preservación y transformación. En ese escenario deberá revisarse la operacionalización direccional de H3b y evaluarse una clasificación basada en el alineamiento inicial de cada actor con los perfiles teóricos.
+
+### 11.4 H3c: adaptación
+
+Solidaridad positiva no formará parte por sí sola del núcleo de preservación. H3c evaluará su articulación, dentro de una misma intervención, con restricciones contributivas, focalizadas o financieras. Estas restricciones se identificarán por el contenido sustantivo de las declaraciones y no por la marca residual `condicionalidad_no_CARIN`. Esto permite distinguir:
+
+- solidaridad positiva no condicionada;
+- solidaridad incorporada bajo restricciones compatibles con el núcleo de preservación;
+- y conceptos compartidos desde la primera etapa que no representan cambio temporal.

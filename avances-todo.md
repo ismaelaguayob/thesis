@@ -39,11 +39,16 @@
 ### Medición de H3a-H3c
 
 - Las tres subhipótesis serán cuantitativamente evaluables y sus dimensiones se informarán por separado.
-- Permanencia se medirá mediante cobertura de actores, balance de posiciones y fuerza relacional de los conceptos.
-- Difusión se medirá fijando las coaliciones observadas en la primera etapa y siguiendo el uso del repertorio de preservación por los actores de la coalición transformadora inicial.
+- H3a y H3b utilizarán un núcleo teórico fijo de preservación: capitalización individual, propiedad individual, reciprocidad contributiva, control y sostenibilidad financiera, con sus posiciones favorables.
+- Reciprocidad y control se tratarán como criterios CARIN. La condicionalidad será una propiedad transversal de las declaraciones, no un sexto criterio ni un componente del núcleo.
+- Durante el piloto, las condiciones se asignarán a su fundamento CARIN cuando corresponda; los casos que no puedan ubicarse justificadamente se reunirán bajo la marca provisional `condicionalidad_no_CARIN` para evaluar si forman nuevas categorías coherentes. La focalización basada en insuficiencia material se interpretará normalmente como necesidad, no como una categoría general fuera de CARIN.
+- Permanencia se medirá mediante cobertura de actores, balance de posiciones y fuerza de las conexiones internas de ese núcleo.
+- Difusión se medirá siguiendo la adopción del núcleo teórico por una cohorte formada por los actores de la comunidad inicialmente más orientada a la transformación.
 - Como complemento descriptivo de H3b, se volverán a estimar las comunidades en cada etapa y se informarán las migraciones de actores.
+- Los conceptos que distingan empíricamente a las comunidades servirán para describirlas e interpretarlas, pero no redefinirán los indicadores de H3a o H3b.
 - Los conceptos ya compartidos en la primera etapa se interpretarán como alcance transversal previo y no como difusión ocurrida durante la tramitación.
 - Adaptación se medirá mediante combinaciones entre solidaridad positiva y restricciones contributivas, focalizadas o financieras.
+- La solidaridad positiva no se considerará por sí sola parte del repertorio de preservación.
 - La intervención será la ventana textual dentro de la cual se medirán las coocurrencias para H3c.
 - Los resultados centrales de H3a-H3c se verificarán mediante lectura cualitativa de las declaraciones que sostengan las conexiones.
 - Se incorporaron antecedentes metodológicos que apoyan la medición de estructuración discursiva, el análisis conjunto de relaciones positivas y negativas y la separación entre coaliciones y estrategias.
@@ -64,8 +69,9 @@
 
 ## Decisiones cerradas después de la reunión
 
-- Se mantendrá la pertenencia inicial fija en el análisis principal de H3b, porque la pregunta es direccional: si actores inicialmente transformadores adoptan después el repertorio de preservación. Esta clasificación se complementará con una descripción de las migraciones de comunidad entre etapas, para no confundir la línea de base analítica con una pertenencia inmutable.
+- Se mantendrá la pertenencia inicial fija como cohorte de referencia en el análisis principal de H3b, porque la pregunta es direccional: si actores inicialmente transformadores adoptan después el núcleo teórico de preservación. La pertenencia se volverá a estimar en cada etapa para describir movimientos, sin redefinir retrospectivamente la cohorte.
 - Se conservará «difusión» como nombre de H3b y el «alcance transversal inicial» se tratará como diagnóstico de línea de base.
+- Las comunidades se detectarán inicialmente sin etiquetas y se interpretarán después según su alineamiento relativo con los perfiles teóricos. Los conceptos compartidos o inesperados no se absorberán automáticamente en esos perfiles.
 - Las comparaciones del corpus deliberativo distinguirán tres etapas con sesiones: primer trámite en la Cámara de Diputados, segundo trámite en el Senado y tercer trámite en la Cámara. El Tribunal Constitucional, la finalización y la promulgación permanecerán como hitos de la cronología institucional.
 - La variable de tiempo identificará tanto la sesión —con fecha-hora propia— como la etapa legislativa a la que pertenece.
 - La intervención será la unidad textual de entrada para la codificación, la ventana de coocurrencia en H3c y la referencia para conservar el orden interno del discurso.
