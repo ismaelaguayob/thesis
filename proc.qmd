@@ -214,19 +214,46 @@ df_debugged = debug_akoma_ntoso_errors(
 df_debugged.to_csv("data/datos_bcn_akn.csv", index=False, sep = ";")
 ```
 
+La descarga anterior se ejecuta solo cuando es necesario refrescar la fuente. El resto del reporte utiliza el CSV persistido, por lo que no vuelve a consultar BCN en cada render.
+
 ### Filtrado de trámites irrelevantes
 
-Para el análisis final, solo necesitaremos los trámites que contengan contenido discursivo significativo, por ejemplo, los diarios de sesión y el mensaje inicial. Otros documentos, como los oficios, son méramente técnicos y no aportan a la investigación. A continuación, obtenemos un dataframe con solo los trámites relevantes.
+Para el análisis final se mantiene un manifiesto explícito con las cuatro discusiones en Sala y, por separado, el mensaje inicial. Los informes y oficios no entran a la pipeline discursiva. Esto evita que una búsqueda amplia por palabras en el título cambie accidentalmente el corpus.
 
 ```{python}
-#| eval: false
 import pandas as pd
 from pathlib import Path
+from bcn_scraper import extract_document_uri
+
 data = pd.read_csv("data/datos_bcn_akn.csv", sep = ";")
 
-data_analysis = data[
-    data["title"].str.contains("Discusión en Sala|Mensaje|Informe", case=False, na=False)
-]
+# Compatibilidad con extracciones anteriores a la persistencia de document_uri.
+if "document_uri" not in data.columns:
+    data["document_uri"] = data["xml_content"].fillna("").map(extract_document_uri)
+
+corpus_manifest = pd.read_csv("data/corpus_manifest.csv")
+data_corpus = corpus_manifest.merge(
+    data,
+    on="document_uri",
+    how="left",
+    validate="one_to_one",
+)
+
+if data_corpus["title"].isna().any():
+    missing = data_corpus.loc[data_corpus["title"].isna(), "document_uri"].tolist()
+    raise ValueError(f"Documentos del manifiesto ausentes en la extracción: {missing}")
+
+if not data_corpus["title"].eq(data_corpus["expected_title"]).all():
+    raise ValueError("Los títulos extraídos no coinciden con corpus_manifest.csv")
+
+if not data_corpus["date"].astype(str).eq(data_corpus["expected_date"]).all():
+    raise ValueError("Las fechas extraídas no coinciden con corpus_manifest.csv")
+
+data_analysis = data_corpus[data_corpus["include_in_speech_pipeline"]].copy()
+data_message = data_corpus[data_corpus["corpus_role"].eq("initial_message")].copy()
+
+data_analysis.to_parquet("data/corpus_sala.parquet", index=False)
+data_message.to_parquet("data/corpus_mensaje_inicial.parquet", index=False)
 ```
 
 ### Extracción y normalización de datos discursivos
@@ -269,9 +296,57 @@ Sin embargo, parte del discurso no está etiquetado, principalmente el discurso 
 
 import json
 import pandas as pd
-from bcn_scraper import add_speech_content, normalize_speech_content, collect_unlabeled_speaker_candidates, build_parliamentarian_table, debug_parliamentarian_data_errors, build_speech_analysis_dataframe
+from bcn_scraper import (
+    add_speech_content,
+    build_corpus_person_registry,
+    collect_akn_person_identities,
+    collect_bcn_speaker_references,
+    normalize_speech_content,
+    collect_unlabeled_speaker_candidates,
+    build_parliamentarian_table,
+    debug_parliamentarian_data_errors,
+    build_speech_analysis_dataframe,
+    build_speech_quality_report,
+    extract_speech_from_history_xml,
+    validate_speech_quality_report,
+)
 
 data_speech = add_speech_content(data_analysis)
+
+# Los IDs perN/PersonaAutN pertenecen a un solo documento. Persistimos el
+# cruce explícito con el recurso estable de Persona BCN antes de incorporar el
+# fallback, para que sus IDs canónicos provengan únicamente de AKN válidos.
+speaker_identity_audit = collect_akn_person_identities(data_speech)
+
+within_document_collisions = (
+    speaker_identity_audit.loc[speaker_identity_audit["document_person_key"].ne("")]
+    .groupby("document_person_key")["speaker_href"]
+    .nunique()
+    .gt(1)
+)
+if within_document_collisions.any():
+    raise ValueError("Un ID local AKN apunta a más de una persona dentro del mismo documento")
+if speaker_identity_audit["stable_person_has_name_conflict"].any():
+    raise ValueError("Un recurso estable de Persona BCN presenta nombres incompatibles")
+
+speaker_identity_audit.to_parquet("data/speaker_identity_audit.parquet", index=False)
+speaker_identity_audit.to_csv("data/speaker_identity_audit.csv", index=False)
+
+corpus_person_registry = build_corpus_person_registry(data_speech)
+
+# 3.1 carece de AKN válido. Su HTML de Historia de la Ley ya delimita el ítem
+# del boletín y se parsea como Orden del Día, separando Discusión y Votación.
+fallback_mask = data_speech["speech_source"].eq("history_xml_fallback")
+for row_index in data_speech.index[fallback_mask]:
+    fallback_content = extract_speech_from_history_xml(
+        data_speech.at[row_index, "xml_content"],
+        person_registry=corpus_person_registry,
+    )
+    if "error" in fallback_content:
+        raise ValueError(
+            f"Falló el fallback de {data_speech.at[row_index, 'title']}: {fallback_content}"
+        )
+    data_speech.at[row_index, "speech_content"] = fallback_content
 
 
 
@@ -291,99 +366,129 @@ Hay intervenciones que no están etiquetadas, especialmente las de hablantes no 
 # Identificación de parlamentarios externos o no etiquetados
 candidates = collect_unlabeled_speaker_candidates(data_normalized)
 
-ministers = {
-        "JARA": {
-            "speaker": "Jeannette Jara",
-            "speaker_id": "PersonaExt1",
-            "speaker_href": "https://es.wikipedia.org/wiki/Jeannette_Jara",
-            "role": "Ministra del Trabajo y Previsión Social",
-        },
-        "MARCEL": {
-            "speaker": "Mario Marcel",
-            "speaker_id": "PersonaExt2",
-            "speaker_href": "https://es.wikipedia.org/wiki/Mario_Marcel",
-            "role": "Ministro de Hacienda",
-        }
-
+def bcn_person(person_id, **metadata):
+    """Entrada estable; el ID local se resuelve nuevamente en cada AKN."""
+    return {
+        "speaker_href": f"http://datos.bcn.cl/recurso/persona/{person_id}",
+        **metadata,
     }
 
-dict_session_12 = {
-        "CIFUENTES": {
-            "speaker_id": "per0"
-        },
-    }
 
-dict_session_24 = {
-        # Discusión Senado 2.4
-        "ALLENDE": {
-            "speaker_id": "PersonaAut7"
-        },
-        "ARAVENA": {
-            "speaker_id": "PersonaAut11"
-        },   
-        "ARAYA": {
-            "speaker_id": "PersonaAut5"
-        },
-        "CHAHUAN": {
-            "speaker_id": "PersonaAut43"
-        },
-        "CRUZ COKE": {
-            "speaker_id": "PersonaAut39"
-        },
-        "EBENSPERGER": {
-            "speaker_id": "PersonaAut14"
-        },
-        "GARCIA": {
-            "speaker_id": "PersonaAut9"
-        },
-        "GUZMAN": {
-            "speaker": "Raul Guzmán Uribe",
-            "speaker_id": "PersonaExt3",
-            "speaker_href": "NA",
-            "role": "Secretario General del Senado"
-        },
-        "INSULZA": {
-            "speaker_id": "PersonaAut25"
-        },
-        "KUSANOVIC": {
-            "speaker_id": "PersonaAut20"
-        },
-        "LAGOS": {
-            "speaker_id": "PersonaAut34"
-        },
-        "MOREIRA": {
-            "speaker_id": "PersonaAut12"
-        },
-        "NUNEZ": {
-            "speaker_id": "PersonaAut15"
-        },
-        "OSSANDON": {
-            "speaker_id": "PersonaAut87"
-        },
-        "PROHENS": {
-            "speaker_id": "PersonaAut33"
-        },
-        "PROVOSTE": {
-            "speaker_id": "PersonaAut40"
-        },
-        "WALKER": {
-            "speaker_id": "PersonaAut6"
-        },
+# Solo actores verdaderamente transversales permanecen en el registro general.
+# Mario Marcel y Miguel Landeros usan el recurso estable de Persona BCN.
+external_speakers_dict = {
+    "JARA": {
+        "speaker": "Jeannette Jara",
+        "speaker_id": "PersonaExt1",
+        "speaker_href": "https://es.wikipedia.org/wiki/Jeannette_Jara",
+        "role": "Ministra del Trabajo y Previsión Social",
+    },
+    "MARCEL": bcn_person(
+        "4216",
+        speaker="Mario Marcel Cullell",
+        role="Ministro de Hacienda",
+    ),
+    "LANDEROS": bcn_person(
+        "4471",
+        speaker="Miguel Landeros Perkic",
+        role="Secretario General de la Cámara de Diputadas y Diputados",
+    ),
 }
 
-external_speakers_dict = ministers | dict_session_12 | dict_session_24
+
+# Los apellidos que pueden cambiar de persona se acotan por documento. Los href
+# son estables; normalize_speech_content recupera el perN/PersonaAutN correcto
+# dentro de cada AKN. En 3.1 los homónimos se desambiguan con el nombre completo
+# del preámbulo "Tiene la palabra...".
+document_speaker_overrides = {
+    "http://datos.bcn.cl/recurso/cl/documento/704142": {
+        "CIFUENTES": bcn_person("5200"),
+        "BOBADILLA": bcn_person("2861"),
+        "MULET": bcn_person("1782"),
+        "MEZA": bcn_person("5272"),
+    },
+    "http://datos.bcn.cl/recurso/cl/documento/704058": {
+        "CIFUENTES": bcn_person("5200"),
+        "DE LA CARRERA": bcn_person("5202"),
+        "MANOUCHEHRI": bcn_person("5201"),
+        "SERRANO": bcn_person("5209"),
+        "MEZA": bcn_person("5272"),
+    },
+    "http://datos.bcn.cl/recurso/cl/documento/706982": {
+        "ALLENDE": bcn_person("3494"),
+        "ARAVENA": bcn_person("4593"),
+        "ARAYA": bcn_person("339"),
+        "CHAHUAN": bcn_person("685"),
+        "CRUZ COKE": bcn_person("4569"),
+        "EBENSPERGER": bcn_person("4589"),
+        "GARCIA": bcn_person("279"),
+        "INSULZA": bcn_person("4141"),
+        "KUSANOVIC": bcn_person("5197"),
+        "LAGOS": bcn_person("3099"),
+        "MOREIRA": bcn_person("1713"),
+        "NUNEZ": bcn_person("4542"),
+        "OSSANDON": bcn_person("4521"),
+        "PROHENS": bcn_person("4591"),
+        "PROVOSTE": bcn_person("4323"),
+        "WALKER": bcn_person("3735"),
+        "PASCUAL": bcn_person("5193"),
+        "GUZMAN": {
+            "speaker": "Raúl Guzmán Uribe",
+            "speaker_id": "PersonaExt3",
+            "speaker_href": "NA",
+            "role": "Secretario General del Senado",
+        },
+    },
+    "http://datos.bcn.cl/recurso/cl/documento/706988": {
+        "CARIOLA": bcn_person("4520"),
+        "AEDO": bcn_person("5253"),
+        "RIVAS": bcn_person("1894"),
+        "COLOMA": bcn_person("4543"),
+        # No aparecen en los AKN anteriores porque asumieron/no intervinieron
+        # allí; los IDs se verificaron en recursos oficiales de BCN.
+        "DURAN": bcn_person("4567", speaker="Jorge Andrés Durán Espinoza"),
+        "CELEDON": bcn_person("4740", speaker="Roberto Antonio Celedón Fernández"),
+    },
+}
 
 data_normalized_full = normalize_speech_content(
     data_speech,
     split_transcription_events=True,
     clean_labeled=True,
     external_speakers = external_speakers_dict,
+    document_speaker_overrides=document_speaker_overrides,
 )
 
 dict_normalized_full = data_normalized_full.to_dict(orient="records")
 
-candidates_full = collect_unlabeled_speaker_candidates(data_normalized_full)
+candidates_full = collect_unlabeled_speaker_candidates(
+    data_normalized_full,
+    external_speakers=external_speakers_dict,
+)
+
+# Esta tabla sí disminuye a medida que se completa el diccionario.
+candidates_pending = candidates_full[
+    candidates_full["identity_status"].ne("resolved")
+].copy()
+
+candidate_progress = (
+    candidates_full.groupby("identity_status", dropna=False)
+    .agg(
+        candidates=("speaker_key", "size"),
+        occurrences=("n_occurrences", "sum"),
+    )
+    .reset_index()
+    .sort_values("identity_status")
+)
+
+candidates_full.to_parquet("data/speaker_candidates.parquet", index=False)
+candidates_pending.to_parquet("data/speaker_candidates_pending.parquet", index=False)
+candidate_progress.to_csv("data/speaker_candidate_progress.csv", index=False)
+
+candidate_progress
 ```
+
+El resumen distingue candidatos resueltos mediante el diccionario o los metadatos AKN, candidatos reconocidos solo por la expresión regular y casos todavía no resueltos o conflictivos. Los dos Parquet conservan el detalle completo y los pendientes de cada ejecución.
 
 Así quedan los datos (simplificados) luego de normalizarlos, con el ejemplo de la intervención de Jeanette Jara que no estaba etiquetada en el AKN:
 
@@ -395,7 +500,7 @@ Así quedan los datos (simplificados) luego de normalizarlos, con el ejemplo de 
  'speaker_id': 'PersonaExt1', 
  'speaker': 'Jeannette Jara', 
  'speaker_href': 'https://es.wikipedia.org/wiki/Jeannette_Jara', 
- 'role': 'Ministra del Trabajo y Previsión Social'
+ 'role': 'Ministra del Trabajo y Previsión Social',
  'content': ['Señora Presidenta, quiero partir este importante día, en que se pone en el centro este debate previsional, esta sentida demanda ciudadana que lleva tanto tiempo pendiente en nuestro país, saludando cordial y fraternalmente la presencia de todas las fuerzas políticas representadas en el Congreso Nacional, a través de las diputadas y los diputados de la república, quienes tienen un rol y una labor muy importante en representar a sus electores, en una democracia que debería salir fortalecida después de este debate, que ha sido de tan largo aliento, donde hemos estado más de una década tratando de hacernos cargo de la insuficiencia de un sistema de pensiones que tiene a la mayoría de los pensionados del país viviendo en condiciones muy precarias, de mucha necesidad y angustia.', 
 '...',
 'Por eso, el gobierno del Presidente Gabriel Boric ha presentado hoy, en palabras del ministro de Hacienda, Mario Marcel , las ideas centrales del proyecto de cumplimiento tributario, para combatir la evasión y la elusión…']
@@ -415,14 +520,16 @@ Luego, se extrayeron los datos relevantes de los parlamentarios, estructurándol
 
 - Para los parlamentarios etiquetados en el AKN, se obtuvieron los datos desde la misma plataforma.
 
-- Para los parlamentarios no etiquetados, se proporcionó un link de Wikipedia, obteniendo luego exactamente los mismos datos.
+- Los actores externos se mantienen en un registro manual con una URL de referencia. El enriquecimiento automático implementado actualmente cubre solo recursos de personas de BCN; no extrae datos desde Wikipedia.
 
 BCN tiene una gran base de datos no estructurada. Una página de parlamentario se ve asi. Tomamos el mismo ejemplo que se mostró más arriba:
 
 ![](images/paste-4.png)Se accedió al formato JSON de esta misma plataforma, extrayendo todos los datos relevantes, como el género, el partido y la edad. En algunos casos, como en el del partido, fue necesario acceder a dos URL adicionales luego de esta. El siguiente bloque de código puede demorar mucho tiempo (\~30 minutos). Solo se extrayó la última militancia de cada parlamentario por el largo tiempo de espera.
 
 ```{python}
-parliamentarians = build_parliamentarian_table(data_normalized, include_all_militancies=False, fetch_militancy_dates=False, timeout=30, max_attempts=1)
+#| eval: false
+# Este bloque se ejecuta solo al refrescar la tabla, porque consulta BCN y puede tardar cerca de una hora.
+parliamentarians = build_parliamentarian_table(data_normalized_full, include_all_militancies=False, fetch_militancy_dates=False, timeout=30, max_attempts=1)
 
 # Función para reintentar con más tiempo en los casos con errores
 parliamentarians_full = debug_parliamentarian_data_errors(
@@ -438,29 +545,140 @@ parliamentarians_full.to_parquet("data/parliamentarians.parquet")
 
 ## Dataframe consolidado
 
-Por último, podemos aplanar el dataframe con todas las intervenciones discursivas para que nos sirva en el análisis.
+Por último, aplanamos el corpus en una fila por unidad ordenada. La tabla analítica conserva tanto las intervenciones como los eventos de transcripción (aplausos, manifestaciones, interrupciones colectivas, etc.); excluye únicamente preámbulos, texto no resuelto y la fase `Votacion` de 3.1.
 
 ```{python}
 parliamentarians = pd.read_parquet("data/parliamentarians.parquet")
 
-speech_df = build_speech_analysis_dataframe(
-    data_normalized_full,
-    parliamentarians=parliamentarians,
-)
+# Entre refrescos costosos, no perdemos la identidad estable de hablantes nuevos:
+# se agregan filas mínimas (href, person_id y nombre observado). Sus atributos
+# biográficos quedan marcados como identity_only hasta ejecutar el bloque anterior.
+speaker_refs = collect_bcn_speaker_references(data_normalized_full)
+missing_speaker_refs = speaker_refs.loc[
+    ~speaker_refs["person_href"].isin(parliamentarians["person_href"])
+].copy()
+missing_speaker_refs.to_parquet("data/parliamentarian_identity_gaps.parquet", index=False)
+missing_speaker_refs.to_csv("data/parliamentarian_identity_gaps.csv", index=False)
 
-# Incluye intervenciones como aplausos, abucheos y preámbulos
+if not missing_speaker_refs.empty:
+    identity_only = missing_speaker_refs[["person_href", "person_id"]].copy()
+    identity_only["name"] = missing_speaker_refs["speaker_names_seen"].map(
+        lambda names: names[0] if isinstance(names, (list, tuple)) and names else None
+    )
+    identity_only["data_status"] = "identity_only"
+    parliamentarians_for_merge = pd.concat(
+        [parliamentarians, identity_only],
+        ignore_index=True,
+        sort=False,
+    )
+else:
+    parliamentarians_for_merge = parliamentarians
 
+# Se construye una sola tabla base. speech_df es una vista materializada de
+# speech_df_full; no se mantienen tablas relacionales separadas por tipo de fila.
 speech_df_full = build_speech_analysis_dataframe(
-    data_normalized,
-    parliamentarians=parliamentarians,
+    data_normalized_full,
+    parliamentarians=parliamentarians_for_merge,
+    identity_audit=speaker_identity_audit,
     include_transcription_events=True,
     include_preambles=True,
     include_unresolved=True,
 )
-speech_df.to_parquet("data/speech_df.parquet")
+speech_df_full = speech_df_full[
+    speech_df_full["bill_number"].eq("15480-13")
+].reset_index(drop=True)
 
-speech_df_full.to_parquet("data/speech_df_full.parquet")
+# El orden se calcula antes de filtrar, por lo que es compartido por todas las
+# vistas y deja huecos explícitos cuando una unidad se excluye del análisis.
+speech_df_full["utterance_order"] = (
+    speech_df_full.groupby("document_uri", sort=False).cumcount() + 1
+)
+analysis_mask = (
+    (
+        speech_df_full["kind"].eq("transcription_event")
+        | (
+            speech_df_full["kind"].eq("participation")
+            & ~speech_df_full["is_preamble"]
+        )
+    )
+    & speech_df_full["section_name"].ne("Votacion")
+)
+speech_df_full["analysis_included"] = analysis_mask
+speech_df_full["analysis_exclusion_reason"] = None
+speech_df_full.loc[
+    speech_df_full["section_name"].eq("Votacion"),
+    "analysis_exclusion_reason",
+] = "voting_phase"
+speech_df_full.loc[
+    speech_df_full["analysis_exclusion_reason"].isna()
+    & speech_df_full["is_preamble"],
+    "analysis_exclusion_reason",
+] = "preamble"
+speech_df_full.loc[
+    speech_df_full["analysis_exclusion_reason"].isna()
+    & speech_df_full["kind"].eq("unlabeled_text"),
+    "analysis_exclusion_reason",
+] = "unresolved_text"
+
+speech_df = speech_df_full.loc[analysis_mask].copy().reset_index(drop=True)
+
+# Invariantes del contrato: una unidad, un ID y una posición; los IDs locales
+# nunca reemplazan al identificador estable en la columna principal.
+if speech_df_full["utterance_id"].duplicated().any():
+    raise ValueError("utterance_id duplicado en speech_df_full")
+if speech_df_full.duplicated(["document_uri", "utterance_order"]).any():
+    raise ValueError("utterance_order duplicado dentro de un documento")
+if not set(speech_df["utterance_id"]).issubset(speech_df_full["utterance_id"]):
+    raise ValueError("speech_df contiene unidades ausentes de speech_df_full")
+local_id_in_primary = (
+    speech_df["kind"].eq("participation")
+    & speech_df["speaker_id"].fillna("").str.match(r"^(?:per|PersonaAut)\d+$")
+)
+if local_id_in_primary.any():
+    raise ValueError("speaker_id conserva IDs locales en vez de IDs estables")
+
+# El reporte incluye todos los documentos esperados y valida las dos fases de 3.1.
+speech_quality_report = build_speech_quality_report(
+    corpus_manifest,
+    data,
+    speech_df,
+    speech_df_full,
+)
+validate_speech_quality_report(speech_quality_report, speech_df)
+
+speech_df.to_parquet("data/speech_df.parquet", index=False)
+speech_df_full.to_parquet("data/speech_df_full.parquet", index=False)
+speech_quality_report.to_parquet("data/speech_quality_report.parquet", index=False)
+speech_quality_report.to_csv("data/speech_quality_report.csv", index=False)
+
+speech_quality_report[[
+    "expected_title",
+    "speech_source",
+    "quality_status",
+    "speech_rows",
+    "participation_rows",
+    "analytical_transcription_event_rows",
+    "full_rows",
+    "transcription_event_rows",
+    "discussion_rows",
+    "voting_rows",
+    "duplicate_item_path_rows",
+    "duplicate_utterance_id_rows",
+    "duplicate_utterance_order_rows",
+    "unresolved_identity_rows",
+    "unstable_bcn_speaker_id_rows",
+    "local_primary_speaker_id_rows",
+    "unresolved_content_rows",
+    "identity_only_speaker_rows",
+    "missing_speaker_data_rows",
+    "issues",
+    "warnings",
+]]
 ```
+
+`speaker_id` es el identificador canónico: `PersonaBCN<id>` para recursos de personas BCN y `PersonaExt<n>` para actores externos que no tienen un recurso BCN conocido. `speaker_bcn_id` conserva además el número puro de BCN; `speaker_local_id` guarda el identificador de la aparición actual y `speaker_local_ids` reúne todos los IDs locales observados. Como un `perN` puede pertenecer a personas distintas en documentos diferentes, `speaker_local_refs` agrega siempre el `document_uri` y es la procedencia no ambigua.
+
+`utterance_id` identifica de manera determinística cada unidad a partir del documento y su ruta estructural, mientras `utterance_order` reconstruye el orden completo del debate. Los eventos tienen ambos campos, aunque correctamente no tienen hablante. Los estados `pass` no presentan errores en estas invariantes principales. En el fallback, el reporte exige contenido en `Discusion`, conserva `Votacion` en la salida completa y comprueba que esa fase no pase al corpus analítico. `warning` mantiene visible contenido que requiere revisión —actualmente solo el cierre procedimental de 2.4— sin confundirlo con un fallo silencioso. Los registros `identity_only` conservan nombre e ID estable entre refrescos; sus atributos biográficos se completan al volver a ejecutar el bloque lento de parlamentarios.
 
 # Identificación de sesiones en comisiones técnicas
 
