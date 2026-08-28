@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Validación manual · Debate previsional</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Tesis · Análisis de redes discursivas</p>
+        <h1>Validación manual</h1>
+      </div>
+      <div class="privacy-badge" title="La interfaz nunca recibe nombre, partido ni género del hablante">
+        Identidad oculta
+      </div>
+    </header>
+
+    <main>
+      <section id="setup-view" class="setup-grid" aria-labelledby="setup-title">
+        <div class="panel setup-panel">
+          <p class="step-label">Nueva muestra</p>
+          <h2 id="setup-title">Crear sesión de codificación</h2>
+          <p class="lede">
+            El muestreo estratificado equilibra documentos y extensión. El libro de códigos queda
+            congelado dentro del JSON de esta sesión.
+          </p>
+
+          <form id="session-form">
+            <label>
+              Identificador del codificador <span class="optional">opcional</span>
+              <input id="coder-id" name="coder_id" maxlength="120" placeholder="por ejemplo: IA-01">
+            </label>
+            <div class="form-row">
+              <label>
+                Tamaño de muestra
+                <input id="sample-size" name="sample_size" type="number" min="1" step="1" required>
+              </label>
+              <label>
+                Semilla
+                <input id="sample-seed" name="seed" type="number" step="1" required>
+              </label>
+            </div>
+            <label>
+              Estrategia
+              <select id="sampling-strategy" name="strategy">
+                <option value="stratified">Estratificada por sesión y longitud</option>
+                <option value="random">Aleatoria simple</option>
+              </select>
+            </label>
+            <button class="primary-button" type="submit">Crear muestra y comenzar</button>
+          </form>
+
+          <div id="corpus-summary" class="summary-box" aria-live="polite"></div>
+        </div>
+
+        <aside class="panel resume-panel">
+          <p class="step-label">Trabajo existente</p>
+          <h2>Reanudar sesión</h2>
+          <div id="sessions-list" class="sessions-list"></div>
+        </aside>
+      </section>
+
+      <section id="coding-view" class="coding-view hidden" aria-labelledby="coding-title">
+        <div class="progress-panel">
+          <div>
+            <p id="session-label" class="step-label"></p>
+            <h2 id="coding-title">Codificar intervención</h2>
+          </div>
+          <div class="progress-copy">
+            <strong id="progress-text"></strong>
+            <div class="progress-track" aria-hidden="true">
+              <span id="progress-bar"></span>
+            </div>
+          </div>
+          <button id="return-setup" class="text-button" type="button">Cambiar sesión</button>
+        </div>
+
+        <div class="workspace-grid">
+          <section class="texts-column">
+            <article class="intervention-card context-card">
+              <div class="card-heading">
+                <div>
+                  <p class="step-label">Contexto</p>
+                  <h3>Intervención anterior</h3>
+                </div>
+                <span class="context-chip">No se codifica</span>
+              </div>
+              <div id="previous-text" class="intervention-text context-text"></div>
+            </article>
+
+            <article class="intervention-card target-card">
+              <div class="card-heading">
+                <div>
+                  <p class="step-label">Unidad objetivo</p>
+                  <h3>Intervención a codificar</h3>
+                </div>
+                <div id="item-metadata" class="item-metadata"></div>
+              </div>
+              <p class="selection-instruction">
+                Selecciona con el cursor el fragmento mínimo que expresa una posición completa.
+              </p>
+              <div
+                id="target-text"
+                class="intervention-text target-text"
+                tabindex="0"
+                aria-label="Texto de la intervención a codificar"
+              ></div>
+            </article>
+
+            <div class="navigation-bar">
+              <button id="previous-item" class="secondary-button" type="button">Anterior</button>
+              <div class="save-actions">
+                <span id="save-state" class="save-state" aria-live="polite"></span>
+                <button id="save-item" class="secondary-button" type="button">Guardar</button>
+                <button id="save-next" class="primary-button" type="button">Guardar y siguiente</button>
+              </div>
+            </div>
+          </section>
+
+          <aside class="coding-sidebar">
+            <section class="panel annotation-panel">
+              <p class="step-label">Declaración seleccionada</p>
+              <div id="selection-preview" class="selection-preview empty">
+                Selecciona un span en la intervención objetivo.
+              </div>
+
+              <label>
+                Concepto
+                <select id="concept-select">
+                  <option value="">Seleccionar…</option>
+                </select>
+              </label>
+              <div id="concept-definition" class="concept-definition"></div>
+
+              <fieldset>
+                <legend>Orientación frente al concepto</legend>
+                <div class="stance-grid">
+                  <label class="stance-option support-option">
+                    <input type="radio" name="stance" value="support">
+                    <span>Apoyo</span>
+                  </label>
+                  <label class="stance-option oppose-option">
+                    <input type="radio" name="stance" value="oppose">
+                    <span>Rechazo</span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <label id="proposed-concept-label" class="hidden">
+                Concepto propuesto <span class="optional">opcional</span>
+                <input id="proposed-concept" maxlength="300" placeholder="Nombre tentativo">
+              </label>
+
+              <label>
+                Nota <span class="optional">opcional</span>
+                <textarea id="annotation-note" rows="2" maxlength="2000" placeholder="Ambigüedad o criterio aplicado"></textarea>
+              </label>
+
+              <button id="add-annotation" class="primary-button" type="button">Agregar declaración</button>
+            </section>
+
+            <section class="panel decisions-panel">
+              <div class="decision-heading">
+                <div>
+                  <p class="step-label">Resultado de la intervención</p>
+                  <h3>Declaraciones registradas</h3>
+                </div>
+                <span id="annotation-count" class="count-chip">0</span>
+              </div>
+              <div id="annotations-list" class="annotations-list"></div>
+              <label class="no-statements-option">
+                <input id="no-statements" type="checkbox">
+                <span>
+                  <strong>Sin declaraciones codificables</strong>
+                  <small>Usar cuando sea procedimental o no exprese una posición previsional. Si falta el concepto, usa Revisar.</small>
+                </span>
+              </label>
+            </section>
+
+            <details class="panel codebook-panel">
+              <summary>Consultar libro de códigos</summary>
+              <div id="codebook-list" class="codebook-list"></div>
+            </details>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+    <script src="/app.js" defer></script>
+  </body>
+</html>
