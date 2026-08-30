@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from shared.manual_validation import (
+from features.manual_validation.service import (
     SCHEMA_VERSION,
     ValidationError,
     ValidationService,
@@ -20,7 +20,7 @@ from shared.manual_validation import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-STATIC_DIR = PROJECT_ROOT / "web" / "manual_validation"
+STATIC_DIR = PROJECT_ROOT / "features" / "manual_validation" / "web"
 
 
 class ManualValidationTestCase(unittest.TestCase):

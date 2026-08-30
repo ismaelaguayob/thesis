@@ -4,7 +4,7 @@ import json
 import unittest
 from pathlib import Path
 
-from shared.codebook_workbook import read_codebook_workbook
+from features.manual_validation.codebook_workbook import read_codebook_workbook
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -12,8 +12,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 class CodebookWorkbookTestCase(unittest.TestCase):
     def test_v01_xlsx_remains_the_exact_source_of_its_json(self) -> None:
-        workbook = PROJECT_ROOT / "config" / "codebook_v0.1.xlsx"
-        generated_json = PROJECT_ROOT / "config" / "codebook_v0.1.json"
+        workbook = PROJECT_ROOT / "data" / "codebook" / "codebook_v0.1.xlsx"
+        generated_json = PROJECT_ROOT / "data" / "codebook" / "codebook_v0.1.json"
         expected = read_codebook_workbook(workbook)
         actual = json.loads(generated_json.read_text(encoding="utf-8"))
         self.assertEqual(expected, actual)
@@ -21,8 +21,8 @@ class CodebookWorkbookTestCase(unittest.TestCase):
         self.assertEqual(expected["concepts"][0]["id"], "capitalizacion_individual")
 
     def test_v02_xlsx_is_the_exact_source_of_the_generated_json(self) -> None:
-        workbook = PROJECT_ROOT / "config" / "codebook_v0.2.xlsx"
-        generated_json = PROJECT_ROOT / "config" / "codebook_v0.2.json"
+        workbook = PROJECT_ROOT / "data" / "codebook" / "codebook_v0.2.xlsx"
+        generated_json = PROJECT_ROOT / "data" / "codebook" / "codebook_v0.2.json"
         expected = read_codebook_workbook(workbook)
         actual = json.loads(generated_json.read_text(encoding="utf-8"))
         self.assertEqual(expected, actual)

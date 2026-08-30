@@ -5,7 +5,7 @@ Estado de `proc.qmd`, sus artefactos y `../bcn-scraper`. Las tareas pendientes e
 ## Resuelto
 
 - Los refrescos costosos de Historia de la Ley y parlamentarios siguen con `eval: false`; el procesamiento sobre caché renderiza en unos 8 segundos.
-- `data/corpus_manifest.csv` declara las cuatro discusiones en Sala y, por separado, el mensaje inicial. Informes y oficios no entran al corpus discursivo.
+- `data/proc_data/corpus_manifest.csv` declara las cuatro discusiones en Sala y, por separado, el mensaje inicial. Informes y oficios no entran al corpus discursivo.
 - **Auditoría de identidades:** los `perN`/`PersonaAutN` son locales al documento, no IDs de persona. En 487 referencias AKN, 137 IDs locales se reutilizan para personas distintas y 109 personas estables cambian de ID entre documentos. No hay un ID local ambiguo dentro de un mismo AKN ni un `speaker_href` con nombres incompatibles. El cruce queda en `speaker_identity_audit.parquet/csv`.
 - La resolución usa `override por documento → href estable de Persona BCN → nombre completo del preámbulo → registro AKN del corpus → manual/regex`. Los alias del Senado ya no se propagan a diputados homónimos de 3.1 (`ARAYA`, `MOREIRA`, `OSSANDÓN`, `GUZMÁN`, etc.). Se corrigió además “Miguel Landeros Perki?” a **Miguel Landeros Perkic** en la salida.
 - **Punto 6:** los 138 apellidos/marcadores están resueltos; 13 representan legítimamente a más de una persona según documento u ocurrencia. `speaker_candidates_pending.parquet` tiene cero filas y el reporte ya no confunde homónimos resueltos con conflictos.

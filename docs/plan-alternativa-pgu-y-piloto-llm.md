@@ -95,7 +95,7 @@ Los conceptos ya compartidos por sectores reformistas durante la PGU se clasific
 
 ### 4.1 Reforma previsional de 2022-2025
 
-El archivo `data/speech_df.parquet` contiene cuatro discusiones en Sala:
+El archivo `data/proc_data/speech_df.parquet` contiene cuatro discusiones en Sala:
 
 | Fecha | Etapa | Filas totales de la vista analítica |
 |---|---|---:|

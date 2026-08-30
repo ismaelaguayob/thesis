@@ -11,19 +11,19 @@ La aplicación no llama a OpenAI ni a ningún otro servicio externo. La clave de
 Desde la raíz del repositorio:
 
 ```bash
-uv run python scripts/run_manual_validation.py
+uv run python -m features.manual_validation
 ```
 
 Luego abrir <http://127.0.0.1:8765>. Para usar otro puerto:
 
 ```bash
-uv run python scripts/run_manual_validation.py --port 8877
+uv run python -m features.manual_validation --port 8877
 ```
 
-Por defecto la aplicación busca primero `data/proc_data/speech_df.parquet` y luego `data/speech_df.parquet`. Los resultados se guardan como un JSON por sesión en:
+Por defecto la aplicación consume `data/proc_data/speech_df.parquet`. Los resultados se guardan como un JSON por sesión en:
 
 ```text
-data/proc_data/validation/
+output/validation/
 ```
 
 La ruta del corpus, el XLSX editable, el JSON derivado, el output, el boletín y los umbrales también se pueden reemplazar mediante `--source`, `--codebook-workbook`, `--codebook-json`, `--output-dir`, `--bill-number`, `--min-words`, `--short-paragraph-words` y `--target-block-words`. `--codebook` se conserva como alias de `--codebook-json`.
@@ -32,9 +32,9 @@ La ruta del corpus, el XLSX editable, el JSON derivado, el output, el boletín y
 
 El procesamiento que consume la aplicación queda dividido en dos capas explícitas:
 
-1. `proc.qmd` construye el corpus analítico y escribe `data/speech_df.parquet`.
-2. `scripts/run_manual_validation.py` genera el JSON del libro desde el XLSX y crea el servicio local.
-3. `shared/manual_validation.py` lee el parquet, aplica los filtros de participación, construye los bloques de párrafos, adjunta el contexto y realiza el muestreo.
+1. `proc.qmd` construye el corpus analítico y escribe `data/proc_data/speech_df.parquet`.
+2. `features/manual_validation/run.py` genera el JSON del libro desde el XLSX y crea el servicio local.
+3. `features/manual_validation/service.py` lee el parquet, aplica los filtros de participación, construye los bloques de párrafos, adjunta el contexto y realiza el muestreo.
 4. El navegador recibe únicamente las unidades muestreadas y el snapshot del libro. Los nombres, partidos, identificadores y género de los hablantes permanecen fuera del payload.
 
 La transformación específica de la aplicación está en Python y se prueba de manera independiente. El parquet conserva sus intervenciones originales, lo que permite cambiar la regla de segmentación sin regenerar ni sobrescribir el corpus.
@@ -69,7 +69,7 @@ Cada intervención se separa en los párrafos delimitados por saltos de línea. 
 
 ## Libro de códigos
 
-La fuente editable activa está en `config/codebook_v0.2.xlsx`. La versión 0.1 se conserva sin cambios para reconstruir la primera ronda. Ambas contienen las hojas `README`, `Metadatos` y `Conceptos`.
+La fuente editable activa está en `data/codebook/codebook_v0.2.xlsx`. La versión 0.1 se conserva sin cambios para reconstruir la primera ronda. Ambas contienen las hojas `README`, `Metadatos` y `Conceptos`.
 
 La versión 0.3.0 está diseñada para analizar *discourse coalitions*. Sus conceptos representan justificaciones normativas empleadas para apoyar o rechazar una posición previsional. Una descripción factual, un diagnóstico o una preferencia por un instrumento que carezca de justificación se marca como `Sin declaraciones codificables`.
 
@@ -103,11 +103,11 @@ Una afirmación sobre la sostenibilidad financiera presente o futura puede codif
 
 No se añadió un código de progresividad tributaria debido a su baja recurrencia. Un nuevo caso puede registrarse con nota o `Revisar` para evaluar su repetición en una ronda posterior.
 
-El JSON `config/codebook_v0.2.json` es un archivo derivado y no debe editarse directamente. Se genera o comprueba con:
+El JSON `data/codebook/codebook_v0.2.json` es un archivo derivado y no debe editarse directamente. Se genera o comprueba con:
 
 ```bash
-uv run python scripts/generate_codebook_json.py
-uv run python scripts/generate_codebook_json.py --check
+uv run python -m features.manual_validation.generate_codebook_json
+uv run python -m features.manual_validation.generate_codebook_json --check
 ```
 
 La aplicación ejecuta la generación automáticamente antes de iniciar. Cada concepto contiene familia, base teórica, definición, proposición de orientación y criterios de inclusión y exclusión. `Apoyo` significa que el actor afirma la proposición de orientación; `Rechazo` significa que la niega, refuta o declara inaplicable.

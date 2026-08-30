@@ -211,4 +211,4 @@ Para la tesis, esto permite reformular H4 con mayor disciplina: la convergencia 
 - `outputs/retrieval/intermediate/2026-06-23-224848-final-springer-openaccess-raw.md`
 - `outputs/retrieval/intermediate/2026-06-23-224848-final-springer-openaccess-raw.json`
 
-El vocabulario depurado quedó en `literature-keywords.yaml`. Se promovieron `institutional narrative`, `pension reform justification` y `policy expert framing`; se conservaron como candidatos `valence idea`, `polysemic idea`, `coalition magnet`, `modes of justification`, `social sustainability` y `deservingness narrative`. Se eliminaron términos automáticos genéricos o desviados.
+El vocabulario depurado quedó en `review-workspace/literature-keywords.yaml`. Se promovieron `institutional narrative`, `pension reform justification` y `policy expert framing`; se conservaron como candidatos `valence idea`, `polysemic idea`, `coalition magnet`, `modes of justification`, `social sustainability` y `deservingness narrative`. Se eliminaron términos automáticos genéricos o desviados.
