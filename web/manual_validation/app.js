@@ -82,11 +82,30 @@ function renderCorpusSummary() {
   const corpus = state.config.corpus;
   const codebook = state.config.codebook;
   elements.corpusSummary.textContent = [
-    `${corpus.available_interventions} intervenciones disponibles`,
+    `${corpus.available_units} bloques disponibles`,
+    `párrafos < ${corpus.short_paragraph_words} palabras se acumulan hasta ${corpus.target_block_words}`,
     `boletín ${state.config.bill_number}`,
     `${codebook.concepts.length} conceptos`,
     `libro ${codebook.version}`,
   ].join(" · ");
+}
+
+function renderQualityFlagOptions() {
+  const selected = new Set(state.item?.quality_flags || []);
+  elements.qualityFlags.replaceChildren();
+  (state.config.quality_flags || []).forEach((flag) => {
+    const label = document.createElement("label");
+    label.className = "quality-flag-option";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.value = flag.id;
+    input.dataset.qualityFlag = flag.id;
+    input.checked = selected.has(flag.id);
+    const text = document.createElement("span");
+    text.textContent = flag.label;
+    label.append(input, text);
+    elements.qualityFlags.append(label);
+  });
 }
 
 function renderSessions(sessions) {
@@ -133,7 +152,7 @@ function renderConceptOptions() {
   });
   const review = document.createElement("option");
   review.value = "__review__";
-  review.textContent = "Revisar: concepto ausente del libro";
+  review.textContent = "Revisar: justificación ausente del libro";
   elements.conceptSelect.append(review);
   if ([...elements.conceptSelect.options].some((option) => option.value === current)) {
     elements.conceptSelect.value = current;
@@ -150,10 +169,29 @@ function renderCodebook() {
     label.textContent = concept.label;
     const definition = document.createElement("p");
     definition.textContent = concept.definition;
-    entry.append(label, definition);
+    entry.append(label);
+    appendConceptMetadata(entry, concept);
+    entry.append(definition);
     appendCriteria(entry, "Incluir", concept.include);
     appendCriteria(entry, "Excluir", concept.exclude);
     elements.codebookList.append(entry);
+  });
+}
+
+function appendConceptMetadata(container, concept) {
+  const metadata = [
+    ["Familia", concept.family],
+    ["Proposición de orientación", concept.orientation_anchor],
+    ["Base teórica", concept.theoretical_basis],
+  ];
+  metadata.forEach(([label, value]) => {
+    if (!value) return;
+    const paragraph = document.createElement("p");
+    paragraph.className = "concept-metadata";
+    const heading = document.createElement("b");
+    heading.textContent = `${label}: `;
+    paragraph.append(heading, document.createTextNode(value));
+    container.append(paragraph);
   });
 }
 
@@ -178,13 +216,14 @@ function renderConceptDefinition() {
   elements.conceptDefinition.replaceChildren();
   if (isReview) {
     elements.conceptDefinition.textContent =
-      "El span expresa una posición frente a un concepto que todavía no está en el libro de códigos.";
+      "El span expresa una justificación normativa explícita que todavía no está en el libro de códigos.";
     return;
   }
   const concept = state.codebook?.concepts.find((item) => item.id === value);
   if (!concept) return;
   const definition = document.createElement("p");
   definition.textContent = concept.definition;
+  appendConceptMetadata(elements.conceptDefinition, concept);
   elements.conceptDefinition.append(definition);
   appendCriteria(elements.conceptDefinition, "Incluir", concept.include);
   appendCriteria(elements.conceptDefinition, "Excluir", concept.exclude);
@@ -217,13 +256,54 @@ function conceptLabel(annotation) {
   );
 }
 
+function renderTargetText() {
+  const text = state.item?.target_text || "";
+  const valid = state.annotations
+    .filter(
+      (annotation) =>
+        Number.isInteger(annotation.start_char) &&
+        Number.isInteger(annotation.end_char) &&
+        annotation.start_char >= 0 &&
+        annotation.end_char > annotation.start_char &&
+        annotation.end_char <= text.length,
+    )
+    .sort((left, right) => left.start_char - right.start_char || left.end_char - right.end_char);
+  const boundaries = new Set([0, text.length]);
+  valid.forEach((annotation) => {
+    boundaries.add(annotation.start_char);
+    boundaries.add(annotation.end_char);
+  });
+  const points = [...boundaries].sort((left, right) => left - right);
+  const fragment = document.createDocumentFragment();
+  for (let index = 0; index + 1 < points.length; index += 1) {
+    const start = points[index];
+    const end = points[index + 1];
+    if (end <= start) continue;
+    const segment = text.slice(start, end);
+    const covering = valid.filter(
+      (annotation) => annotation.start_char <= start && annotation.end_char >= end,
+    );
+    if (!covering.length) {
+      fragment.append(document.createTextNode(segment));
+      continue;
+    }
+    const highlight = document.createElement("mark");
+    highlight.className = "coded-highlight";
+    highlight.textContent = segment;
+    highlight.title = covering.map(conceptLabel).join(" · ");
+    highlight.dataset.annotationCount = String(covering.length);
+    fragment.append(highlight);
+  }
+  elements.targetText.replaceChildren(fragment);
+}
+
 function renderAnnotations() {
   elements.annotationsList.replaceChildren();
   elements.annotationCount.textContent = String(state.annotations.length);
   if (!state.annotations.length) {
     const empty = document.createElement("div");
     empty.className = "annotation-empty";
-    empty.textContent = "Aún no hay declaraciones en esta intervención.";
+    empty.textContent = "Aún no hay declaraciones en este bloque.";
     elements.annotationsList.append(empty);
   }
   state.annotations.forEach((annotation, index) => {
@@ -249,6 +329,7 @@ function renderAnnotations() {
       state.annotations.splice(index, 1);
       state.dirty = true;
       renderAnnotations();
+      renderTargetText();
       updateNoStatementsState();
     });
     meta.append(concept, stance, remove);
@@ -274,10 +355,22 @@ function renderProgress() {
 function renderItem() {
   elements.previousText.textContent = state.item.has_previous
     ? state.item.previous_text
-    : "Esta es la primera intervención disponible en el documento.";
-  elements.targetText.textContent = state.item.target_text;
+    : "No hay un bloque anterior disponible en este documento.";
+  elements.nextText.textContent = state.item.has_next
+    ? state.item.next_text
+    : "No hay un bloque siguiente disponible en este documento.";
   elements.itemMetadata.replaceChildren();
-  [state.item.date, state.item.constitutional_stage, `${state.item.n_words} palabras`]
+  const paragraphPosition = state.item.paragraph_start
+    ? state.item.paragraph_start === state.item.paragraph_end
+      ? `párrafo ${state.item.paragraph_start} de ${state.item.paragraph_count}`
+      : `párrafos ${state.item.paragraph_start}–${state.item.paragraph_end} de ${state.item.paragraph_count}`
+    : "sesión heredada: intervención completa";
+  [
+    state.item.date,
+    state.item.constitutional_stage,
+    paragraphPosition,
+    `${state.item.n_words} palabras`,
+  ]
     .filter(Boolean)
     .forEach((value) => {
       const chip = document.createElement("span");
@@ -285,11 +378,20 @@ function renderItem() {
       elements.itemMetadata.append(chip);
     });
   state.annotations = (state.item.annotations || []).map(annotationFromServer);
+  renderTargetText();
   elements.noStatements.checked = state.item.decision === "no_statements";
+  elements.generalComment.value = state.item.general_comment || "";
+  const selectedFlags = new Set(state.item.quality_flags || []);
+  elements.qualityFlags.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+    input.checked = selectedFlags.has(input.value);
+  });
+  const hasGeneralMetadata = Boolean(elements.generalComment.value || selectedFlags.size);
+  elements.generalCommentPanel.classList.toggle("hidden", !hasGeneralMetadata);
+  elements.toggleGeneralComment.setAttribute("aria-expanded", String(hasGeneralMetadata));
   state.selection = null;
   state.dirty = false;
   elements.saveState.textContent = state.item.status === "completed" ? "Codificación guardada" : "Sin guardar";
-  elements.selectionPreview.textContent = "Selecciona un span en la intervención objetivo.";
+  elements.selectionPreview.textContent = "Selecciona un span en el bloque objetivo.";
   elements.selectionPreview.classList.add("empty");
   elements.conceptSelect.value = "";
   elements.proposedConcept.value = "";
@@ -344,7 +446,7 @@ function createAnnotationId() {
 
 function addAnnotation() {
   if (!state.selection) {
-    showToast("Selecciona primero un span en la intervención objetivo.", "error");
+    showToast("Selecciona primero un span en el bloque objetivo.", "error");
     return;
   }
   const conceptValue = elements.conceptSelect.value;
@@ -384,7 +486,7 @@ function addAnnotation() {
   state.annotations.push(annotation);
   state.dirty = true;
   state.selection = null;
-  elements.selectionPreview.textContent = "Selecciona otro span o guarda la intervención.";
+  elements.selectionPreview.textContent = "Selecciona otro span o guarda el bloque.";
   elements.selectionPreview.classList.add("empty");
   elements.conceptSelect.value = "";
   elements.proposedConcept.value = "";
@@ -394,6 +496,7 @@ function addAnnotation() {
   });
   renderConceptDefinition();
   renderAnnotations();
+  renderTargetText();
   updateNoStatementsState();
   window.getSelection()?.removeAllRanges();
 }
@@ -414,11 +517,19 @@ async function saveCurrent(advance) {
   setBusy(button, true, "Guardando…");
   elements.saveState.textContent = "Guardando";
   try {
+    const qualityFlags = [
+      ...elements.qualityFlags.querySelectorAll('input[type="checkbox"]:checked'),
+    ].map((input) => input.value);
     const result = await fetchJSON(
       `/api/sessions/${encodeURIComponent(state.sessionId)}/items/${state.index}`,
       {
         method: "PUT",
-        body: JSON.stringify({ decision, annotations: state.annotations }),
+        body: JSON.stringify({
+          decision,
+          annotations: state.annotations,
+          general_comment: elements.generalComment.value.trim(),
+          quality_flags: qualityFlags,
+        }),
       },
     );
     state.session = result.session;
@@ -472,6 +583,7 @@ async function resumeSession(sessionId, index) {
 async function refreshConfig() {
   state.config = await fetchJSON("/api/config");
   renderCorpusSummary();
+  renderQualityFlagOptions();
   renderSessions(state.config.sessions);
 }
 
@@ -524,6 +636,18 @@ function bindEvents() {
     }
     state.dirty = true;
   });
+  elements.toggleGeneralComment.addEventListener("click", () => {
+    const willOpen = elements.generalCommentPanel.classList.contains("hidden");
+    elements.generalCommentPanel.classList.toggle("hidden", !willOpen);
+    elements.toggleGeneralComment.setAttribute("aria-expanded", String(willOpen));
+    if (willOpen) elements.generalComment.focus();
+  });
+  elements.generalComment.addEventListener("input", () => {
+    state.dirty = true;
+  });
+  elements.qualityFlags.addEventListener("change", () => {
+    state.dirty = true;
+  });
   window.addEventListener("beforeunload", (event) => {
     if (!state.dirty) return;
     event.preventDefault();
@@ -553,6 +677,7 @@ async function initialize() {
     "progress-bar",
     "return-setup",
     "previous-text",
+    "next-text",
     "target-text",
     "item-metadata",
     "previous-item",
@@ -569,6 +694,10 @@ async function initialize() {
     "annotations-list",
     "annotation-count",
     "no-statements",
+    "toggle-general-comment",
+    "general-comment-panel",
+    "quality-flags",
+    "general-comment",
     "codebook-list",
     "toast",
   ].forEach((id) => {

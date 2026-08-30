@@ -48,7 +48,7 @@ class ManualValidationTestCase(unittest.TestCase):
                 "document_uri": "doc-a",
                 "utterance_order": 1,
                 "kind": "participation",
-                "content": "La solidaridad debe mejorar las pensiones.",
+                "content": "La solidaridad debe mejorar las pensiones.\nSí.",
                 "bill_number": "15480-13",
                 "section_name": "Discusión",
                 "is_preamble": False,
@@ -66,14 +66,17 @@ class ManualValidationTestCase(unittest.TestCase):
                 "document_uri": "doc-a",
                 "utterance_order": 2,
                 "kind": "participation",
-                "content": "Rechazo que el ahorro individual pierda su propiedad.",
+                "content": (
+                    "Rechazo que el ahorro individual pierda su propiedad.\n"
+                    "Este párrafo adicional sostiene una segunda razón previsional."
+                ),
                 "bill_number": "15480-13",
                 "section_name": "Discusión",
                 "is_preamble": False,
                 "date": "2024-01-01",
                 "constitutional_stage": "Primer trámite",
                 "title": "Sesión A",
-                "n_words": 8,
+                "n_words": 16,
                 "speaker": "Segundo nombre oculto",
                 "speaker_id": "persona-secreta-2",
                 "current_party": "Otro partido secreto",
@@ -84,7 +87,11 @@ class ManualValidationTestCase(unittest.TestCase):
                 "document_uri": "doc-a",
                 "utterance_order": 3,
                 "kind": "participation",
-                "content": "El costo fiscal debe poder sostenerse durante muchos años. " * 20,
+                "content": (
+                    "El costo fiscal debe poder sostenerse durante muchos años. " * 10
+                    + "\n"
+                    + "La responsabilidad previsional requiere una regla estable y transparente. " * 10
+                ),
                 "bill_number": "15480-13",
                 "section_name": "Discusión",
                 "is_preamble": False,
@@ -138,14 +145,15 @@ class ManualValidationTestCase(unittest.TestCase):
                 "document_uri": "doc-b",
                 "utterance_order": 3,
                 "kind": "participation",
-                "content": "Votación nominal.",
+                "content": "Resultado de la votación nominal registrado por la secretaría.",
                 "bill_number": "15480-13",
                 "section_name": "Votacion",
                 "is_preamble": False,
                 "date": "2025-01-02",
                 "constitutional_stage": "Segundo trámite",
                 "title": "Sesión B",
-                "n_words": 2,
+                "n_words": 9,
+                "analysis_included": False,
             },
             {
                 "utterance_id": "excluded-event",
@@ -230,21 +238,35 @@ class ManualValidationTestCase(unittest.TestCase):
     def _session_payload(self, session_id: str) -> dict:
         return json.loads((self.output_dir / f"{session_id}.json").read_text(encoding="utf-8"))
 
-    def test_corpus_filter_and_previous_context(self) -> None:
-        self.assertEqual(len(self.service.records), 5)
-        by_id = {record["utterance_id"]: record for record in self.service.records}
-        self.assertIsNone(by_id["doc-a-1"]["previous_context"])
+    def test_corpus_builds_short_paragraph_blocks_and_keeps_votes(self) -> None:
+        self.assertEqual(len(self.service.records), 7)
+        self.assertTrue(all(record["n_words"] >= 5 for record in self.service.records))
+        by_id = {record["unit_id"]: record for record in self.service.records}
+        first = by_id["doc-a-1::p0001-p0002"]
+        self.assertIsNone(first["previous_context"])
+        self.assertEqual(first["unit_kind"], "paragraph_block")
+        self.assertEqual(first["paragraph_start"], 1)
+        self.assertEqual(first["paragraph_end"], 2)
+        self.assertEqual(first["block_paragraph_count"], 2)
+        self.assertEqual(len(first["source_segments"]), 2)
         self.assertEqual(
-            by_id["doc-a-2"]["previous_context"]["content"],
-            by_id["doc-a-1"]["content"],
+            first["content"],
+            "La solidaridad debe mejorar las pensiones.\n\nSí.",
         )
-        self.assertIsNone(by_id["doc-b-1"]["previous_context"])
+        self.assertFalse(
+            by_id["doc-a-2::p0001-p0002"]["previous_context"]["same_utterance"]
+        )
+        self.assertTrue(
+            by_id["doc-a-3::p0001"]["next_context"]["same_utterance"]
+        )
+        self.assertIsNone(by_id["doc-b-1::p0001"]["previous_context"])
+        self.assertIn("excluded-vote::p0001", by_id)
 
     def test_stratified_sampling_is_deterministic_and_unique(self) -> None:
         first = sample_records(self.service.records, 4, 77, "stratified")
         second = sample_records(self.service.records, 4, 77, "stratified")
-        first_ids = [item["utterance_id"] for item in first]
-        self.assertEqual(first_ids, [item["utterance_id"] for item in second])
+        first_ids = [item["unit_id"] for item in first]
+        self.assertEqual(first_ids, [item["unit_id"] for item in second])
         self.assertEqual(len(first_ids), len(set(first_ids)))
         self.assertTrue(all("sampling_stratum" in item for item in first))
 
@@ -304,6 +326,8 @@ class ManualValidationTestCase(unittest.TestCase):
                         "selected_at_client": "2026-08-24T12:01:00.000Z",
                     },
                 ],
+                "general_comment": "El bloque combina dos argumentos.",
+                "quality_flags": ["insufficient_context"],
             },
         )
         self.assertEqual(saved["item"]["status"], "completed")
@@ -313,7 +337,14 @@ class ManualValidationTestCase(unittest.TestCase):
         persisted = self._session_payload(session_id)
         item = persisted["items"][0]
         self.assertEqual(persisted["schema_version"], SCHEMA_VERSION)
+        self.assertEqual(persisted["source"]["unit_of_analysis"], "paragraph_block")
+        self.assertEqual(persisted["sampling"]["minimum_words"], 5)
+        self.assertEqual(persisted["sampling"]["short_paragraph_words"], 50)
+        self.assertEqual(persisted["sampling"]["target_block_words"], 100)
+        self.assertEqual(item["unit_kind"], "paragraph_block")
         self.assertEqual(item["revision"], 1)
+        self.assertEqual(item["general_comment"], "El bloque combina dos argumentos.")
+        self.assertEqual(item["quality_flags"], ["insufficient_context"])
         self.assertTrue(item["completed_at_utc"].endswith("Z"))
         self.assertIn("-", item["completed_at_local"])
         self.assertEqual(item["annotations"][0]["span"]["text"], text[:first_end])
@@ -327,9 +358,17 @@ class ManualValidationTestCase(unittest.TestCase):
         summary = self._session()
         session_id = summary["session_id"]
         saved = self.service.save_item(
-            session_id, 0, {"decision": "no_statements", "annotations": []}
+            session_id,
+            0,
+            {
+                "decision": "no_statements",
+                "annotations": [],
+                "general_comment": "Registro de votación sin discurso sustantivo.",
+                "quality_flags": ["vote", "procedural"],
+            },
         )
         self.assertEqual(saved["item"]["decision"], "no_statements")
+        self.assertEqual(saved["item"]["quality_flags"], ["vote", "procedural"])
         text = self.service.open_item(session_id, 1)["item"]["target_text"]
         with self.assertRaisesRegex(ValidationError, "no coincide exactamente"):
             self.service.save_item(
@@ -361,7 +400,11 @@ class ManualValidationTestCase(unittest.TestCase):
                 self.assertIn(
                     "default-src", response.headers.get("Content-Security-Policy", "")
                 )
-            self.assertEqual(config["corpus"]["available_interventions"], 5)
+            self.assertEqual(config["corpus"]["available_units"], 7)
+            self.assertEqual(config["corpus"]["minimum_words"], 5)
+            self.assertEqual(config["corpus"]["short_paragraph_words"], 50)
+            self.assertEqual(config["corpus"]["target_block_words"], 100)
+            self.assertIn({"id": "vote", "label": "Voto"}, config["quality_flags"])
 
             request = urllib.request.Request(
                 f"{base_url}/api/sessions",
@@ -386,6 +429,19 @@ class ManualValidationTestCase(unittest.TestCase):
             server.shutdown()
             server.server_close()
             thread.join(timeout=5)
+
+    def test_static_ui_includes_adjacent_context_and_coded_highlight(self) -> None:
+        html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+        javascript = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+        styles = (STATIC_DIR / "styles.css").read_text(encoding="utf-8")
+        self.assertIn('id="next-text"', html)
+        self.assertIn('id="general-comment"', html)
+        self.assertIn('id="quality-flags"', html)
+        self.assertIn("function renderTargetText()", javascript)
+        self.assertIn("quality_flags: qualityFlags", javascript)
+        self.assertIn('highlight.className = "coded-highlight"', javascript)
+        self.assertIn(".coded-highlight", styles)
+        self.assertIn("#fde68a", styles)
 
 
 if __name__ == "__main__":

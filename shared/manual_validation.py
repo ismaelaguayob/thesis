@@ -27,13 +27,25 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 
-SCHEMA_VERSION = "manual-validation-1.0.0"
+SCHEMA_VERSION = "manual-validation-2.1.0"
 DEFAULT_TIMEZONE = "America/Santiago"
+DEFAULT_MIN_WORDS = 5
+DEFAULT_SHORT_PARAGRAPH_WORDS = 50
+DEFAULT_TARGET_BLOCK_WORDS = 100
 SESSION_ID_RE = re.compile(r"^validation_\d{8}T\d{12}Z_[0-9a-f]{8}$")
 ALLOWED_STANCES = {"support", "oppose"}
 ALLOWED_CONCEPT_STATUSES = {"in_codebook", "review"}
 ALLOWED_DECISIONS = {"statements", "no_statements"}
 ALLOWED_STRATEGIES = {"stratified", "random"}
+QUALITY_FLAGS = {
+    "vote": "Voto",
+    "procedural": "Procedimental",
+    "too_short": "Texto demasiado breve",
+    "truncated": "Texto truncado",
+    "insufficient_context": "Contexto insuficiente",
+    "segmentation_problem": "Problema de segmentación",
+    "other": "Otro problema",
+}
 MAX_REQUEST_BYTES = 2_000_000
 
 
@@ -163,7 +175,117 @@ def _length_bin(words: int) -> str:
     return "long_501_plus"
 
 
-def load_corpus_records(source_path: Path, bill_number: str) -> list[dict[str, Any]]:
+WORD_RE = re.compile(r"[^\W_]+(?:[-’'][^\W_]+)*", re.UNICODE)
+PARAGRAPH_RE = re.compile(r"[^\r\n]+")
+
+
+def _count_words(text: str) -> int:
+    return len(WORD_RE.findall(text))
+
+
+def _paragraphs(text: str) -> list[dict[str, Any]]:
+    """Split an intervention on transcript line breaks and preserve source offsets."""
+    paragraphs: list[dict[str, Any]] = []
+    for match in PARAGRAPH_RE.finditer(text):
+        raw = match.group(0)
+        content = raw.strip()
+        if not content:
+            continue
+        left_trim = len(raw) - len(raw.lstrip())
+        start_char = match.start() + left_trim
+        paragraphs.append(
+            {
+                "content": content,
+                "source_start_char": start_char,
+                "source_end_char": start_char + len(content),
+                "n_words": _count_words(content),
+            }
+        )
+    return paragraphs
+
+
+def _merge_paragraphs(paragraphs: list[dict[str, Any]]) -> dict[str, Any]:
+    content = "\n\n".join(paragraph["content"] for paragraph in paragraphs)
+    return {
+        "_members": paragraphs,
+        "content": content,
+        "content_sha256": sha256_text(content),
+        "source_start_char": paragraphs[0]["source_start_char"],
+        "source_end_char": paragraphs[-1]["source_end_char"],
+        "paragraph_start": paragraphs[0]["paragraph_number"],
+        "paragraph_end": paragraphs[-1]["paragraph_number"],
+        "block_paragraph_count": len(paragraphs),
+        "n_words": sum(paragraph["n_words"] for paragraph in paragraphs),
+        "source_segments": [
+            {
+                "paragraph_number": paragraph["paragraph_number"],
+                "source_start_char": paragraph["source_start_char"],
+                "source_end_char": paragraph["source_end_char"],
+                "n_words": paragraph["n_words"],
+                "content_sha256": sha256_text(paragraph["content"]),
+            }
+            for paragraph in paragraphs
+        ],
+    }
+
+
+def _paragraph_blocks(
+    paragraphs: list[dict[str, Any]],
+    short_paragraph_words: int,
+    target_block_words: int,
+) -> list[dict[str, Any]]:
+    """Join a short paragraph with following paragraphs from the same utterance."""
+    blocks: list[dict[str, Any]] = []
+    index = 0
+    while index < len(paragraphs):
+        members = [paragraphs[index]]
+        total_words = paragraphs[index]["n_words"]
+        index += 1
+        if total_words < short_paragraph_words:
+            while index < len(paragraphs) and total_words < target_block_words:
+                members.append(paragraphs[index])
+                total_words += paragraphs[index]["n_words"]
+                index += 1
+        blocks.append(_merge_paragraphs(members))
+
+    if len(blocks) > 1 and blocks[-1]["n_words"] < short_paragraph_words:
+        trailing = blocks.pop()
+        previous = blocks.pop()
+        blocks.append(_merge_paragraphs(previous["_members"] + trailing["_members"]))
+    return blocks
+
+
+def _context_record(record: dict[str, Any], target: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "unit_id": record["unit_id"],
+        "utterance_id": record["utterance_id"],
+        "paragraph_number": record["paragraph_number"],
+        "paragraph_start": record["paragraph_start"],
+        "paragraph_end": record["paragraph_end"],
+        "block_paragraph_count": record["block_paragraph_count"],
+        "paragraph_count": record["paragraph_count"],
+        "content": record["content"],
+        "content_sha256": record["content_sha256"],
+        "same_utterance": record["utterance_id"] == target["utterance_id"],
+    }
+
+
+def load_corpus_records(
+    source_path: Path,
+    bill_number: str,
+    min_words: int = DEFAULT_MIN_WORDS,
+    short_paragraph_words: int = DEFAULT_SHORT_PARAGRAPH_WORDS,
+    target_block_words: int = DEFAULT_TARGET_BLOCK_WORDS,
+) -> list[dict[str, Any]]:
+    """Build paragraph blocks and attach adjacent blocks as context."""
+    if min_words < 1:
+        raise ValidationError("El mínimo de palabras debe ser mayor que cero")
+    if short_paragraph_words < 1:
+        raise ValidationError("El umbral de párrafo breve debe ser mayor que cero")
+    if target_block_words < short_paragraph_words:
+        raise ValidationError(
+            "El objetivo del bloque debe ser igual o mayor que el umbral de párrafo breve"
+        )
     if not source_path.exists():
         raise FileNotFoundError(f"No existe el corpus: {source_path}")
     dataframe = pd.read_parquet(source_path)
@@ -182,9 +304,12 @@ def load_corpus_records(source_path: Path, bill_number: str) -> list[dict[str, A
     if "bill_number" in dataframe.columns:
         mask &= dataframe["bill_number"].astype(str).eq(bill_number)
     if "analysis_included" in dataframe.columns:
-        mask &= dataframe["analysis_included"].fillna(False).astype(bool)
-    if "section_name" in dataframe.columns:
-        mask &= ~dataframe["section_name"].fillna("").astype(str).str.casefold().eq("votacion")
+        analysis_included = dataframe["analysis_included"].fillna(False).astype(bool)
+        if "section_name" in dataframe.columns:
+            section_names = dataframe["section_name"].fillna("").astype(str).str.casefold()
+            is_voting_section = section_names.isin({"votacion", "votación"})
+            analysis_included |= is_voting_section
+        mask &= analysis_included
     if "is_preamble" in dataframe.columns:
         mask &= ~dataframe["is_preamble"].fillna(False).astype(bool)
     filtered = dataframe.loc[mask].copy()
@@ -203,36 +328,75 @@ def load_corpus_records(source_path: Path, bill_number: str) -> list[dict[str, A
 
     records: list[dict[str, Any]] = []
     for _, group in filtered.groupby("_document_sort", sort=False, dropna=False):
-        previous: dict[str, Any] | None = None
+        document_blocks: list[dict[str, Any]] = []
         for _, row in group.iterrows():
             content = _text(row.get("content"))
             n_words_value = _clean_scalar(row.get("n_words"))
             try:
-                n_words = int(n_words_value) if n_words_value is not None else len(content.split())
+                intervention_n_words = (
+                    int(n_words_value) if n_words_value is not None else _count_words(content)
+                )
             except (TypeError, ValueError):
-                n_words = len(content.split())
-            record = {
-                "utterance_id": _text(row.get("utterance_id")),
-                "document_uri": _text(row.get("document_uri")),
-                "utterance_order": _clean_scalar(row.get("utterance_order")),
-                "date": _text(row.get("date")),
-                "constitutional_stage": _text(row.get("constitutional_stage")),
-                "title": _text(row.get("title")),
-                "content": content,
-                "content_sha256": sha256_text(content),
-                "n_words": n_words,
-                "length_bin": _length_bin(n_words),
-                "previous_context": None,
-            }
-            if previous is not None:
-                record["previous_context"] = {
-                    "utterance_id": previous["utterance_id"],
-                    "utterance_order": previous["utterance_order"],
-                    "content": previous["content"],
-                    "content_sha256": previous["content_sha256"],
-                }
-            records.append(record)
-            previous = record
+                intervention_n_words = _count_words(content)
+            paragraphs = _paragraphs(content)
+            utterance_id = _text(row.get("utterance_id"))
+            for paragraph_index, paragraph in enumerate(paragraphs, start=1):
+                paragraph["paragraph_number"] = paragraph_index
+            blocks = _paragraph_blocks(
+                paragraphs,
+                short_paragraph_words=short_paragraph_words,
+                target_block_words=target_block_words,
+            )
+            for block in blocks:
+                paragraph_start = block["paragraph_start"]
+                paragraph_end = block["paragraph_end"]
+                unit_suffix = (
+                    f"p{paragraph_start:04d}"
+                    if paragraph_start == paragraph_end
+                    else f"p{paragraph_start:04d}-p{paragraph_end:04d}"
+                )
+                document_blocks.append(
+                    {
+                        "unit_id": f"{utterance_id}::{unit_suffix}",
+                        "unit_kind": "paragraph_block",
+                        "utterance_id": utterance_id,
+                        "document_uri": _text(row.get("document_uri")),
+                        "utterance_order": _clean_scalar(row.get("utterance_order")),
+                        "paragraph_number": paragraph_start,
+                        "paragraph_start": paragraph_start,
+                        "paragraph_end": paragraph_end,
+                        "block_paragraph_count": block["block_paragraph_count"],
+                        "paragraph_count": len(paragraphs),
+                        "source_start_char": block["source_start_char"],
+                        "source_end_char": block["source_end_char"],
+                        "source_segments": block["source_segments"],
+                        "source_utterance_n_words": intervention_n_words,
+                        "date": _text(row.get("date")),
+                        "constitutional_stage": _text(row.get("constitutional_stage")),
+                        "title": _text(row.get("title")),
+                        "content": block["content"],
+                        "content_sha256": block["content_sha256"],
+                        "n_words": block["n_words"],
+                        "length_bin": _length_bin(block["n_words"]),
+                        "previous_context": None,
+                        "next_context": None,
+                    }
+                )
+        for index, record in enumerate(document_blocks):
+            if index > 0:
+                record["previous_context"] = _context_record(
+                    document_blocks[index - 1], record
+                )
+            if index + 1 < len(document_blocks):
+                record["next_context"] = _context_record(
+                    document_blocks[index + 1], record
+                )
+            if record["n_words"] >= min_words:
+                records.append(record)
+    if not records:
+        raise ValidationError(
+            f"El filtro no produjo bloques de al menos {min_words} palabras"
+        )
     return records
 
 
@@ -248,7 +412,7 @@ def sample_records(
         raise ValidationError("El tamaño de muestra debe ser mayor que cero")
     if sample_size > len(records):
         raise ValidationError(
-            f"El tamaño solicitado ({sample_size}) supera las {len(records)} intervenciones disponibles"
+            f"El tamaño solicitado ({sample_size}) supera las {len(records)} unidades disponibles"
         )
     rng = random.Random(seed)
     if strategy == "random":
@@ -293,14 +457,26 @@ class ValidationService:
         output_dir: Path,
         bill_number: str = "15480-13",
         timezone_name: str = DEFAULT_TIMEZONE,
+        min_words: int = DEFAULT_MIN_WORDS,
+        short_paragraph_words: int = DEFAULT_SHORT_PARAGRAPH_WORDS,
+        target_block_words: int = DEFAULT_TARGET_BLOCK_WORDS,
     ) -> None:
         self.source_path = source_path.resolve()
         self.codebook_path = codebook_path.resolve()
         self.output_dir = output_dir.resolve()
         self.bill_number = bill_number
         self.timezone_name = timezone_name
+        self.min_words = min_words
+        self.short_paragraph_words = short_paragraph_words
+        self.target_block_words = target_block_words
         self.codebook = load_codebook(self.codebook_path)
-        self.records = load_corpus_records(self.source_path, bill_number)
+        self.records = load_corpus_records(
+            self.source_path,
+            bill_number,
+            min_words,
+            short_paragraph_words,
+            target_block_words,
+        )
         self.source_sha256 = sha256_file(self.source_path)
         self.codebook_sha256 = sha256_file(self.codebook_path)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -321,13 +497,32 @@ class ValidationService:
             "corpus": {
                 "path": str(self.source_path),
                 "sha256": self.source_sha256,
-                "available_interventions": len(self.records),
+                "unit_of_analysis": "paragraph_block",
+                "minimum_words": self.min_words,
+                "short_paragraph_words": self.short_paragraph_words,
+                "target_block_words": self.target_block_words,
+                "available_units": len(self.records),
+                "available_paragraph_blocks": len(self.records),
+                "source_interventions": len(
+                    {record["utterance_id"] for record in self.records}
+                ),
                 "by_document": dict(sorted(by_document.items())),
                 "by_length_bin": dict(sorted(by_length.items())),
             },
             "codebook": self.codebook,
+            "quality_flags": [
+                {"id": flag_id, "label": label}
+                for flag_id, label in QUALITY_FLAGS.items()
+            ],
             "sessions": self.list_sessions(),
-            "defaults": {"sample_size": 40, "seed": 20260824, "strategy": "stratified"},
+            "defaults": {
+                "sample_size": 40,
+                "seed": 20260824,
+                "strategy": "stratified",
+                "minimum_words": self.min_words,
+                "short_paragraph_words": self.short_paragraph_words,
+                "target_block_words": self.target_block_words,
+            },
         }
 
     def _session_path(self, session_id: str) -> Path:
@@ -400,9 +595,20 @@ class ValidationService:
             items.append(
                 {
                     "sample_index": index,
+                    "unit_id": record["unit_id"],
+                    "unit_kind": record["unit_kind"],
                     "utterance_id": record["utterance_id"],
                     "document_uri": record["document_uri"],
                     "utterance_order": record["utterance_order"],
+                    "paragraph_number": record["paragraph_number"],
+                    "paragraph_start": record["paragraph_start"],
+                    "paragraph_end": record["paragraph_end"],
+                    "block_paragraph_count": record["block_paragraph_count"],
+                    "paragraph_count": record["paragraph_count"],
+                    "source_start_char": record["source_start_char"],
+                    "source_end_char": record["source_end_char"],
+                    "source_segments": record["source_segments"],
+                    "source_utterance_n_words": record["source_utterance_n_words"],
                     "date": record["date"],
                     "constitutional_stage": record["constitutional_stage"],
                     "title": record["title"],
@@ -412,9 +618,12 @@ class ValidationService:
                     "target_text": record["content"],
                     "target_text_sha256": record["content_sha256"],
                     "previous_context": record["previous_context"],
+                    "next_context": record["next_context"],
                     "status": "pending",
                     "decision": None,
                     "annotations": [],
+                    "general_comment": None,
+                    "quality_flags": [],
                     "revision": 0,
                     "first_opened_at_utc": None,
                     "first_opened_at_local": None,
@@ -439,7 +648,11 @@ class ValidationService:
             "source": {
                 "path": str(self.source_path),
                 "sha256": self.source_sha256,
-                "available_interventions": len(self.records),
+                "unit_of_analysis": "paragraph_block",
+                "minimum_words": self.min_words,
+                "short_paragraph_words": self.short_paragraph_words,
+                "target_block_words": self.target_block_words,
+                "available_units": len(self.records),
             },
             "codebook": {
                 **self.codebook,
@@ -451,6 +664,10 @@ class ValidationService:
                 "seed": seed,
                 "requested_size": sample_size,
                 "actual_size": len(items),
+                "unit_of_analysis": "paragraph_block",
+                "minimum_words": self.min_words,
+                "short_paragraph_words": self.short_paragraph_words,
+                "target_block_words": self.target_block_words,
                 "strata": ["document_uri", "length_bin"] if strategy == "stratified" else [],
             },
             "items": items,
@@ -465,7 +682,7 @@ class ValidationService:
         session = self._load_session(session_id)
         items = session["items"]
         if index < 0 or index >= len(items):
-            raise ValidationError("Índice de intervención fuera de rango")
+            raise ValidationError("Índice de unidad fuera de rango")
         item = items[index]
         timestamps = timestamp_pair(self.timezone_name)
         if item.get("first_opened_at_utc") is None:
@@ -476,18 +693,37 @@ class ValidationService:
         self._save_session(session)
         public_item = {
             "sample_index": item["sample_index"],
+            "unit_id": item.get("unit_id", item.get("utterance_id", "")),
+            "unit_kind": item.get("unit_kind", "intervention"),
             "date": item["date"],
             "constitutional_stage": item["constitutional_stage"],
             "title": item["title"],
             "n_words": item["n_words"],
+            "paragraph_number": item.get("paragraph_number"),
+            "paragraph_start": item.get("paragraph_start", item.get("paragraph_number")),
+            "paragraph_end": item.get("paragraph_end", item.get("paragraph_number")),
+            "block_paragraph_count": item.get("block_paragraph_count", 1),
+            "paragraph_count": item.get("paragraph_count"),
             "target_text": item["target_text"],
             "previous_text": (
                 item["previous_context"]["content"] if item.get("previous_context") else ""
             ),
             "has_previous": item.get("previous_context") is not None,
+            "previous_same_utterance": bool(
+                (item.get("previous_context") or {}).get("same_utterance")
+            ),
+            "next_text": (
+                item["next_context"]["content"] if item.get("next_context") else ""
+            ),
+            "has_next": item.get("next_context") is not None,
+            "next_same_utterance": bool(
+                (item.get("next_context") or {}).get("same_utterance")
+            ),
             "status": item["status"],
             "decision": item["decision"],
             "annotations": item["annotations"],
+            "general_comment": item.get("general_comment"),
+            "quality_flags": item.get("quality_flags", []),
             "revision": item["revision"],
         }
         return {
@@ -516,7 +752,7 @@ class ValidationService:
         except (TypeError, ValueError) as exc:
             raise ValidationError("Los offsets del span deben ser números enteros") from exc
         if start_char < 0 or end_char <= start_char or end_char > len(target_text):
-            raise ValidationError("El span está fuera de los límites de la intervención")
+            raise ValidationError("El span está fuera de los límites del bloque")
         evidence_text = _text(raw.get("evidence_text"))
         exact = target_text[start_char:end_char]
         if evidence_text != exact:
@@ -572,7 +808,7 @@ class ValidationService:
         session = self._load_session(session_id)
         items = session["items"]
         if index < 0 or index >= len(items):
-            raise ValidationError("Índice de intervención fuera de rango")
+            raise ValidationError("Índice de unidad fuera de rango")
         item = items[index]
         decision = _limited_text(payload.get("decision"), "decision", 30)
         if decision not in ALLOWED_DECISIONS:
@@ -581,11 +817,27 @@ class ValidationService:
         if not isinstance(raw_annotations, list):
             raise ValidationError("annotations debe ser una lista")
         if len(raw_annotations) > 50:
-            raise ValidationError("Una intervención no puede superar 50 declaraciones")
+            raise ValidationError("Un bloque no puede superar 50 declaraciones")
         if decision == "no_statements" and raw_annotations:
-            raise ValidationError("Una intervención sin declaraciones no puede incluir spans")
+            raise ValidationError("Un bloque sin declaraciones no puede incluir spans")
         if decision == "statements" and not raw_annotations:
             raise ValidationError("Agregue al menos una declaración")
+
+        raw_quality_flags = payload.get("quality_flags", [])
+        if not isinstance(raw_quality_flags, list):
+            raise ValidationError("quality_flags debe ser una lista")
+        if len(raw_quality_flags) > len(QUALITY_FLAGS):
+            raise ValidationError("Se recibieron demasiadas flags de calidad")
+        quality_flags: list[str] = []
+        for raw_flag in raw_quality_flags:
+            flag = _limited_text(raw_flag, "quality_flags", 60)
+            if flag not in QUALITY_FLAGS:
+                raise ValidationError(f"Flag de calidad inválida: {flag}")
+            if flag not in quality_flags:
+                quality_flags.append(flag)
+        general_comment = _limited_text(
+            payload.get("general_comment", ""), "general_comment", 4000
+        )
 
         concept_ids = {
             str(concept["id"]) for concept in session.get("codebook", {}).get("concepts", [])
@@ -604,6 +856,8 @@ class ValidationService:
         timestamps = timestamp_pair(self.timezone_name)
         item["decision"] = decision
         item["annotations"] = normalized
+        item["general_comment"] = general_comment or None
+        item["quality_flags"] = quality_flags
         item["status"] = "completed"
         item["revision"] = int(item.get("revision", 0)) + 1
         item["updated_at_utc"] = timestamps["utc"]
@@ -686,7 +940,7 @@ class ValidationRequestHandler(BaseHTTPRequestHandler):
         try:
             return int(value)
         except ValueError as exc:
-            raise ValidationError("El índice de intervención debe ser un número entero") from exc
+            raise ValidationError("El índice de unidad debe ser un número entero") from exc
 
     def _handle_error(self, exc: Exception) -> None:
         if isinstance(exc, ValidationError):
