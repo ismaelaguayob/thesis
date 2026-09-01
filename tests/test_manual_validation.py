@@ -14,6 +14,8 @@ from features.manual_validation.service import (
     SCHEMA_VERSION,
     ValidationError,
     ValidationService,
+    _paragraph_blocks,
+    _paragraphs,
     create_server,
     sample_records,
 )
@@ -241,6 +243,7 @@ class ManualValidationTestCase(unittest.TestCase):
     def test_corpus_builds_short_paragraph_blocks_and_keeps_votes(self) -> None:
         self.assertEqual(len(self.service.records), 7)
         self.assertTrue(all(record["n_words"] >= 5 for record in self.service.records))
+        self.assertTrue(all(record["n_words"] <= 150 for record in self.service.records))
         by_id = {record["unit_id"]: record for record in self.service.records}
         first = by_id["doc-a-1::p0001-p0002"]
         self.assertIsNone(first["previous_context"])
@@ -261,6 +264,43 @@ class ManualValidationTestCase(unittest.TestCase):
         )
         self.assertIsNone(by_id["doc-b-1::p0001"]["previous_context"])
         self.assertIn("excluded-vote::p0001", by_id)
+
+    def test_chunking_prefers_previous_context_and_enforces_strict_maximum(self) -> None:
+        text = "\n".join(
+            " ".join([f"p{paragraph_number}"] * words)
+            for paragraph_number, words in enumerate([60, 35, 17, 147, 34], start=1)
+        )
+        paragraphs = _paragraphs(text)
+        for paragraph_number, paragraph in enumerate(paragraphs, start=1):
+            paragraph["paragraph_number"] = paragraph_number
+        blocks = _paragraph_blocks(
+            paragraphs,
+            short_paragraph_words=50,
+            target_block_words=100,
+            max_block_words=150,
+        )
+        self.assertEqual([block["n_words"] for block in blocks], [112, 147, 34])
+        self.assertEqual(blocks[0]["paragraph_start"], 1)
+        self.assertEqual(blocks[0]["paragraph_end"], 3)
+        self.assertTrue(all(block["n_words"] <= 150 for block in blocks))
+
+        long_paragraph = _paragraphs(" ".join(["palabra"] * 320))
+        long_paragraph[0]["paragraph_number"] = 1
+        split_blocks = _paragraph_blocks(
+            long_paragraph,
+            short_paragraph_words=50,
+            target_block_words=100,
+            max_block_words=150,
+        )
+        self.assertEqual(sum(block["n_words"] for block in split_blocks), 320)
+        self.assertTrue(all(block["n_words"] <= 150 for block in split_blocks))
+        self.assertTrue(
+            all(
+                segment["paragraph_segment_count"] == len(split_blocks)
+                for block in split_blocks
+                for segment in block["source_segments"]
+            )
+        )
 
     def test_stratified_sampling_is_deterministic_and_unique(self) -> None:
         first = sample_records(self.service.records, 4, 77, "stratified")
@@ -341,6 +381,7 @@ class ManualValidationTestCase(unittest.TestCase):
         self.assertEqual(persisted["sampling"]["minimum_words"], 5)
         self.assertEqual(persisted["sampling"]["short_paragraph_words"], 50)
         self.assertEqual(persisted["sampling"]["target_block_words"], 100)
+        self.assertEqual(persisted["sampling"]["max_block_words"], 150)
         self.assertEqual(item["unit_kind"], "paragraph_block")
         self.assertEqual(item["revision"], 1)
         self.assertEqual(item["general_comment"], "El bloque combina dos argumentos.")
@@ -404,6 +445,7 @@ class ManualValidationTestCase(unittest.TestCase):
             self.assertEqual(config["corpus"]["minimum_words"], 5)
             self.assertEqual(config["corpus"]["short_paragraph_words"], 50)
             self.assertEqual(config["corpus"]["target_block_words"], 100)
+            self.assertEqual(config["corpus"]["max_block_words"], 150)
             self.assertIn({"id": "vote", "label": "Voto"}, config["quality_flags"])
 
             request = urllib.request.Request(
@@ -442,6 +484,7 @@ class ManualValidationTestCase(unittest.TestCase):
         self.assertIn('highlight.className = "coded-highlight"', javascript)
         self.assertIn(".coded-highlight", styles)
         self.assertIn("#fde68a", styles)
+        self.assertIn("máximo estricto", javascript)
 
 
 if __name__ == "__main__":

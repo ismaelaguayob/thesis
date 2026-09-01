@@ -1,10 +1,10 @@
-# Decisiones teóricas y operacionales del libro de códigos v0.3.0
+# Decisiones teóricas y operacionales del libro de códigos v0.3.0–v0.4.0
 
 ## Objeto de codificación
 
 La versión 0.2 adopta la variante de análisis de redes discursivas orientada a *discourse coalitions*. Leifeld distingue esta estrategia de la operacionalización de *advocacy coalitions*. La segunda codifica posiciones sobre instrumentos de política; la primera codifica justificaciones o narrativas utilizadas para sostener una posición respecto de un asunto [@leifeld_discourse_2017]. En consecuencia, el libro incluye razones normativas y excluye preferencias instrumentales que carecen de una justificación expresada.
 
-La unidad empírica sigue siendo una declaración contenida en el bloque objetivo. El bloque reúne uno o más párrafos de una misma intervención cuando el primero tiene menos de 50 palabras. En ese caso se agregan párrafos siguientes hasta alcanzar 100 palabras o terminar la intervención. Los bloques anterior y siguiente permiten identificar la conclusión política a la que se aplica la razón. La selección anotada debe contener la justificación. Por ejemplo, una petición de aumentar una pensión carece por sí misma de criterio codificable. La referencia a privación material permite codificar necesidad; una apelación al derecho de todas las personas permite codificar igualdad o universalismo.
+La unidad empírica sigue siendo una declaración contenida en el bloque objetivo. Los párrafos con menos de 50 palabras se agregan preferentemente al bloque anterior o, cuando no es posible, se acumulan hacia un objetivo de 100 palabras. Ningún bloque puede superar 150 palabras. Los párrafos que exceden ese máximo se dividen por oraciones y, solo como último recurso, por palabras. Los bloques anterior y siguiente permiten identificar la conclusión política a la que se aplica la razón. La selección anotada debe contener la justificación. Por ejemplo, una petición de aumentar una pensión carece por sí misma de criterio codificable. La referencia a privación material permite codificar necesidad; una apelación al derecho de todas las personas permite codificar igualdad o universalismo.
 
 ## Integración de CARIN y los criterios contextuales
 
@@ -22,7 +22,9 @@ La codificación múltiple está permitida. Una propuesta universal puede invoca
 
 `capitalizacion_individual` se reincorpora con un alcance acotado y codifica la regla según la cual las cotizaciones ingresan a cuentas individuales para financiar la pensión de su titular. Incluye defensas del destino individual de todas o la mayor parte de las cotizaciones, afirmaciones de que cada persona debe financiar su propia pensión mediante ahorro previsional y críticas explícitas a ese arreglo porque produce pensiones insuficientes o reproduce desigualdades. La mención descriptiva al sistema AFP continúa fuera del código.
 
-La función de la afirmación establece la frontera con reciprocidad contributiva: capitalización individual responde qué ocurre con las cotizaciones y quién financia la pensión; reciprocidad define qué beneficio, cuantía o prioridad se justifica por aportes o trabajo previos. Por ello, el destino del aporte en la cuenta propia corresponde a capitalización, mientras la relación entre mayor cotización y mayor beneficio corresponde a reciprocidad. Ambas pueden coexistir cuando el texto formula las dos reglas.
+La función de la afirmación establece la frontera con reciprocidad contributiva: capitalización individual responde qué ocurre con las cotizaciones y quién financia la pensión; reciprocidad identifica el título moral que el trabajo, las cotizaciones o el esfuerzo contributivo generan sobre recursos, beneficios o protección. Por ello, el destino del aporte en la cuenta propia corresponde a capitalización cuando se formula solo como regla institucional. La relación entre mayor cotización y mayor beneficio, así como la afirmación de que el esfuerzo permite merecer, conservar o controlar recursos, corresponde a reciprocidad. Ambas pueden coexistir cuando el texto formula la regla institucional y su fundamento de merecimiento.
+
+La ampliación de reciprocidad en la v0.4.0 responde a la segunda validación manual. La definición anterior se restringía demasiado a cuantía, prioridad y acceso, y dejaba fuera frases como “no es justo hacer solidaridad con el esfuerzo de los trabajadores”. En ese caso, el esfuerzo contributivo genera una pretensión moral sobre el destino de los aportes. No se trata de control, porque el argumento no atribuye la necesidad previsional a una conducta voluntaria; tampoco se reduce a propiedad, porque no depende de una titularidad jurídica, heredabilidad o expropiación.
 
 Propiedad individual de los fondos permanece como concepto específico. Su vínculo con *entitlement* se registra como una inferencia del estudio. Hülle et al. definen *entitlement* como asignación basada en características adscritas o en un estatus adquirido previamente [@hulle_measuring_2018]. El saldo acumulado puede interpretarse como un estatus adquirido que fundamenta un título sobre los recursos. La v0.3 conserva el concepto empírico y posterga su agregación bajo una familia general de *entitlement*.
 
@@ -40,6 +42,14 @@ Las comisiones se integran en este código cuando se califican como abusivas, ex
 
 La v0.3.0 no incorpora un código de progresividad tributaria. El caso observado es poco frecuente y puede conservarse mediante nota o `Revisar` si vuelve a aparecer. Esta decisión evita ampliar igualdad o universalismo a una regla de distribución de cargas que todavía carece de recurrencia empírica.
 
+## Acuerdos y moderación democrática
+
+La segunda validación manual produjo tres candidatos convergentes: valoración de la política de los acuerdos, llamado a la moderación frente a un camino refundacional y rechazo de los extremos a favor de una solución mixta. La recurrencia y una frontera operacional distinguible justifican incorporar `acuerdos_moderacion` en la v0.4.0.
+
+El código registra la proposición de que los acuerdos amplios, el compromiso entre posiciones contrapuestas y la moderación otorgan valor o legitimidad democrática a una reforma previsional. Incluye defensas de soluciones imperfectas o mixtas cuando su valor procede del compromiso alcanzado y refutaciones explícitas de esa proposición. Excluye menciones descriptivas de negociaciones, llamados procedimentales y defensas puramente técnicas de un sistema mixto.
+
+La apelación a las preferencias ciudadanas mantiene una frontera separada. Preguntar a la ciudadanía, respetar una mayoría o permitir que cada trabajador decida puede expresar responsividad democrática o autonomía, pero no necesariamente un acuerdo entre posiciones contrapuestas. Estos casos continuarán en `Revisar` hasta comprobar su recurrencia y alcance.
+
 ## Ineficiencia estatal como justificación normativa
 
 `ineficiencia_estado` combina una premisa cognitiva con una consecuencia normativa. La premisa atribuye al Estado incapacidad, ineficiencia, uso político, apropiación, dilapidación o riesgo de pérdida. La consecuencia afirma que el resguardo legítimo de las cotizaciones exige limitar o rechazar la administración estatal. El código incluye también refutaciones explícitas, como la defensa de una gestión pública profesional, transparente o segura; la orientación registra si el actor afirma o rechaza la proposición ancla.
@@ -54,4 +64,4 @@ Los votos, asistencias y pasajes procedimentales permanecen en la muestra cuando
 
 ## Preguntas para la siguiente iteración
 
-La siguiente ronda permitirá evaluar si igualdad y universalismo requieren códigos separados y si las premisas cognitivas recurrentes justifican una capa adicional vinculada con los conceptos normativos. También permitirá comprobar la frontera entre capitalización y reciprocidad, la amplitud de previsión como mercado, la aplicación de conciencia de costos sin cuantificación y la recurrencia de la ilegitimidad del origen dictatorial.
+La siguiente ronda permitirá evaluar si igualdad y universalismo requieren códigos separados y si las premisas cognitivas recurrentes justifican una capa adicional vinculada con los conceptos normativos. También permitirá comprobar la nueva frontera entre capitalización y reciprocidad, la distinción entre acuerdos y responsividad democrática, la amplitud de previsión como mercado y la aplicación de conciencia de costos cuando el actor reconoce una restricción pero propone financiarla en vez de reducir la reforma.

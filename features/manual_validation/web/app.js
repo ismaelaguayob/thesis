@@ -83,7 +83,7 @@ function renderCorpusSummary() {
   const codebook = state.config.codebook;
   elements.corpusSummary.textContent = [
     `${corpus.available_units} bloques disponibles`,
-    `párrafos < ${corpus.short_paragraph_words} palabras se acumulan hasta ${corpus.target_block_words}`,
+    `párrafos < ${corpus.short_paragraph_words} palabras se acumulan hacia ${corpus.target_block_words}; máximo estricto ${corpus.max_block_words}`,
     `boletín ${state.config.bill_number}`,
     `${codebook.concepts.length} conceptos`,
     `libro ${codebook.version}`,

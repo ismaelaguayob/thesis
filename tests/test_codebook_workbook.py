@@ -81,6 +81,30 @@ class CodebookWorkbookTestCase(unittest.TestCase):
             any("capitalización individual" in criterion for criterion in reciprocity["exclude"])
         )
 
+    def test_v03_xlsx_is_the_exact_source_of_the_generated_json(self) -> None:
+        workbook = PROJECT_ROOT / "data" / "codebook" / "codebook_v0.3.xlsx"
+        generated_json = PROJECT_ROOT / "data" / "codebook" / "codebook_v0.3.json"
+        expected = read_codebook_workbook(workbook)
+        actual = json.loads(generated_json.read_text(encoding="utf-8"))
+        self.assertEqual(expected, actual)
+        self.assertEqual(expected["version"], "0.4.0-pilot")
+        self.assertEqual(len(expected["concepts"]), 14)
+        concepts = {concept["id"]: concept for concept in expected["concepts"]}
+        self.assertIn("acuerdos_moderacion", concepts)
+        self.assertIn("título moral", concepts["reciprocidad_contributiva"]["definition"])
+        self.assertTrue(
+            any(
+                "controlar" in criterion
+                for criterion in concepts["reciprocidad_contributiva"]["include"]
+            )
+        )
+        self.assertTrue(
+            any(
+                "preferencias ciudadanas" in criterion
+                for criterion in concepts["acuerdos_moderacion"]["exclude"]
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

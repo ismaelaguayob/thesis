@@ -14,6 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from features.manual_validation.codebook_workbook import write_codebook_json  # noqa: E402
 from features.manual_validation.service import (  # noqa: E402
+    DEFAULT_MAX_BLOCK_WORDS,
     DEFAULT_MIN_WORDS,
     DEFAULT_SHORT_PARAGRAPH_WORDS,
     DEFAULT_TARGET_BLOCK_WORDS,
@@ -34,7 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--codebook-workbook",
         type=Path,
-        default=PROJECT_ROOT / "data" / "codebook" / "codebook_v0.2.xlsx",
+        default=PROJECT_ROOT / "data" / "codebook" / "codebook_v0.3.xlsx",
         help="XLSX editable que actúa como fuente del libro de códigos.",
     )
     parser.add_argument(
@@ -42,7 +43,7 @@ def parse_args() -> argparse.Namespace:
         "--codebook",
         dest="codebook_json",
         type=Path,
-        default=PROJECT_ROOT / "data" / "codebook" / "codebook_v0.2.json",
+        default=PROJECT_ROOT / "data" / "codebook" / "codebook_v0.3.json",
         help="JSON derivado que consumirá la interfaz.",
     )
     parser.add_argument(
@@ -56,13 +57,19 @@ def parse_args() -> argparse.Namespace:
         "--short-paragraph-words",
         type=int,
         default=DEFAULT_SHORT_PARAGRAPH_WORDS,
-        help="Umbral bajo el cual un párrafo se une con los siguientes de su intervención.",
+        help="Umbral bajo el cual un párrafo se agrupa con bloques adyacentes de su intervención.",
     )
     parser.add_argument(
         "--target-block-words",
         type=int,
         default=DEFAULT_TARGET_BLOCK_WORDS,
         help="Extensión objetivo al acumular párrafos breves.",
+    )
+    parser.add_argument(
+        "--max-block-words",
+        type=int,
+        default=DEFAULT_MAX_BLOCK_WORDS,
+        help="Máximo estricto de palabras por bloque; los párrafos más largos se dividen.",
     )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
@@ -80,6 +87,7 @@ def main() -> int:
         min_words=args.min_words,
         short_paragraph_words=args.short_paragraph_words,
         target_block_words=args.target_block_words,
+        max_block_words=args.max_block_words,
     )
     static_dir = Path(__file__).resolve().parent / "web"
     server = create_server(service, static_dir, args.host, args.port)
@@ -87,7 +95,8 @@ def main() -> int:
     print(
         f"Bloques disponibles: {len(service.records)} "
         f"(párrafos breves < {service.short_paragraph_words} palabras; "
-        f"objetivo {service.target_block_words}; mínimo residual {service.min_words})"
+        f"objetivo {service.target_block_words}; máximo {service.max_block_words}; "
+        f"mínimo residual {service.min_words})"
     )
     print(f"Libro editable: {args.codebook_workbook.resolve()}")
     print(

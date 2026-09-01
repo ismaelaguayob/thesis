@@ -26,7 +26,7 @@ Por defecto la aplicación consume `data/proc_data/speech_df.parquet`. Los resul
 output/validation/
 ```
 
-La ruta del corpus, el XLSX editable, el JSON derivado, el output, el boletín y los umbrales también se pueden reemplazar mediante `--source`, `--codebook-workbook`, `--codebook-json`, `--output-dir`, `--bill-number`, `--min-words`, `--short-paragraph-words` y `--target-block-words`. `--codebook` se conserva como alias de `--codebook-json`.
+La ruta del corpus, el XLSX editable, el JSON derivado, el output, el boletín y los umbrales también se pueden reemplazar mediante `--source`, `--codebook-workbook`, `--codebook-json`, `--output-dir`, `--bill-number`, `--min-words`, `--short-paragraph-words`, `--target-block-words` y `--max-block-words`. `--codebook` se conserva como alias de `--codebook-json`.
 
 ## Flujo de datos
 
@@ -65,15 +65,17 @@ Luego recorre los estratos en rondas hasta completar el tamaño solicitado. Esto
 
 Antes del muestreo se mantienen solo filas `kind = participation` del boletín elegido. Cuando existe la columna, se exige `analysis_included = true`, con una excepción explícita para las secciones `Votacion`, que el procesamiento anterior había marcado como excluidas. También se excluyen preámbulos y contenidos vacíos. Las secciones de votación permanecen así en el universo y se clasifican manualmente con las flags `Voto` o `Procedimental` cuando carecen de discurso sustantivo.
 
-Cada intervención se separa en los párrafos delimitados por saltos de línea. Un párrafo con 50 palabras o más forma por defecto su propio bloque. Si un párrafo tiene menos de 50 palabras, se une con los párrafos siguientes de la misma intervención hasta alcanzar 100 palabras o llegar al final. Un residuo final menor de 50 palabras se agrega al bloque anterior de esa intervención. Las intervenciones completas con menos de 50 palabras permanecen como una unidad y pueden clasificarse manualmente. El umbral residual de cinco palabras se conserva para descartar unidades extremadamente breves. Los bloques adyacentes sirven como contexto y nunca cruzan de un documento o sesión a otro.
+Cada intervención se separa en los párrafos delimitados por saltos de línea. Un párrafo con 50 palabras o más forma por defecto su propio bloque. Los párrafos menores de 50 palabras se agregan preferentemente al bloque anterior de la misma intervención mientras el resultado no exceda 150 palabras; así, enumeraciones y precisiones breves permanecen con la proposición que desarrollan. Cuando no existe un bloque anterior compatible, se acumulan hacia una extensión objetivo de 100 palabras.
+
+El máximo de 150 palabras es estricto. Un párrafo que por sí solo lo excede se divide primero por límites de oración y, únicamente si una oración continúa siendo demasiado larga, por un límite entre palabras. Un residuo breve solo se agrega a otro bloque cuando la suma respeta el máximo; en caso contrario permanece separado. Las intervenciones completas con menos de 50 palabras pueden conservarse como una unidad, mientras el umbral residual de cinco palabras descarta unidades extremadamente breves. Los bloques adyacentes sirven como contexto y nunca cruzan de un documento o sesión a otro.
 
 ## Libro de códigos
 
-La fuente editable activa está en `data/codebook/codebook_v0.2.xlsx`. La versión 0.1 se conserva sin cambios para reconstruir la primera ronda. Ambas contienen las hojas `README`, `Metadatos` y `Conceptos`.
+La fuente editable activa está en `data/codebook/codebook_v0.3.xlsx`. Las versiones 0.1 y 0.2 se conservan sin cambios para reconstruir las rondas anteriores. Todas contienen las hojas `README`, `Metadatos` y `Conceptos`.
 
-La versión 0.3.0 está diseñada para analizar *discourse coalitions*. Sus conceptos representan justificaciones normativas empleadas para apoyar o rechazar una posición previsional. Una descripción factual, un diagnóstico o una preferencia por un instrumento que carezca de justificación se marca como `Sin declaraciones codificables`.
+La versión conceptual 0.4.0 está diseñada para analizar *discourse coalitions*. Sus conceptos representan justificaciones normativas empleadas para apoyar o rechazar una posición previsional. Una descripción factual, un diagnóstico o una preferencia por un instrumento que carezca de justificación se marca como `Sin declaraciones codificables`.
 
-Los trece conceptos activos son:
+Los catorce conceptos activos son:
 
 - capitalización individual como regla de autofinanciamiento;
 - propiedad individual de los fondos;
@@ -87,9 +89,12 @@ Los trece conceptos activos son:
 - solidaridad intergeneracional;
 - ineficiencia y riesgo estatal;
 - previsión como mercado, negocio e incentivos;
-- ilegitimidad del origen dictatorial.
+- ilegitimidad del origen dictatorial;
+- acuerdos y moderación democrática.
 
-`Suficiencia de las pensiones` se retiró porque describía un resultado deseable o un diagnóstico. `Capitalización individual` se reincorpora con una frontera estricta: codifica que las cotizaciones deben ingresar a cuentas individuales y financiar la pensión de su titular. La mención descriptiva al sistema AFP sigue fuera. La relación entre aportes o trabajo previos y el monto, prioridad o acceso a un beneficio corresponde a reciprocidad contributiva.
+`Suficiencia de las pensiones` se retiró porque describía un resultado deseable o un diagnóstico. `Capitalización individual` se reincorpora con una frontera estricta: codifica que las cotizaciones deben ingresar a cuentas individuales y financiar la pensión de su titular. La mención descriptiva al sistema AFP sigue fuera.
+
+`Reciprocidad contributiva` no se limita al monto o al acceso al beneficio. El trabajo, las cotizaciones o el esfuerzo contributivo pueden generar un título moral para recibir, conservar o controlar recursos y protección previsional. Por ello, “quien cotizó más debe recibir más” y “no es justo hacer solidaridad con el esfuerzo de los trabajadores” expresan reciprocidad. La capitalización identifica la regla institucional sobre el destino individual del aporte; reciprocidad identifica el merecimiento derivado del aporte. Ambos códigos pueden coexistir cuando una declaración formula las dos proposiciones.
 
 `Conciencia de costos como restricción de gasto` reemplazó a `Sostenibilidad financiera`. Su proposición de orientación afirma que una reforma o expansión previsional es demasiado costosa, carece de financiamiento sostenible o excede la capacidad fiscal del Estado. Por tanto, `Apoyo` corresponde a afirmar esa restricción y `Rechazo` a sostener que la medida es sostenible, está bien financiada o cabe dentro de la capacidad fiscal.
 
@@ -101,9 +106,11 @@ Una afirmación sobre la sostenibilidad financiera presente o futura puede codif
 
 `Ilegitimidad del origen dictatorial` registra argumentos que vinculan el origen autoritario, coercitivo o engañoso del sistema con su legitimidad actual. Las fechas históricas y las críticas contemporáneas sin ese vínculo se excluyen.
 
+`Acuerdos y moderación democrática` registra la valoración normativa del compromiso entre posiciones contrapuestas, la política de los acuerdos y el rechazo de extremos o maximalismos como bases de una reforma legítima. No incluye la mera existencia de una negociación, la eficacia técnica de un sistema mixto ni las apelaciones a preferencias ciudadanas, consulta o mayoría que no expresan compromiso entre posiciones. Estas últimas se mantienen como posible candidato inductivo de responsividad democrática.
+
 No se añadió un código de progresividad tributaria debido a su baja recurrencia. Un nuevo caso puede registrarse con nota o `Revisar` para evaluar su repetición en una ronda posterior.
 
-El JSON `data/codebook/codebook_v0.2.json` es un archivo derivado y no debe editarse directamente. Se genera o comprueba con:
+El JSON `data/codebook/codebook_v0.3.json` es un archivo derivado y no debe editarse directamente. Se genera o comprueba con:
 
 ```bash
 uv run python -m features.manual_validation.generate_codebook_json
@@ -125,12 +132,12 @@ No se debe editar el libro incorporado dentro de una sesión ya iniciada. Al cre
 
 Cada archivo se denomina `validation_<timestamp UTC>_<sufijo>.json`. Incluye:
 
-- versión del esquema (`manual-validation-2.1.0`);
+- versión del esquema (`manual-validation-2.2.0`);
 - timestamps UTC y `America/Santiago` de creación, apertura, actualización y finalización;
 - checksum y ruta del corpus;
 - snapshot completo y checksum del libro de códigos;
 - estrategia, semilla, tamaño y estrato de muestreo;
-- bloque objetivo, rango de párrafos, offsets y segmentos dentro de la intervención original, junto con ambos contextos adyacentes y sus checksums;
+- bloque objetivo, rango de párrafos, offsets y segmentos dentro de la intervención original —incluidos subsegmentos cuando un párrafo excede el máximo—, junto con ambos contextos adyacentes y sus checksums;
 - estado, decisión y número de revisión de cada intervención;
 - comentario general y flags de calidad de cada unidad;
 - cero o más anotaciones con offsets exactos, texto, checksum, concepto, orientación, nota y timestamps.

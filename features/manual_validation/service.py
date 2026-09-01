@@ -27,11 +27,12 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 
-SCHEMA_VERSION = "manual-validation-2.1.0"
+SCHEMA_VERSION = "manual-validation-2.2.0"
 DEFAULT_TIMEZONE = "America/Santiago"
 DEFAULT_MIN_WORDS = 5
 DEFAULT_SHORT_PARAGRAPH_WORDS = 50
 DEFAULT_TARGET_BLOCK_WORDS = 100
+DEFAULT_MAX_BLOCK_WORDS = 150
 SESSION_ID_RE = re.compile(r"^validation_\d{8}T\d{12}Z_[0-9a-f]{8}$")
 ALLOWED_STANCES = {"support", "oppose"}
 ALLOWED_CONCEPT_STATUSES = {"in_codebook", "review"}
@@ -177,6 +178,7 @@ def _length_bin(words: int) -> str:
 
 WORD_RE = re.compile(r"[^\W_]+(?:[-’'][^\W_]+)*", re.UNICODE)
 PARAGRAPH_RE = re.compile(r"[^\r\n]+")
+SENTENCE_BOUNDARY_RE = re.compile(r"[.!?…]+[\"»”’\)\]]*(?:\s+|$)")
 
 
 def _count_words(text: str) -> int:
@@ -204,27 +206,143 @@ def _paragraphs(text: str) -> list[dict[str, Any]]:
     return paragraphs
 
 
-def _merge_paragraphs(paragraphs: list[dict[str, Any]]) -> dict[str, Any]:
-    content = "\n\n".join(paragraph["content"] for paragraph in paragraphs)
+def _source_slice(
+    source: dict[str, Any], start_char: int, end_char: int
+) -> dict[str, Any]:
+    """Slice a source fragment while retaining absolute offsets."""
+    raw = source["content"][start_char:end_char]
+    content = raw.strip()
+    left_trim = len(raw) - len(raw.lstrip())
+    absolute_start = source["source_start_char"] + start_char + left_trim
     return {
-        "_members": paragraphs,
+        "content": content,
+        "source_start_char": absolute_start,
+        "source_end_char": absolute_start + len(content),
+        "n_words": _count_words(content),
+    }
+
+
+def _split_fragment_by_words(
+    fragment: dict[str, Any], max_block_words: int
+) -> list[dict[str, Any]]:
+    """Split an overlong sentence at whitespace without losing punctuation."""
+    words = list(WORD_RE.finditer(fragment["content"]))
+    if len(words) <= max_block_words:
+        return [fragment]
+    result: list[dict[str, Any]] = []
+    start_char = 0
+    word_index = max_block_words
+    while word_index < len(words):
+        cut = words[word_index].start()
+        while cut > start_char and not fragment["content"][cut - 1].isspace():
+            cut -= 1
+        if cut <= start_char:
+            cut = words[word_index].start()
+        piece = _source_slice(fragment, start_char, cut)
+        if piece["content"]:
+            result.append(piece)
+        start_char = cut
+        word_index += max_block_words
+    piece = _source_slice(fragment, start_char, len(fragment["content"]))
+    if piece["content"]:
+        result.append(piece)
+    return result
+
+
+def _sentence_fragments(paragraph: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return sentence-like fragments with offsets relative to the source text."""
+    fragments: list[dict[str, Any]] = []
+    start_char = 0
+    for match in SENTENCE_BOUNDARY_RE.finditer(paragraph["content"]):
+        piece = _source_slice(paragraph, start_char, match.end())
+        if piece["content"]:
+            fragments.append(piece)
+        start_char = match.end()
+    if start_char < len(paragraph["content"]):
+        piece = _source_slice(paragraph, start_char, len(paragraph["content"]))
+        if piece["content"]:
+            fragments.append(piece)
+    return fragments or [dict(paragraph)]
+
+
+def _split_paragraph(
+    paragraph: dict[str, Any],
+    target_block_words: int,
+    max_block_words: int,
+) -> list[dict[str, Any]]:
+    """Split one paragraph into sentence-aware segments under a strict ceiling."""
+    if paragraph["n_words"] <= max_block_words:
+        segments = [dict(paragraph)]
+    else:
+        atoms: list[dict[str, Any]] = []
+        for sentence in _sentence_fragments(paragraph):
+            atoms.extend(_split_fragment_by_words(sentence, max_block_words))
+        grouped_atoms: list[list[dict[str, Any]]] = []
+        current: list[dict[str, Any]] = []
+        current_words = 0
+        for atom in atoms:
+            if current and (
+                current_words >= target_block_words
+                or current_words + atom["n_words"] > max_block_words
+            ):
+                grouped_atoms.append(current)
+                current = []
+                current_words = 0
+            current.append(atom)
+            current_words += atom["n_words"]
+        if current:
+            grouped_atoms.append(current)
+
+        segments = []
+        for atoms_group in grouped_atoms:
+            relative_start = (
+                atoms_group[0]["source_start_char"] - paragraph["source_start_char"]
+            )
+            relative_end = (
+                atoms_group[-1]["source_end_char"] - paragraph["source_start_char"]
+            )
+            segments.append(_source_slice(paragraph, relative_start, relative_end))
+
+    segment_count = len(segments)
+    for segment_number, segment in enumerate(segments, start=1):
+        segment["paragraph_number"] = paragraph["paragraph_number"]
+        segment["paragraph_segment_number"] = segment_number
+        segment["paragraph_segment_count"] = segment_count
+    return segments
+
+
+def _merge_segments(segments: list[dict[str, Any]]) -> dict[str, Any]:
+    content_parts = [segments[0]["content"]]
+    for previous, current in zip(segments, segments[1:], strict=False):
+        separator = (
+            " "
+            if previous["paragraph_number"] == current["paragraph_number"]
+            else "\n\n"
+        )
+        content_parts.extend([separator, current["content"]])
+    content = "".join(content_parts)
+    paragraph_numbers = {segment["paragraph_number"] for segment in segments}
+    return {
+        "_members": segments,
         "content": content,
         "content_sha256": sha256_text(content),
-        "source_start_char": paragraphs[0]["source_start_char"],
-        "source_end_char": paragraphs[-1]["source_end_char"],
-        "paragraph_start": paragraphs[0]["paragraph_number"],
-        "paragraph_end": paragraphs[-1]["paragraph_number"],
-        "block_paragraph_count": len(paragraphs),
-        "n_words": sum(paragraph["n_words"] for paragraph in paragraphs),
+        "source_start_char": segments[0]["source_start_char"],
+        "source_end_char": segments[-1]["source_end_char"],
+        "paragraph_start": segments[0]["paragraph_number"],
+        "paragraph_end": segments[-1]["paragraph_number"],
+        "block_paragraph_count": len(paragraph_numbers),
+        "n_words": sum(segment["n_words"] for segment in segments),
         "source_segments": [
             {
-                "paragraph_number": paragraph["paragraph_number"],
-                "source_start_char": paragraph["source_start_char"],
-                "source_end_char": paragraph["source_end_char"],
-                "n_words": paragraph["n_words"],
-                "content_sha256": sha256_text(paragraph["content"]),
+                "paragraph_number": segment["paragraph_number"],
+                "paragraph_segment_number": segment["paragraph_segment_number"],
+                "paragraph_segment_count": segment["paragraph_segment_count"],
+                "source_start_char": segment["source_start_char"],
+                "source_end_char": segment["source_end_char"],
+                "n_words": segment["n_words"],
+                "content_sha256": sha256_text(segment["content"]),
             }
-            for paragraph in paragraphs
+            for segment in segments
         ],
     }
 
@@ -233,26 +351,77 @@ def _paragraph_blocks(
     paragraphs: list[dict[str, Any]],
     short_paragraph_words: int,
     target_block_words: int,
+    max_block_words: int,
 ) -> list[dict[str, Any]]:
-    """Join a short paragraph with following paragraphs from the same utterance."""
-    blocks: list[dict[str, Any]] = []
-    index = 0
-    while index < len(paragraphs):
-        members = [paragraphs[index]]
-        total_words = paragraphs[index]["n_words"]
-        index += 1
-        if total_words < short_paragraph_words:
-            while index < len(paragraphs) and total_words < target_block_words:
-                members.append(paragraphs[index])
-                total_words += paragraphs[index]["n_words"]
-                index += 1
-        blocks.append(_merge_paragraphs(members))
+    """Build readable blocks while enforcing an absolute word ceiling.
 
-    if len(blocks) > 1 and blocks[-1]["n_words"] < short_paragraph_words:
-        trailing = blocks.pop()
-        previous = blocks.pop()
-        blocks.append(_merge_paragraphs(previous["_members"] + trailing["_members"]))
+    Short paragraphs preferentially attach to the preceding block.  This keeps
+    enumerations and brief qualifications with the proposition they elaborate.
+    At the start of an utterance, short paragraphs accumulate forward toward the
+    target.  A paragraph above the ceiling is split on sentence boundaries (and,
+    only when necessary, on a word boundary).
+    """
+    segments: list[dict[str, Any]] = []
+    for paragraph in paragraphs:
+        segments.extend(
+            _split_paragraph(paragraph, target_block_words, max_block_words)
+        )
+
+    block_members: list[list[dict[str, Any]]] = []
+    pending: list[dict[str, Any]] = []
+
+    def pending_words() -> int:
+        return sum(segment["n_words"] for segment in pending)
+
+    def flush_pending() -> None:
+        nonlocal pending
+        if pending:
+            block_members.append(pending)
+            pending = []
+
+    for segment in segments:
+        segment_words = segment["n_words"]
+        if segment_words >= short_paragraph_words:
+            if pending:
+                total = pending_words()
+                if total < target_block_words and total + segment_words <= max_block_words:
+                    pending.append(segment)
+                    flush_pending()
+                else:
+                    flush_pending()
+                    block_members.append([segment])
+            else:
+                block_members.append([segment])
+            continue
+
+        if block_members:
+            previous_words = sum(
+                member["n_words"] for member in block_members[-1]
+            )
+            if previous_words + segment_words <= max_block_words:
+                block_members[-1].append(segment)
+                continue
+
+        if pending and pending_words() + segment_words > max_block_words:
+            flush_pending()
+        pending.append(segment)
+        if pending_words() >= target_block_words:
+            flush_pending()
+
+    flush_pending()
+    blocks = [_merge_segments(members) for members in block_members]
+    if any(block["n_words"] > max_block_words for block in blocks):
+        raise ValidationError(
+            f"La segmentación produjo un bloque sobre {max_block_words} palabras"
+        )
     return blocks
+
+
+def _segment_token(segment: dict[str, Any]) -> str:
+    token = f"p{segment['paragraph_number']:04d}"
+    if segment["paragraph_segment_count"] > 1:
+        token += f"s{segment['paragraph_segment_number']:03d}"
+    return token
 
 
 def _context_record(record: dict[str, Any], target: dict[str, Any]) -> dict[str, Any]:
@@ -276,6 +445,7 @@ def load_corpus_records(
     min_words: int = DEFAULT_MIN_WORDS,
     short_paragraph_words: int = DEFAULT_SHORT_PARAGRAPH_WORDS,
     target_block_words: int = DEFAULT_TARGET_BLOCK_WORDS,
+    max_block_words: int = DEFAULT_MAX_BLOCK_WORDS,
 ) -> list[dict[str, Any]]:
     """Build paragraph blocks and attach adjacent blocks as context."""
     if min_words < 1:
@@ -285,6 +455,10 @@ def load_corpus_records(
     if target_block_words < short_paragraph_words:
         raise ValidationError(
             "El objetivo del bloque debe ser igual o mayor que el umbral de párrafo breve"
+        )
+    if max_block_words < target_block_words:
+        raise ValidationError(
+            "El máximo del bloque debe ser igual o mayor que su extensión objetivo"
         )
     if not source_path.exists():
         raise FileNotFoundError(f"No existe el corpus: {source_path}")
@@ -346,14 +520,17 @@ def load_corpus_records(
                 paragraphs,
                 short_paragraph_words=short_paragraph_words,
                 target_block_words=target_block_words,
+                max_block_words=max_block_words,
             )
             for block in blocks:
-                paragraph_start = block["paragraph_start"]
-                paragraph_end = block["paragraph_end"]
+                first_segment = block["_members"][0]
+                last_segment = block["_members"][-1]
+                start_token = _segment_token(first_segment)
+                end_token = _segment_token(last_segment)
                 unit_suffix = (
-                    f"p{paragraph_start:04d}"
-                    if paragraph_start == paragraph_end
-                    else f"p{paragraph_start:04d}-p{paragraph_end:04d}"
+                    start_token
+                    if start_token == end_token
+                    else f"{start_token}-{end_token}"
                 )
                 document_blocks.append(
                     {
@@ -362,9 +539,9 @@ def load_corpus_records(
                         "utterance_id": utterance_id,
                         "document_uri": _text(row.get("document_uri")),
                         "utterance_order": _clean_scalar(row.get("utterance_order")),
-                        "paragraph_number": paragraph_start,
-                        "paragraph_start": paragraph_start,
-                        "paragraph_end": paragraph_end,
+                        "paragraph_number": block["paragraph_start"],
+                        "paragraph_start": block["paragraph_start"],
+                        "paragraph_end": block["paragraph_end"],
                         "block_paragraph_count": block["block_paragraph_count"],
                         "paragraph_count": len(paragraphs),
                         "source_start_char": block["source_start_char"],
@@ -460,6 +637,7 @@ class ValidationService:
         min_words: int = DEFAULT_MIN_WORDS,
         short_paragraph_words: int = DEFAULT_SHORT_PARAGRAPH_WORDS,
         target_block_words: int = DEFAULT_TARGET_BLOCK_WORDS,
+        max_block_words: int = DEFAULT_MAX_BLOCK_WORDS,
     ) -> None:
         self.source_path = source_path.resolve()
         self.codebook_path = codebook_path.resolve()
@@ -469,6 +647,7 @@ class ValidationService:
         self.min_words = min_words
         self.short_paragraph_words = short_paragraph_words
         self.target_block_words = target_block_words
+        self.max_block_words = max_block_words
         self.codebook = load_codebook(self.codebook_path)
         self.records = load_corpus_records(
             self.source_path,
@@ -476,6 +655,7 @@ class ValidationService:
             min_words,
             short_paragraph_words,
             target_block_words,
+            max_block_words,
         )
         self.source_sha256 = sha256_file(self.source_path)
         self.codebook_sha256 = sha256_file(self.codebook_path)
@@ -501,6 +681,7 @@ class ValidationService:
                 "minimum_words": self.min_words,
                 "short_paragraph_words": self.short_paragraph_words,
                 "target_block_words": self.target_block_words,
+                "max_block_words": self.max_block_words,
                 "available_units": len(self.records),
                 "available_paragraph_blocks": len(self.records),
                 "source_interventions": len(
@@ -522,6 +703,7 @@ class ValidationService:
                 "minimum_words": self.min_words,
                 "short_paragraph_words": self.short_paragraph_words,
                 "target_block_words": self.target_block_words,
+                "max_block_words": self.max_block_words,
             },
         }
 
@@ -652,6 +834,7 @@ class ValidationService:
                 "minimum_words": self.min_words,
                 "short_paragraph_words": self.short_paragraph_words,
                 "target_block_words": self.target_block_words,
+                "max_block_words": self.max_block_words,
                 "available_units": len(self.records),
             },
             "codebook": {
@@ -668,6 +851,7 @@ class ValidationService:
                 "minimum_words": self.min_words,
                 "short_paragraph_words": self.short_paragraph_words,
                 "target_block_words": self.target_block_words,
+                "max_block_words": self.max_block_words,
                 "strata": ["document_uri", "length_bin"] if strategy == "stratified" else [],
             },
             "items": items,

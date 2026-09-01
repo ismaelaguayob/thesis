@@ -1,5 +1,5 @@
 ---
-title: "Reporte de Avance: Metodología, evaluación de datos y extración masiva de la Biblioteca del Congreso Nacional"
+title: "Procesamiento de datos de la Biblioteca del Congreso Nacional (leyes 21.735 y 21.736)"
 author:
   - name: "Ismael Aguayo"
     orcid: "0009-0002-4056-8242"
@@ -36,64 +36,6 @@ csl: apa.csl
 link-citations: true
 lang: es
 ---
-
-## Resumen metodológico
-
-Aunque aún no definida por completo, la metodología escogida nos otorga los supuestos relevantes para extraer y limpiar los datos de forma que sean útiles posteriormente. Tentativamente, utilizaremos **Discourse Network Analysis** [@leifeld_discourse_2017], que entiende el discurso como un fenómeno de red, ya que las declaraciones de los actores son interdependientes entre sí, de forma temporal y transversal, y comúnmente están dirigidas hacia otros actores, lo que constituye una **acción relacional.** El DNA combina técnicas de análisis de contenido discursivo, análisis descriptivo de redes y análisis inferencial de redes para describir las estructuras de los discursos políticos y comprender sus procesos generativos. Esta técnica permite capturar la agrupación de actores (**coaliciones**), la agrupación temporal (**ciclos de atención**) y la agrupación en torno a conceptos (**frames**). Esto nos permitirá, entre otras cosas, evaluar el nivel de cooperación y conflicto y la polarización en el debate, entender sistemáticamente como el poder da forma al discurso, y tomar en consideración el tiempo y la competencia entre coaliciones opuestas al analizar los conceptos teóricos que nos interesan. El mayor potencial que tiene esta perspectiva para nuestra investigación es lograr transformar el debate, por naturaleza no estructurado y disperso, en contenido con estructura clara y analizable, para atacar de forma efectiva las hipótesis y preguntas que nos interesan. Sumado a esto, el DNA ofrece categorías y variables claras y delimitadas, perfectas para realizar un análisis con Inteligencia Aumentada como el que propone esta investigación.
-
-### Variables:
-
-La unidad básica de análisis en el DNA es una declaración **(statement).** Se compone de las siguientes variables:
-
-- **Actores:** Organizaciones o sujetos. Deben definirse de forma clara antes de empezar a analizar. En este caso, utilizaremos a los sujetos, añadiendo la organización (comúnmente el partido) como una categoría adicional de análisis a posteriori.
-
-- **Conceptos:** puede ser tanto afirmaciones sobre políticas (desde la perspectiva de las *advocacy coalitions*) o justificaciones/narrativas (desde la perspectiva de las *discourse coalitions*). Para nuestra investigación, probablemente utilizaremos *discourse coalitions*, pero es algo que queda por definir y requiere de una teoría auxiliar para ser operacionalizado.
-
-- **Acuerdo:** Relación de acuerdo entre el actor y el concepto. Es un calificador dicotómico, tomando valor 1 si el actor se refiere al concepto de forma afirmatoria, y 2 si el actor rechaza el concepto o usa una connotación negativa. Es una distinción crucial, ya que los actores usualmente discuten los mismos conceptos, pero con un posicionamiento diferente o muchas veces opuesto. Metodologías como el análisis de tópicos no serían capaces de capturar esta complejidad.
-
-- **Tiempo:** El momento en que la declaración se emite. Por el momento, la estamos operacionalizando de dos formas:
-
-  1.  Utilizamos el día de la discusión para temporalizar cada debate entre sí.
-
-  2.  Utilizamos un time step discreto interno a cada debate, para capturar posibles influencias entre actores o referencias a otras declaraciones (t=1, t=2, ..., t=n).
-
-### Ejemplo de codificación
-
-Existen métodos inferenciales que aún no he explorado (y pueden llegar a influenciar el procedimiento), pero por el momento esta sería la forma más básica de codificación:
-
-**Actor -\> acuerdo -\> concepto (en un time step específico)**
-
-Para nuestro caso podría ser:
-
-Johannes Kayser -\> Desacuerdo -\> Solidaridad Intergeneracional
-
-O también:
-
-**Johannes Kayser -\> Acuerdo -\> Estado ineficiente**
-
-Una posibilidad es construir diccionarios de conceptos análogos a nuestras categorías teóricas, como en este ejemplo muy simplificado:
-
-```{python}
-#| eval: false
-market_justice = ["capitalización individual", "ineficiencia del Estado", "administración privada", "administraciones de fondos de pensiones", "mérito personal"]
-political_justice = ["sistema de reparto", "solidaridad intergeneracional", "administración estatal", "derecho a pensiones dignas"]
-```
-
-Esta es una forma muy simplificada (y por desarrollarse), ya que en realidad debería ser más parecido a esto:
-
-```{python}
-#| eval: false
-market_justice = {
-    "AFP": ["administradoras de fondos de pensiones", "administradoras actuales", "administración privada de las pensiones"]
-}
-political_justice = {
-    "sistema de reparto": ["el sistema anterior", "... ejemplos"]
-}
-```
-
-En último término, esto permite construir grafos y analizar el dinamismo de los clusters de forma descriptiva (aún sin utilizar métodos más avanzados), como en este ejemplo del análisis del discurso en torno a las pensiones en Alemania [@leifeld_reconceptualizing_2013]:
-
-![](output/figures/paste-3.png)
 
 ## Línea de tiempo y revisión de datos ley 21.735
 
