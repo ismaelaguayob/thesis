@@ -10,7 +10,6 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
-import math
 import mimetypes
 import os
 import random
@@ -27,12 +26,9 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 
-SCHEMA_VERSION = "manual-validation-2.2.0"
+SCHEMA_VERSION = "manual-validation-2.3.0"
+CHUNK_SCHEMA_VERSION = "coding-chunks-1.0.0"
 DEFAULT_TIMEZONE = "America/Santiago"
-DEFAULT_MIN_WORDS = 5
-DEFAULT_SHORT_PARAGRAPH_WORDS = 50
-DEFAULT_TARGET_BLOCK_WORDS = 100
-DEFAULT_MAX_BLOCK_WORDS = 150
 SESSION_ID_RE = re.compile(r"^validation_\d{8}T\d{12}Z_[0-9a-f]{8}$")
 ALLOWED_STANCES = {"support", "oppose"}
 ALLOWED_CONCEPT_STATUSES = {"in_codebook", "review"}
@@ -168,262 +164,6 @@ def load_codebook(path: Path) -> dict[str, Any]:
     return codebook
 
 
-def _length_bin(words: int) -> str:
-    if words <= 75:
-        return "short_000_075"
-    if words <= 500:
-        return "medium_076_500"
-    return "long_501_plus"
-
-
-WORD_RE = re.compile(r"[^\W_]+(?:[-’'][^\W_]+)*", re.UNICODE)
-PARAGRAPH_RE = re.compile(r"[^\r\n]+")
-SENTENCE_BOUNDARY_RE = re.compile(r"[.!?…]+[\"»”’\)\]]*(?:\s+|$)")
-
-
-def _count_words(text: str) -> int:
-    return len(WORD_RE.findall(text))
-
-
-def _paragraphs(text: str) -> list[dict[str, Any]]:
-    """Split an intervention on transcript line breaks and preserve source offsets."""
-    paragraphs: list[dict[str, Any]] = []
-    for match in PARAGRAPH_RE.finditer(text):
-        raw = match.group(0)
-        content = raw.strip()
-        if not content:
-            continue
-        left_trim = len(raw) - len(raw.lstrip())
-        start_char = match.start() + left_trim
-        paragraphs.append(
-            {
-                "content": content,
-                "source_start_char": start_char,
-                "source_end_char": start_char + len(content),
-                "n_words": _count_words(content),
-            }
-        )
-    return paragraphs
-
-
-def _source_slice(
-    source: dict[str, Any], start_char: int, end_char: int
-) -> dict[str, Any]:
-    """Slice a source fragment while retaining absolute offsets."""
-    raw = source["content"][start_char:end_char]
-    content = raw.strip()
-    left_trim = len(raw) - len(raw.lstrip())
-    absolute_start = source["source_start_char"] + start_char + left_trim
-    return {
-        "content": content,
-        "source_start_char": absolute_start,
-        "source_end_char": absolute_start + len(content),
-        "n_words": _count_words(content),
-    }
-
-
-def _split_fragment_by_words(
-    fragment: dict[str, Any], max_block_words: int
-) -> list[dict[str, Any]]:
-    """Split an overlong sentence at whitespace without losing punctuation."""
-    words = list(WORD_RE.finditer(fragment["content"]))
-    if len(words) <= max_block_words:
-        return [fragment]
-    result: list[dict[str, Any]] = []
-    start_char = 0
-    word_index = max_block_words
-    while word_index < len(words):
-        cut = words[word_index].start()
-        while cut > start_char and not fragment["content"][cut - 1].isspace():
-            cut -= 1
-        if cut <= start_char:
-            cut = words[word_index].start()
-        piece = _source_slice(fragment, start_char, cut)
-        if piece["content"]:
-            result.append(piece)
-        start_char = cut
-        word_index += max_block_words
-    piece = _source_slice(fragment, start_char, len(fragment["content"]))
-    if piece["content"]:
-        result.append(piece)
-    return result
-
-
-def _sentence_fragments(paragraph: dict[str, Any]) -> list[dict[str, Any]]:
-    """Return sentence-like fragments with offsets relative to the source text."""
-    fragments: list[dict[str, Any]] = []
-    start_char = 0
-    for match in SENTENCE_BOUNDARY_RE.finditer(paragraph["content"]):
-        piece = _source_slice(paragraph, start_char, match.end())
-        if piece["content"]:
-            fragments.append(piece)
-        start_char = match.end()
-    if start_char < len(paragraph["content"]):
-        piece = _source_slice(paragraph, start_char, len(paragraph["content"]))
-        if piece["content"]:
-            fragments.append(piece)
-    return fragments or [dict(paragraph)]
-
-
-def _split_paragraph(
-    paragraph: dict[str, Any],
-    target_block_words: int,
-    max_block_words: int,
-) -> list[dict[str, Any]]:
-    """Split one paragraph into sentence-aware segments under a strict ceiling."""
-    if paragraph["n_words"] <= max_block_words:
-        segments = [dict(paragraph)]
-    else:
-        atoms: list[dict[str, Any]] = []
-        for sentence in _sentence_fragments(paragraph):
-            atoms.extend(_split_fragment_by_words(sentence, max_block_words))
-        grouped_atoms: list[list[dict[str, Any]]] = []
-        current: list[dict[str, Any]] = []
-        current_words = 0
-        for atom in atoms:
-            if current and (
-                current_words >= target_block_words
-                or current_words + atom["n_words"] > max_block_words
-            ):
-                grouped_atoms.append(current)
-                current = []
-                current_words = 0
-            current.append(atom)
-            current_words += atom["n_words"]
-        if current:
-            grouped_atoms.append(current)
-
-        segments = []
-        for atoms_group in grouped_atoms:
-            relative_start = (
-                atoms_group[0]["source_start_char"] - paragraph["source_start_char"]
-            )
-            relative_end = (
-                atoms_group[-1]["source_end_char"] - paragraph["source_start_char"]
-            )
-            segments.append(_source_slice(paragraph, relative_start, relative_end))
-
-    segment_count = len(segments)
-    for segment_number, segment in enumerate(segments, start=1):
-        segment["paragraph_number"] = paragraph["paragraph_number"]
-        segment["paragraph_segment_number"] = segment_number
-        segment["paragraph_segment_count"] = segment_count
-    return segments
-
-
-def _merge_segments(segments: list[dict[str, Any]]) -> dict[str, Any]:
-    content_parts = [segments[0]["content"]]
-    for previous, current in zip(segments, segments[1:], strict=False):
-        separator = (
-            " "
-            if previous["paragraph_number"] == current["paragraph_number"]
-            else "\n\n"
-        )
-        content_parts.extend([separator, current["content"]])
-    content = "".join(content_parts)
-    paragraph_numbers = {segment["paragraph_number"] for segment in segments}
-    return {
-        "_members": segments,
-        "content": content,
-        "content_sha256": sha256_text(content),
-        "source_start_char": segments[0]["source_start_char"],
-        "source_end_char": segments[-1]["source_end_char"],
-        "paragraph_start": segments[0]["paragraph_number"],
-        "paragraph_end": segments[-1]["paragraph_number"],
-        "block_paragraph_count": len(paragraph_numbers),
-        "n_words": sum(segment["n_words"] for segment in segments),
-        "source_segments": [
-            {
-                "paragraph_number": segment["paragraph_number"],
-                "paragraph_segment_number": segment["paragraph_segment_number"],
-                "paragraph_segment_count": segment["paragraph_segment_count"],
-                "source_start_char": segment["source_start_char"],
-                "source_end_char": segment["source_end_char"],
-                "n_words": segment["n_words"],
-                "content_sha256": sha256_text(segment["content"]),
-            }
-            for segment in segments
-        ],
-    }
-
-
-def _paragraph_blocks(
-    paragraphs: list[dict[str, Any]],
-    short_paragraph_words: int,
-    target_block_words: int,
-    max_block_words: int,
-) -> list[dict[str, Any]]:
-    """Build readable blocks while enforcing an absolute word ceiling.
-
-    Short paragraphs preferentially attach to the preceding block.  This keeps
-    enumerations and brief qualifications with the proposition they elaborate.
-    At the start of an utterance, short paragraphs accumulate forward toward the
-    target.  A paragraph above the ceiling is split on sentence boundaries (and,
-    only when necessary, on a word boundary).
-    """
-    segments: list[dict[str, Any]] = []
-    for paragraph in paragraphs:
-        segments.extend(
-            _split_paragraph(paragraph, target_block_words, max_block_words)
-        )
-
-    block_members: list[list[dict[str, Any]]] = []
-    pending: list[dict[str, Any]] = []
-
-    def pending_words() -> int:
-        return sum(segment["n_words"] for segment in pending)
-
-    def flush_pending() -> None:
-        nonlocal pending
-        if pending:
-            block_members.append(pending)
-            pending = []
-
-    for segment in segments:
-        segment_words = segment["n_words"]
-        if segment_words >= short_paragraph_words:
-            if pending:
-                total = pending_words()
-                if total < target_block_words and total + segment_words <= max_block_words:
-                    pending.append(segment)
-                    flush_pending()
-                else:
-                    flush_pending()
-                    block_members.append([segment])
-            else:
-                block_members.append([segment])
-            continue
-
-        if block_members:
-            previous_words = sum(
-                member["n_words"] for member in block_members[-1]
-            )
-            if previous_words + segment_words <= max_block_words:
-                block_members[-1].append(segment)
-                continue
-
-        if pending and pending_words() + segment_words > max_block_words:
-            flush_pending()
-        pending.append(segment)
-        if pending_words() >= target_block_words:
-            flush_pending()
-
-    flush_pending()
-    blocks = [_merge_segments(members) for members in block_members]
-    if any(block["n_words"] > max_block_words for block in blocks):
-        raise ValidationError(
-            f"La segmentación produjo un bloque sobre {max_block_words} palabras"
-        )
-    return blocks
-
-
-def _segment_token(segment: dict[str, Any]) -> str:
-    token = f"p{segment['paragraph_number']:04d}"
-    if segment["paragraph_segment_count"] > 1:
-        token += f"s{segment['paragraph_segment_number']:03d}"
-    return token
-
-
 def _context_record(record: dict[str, Any], target: dict[str, Any]) -> dict[str, Any]:
     return {
         "unit_id": record["unit_id"],
@@ -441,139 +181,239 @@ def _context_record(record: dict[str, Any], target: dict[str, Any]) -> dict[str,
 
 def load_corpus_records(
     source_path: Path,
-    bill_number: str,
-    min_words: int = DEFAULT_MIN_WORDS,
-    short_paragraph_words: int = DEFAULT_SHORT_PARAGRAPH_WORDS,
-    target_block_words: int = DEFAULT_TARGET_BLOCK_WORDS,
-    max_block_words: int = DEFAULT_MAX_BLOCK_WORDS,
 ) -> list[dict[str, Any]]:
-    """Build paragraph blocks and attach adjacent blocks as context."""
-    if min_words < 1:
-        raise ValidationError("El mínimo de palabras debe ser mayor que cero")
-    if short_paragraph_words < 1:
-        raise ValidationError("El umbral de párrafo breve debe ser mayor que cero")
-    if target_block_words < short_paragraph_words:
-        raise ValidationError(
-            "El objetivo del bloque debe ser igual o mayor que el umbral de párrafo breve"
-        )
-    if max_block_words < target_block_words:
-        raise ValidationError(
-            "El máximo del bloque debe ser igual o mayor que su extensión objetivo"
-        )
+    """Load the finalized long-form chunk corpus produced by ``proc.qmd``."""
     if not source_path.exists():
         raise FileNotFoundError(f"No existe el corpus: {source_path}")
     dataframe = pd.read_parquet(source_path)
     required = {
+        "chunk_id",
+        "chunk_schema_version",
+        "unit_id",
+        "unit_kind",
         "utterance_id",
         "document_uri",
         "utterance_order",
-        "kind",
+        "document_chunk_order",
+        "utterance_chunk_number",
+        "utterance_chunk_count",
+        "paragraph_number",
+        "paragraph_start",
+        "paragraph_end",
+        "block_paragraph_count",
+        "paragraph_count",
+        "source_start_char",
+        "source_end_char",
+        "source_segments_json",
+        "source_utterance_n_words",
+        "date",
+        "constitutional_stage",
+        "title",
+        "bill_number",
         "content",
+        "content_sha256",
+        "n_words",
+        "length_bin",
+        "previous_chunk_id",
+        "next_chunk_id",
+        "minimum_words",
+        "short_paragraph_words",
+        "target_block_words",
+        "max_block_words",
     }
     missing = sorted(required.difference(dataframe.columns))
     if missing:
-        raise ValidationError(f"Faltan columnas requeridas en el corpus: {', '.join(missing)}")
-
-    mask = dataframe["kind"].eq("participation")
-    if "bill_number" in dataframe.columns:
-        mask &= dataframe["bill_number"].astype(str).eq(bill_number)
-    if "analysis_included" in dataframe.columns:
-        analysis_included = dataframe["analysis_included"].fillna(False).astype(bool)
-        if "section_name" in dataframe.columns:
-            section_names = dataframe["section_name"].fillna("").astype(str).str.casefold()
-            is_voting_section = section_names.isin({"votacion", "votación"})
-            analysis_included |= is_voting_section
-        mask &= analysis_included
-    if "is_preamble" in dataframe.columns:
-        mask &= ~dataframe["is_preamble"].fillna(False).astype(bool)
-    filtered = dataframe.loc[mask].copy()
-    filtered["content"] = filtered["content"].fillna("").astype(str)
-    filtered = filtered.loc[filtered["content"].str.strip().ne("")].copy()
-    if filtered.empty:
-        raise ValidationError("El filtro no produjo intervenciones codificables")
-    if filtered["utterance_id"].duplicated().any():
-        duplicates = filtered.loc[filtered["utterance_id"].duplicated(), "utterance_id"].tolist()
-        raise ValidationError(f"utterance_id duplicado en el corpus: {duplicates[:3]}")
-
-    filtered["_document_sort"] = filtered["document_uri"].fillna("").astype(str)
-    filtered["_order_sort"] = pd.to_numeric(filtered["utterance_order"], errors="coerce")
-    filtered["_order_sort"] = filtered["_order_sort"].fillna(math.inf)
-    filtered = filtered.sort_values(["_document_sort", "_order_sort"], kind="stable")
-
-    records: list[dict[str, Any]] = []
-    for _, group in filtered.groupby("_document_sort", sort=False, dropna=False):
-        document_blocks: list[dict[str, Any]] = []
-        for _, row in group.iterrows():
-            content = _text(row.get("content"))
-            n_words_value = _clean_scalar(row.get("n_words"))
-            try:
-                intervention_n_words = (
-                    int(n_words_value) if n_words_value is not None else _count_words(content)
-                )
-            except (TypeError, ValueError):
-                intervention_n_words = _count_words(content)
-            paragraphs = _paragraphs(content)
-            utterance_id = _text(row.get("utterance_id"))
-            for paragraph_index, paragraph in enumerate(paragraphs, start=1):
-                paragraph["paragraph_number"] = paragraph_index
-            blocks = _paragraph_blocks(
-                paragraphs,
-                short_paragraph_words=short_paragraph_words,
-                target_block_words=target_block_words,
-                max_block_words=max_block_words,
-            )
-            for block in blocks:
-                first_segment = block["_members"][0]
-                last_segment = block["_members"][-1]
-                start_token = _segment_token(first_segment)
-                end_token = _segment_token(last_segment)
-                unit_suffix = (
-                    start_token
-                    if start_token == end_token
-                    else f"{start_token}-{end_token}"
-                )
-                document_blocks.append(
-                    {
-                        "unit_id": f"{utterance_id}::{unit_suffix}",
-                        "unit_kind": "paragraph_block",
-                        "utterance_id": utterance_id,
-                        "document_uri": _text(row.get("document_uri")),
-                        "utterance_order": _clean_scalar(row.get("utterance_order")),
-                        "paragraph_number": block["paragraph_start"],
-                        "paragraph_start": block["paragraph_start"],
-                        "paragraph_end": block["paragraph_end"],
-                        "block_paragraph_count": block["block_paragraph_count"],
-                        "paragraph_count": len(paragraphs),
-                        "source_start_char": block["source_start_char"],
-                        "source_end_char": block["source_end_char"],
-                        "source_segments": block["source_segments"],
-                        "source_utterance_n_words": intervention_n_words,
-                        "date": _text(row.get("date")),
-                        "constitutional_stage": _text(row.get("constitutional_stage")),
-                        "title": _text(row.get("title")),
-                        "content": block["content"],
-                        "content_sha256": block["content_sha256"],
-                        "n_words": block["n_words"],
-                        "length_bin": _length_bin(block["n_words"]),
-                        "previous_context": None,
-                        "next_context": None,
-                    }
-                )
-        for index, record in enumerate(document_blocks):
-            if index > 0:
-                record["previous_context"] = _context_record(
-                    document_blocks[index - 1], record
-                )
-            if index + 1 < len(document_blocks):
-                record["next_context"] = _context_record(
-                    document_blocks[index + 1], record
-                )
-            if record["n_words"] >= min_words:
-                records.append(record)
-    if not records:
         raise ValidationError(
-            f"El filtro no produjo bloques de al menos {min_words} palabras"
+            f"Faltan columnas requeridas en el corpus de chunks: {', '.join(missing)}"
         )
+    if dataframe.empty:
+        raise ValidationError("El corpus de chunks está vacío")
+    if dataframe["unit_id"].duplicated().any():
+        duplicates = dataframe.loc[dataframe["unit_id"].duplicated(), "unit_id"].tolist()
+        raise ValidationError(f"unit_id duplicado en el corpus: {duplicates[:3]}")
+    if not dataframe["chunk_id"].astype(str).eq(dataframe["unit_id"].astype(str)).all():
+        raise ValidationError("chunk_id y unit_id deben identificar la misma unidad")
+    if not dataframe["unit_kind"].eq("paragraph_block").all():
+        raise ValidationError("unit_kind debe ser paragraph_block en todo el corpus")
+
+    integer_fields = [
+        "document_chunk_order",
+        "utterance_chunk_number",
+        "utterance_chunk_count",
+        "paragraph_number",
+        "paragraph_start",
+        "paragraph_end",
+        "block_paragraph_count",
+        "paragraph_count",
+        "source_start_char",
+        "source_end_char",
+        "source_utterance_n_words",
+        "n_words",
+        "minimum_words",
+        "short_paragraph_words",
+        "target_block_words",
+        "max_block_words",
+    ]
+    for field in integer_fields:
+        numeric = pd.to_numeric(dataframe[field], errors="coerce")
+        if numeric.isna().any() or not numeric.mod(1).eq(0).all():
+            raise ValidationError(f"{field} debe contener enteros sin valores ausentes")
+        dataframe[field] = numeric.astype(int)
+
+    for field in (
+        "minimum_words",
+        "short_paragraph_words",
+        "target_block_words",
+        "max_block_words",
+        "chunk_schema_version",
+        "bill_number",
+    ):
+        if dataframe[field].nunique(dropna=False) != 1:
+            raise ValidationError(f"{field} debe tener un único valor en el corpus")
+    minimum_words = int(dataframe["minimum_words"].iloc[0])
+    short_paragraph_words = int(dataframe["short_paragraph_words"].iloc[0])
+    target_block_words = int(dataframe["target_block_words"].iloc[0])
+    max_block_words = int(dataframe["max_block_words"].iloc[0])
+    chunk_schema_version = str(dataframe["chunk_schema_version"].iloc[0])
+    if chunk_schema_version != CHUNK_SCHEMA_VERSION:
+        raise ValidationError(
+            f"Versión de corpus no soportada: {chunk_schema_version}"
+        )
+    if not 1 <= minimum_words <= short_paragraph_words <= target_block_words <= max_block_words:
+        raise ValidationError("Los parámetros de chunking del corpus son inconsistentes")
+
+    dataframe["content"] = dataframe["content"].fillna("").astype(str)
+    if dataframe["content"].str.strip().eq("").any():
+        raise ValidationError("El corpus contiene chunks sin texto")
+    if dataframe["n_words"].lt(minimum_words).any():
+        raise ValidationError("El corpus contiene chunks bajo el mínimo de palabras")
+    if dataframe["n_words"].gt(max_block_words).any():
+        raise ValidationError("El corpus contiene chunks sobre el máximo de palabras")
+    expected_hashes = dataframe["content"].map(sha256_text)
+    if not expected_hashes.eq(dataframe["content_sha256"].astype(str)).all():
+        raise ValidationError("content_sha256 no coincide con el texto de uno o más chunks")
+
+    dataframe = dataframe.sort_values(
+        ["document_uri", "document_chunk_order"], kind="stable"
+    ).reset_index(drop=True)
+    if dataframe.duplicated(["document_uri", "document_chunk_order"]).any():
+        raise ValidationError("document_chunk_order está duplicado dentro de un documento")
+    for document_uri, group in dataframe.groupby("document_uri", sort=False):
+        expected_order = list(range(1, len(group) + 1))
+        if group["document_chunk_order"].tolist() != expected_order:
+            raise ValidationError(
+                f"document_chunk_order no es consecutivo en {document_uri}"
+            )
+        chunk_ids = group["chunk_id"].astype(str).tolist()
+        expected_previous = [None, *chunk_ids[:-1]]
+        expected_next = [*chunk_ids[1:], None]
+        for field, expected_values in (
+            ("previous_chunk_id", expected_previous),
+            ("next_chunk_id", expected_next),
+        ):
+            actual_values = [_clean_scalar(value) for value in group[field]]
+            if actual_values != expected_values:
+                raise ValidationError(
+                    f"{field} no coincide con el orden de chunks en {document_uri}"
+                )
+    for utterance_id, group in dataframe.groupby("utterance_id", sort=False):
+        expected_count = len(group)
+        expected_numbers = list(range(1, expected_count + 1))
+        if group["utterance_chunk_number"].tolist() != expected_numbers:
+            raise ValidationError(
+                f"utterance_chunk_number no es consecutivo en {utterance_id}"
+            )
+        if not group["utterance_chunk_count"].eq(expected_count).all():
+            raise ValidationError(
+                f"utterance_chunk_count es inconsistente en {utterance_id}"
+            )
+        starts = group["source_start_char"].tolist()
+        ends = group["source_end_char"].tolist()
+        if starts != sorted(starts):
+            raise ValidationError(
+                f"El orden de chunks retrocede dentro de {utterance_id}"
+            )
+        if any(
+            previous_end > next_start
+            for previous_end, next_start in zip(ends, starts[1:])
+        ):
+            raise ValidationError(f"Hay chunks solapados dentro de {utterance_id}")
+    if not dataframe["paragraph_start"].le(dataframe["paragraph_end"]).all():
+        raise ValidationError("paragraph_start no puede ser mayor que paragraph_end")
+    if not dataframe["paragraph_end"].le(dataframe["paragraph_count"]).all():
+        raise ValidationError("paragraph_end excede paragraph_count")
+    if not dataframe["source_start_char"].lt(dataframe["source_end_char"]).all():
+        raise ValidationError("Los offsets de origen deben delimitar texto no vacío")
+
+    public_fields = [
+        "chunk_id",
+        "unit_id",
+        "unit_kind",
+        "chunk_schema_version",
+        "utterance_id",
+        "document_uri",
+        "utterance_order",
+        "document_chunk_order",
+        "utterance_chunk_number",
+        "utterance_chunk_count",
+        "paragraph_number",
+        "paragraph_start",
+        "paragraph_end",
+        "block_paragraph_count",
+        "paragraph_count",
+        "source_start_char",
+        "source_end_char",
+        "source_utterance_n_words",
+        "date",
+        "constitutional_stage",
+        "title",
+        "bill_number",
+        "content",
+        "content_sha256",
+        "n_words",
+        "length_bin",
+        "previous_chunk_id",
+        "next_chunk_id",
+        "minimum_words",
+        "short_paragraph_words",
+        "target_block_words",
+        "max_block_words",
+    ]
+    records: list[dict[str, Any]] = []
+    for _, row in dataframe.iterrows():
+        record = {field: _clean_scalar(row[field]) for field in public_fields}
+        try:
+            source_segments = json.loads(_text(row["source_segments_json"]))
+        except json.JSONDecodeError as exc:
+            raise ValidationError(
+                f"source_segments_json inválido en {record['unit_id']}"
+            ) from exc
+        if not isinstance(source_segments, list) or not source_segments:
+            raise ValidationError(
+                f"source_segments_json debe ser una lista no vacía en {record['unit_id']}"
+            )
+        record["source_segments"] = source_segments
+        record["previous_context"] = None
+        record["next_context"] = None
+        records.append(record)
+
+    by_id = {record["unit_id"]: record for record in records}
+    for record in records:
+        for id_field, context_field in (
+            ("previous_chunk_id", "previous_context"),
+            ("next_chunk_id", "next_context"),
+        ):
+            context_id = record.pop(id_field)
+            if context_id is None:
+                continue
+            context = by_id.get(str(context_id))
+            if context is None:
+                raise ValidationError(
+                    f"{id_field} referencia un chunk inexistente: {context_id}"
+                )
+            if context["document_uri"] != record["document_uri"]:
+                raise ValidationError(f"{id_field} debe pertenecer al mismo documento")
+            record[context_field] = _context_record(context, record)
     return records
 
 
@@ -632,31 +472,21 @@ class ValidationService:
         source_path: Path,
         codebook_path: Path,
         output_dir: Path,
-        bill_number: str = "15480-13",
         timezone_name: str = DEFAULT_TIMEZONE,
-        min_words: int = DEFAULT_MIN_WORDS,
-        short_paragraph_words: int = DEFAULT_SHORT_PARAGRAPH_WORDS,
-        target_block_words: int = DEFAULT_TARGET_BLOCK_WORDS,
-        max_block_words: int = DEFAULT_MAX_BLOCK_WORDS,
     ) -> None:
         self.source_path = source_path.resolve()
         self.codebook_path = codebook_path.resolve()
         self.output_dir = output_dir.resolve()
-        self.bill_number = bill_number
         self.timezone_name = timezone_name
-        self.min_words = min_words
-        self.short_paragraph_words = short_paragraph_words
-        self.target_block_words = target_block_words
-        self.max_block_words = max_block_words
         self.codebook = load_codebook(self.codebook_path)
-        self.records = load_corpus_records(
-            self.source_path,
-            bill_number,
-            min_words,
-            short_paragraph_words,
-            target_block_words,
-            max_block_words,
-        )
+        self.records = load_corpus_records(self.source_path)
+        first_record = self.records[0]
+        self.chunk_schema_version = str(first_record["chunk_schema_version"])
+        self.bill_number = str(first_record["bill_number"])
+        self.min_words = int(first_record["minimum_words"])
+        self.short_paragraph_words = int(first_record["short_paragraph_words"])
+        self.target_block_words = int(first_record["target_block_words"])
+        self.max_block_words = int(first_record["max_block_words"])
         self.source_sha256 = sha256_file(self.source_path)
         self.codebook_sha256 = sha256_file(self.codebook_path)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -677,6 +507,7 @@ class ValidationService:
             "corpus": {
                 "path": str(self.source_path),
                 "sha256": self.source_sha256,
+                "chunk_schema_version": self.chunk_schema_version,
                 "unit_of_analysis": "paragraph_block",
                 "minimum_words": self.min_words,
                 "short_paragraph_words": self.short_paragraph_words,
@@ -777,6 +608,7 @@ class ValidationService:
             items.append(
                 {
                     "sample_index": index,
+                    "chunk_id": record["chunk_id"],
                     "unit_id": record["unit_id"],
                     "unit_kind": record["unit_kind"],
                     "utterance_id": record["utterance_id"],
@@ -830,6 +662,7 @@ class ValidationService:
             "source": {
                 "path": str(self.source_path),
                 "sha256": self.source_sha256,
+                "chunk_schema_version": self.chunk_schema_version,
                 "unit_of_analysis": "paragraph_block",
                 "minimum_words": self.min_words,
                 "short_paragraph_words": self.short_paragraph_words,
@@ -877,6 +710,9 @@ class ValidationService:
         self._save_session(session)
         public_item = {
             "sample_index": item["sample_index"],
+            "chunk_id": item.get(
+                "chunk_id", item.get("unit_id", item.get("utterance_id", ""))
+            ),
             "unit_id": item.get("unit_id", item.get("utterance_id", "")),
             "unit_kind": item.get("unit_kind", "intervention"),
             "date": item["date"],

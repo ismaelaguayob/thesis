@@ -1,5 +1,5 @@
 ---
-title: "Procesamiento de datos de la Biblioteca del Congreso Nacional (leyes 21.735 y 21.736)"
+title: "Procesamiento de debates legislativos de pensiones"
 author:
   - name: "Ismael Aguayo"
     orcid: "0009-0002-4056-8242"
@@ -27,6 +27,10 @@ editor: visual
 execute: 
   echo: false
   warning: false
+params:
+  law_number: "21735"
+  refresh_history: false
+  refresh_parliamentarians: false
 comments:
   hypothesis: 
     theme: classic
@@ -137,10 +141,63 @@ Todas las rutas del procesamiento se definen según su función. Los insumos ori
 
 ```{python}
 from pathlib import Path
+import os
 
 RAW_DATA_DIR = Path("data/raw_data")
-PROC_DATA_DIR = Path("data/proc_data")
-TABLE_OUTPUT_DIR = Path("output/tables")
+PROC_DATA_ROOT = Path("data/proc_data")
+TABLE_OUTPUT_ROOT = Path("output/tables")
+
+LAW_CONFIGS = {
+    "21735": {
+        "folder": "ley_21735",
+        "bill_number": "15480-13",
+        "expected_floor_debates": 4,
+        "fetch_all_akn": True,
+    },
+    "21419": {
+        "folder": "ley_21419",
+        "bill_number": "14588-13",
+        "expected_floor_debates": 3,
+        "fetch_all_akn": False,
+    },
+    "21538": {
+        "folder": "ley_21538",
+        "bill_number": "15625-13",
+        "expected_floor_debates": 2,
+        "fetch_all_akn": False,
+    },
+}
+
+execution_params = globals().get("params", {})
+LAW_NUMBER = str(
+    execution_params.get("law_number", os.environ.get("THESIS_LAW_NUMBER", "21735"))
+)
+if LAW_NUMBER not in LAW_CONFIGS:
+    raise ValueError(f"Ley no configurada: {LAW_NUMBER}")
+
+LAW_CONFIG = LAW_CONFIGS[LAW_NUMBER]
+BILL_NUMBER = LAW_CONFIG["bill_number"]
+
+def execution_flag(parameter_name: str, environment_name: str) -> bool:
+    value = execution_params.get(
+        parameter_name,
+        os.environ.get(environment_name, "false"),
+    )
+    if isinstance(value, bool):
+        return value
+    normalized = str(value).strip().lower()
+    if normalized not in {"true", "false", "1", "0", "yes", "no"}:
+        raise ValueError(f"Flag inválido para {parameter_name}: {value}")
+    return normalized in {"true", "1", "yes"}
+
+
+REFRESH_HISTORY = execution_flag("refresh_history", "THESIS_REFRESH_HISTORY")
+REFRESH_PARLIAMENTARIANS = execution_flag(
+    "refresh_parliamentarians", "THESIS_REFRESH_PARLIAMENTARIANS"
+)
+
+PROC_DATA_DIR = PROC_DATA_ROOT / LAW_CONFIG["folder"]
+TABLE_OUTPUT_DIR = TABLE_OUTPUT_ROOT / LAW_CONFIG["folder"]
 
 PROC_DATA_DIR.mkdir(parents=True, exist_ok=True)
 TABLE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -148,25 +205,56 @@ TABLE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 ### Descarga de datos
 
-Utilizamos el paquete de python `bcn_scraper` de desarrollo propio para descargar de forma automatizada los datos tramitación de la ley 21.735, y procesar los datos para obtener el discurso de forma limpia, normalizada y enriquecida. En primer lugar, descargamos todos los datos de la tramitación ingresando el número de ley. La función nos otorga un dataframe con todos los documentos de cada trámite y metadatos como la fecha, número de trámite y URL de cada documento. Este bloque de código demora un tiempo considerable, ya que se descargan los documentos y el Akoma Ntoso (AKN) de cada trámite, y se procesan para obtener el texto limpio. Específicamente para el AKN, se requirió desarrollar una función para reintentar la descarga con un mayor tiempo de espera, ya que solían presentar errores.
+Utilizamos el paquete de Python `bcn_scraper` de desarrollo propio para descargar de forma automatizada la historia de la ley seleccionada y procesar sus debates. La descarga conserva el inventario completo de trámites. Para la ley 21.735 se refresca todo el AKN por compatibilidad con la línea base; para las leyes 21.419 y 21.538 se consulta AKN solo para las discusiones en Sala que integran el corpus.
 
 ```{python}
-#| eval: false
 from bcn_scraper.wrapper import historia_dataframe_from_ley_o_boletin
-from bcn_scraper.akoma_ntoso import debug_akoma_ntoso_errors
+from bcn_scraper.akoma_ntoso import (
+    debug_akoma_ntoso_errors,
+    fetch_akoma_ntoso,
+)
 from bcn_scraper import collect_unlabeled_speaker_candidates
 
-df = historia_dataframe_from_ley_o_boletin(numero_ley="21735", clean_text=True, fetch_akn=True)
+if REFRESH_HISTORY:
+    df = historia_dataframe_from_ley_o_boletin(
+        numero_ley=LAW_NUMBER,
+        clean_text=True,
+        fetch_akn=LAW_CONFIG["fetch_all_akn"],
+    )
+    if not LAW_CONFIG["fetch_all_akn"]:
+        floor_mask = df["title"].str.contains(
+            "Discusión en Sala", case=False, na=False
+        )
+        df.loc[~floor_mask, "akn_content"] = ""
+        for row_index in df.index[floor_mask]:
+            df.at[row_index, "akn_content"] = fetch_akoma_ntoso(
+                df.at[row_index, "akn_url"],
+                timeout=90,
+                max_attempts=3,
+                backoff_seconds=2.0,
+            )
 
-# Implementa reintentos sobre filas con errores
-df_debugged = debug_akoma_ntoso_errors(
-    df,
-    timeout = 90,
-    max_attempts = 3,
-    backoff_seconds= 2.0
+    df_debugged = debug_akoma_ntoso_errors(
+        df,
+        timeout=90,
+        max_attempts=3,
+        backoff_seconds=2.0,
     )
 
-df_debugged.to_csv(PROC_DATA_DIR / "datos_bcn_akn.csv", index=False, sep=";")
+    csv_path = PROC_DATA_DIR / "datos_bcn_akn.csv"
+    parquet_path = PROC_DATA_DIR / "datos_bcn_akn.parquet"
+    temporary_csv = csv_path.with_suffix(".csv.tmp")
+    temporary_parquet = parquet_path.with_suffix(".parquet.tmp")
+    df_debugged.to_csv(temporary_csv, index=False, sep=";")
+    df_debugged.to_parquet(temporary_parquet, index=False, engine="pyarrow")
+    temporary_csv.replace(csv_path)
+    temporary_parquet.replace(parquet_path)
+
+source_path = PROC_DATA_DIR / "datos_bcn_akn.csv"
+if not source_path.exists():
+    raise FileNotFoundError(
+        f"Falta {source_path}. Ejecute el render con refresh_history:true."
+    )
 ```
 
 La descarga anterior se ejecuta solo cuando es necesario refrescar la fuente. El resto del reporte utiliza el CSV persistido, por lo que no vuelve a consultar BCN en cada render.
@@ -186,6 +274,40 @@ if "document_uri" not in data.columns:
     data["document_uri"] = data["xml_content"].fillna("").map(extract_document_uri)
 
 corpus_manifest = pd.read_csv(PROC_DATA_DIR / "corpus_manifest.csv")
+if corpus_manifest["document_uri"].isna().any() or corpus_manifest["document_uri"].eq("").any():
+    raise ValueError("corpus_manifest.csv contiene document_uri vacíos")
+if corpus_manifest["document_uri"].duplicated().any():
+    raise ValueError("corpus_manifest.csv contiene document_uri duplicados")
+if set(corpus_manifest["bill_number"].astype(str)) != {BILL_NUMBER}:
+    raise ValueError(f"El manifiesto no corresponde al boletín {BILL_NUMBER}")
+
+manifest_floor = corpus_manifest.loc[
+    corpus_manifest["corpus_role"].eq("floor_debate"), "document_uri"
+]
+if len(manifest_floor) != LAW_CONFIG["expected_floor_debates"]:
+    raise ValueError(
+        f"Se esperaban {LAW_CONFIG['expected_floor_debates']} debates en Sala "
+        f"para la ley {LAW_NUMBER}; el manifiesto contiene {len(manifest_floor)}"
+    )
+if not corpus_manifest.loc[
+    corpus_manifest["corpus_role"].eq("floor_debate"),
+    "include_in_speech_pipeline",
+].all():
+    raise ValueError("Todo debate en Sala debe estar incluido en la pipeline")
+
+extracted_floor = set(
+    data.loc[
+        data["title"].str.contains("Discusión en Sala", case=False, na=False),
+        "document_uri",
+    ].dropna()
+)
+if extracted_floor != set(manifest_floor):
+    raise ValueError(
+        "La cobertura de discusiones en Sala difiere entre la extracción y "
+        f"el manifiesto: extracción={sorted(extracted_floor)}, "
+        f"manifiesto={sorted(set(manifest_floor))}"
+    )
+
 data_corpus = corpus_manifest.merge(
     data,
     on="document_uri",
@@ -280,8 +402,22 @@ within_document_collisions = (
 )
 if within_document_collisions.any():
     raise ValueError("Un ID local AKN apunta a más de una persona dentro del mismo documento")
-if speaker_identity_audit["stable_person_has_name_conflict"].any():
-    raise ValueError("Un recurso estable de Persona BCN presenta nombres incompatibles")
+
+# BCN alterna entre nombres abreviados y nombres completos de una misma persona.
+# Se aceptan esas extensiones, pero no dos nombres con tokens incompatibles.
+incompatible_stable_names = []
+for speaker_href, group in speaker_identity_audit.loc[
+    speaker_identity_audit["stable_person_has_name_conflict"]
+].groupby("speaker_href"):
+    token_sets = [set(str(name).split()) for name in group["name_key"] if str(name).strip()]
+    shortest = min(token_sets, key=len) if token_sets else set()
+    if shortest and not all(shortest.issubset(tokens) for tokens in token_sets):
+        incompatible_stable_names.append(speaker_href)
+if incompatible_stable_names:
+    raise ValueError(
+        "Recursos Persona BCN con nombres incompatibles: "
+        f"{incompatible_stable_names}"
+    )
 
 speaker_identity_audit.to_parquet(
     PROC_DATA_DIR / "speaker_identity_audit.parquet", index=False
@@ -332,82 +468,169 @@ def bcn_person(person_id, **metadata):
     }
 
 
-# Solo actores verdaderamente transversales permanecen en el registro general.
-# Mario Marcel y Miguel Landeros usan el recurso estable de Persona BCN.
-external_speakers_dict = {
-    "JARA": {
-        "speaker": "Jeannette Jara",
-        "speaker_id": "PersonaExt1",
-        "speaker_href": "https://es.wikipedia.org/wiki/Jeannette_Jara",
-        "role": "Ministra del Trabajo y Previsión Social",
+# Los actores externos y los apellidos ambiguos se configuran por ley y por
+# documento. Esto impide que una inferencia de una cámara contamine otra sesión.
+EXTERNAL_SPEAKERS_BY_LAW = {
+    "21735": {
+        "JARA": {
+            "speaker": "Jeannette Jara",
+            "speaker_id": "PersonaExt1",
+            "speaker_href": "https://es.wikipedia.org/wiki/Jeannette_Jara",
+            "role": "Ministra del Trabajo y Previsión Social",
+        },
+        "MARCEL": bcn_person("4216", speaker="Mario Marcel Cullell", role="Ministro de Hacienda"),
+        "LANDEROS": bcn_person(
+            "4471",
+            speaker="Miguel Landeros Perkic",
+            role="Secretario General de la Cámara de Diputadas y Diputados",
+        ),
     },
-    "MARCEL": bcn_person(
-        "4216",
-        speaker="Mario Marcel Cullell",
-        role="Ministro de Hacienda",
-    ),
-    "LANDEROS": bcn_person(
-        "4471",
-        speaker="Miguel Landeros Perkic",
-        role="Secretario General de la Cámara de Diputadas y Diputados",
-    ),
-}
-
-
-# Los apellidos que pueden cambiar de persona se acotan por documento. Los href
-# son estables; normalize_speech_content recupera el perN/PersonaAutN correcto
-# dentro de cada AKN. En 3.1 los homónimos se desambiguan con el nombre completo
-# del preámbulo "Tiene la palabra...".
-document_speaker_overrides = {
-    "http://datos.bcn.cl/recurso/cl/documento/704142": {
-        "CIFUENTES": bcn_person("5200"),
-        "BOBADILLA": bcn_person("2861"),
-        "MULET": bcn_person("1782"),
-        "MEZA": bcn_person("5272"),
-    },
-    "http://datos.bcn.cl/recurso/cl/documento/704058": {
-        "CIFUENTES": bcn_person("5200"),
-        "DE LA CARRERA": bcn_person("5202"),
-        "MANOUCHEHRI": bcn_person("5201"),
-        "SERRANO": bcn_person("5209"),
-        "MEZA": bcn_person("5272"),
-    },
-    "http://datos.bcn.cl/recurso/cl/documento/706982": {
-        "ALLENDE": bcn_person("3494"),
-        "ARAVENA": bcn_person("4593"),
-        "ARAYA": bcn_person("339"),
-        "CHAHUAN": bcn_person("685"),
-        "CRUZ COKE": bcn_person("4569"),
-        "EBENSPERGER": bcn_person("4589"),
-        "GARCIA": bcn_person("279"),
-        "INSULZA": bcn_person("4141"),
-        "KUSANOVIC": bcn_person("5197"),
-        "LAGOS": bcn_person("3099"),
-        "MOREIRA": bcn_person("1713"),
-        "NUNEZ": bcn_person("4542"),
-        "OSSANDON": bcn_person("4521"),
-        "PROHENS": bcn_person("4591"),
-        "PROVOSTE": bcn_person("4323"),
-        "WALKER": bcn_person("3735"),
-        "PASCUAL": bcn_person("5193"),
+    "21419": {
+        "CERDA": {
+            "speaker": "Rodrigo Cerda Norambuena",
+            "speaker_id": "PersonaExt21419Cerda",
+            "speaker_href": "https://www.hacienda.cl/noticias-y-eventos/noticias/rodrigo-cerda-asume-como-ministro-de-hacienda",
+            "role": "Ministro de Hacienda",
+        },
+        "GALLI": {
+            "speaker": "Juan Francisco Galli Basili",
+            "speaker_id": "PersonaExt21419Galli",
+            "speaker_href": "https://subinterior-2018.interior.gob.cl/noticias/2020/01/02/juan-francisco-galli-asume-como-subsecretario-del-interior/",
+            "role": "Ministro del Interior y Seguridad Pública subrogante",
+        },
         "GUZMAN": {
             "speaker": "Raúl Guzmán Uribe",
-            "speaker_id": "PersonaExt3",
-            "speaker_href": "NA",
+            "speaker_id": "PersonaExt21419Guzman",
+            "speaker_href": "https://www.senado.cl/comunicaciones/noticias/sesion-155a-ordinaria-miercoles-3-de-marzo-de-2021",
             "role": "Secretario General del Senado",
         },
+        "LANDEROS": bcn_person(
+            "4471",
+            speaker="Miguel Landeros Perkic",
+            role="Secretario General de la Cámara de Diputadas y Diputados",
+        ),
+        "MELERO": bcn_person("504", speaker="Patricio Melero Abaroa", role="Ministro del Trabajo y Previsión Social"),
+        "SILVA": {
+            "speaker": "Pilar Silva García de Cortázar",
+            "speaker_id": "PersonaExt21419Silva",
+            "speaker_href": "https://www.senado.cl/comunicaciones/noticias/sesion-56a-especial-en-miercoles-16-de-octubre-de-2019",
+            "role": "Secretaria General subrogante del Senado",
+        },
+        "WEBER": {
+            "speaker": "Alejandro Weber Pérez",
+            "speaker_id": "PersonaExt21419Weber",
+            "speaker_href": "https://www.hacienda.cl/subsecretaria/resena-historica",
+            "role": "Subsecretario de Hacienda",
+        },
     },
-    "http://datos.bcn.cl/recurso/cl/documento/706988": {
-        "CARIOLA": bcn_person("4520"),
-        "AEDO": bcn_person("5253"),
-        "RIVAS": bcn_person("1894"),
-        "COLOMA": bcn_person("4543"),
-        # No aparecen en los AKN anteriores porque asumieron/no intervinieron
-        # allí; los IDs se verificaron en recursos oficiales de BCN.
-        "DURAN": bcn_person("4567", speaker="Jorge Andrés Durán Espinoza"),
-        "CELEDON": bcn_person("4740", speaker="Roberto Antonio Celedón Fernández"),
+    "21538": {
+        "AGUILERA": {
+            "speaker": "Ximena Aguilera Sanhueza",
+            "speaker_id": "PersonaExt21538Aguilera",
+            "speaker_href": "https://www.minsal.cl/historial-de-ministros-de-salud/",
+            "role": "Ministra de Salud",
+        },
+        "JARA": {
+            "speaker": "Jeannette Jara",
+            "speaker_id": "PersonaExt1",
+            "speaker_href": "https://es.wikipedia.org/wiki/Jeannette_Jara",
+            "role": "Ministra del Trabajo y Previsión Social",
+        },
+        "LANDEROS": bcn_person(
+            "4471",
+            speaker="Miguel Landeros Perkic",
+            role="Secretario General de la Cámara de Diputadas y Diputados",
+        ),
+        "MARCEL": bcn_person("4216", speaker="Mario Marcel Cullell", role="Ministro de Hacienda"),
+        "ROJAS": {
+            "speaker": "Luis Rojas Gallardo",
+            "speaker_id": "PersonaExt21538Rojas",
+            "speaker_href": "https://www.camara.cl/verdoc.aspx?DESTINOID=170907&prmID=214132&prmTIPO=OFICIO",
+            "role": "Prosecretario de la Cámara de Diputadas y Diputados",
+        },
     },
 }
+
+DOCUMENT_SPEAKER_OVERRIDES_BY_LAW = {
+    "21735": {
+        "http://datos.bcn.cl/recurso/cl/documento/704142": {
+            "CIFUENTES": bcn_person("5200"), "BOBADILLA": bcn_person("2861"),
+            "MULET": bcn_person("1782"), "MEZA": bcn_person("5272"),
+        },
+        "http://datos.bcn.cl/recurso/cl/documento/704058": {
+            "CIFUENTES": bcn_person("5200"), "DE LA CARRERA": bcn_person("5202"),
+            "MANOUCHEHRI": bcn_person("5201"), "SERRANO": bcn_person("5209"),
+            "MEZA": bcn_person("5272"),
+        },
+        "http://datos.bcn.cl/recurso/cl/documento/706982": {
+            "ALLENDE": bcn_person("3494"), "ARAVENA": bcn_person("4593"),
+            "ARAYA": bcn_person("339"), "CHAHUAN": bcn_person("685"),
+            "CRUZ COKE": bcn_person("4569"), "EBENSPERGER": bcn_person("4589"),
+            "GARCIA": bcn_person("279"), "INSULZA": bcn_person("4141"),
+            "KUSANOVIC": bcn_person("5197"), "LAGOS": bcn_person("3099"),
+            "MOREIRA": bcn_person("1713"), "NUNEZ": bcn_person("4542"),
+            "OSSANDON": bcn_person("4521"), "PROHENS": bcn_person("4591"),
+            "PROVOSTE": bcn_person("4323"), "WALKER": bcn_person("3735"),
+            "PASCUAL": bcn_person("5193"),
+            "GUZMAN": {
+                "speaker": "Raúl Guzmán Uribe", "speaker_id": "PersonaExt3",
+                "speaker_href": "NA", "role": "Secretario General del Senado",
+            },
+        },
+        "http://datos.bcn.cl/recurso/cl/documento/706988": {
+            "CARIOLA": bcn_person("4520"), "AEDO": bcn_person("5253"),
+            "RIVAS": bcn_person("1894"), "COLOMA": bcn_person("4543"),
+            "DURAN": bcn_person("4567", speaker="Jorge Andrés Durán Espinoza"),
+            "CELEDON": bcn_person("4740", speaker="Roberto Antonio Celedón Fernández"),
+        },
+    },
+    "21419": {
+        "http://datos.bcn.cl/recurso/cl/documento/697505": {
+            "BARRERA": bcn_person("4560"), "PAULSEN": bcn_person("4515"),
+        },
+        "http://datos.bcn.cl/recurso/cl/documento/696951": {
+            "ALLENDE": bcn_person("3494"), "ARAVENA": bcn_person("4593"),
+            "BIANCHI": bcn_person("1274"), "COLOMA": bcn_person("1778"),
+            "EBENSPERGER": bcn_person("4589"), "ELIZALDE": bcn_person("4584"),
+            "GARCIA": bcn_person("279"), "GIRARDI": bcn_person("1961"),
+            "GOIC": bcn_person("1706"), "INSULZA": bcn_person("4141"),
+            "KAST": bcn_person("4030"), "LAGOS": bcn_person("3099"),
+            "LETELIER": bcn_person("2605"), "MONTES": bcn_person("1667"),
+            "MOREIRA": bcn_person("1713"), "NAVARRO": bcn_person("3688"),
+            "ORDENES": bcn_person("4592"), "OSSANDON": bcn_person("4521"),
+            "PIZARRO": bcn_person("218"), "PROVOSTE": bcn_person("4323"),
+            "QUINTEROS": bcn_person("4519"), "RINCON": bcn_person("2362"),
+        },
+        "http://datos.bcn.cl/recurso/cl/documento/698998": {
+            "ORTIZ": bcn_person("1209"), "SCHILLING": bcn_person("3014"),
+            "UNDURRAGA": bcn_person("4563"), "VENEGAS": bcn_person("3192"),
+        },
+    },
+    "21538": {
+        "http://datos.bcn.cl/recurso/cl/documento/700181": {
+            "BIANCHI": bcn_person("1274"), "GUZMAN": bcn_person("5255"),
+            "MIROSEVIC": bcn_person("4531"),
+        },
+        "http://datos.bcn.cl/recurso/cl/documento/700224": {
+            "ALLENDE": bcn_person("3494"), "CHAHUAN": bcn_person("685"),
+            "COLOMA": bcn_person("1778"), "EBENSPERGER": bcn_person("4589"),
+            "ELIZALDE": bcn_person("4584"), "GAHONA": bcn_person("4504"),
+            "GALILEA": bcn_person("4633"), "GARCIA": bcn_person("279"),
+            "GUZMAN": {
+                "speaker": "Raúl Guzmán Uribe", "speaker_id": "PersonaExt21538Guzman",
+                "speaker_href": "https://www.senado.cl/comunicaciones/noticias/sesion-155a-ordinaria-miercoles-3-de-marzo-de-2021",
+                "role": "Secretario General del Senado",
+            },
+            "JACKSON": bcn_person("4541"), "KAST": bcn_person("4030"),
+            "MOREIRA": bcn_person("1713"), "PASCUAL": bcn_person("5193"),
+            "PROVOSTE": bcn_person("4323"), "RINCON": bcn_person("2362"),
+            "SANDOVAL": bcn_person("1646"), "SANHUEZA": bcn_person("4623"),
+        },
+    },
+}
+
+external_speakers_dict = EXTERNAL_SPEAKERS_BY_LAW[LAW_NUMBER]
+document_speaker_overrides = DOCUMENT_SPEAKER_OVERRIDES_BY_LAW[LAW_NUMBER]
 
 data_normalized_full = normalize_speech_content(
     data_speech,
@@ -443,6 +666,13 @@ candidates_full.to_parquet(PROC_DATA_DIR / "speaker_candidates.parquet", index=F
 candidates_pending.to_parquet(
     PROC_DATA_DIR / "speaker_candidates_pending.parquet", index=False
 )
+if not candidates_pending.empty:
+    pending_summary = candidates_pending[
+        ["speaker_key", "identity_status", "n_occurrences"]
+    ].to_dict(orient="records")
+    raise ValueError(
+        f"Quedan hablantes pendientes en la ley {LAW_NUMBER}: {pending_summary}"
+    )
 candidate_progress.to_csv(
     TABLE_OUTPUT_DIR / "speaker_candidate_progress.csv", index=False
 )
@@ -489,20 +719,36 @@ BCN tiene una gran base de datos no estructurada. Una página de parlamentario s
 ![](output/figures/paste-4.png)Se accedió al formato JSON de esta misma plataforma, extrayendo todos los datos relevantes, como el género, el partido y la edad. En algunos casos, como en el del partido, fue necesario acceder a dos URL adicionales luego de esta. El siguiente bloque de código puede demorar mucho tiempo (\~30 minutos). Solo se extrayó la última militancia de cada parlamentario por el largo tiempo de espera.
 
 ```{python}
-#| eval: false
-# Este bloque se ejecuta solo al refrescar la tabla, porque consulta BCN y puede tardar cerca de una hora.
-parliamentarians = build_parliamentarian_table(data_normalized_full, include_all_militancies=False, fetch_militancy_dates=False, timeout=30, max_attempts=1)
+# Este bloque consulta BCN y puede tardar cerca de una hora. El parámetro
+# refresh_parliamentarians lo mantiene apagado en renders ordinarios.
+if REFRESH_PARLIAMENTARIANS:
+    parliamentarians = build_parliamentarian_table(
+        data_normalized_full,
+        include_all_militancies=False,
+        fetch_militancy_dates=False,
+        timeout=30,
+        max_attempts=1,
+    )
+    parliamentarians_full = debug_parliamentarian_data_errors(
+        parliamentarians,
+        include_all_militancies=False,
+        fetch_militancy_dates=False,
+        timeout=60,
+        max_attempts=5,
+        backoff_seconds=3,
+    )
+    parliamentarians_full.to_parquet(
+        PROC_DATA_DIR / "parliamentarians.parquet",
+        index=False,
+        engine="pyarrow",
+    )
 
-# Función para reintentar con más tiempo en los casos con errores
-parliamentarians_full = debug_parliamentarian_data_errors(
-    parliamentarians,
-    include_all_militancies=False, fetch_militancy_dates=False,
-    timeout=60,
-    max_attempts=5,
-    backoff_seconds=3,
-)
-# Guardamos en parquet
-parliamentarians_full.to_parquet(PROC_DATA_DIR / "parliamentarians.parquet")
+parliamentarian_path = PROC_DATA_DIR / "parliamentarians.parquet"
+if not parliamentarian_path.exists():
+    raise FileNotFoundError(
+        f"Falta {parliamentarian_path}. Ejecute el render con "
+        "refresh_parliamentarians:true."
+    )
 ```
 
 ## Dataframe consolidado
@@ -551,8 +797,12 @@ speech_df_full = build_speech_analysis_dataframe(
     include_unresolved=True,
 )
 speech_df_full = speech_df_full[
-    speech_df_full["bill_number"].eq("15480-13")
+    speech_df_full["bill_number"].eq(BILL_NUMBER)
 ].reset_index(drop=True)
+if speech_df_full.empty:
+    raise ValueError(
+        f"No se extrajeron unidades del boletín {BILL_NUMBER} para la ley {LAW_NUMBER}"
+    )
 
 # El orden se calcula antes de filtrar, por lo que es compartido por todas las
 # vistas y deja huecos explícitos cuando una unidad se excluye del análisis.
@@ -660,6 +910,590 @@ speech_quality_report[[
 
 # Identificación de hablantes
 
-# Dataframe a formato long y lógica de chunking
+# Corpus definitivo de chunks en formato long
 
-#
+La unidad definitiva para la codificación es el bloque de párrafos. La segmentación se materializa en este reporte, en lugar de reconstruirse al iniciar una aplicación consumidora. Así, la validación manual y la futura codificación asistida por LLM reciben exactamente las mismas unidades, IDs, offsets y reglas de longitud.
+
+Los párrafos con menos de 50 palabras se agregan preferentemente al bloque anterior, hasta un objetivo de 100 palabras y sin superar 150. Un párrafo que excede el máximo se divide primero por límites de oración y, solo si es imprescindible, por límites de palabra. Los residuos con menos de 5 palabras no forman una unidad codificable.
+
+```{python}
+import hashlib
+import json
+import re
+from typing import Any
+
+
+MINIMUM_WORDS = 5
+SHORT_PARAGRAPH_WORDS = 50
+TARGET_BLOCK_WORDS = 100
+MAX_BLOCK_WORDS = 150
+CODING_CHUNKS_SCHEMA_VERSION = "coding-chunks-1.0.0"
+
+WORD_RE = re.compile(r"[^\W_]+(?:[-’'][^\W_]+)*", re.UNICODE)
+PARAGRAPH_RE = re.compile(r"[^\r\n]+")
+SENTENCE_BOUNDARY_RE = re.compile(r"[.!?…]+[\"»”’\)\]]*(?:\s+|$)")
+
+
+def count_words(text: str) -> int:
+    return len(WORD_RE.findall(text))
+
+
+def text_sha256(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def paragraph_fragments(text: str) -> list[dict[str, Any]]:
+    """Separa por saltos de línea y conserva offsets sobre la intervención."""
+    paragraphs = []
+    for match in PARAGRAPH_RE.finditer(text):
+        raw = match.group(0)
+        content = raw.strip()
+        if not content:
+            continue
+        left_trim = len(raw) - len(raw.lstrip())
+        start_char = match.start() + left_trim
+        paragraphs.append(
+            {
+                "content": content,
+                "source_start_char": start_char,
+                "source_end_char": start_char + len(content),
+                "n_words": count_words(content),
+            }
+        )
+    return paragraphs
+
+
+def source_slice(
+    source: dict[str, Any], start_char: int, end_char: int
+) -> dict[str, Any]:
+    """Recorta un fragmento sin perder los offsets de la intervención original."""
+    raw = source["content"][start_char:end_char]
+    content = raw.strip()
+    left_trim = len(raw) - len(raw.lstrip())
+    absolute_start = source["source_start_char"] + start_char + left_trim
+    return {
+        "content": content,
+        "source_start_char": absolute_start,
+        "source_end_char": absolute_start + len(content),
+        "n_words": count_words(content),
+    }
+
+
+def split_fragment_by_words(
+    fragment: dict[str, Any], max_block_words: int
+) -> list[dict[str, Any]]:
+    """Aplica el corte de respaldo a una oración que por sí sola excede el máximo."""
+    words = list(WORD_RE.finditer(fragment["content"]))
+    if len(words) <= max_block_words:
+        return [fragment]
+    result = []
+    start_char = 0
+    word_index = max_block_words
+    while word_index < len(words):
+        cut = words[word_index].start()
+        while cut > start_char and not fragment["content"][cut - 1].isspace():
+            cut -= 1
+        if cut <= start_char:
+            cut = words[word_index].start()
+        piece = source_slice(fragment, start_char, cut)
+        if piece["content"]:
+            result.append(piece)
+        start_char = cut
+        word_index += max_block_words
+    piece = source_slice(fragment, start_char, len(fragment["content"]))
+    if piece["content"]:
+        result.append(piece)
+    return result
+
+
+def sentence_fragments(paragraph: dict[str, Any]) -> list[dict[str, Any]]:
+    """Divide un párrafo por puntuación terminal, conservando la puntuación."""
+    fragments = []
+    start_char = 0
+    for match in SENTENCE_BOUNDARY_RE.finditer(paragraph["content"]):
+        piece = source_slice(paragraph, start_char, match.end())
+        if piece["content"]:
+            fragments.append(piece)
+        start_char = match.end()
+    if start_char < len(paragraph["content"]):
+        piece = source_slice(paragraph, start_char, len(paragraph["content"]))
+        if piece["content"]:
+            fragments.append(piece)
+    return fragments or [dict(paragraph)]
+
+
+def split_paragraph(
+    paragraph: dict[str, Any],
+    target_block_words: int,
+    max_block_words: int,
+) -> list[dict[str, Any]]:
+    """Produce segmentos legibles de un párrafo bajo un máximo estricto."""
+    if paragraph["n_words"] <= max_block_words:
+        segments = [dict(paragraph)]
+    else:
+        atoms = []
+        for sentence in sentence_fragments(paragraph):
+            atoms.extend(split_fragment_by_words(sentence, max_block_words))
+        grouped_atoms = []
+        current = []
+        current_words = 0
+        for atom in atoms:
+            if current and (
+                current_words >= target_block_words
+                or current_words + atom["n_words"] > max_block_words
+            ):
+                grouped_atoms.append(current)
+                current = []
+                current_words = 0
+            current.append(atom)
+            current_words += atom["n_words"]
+        if current:
+            grouped_atoms.append(current)
+
+        segments = []
+        for atom_group in grouped_atoms:
+            relative_start = (
+                atom_group[0]["source_start_char"] - paragraph["source_start_char"]
+            )
+            relative_end = (
+                atom_group[-1]["source_end_char"] - paragraph["source_start_char"]
+            )
+            segments.append(source_slice(paragraph, relative_start, relative_end))
+
+    segment_count = len(segments)
+    for segment_number, segment in enumerate(segments, start=1):
+        segment["paragraph_number"] = paragraph["paragraph_number"]
+        segment["paragraph_segment_number"] = segment_number
+        segment["paragraph_segment_count"] = segment_count
+    return segments
+
+
+def merge_segments(segments: list[dict[str, Any]]) -> dict[str, Any]:
+    """Une segmentos contiguos y registra su procedencia en una forma serializable."""
+    content_parts = [segments[0]["content"]]
+    for previous, current in zip(segments, segments[1:], strict=False):
+        separator = (
+            " "
+            if previous["paragraph_number"] == current["paragraph_number"]
+            else "\n\n"
+        )
+        content_parts.extend([separator, current["content"]])
+    content = "".join(content_parts)
+    paragraph_numbers = {segment["paragraph_number"] for segment in segments}
+    source_segments = [
+        {
+            "paragraph_number": segment["paragraph_number"],
+            "paragraph_segment_number": segment["paragraph_segment_number"],
+            "paragraph_segment_count": segment["paragraph_segment_count"],
+            "source_start_char": segment["source_start_char"],
+            "source_end_char": segment["source_end_char"],
+            "n_words": segment["n_words"],
+            "content_sha256": text_sha256(segment["content"]),
+        }
+        for segment in segments
+    ]
+    return {
+        "_members": segments,
+        "content": content,
+        "content_sha256": text_sha256(content),
+        "source_start_char": segments[0]["source_start_char"],
+        "source_end_char": segments[-1]["source_end_char"],
+        "paragraph_start": segments[0]["paragraph_number"],
+        "paragraph_end": segments[-1]["paragraph_number"],
+        "block_paragraph_count": len(paragraph_numbers),
+        "n_words": sum(segment["n_words"] for segment in segments),
+        "source_segments_json": json.dumps(
+            source_segments,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+    }
+
+
+def paragraph_blocks(
+    paragraphs: list[dict[str, Any]],
+    short_paragraph_words: int,
+    target_block_words: int,
+    max_block_words: int,
+) -> list[dict[str, Any]]:
+    """Agrupa párrafos breves y divide párrafos extensos bajo un máximo estricto."""
+    segments = []
+    for paragraph in paragraphs:
+        segments.extend(
+            split_paragraph(paragraph, target_block_words, max_block_words)
+        )
+
+    block_members = []
+    pending = []
+
+    def pending_words() -> int:
+        return sum(segment["n_words"] for segment in pending)
+
+    def flush_pending() -> None:
+        nonlocal pending
+        if pending:
+            block_members.append(pending)
+            pending = []
+
+    for segment in segments:
+        segment_words = segment["n_words"]
+        if pending:
+            if segment_words >= short_paragraph_words:
+                total = pending_words()
+                if total < target_block_words and total + segment_words <= max_block_words:
+                    pending.append(segment)
+                    flush_pending()
+                else:
+                    flush_pending()
+                    block_members.append([segment])
+            else:
+                if pending_words() + segment_words > max_block_words:
+                    flush_pending()
+                pending.append(segment)
+                if pending_words() >= target_block_words:
+                    flush_pending()
+            continue
+
+        if segment_words >= short_paragraph_words:
+            block_members.append([segment])
+            continue
+
+        if block_members:
+            previous_words = sum(member["n_words"] for member in block_members[-1])
+            if previous_words + segment_words <= max_block_words:
+                block_members[-1].append(segment)
+                continue
+
+        pending.append(segment)
+        if pending_words() >= target_block_words:
+            flush_pending()
+
+    flush_pending()
+    blocks = [merge_segments(members) for members in block_members]
+    if any(block["n_words"] > max_block_words for block in blocks):
+        raise ValueError(
+            f"La segmentación produjo un bloque sobre {max_block_words} palabras"
+        )
+    return blocks
+
+
+def segment_token(segment: dict[str, Any]) -> str:
+    token = f"p{segment['paragraph_number']:04d}"
+    if segment["paragraph_segment_count"] > 1:
+        token += f"s{segment['paragraph_segment_number']:03d}"
+    return token
+
+
+def length_bin(words: int) -> str:
+    if words <= 75:
+        return "short_000_075"
+    if words <= 500:
+        return "medium_076_500"
+    return "long_501_plus"
+```
+
+La siguiente transformación aplica esas reglas al corpus analítico consolidado. Solo incorpora participaciones no vacías que ya fueron marcadas para análisis; los eventos de transcripción permanecen en `speech_df.parquet`, pero no se convierten en unidades de codificación. Se repiten únicamente metadatos escalares útiles para análisis o auditoría, lo que mantiene una observación por fila y evita columnas anidadas.
+
+```{python}
+CODING_METADATA_COLUMNS = [
+    "document_uri",
+    "utterance_id",
+    "utterance_order",
+    "date",
+    "title",
+    "bill_number",
+    "constitutional_stage",
+    "regulatory_stage",
+    "debate_result",
+    "point_of_order_id",
+    "point_of_order_title",
+    "section_kind",
+    "section_name",
+    "section_id",
+    "project_id",
+    "project_title",
+    "participation_id",
+    "participation_type",
+    "item_path",
+    "item_depth",
+    "kind",
+    "source_kind",
+    "is_labeled",
+    "is_interruption",
+    "is_preamble",
+    "analysis_included",
+    "speaker_id",
+    "speaker_bcn_id",
+    "speaker",
+    "speaker_href",
+    "role",
+    "speaker_resolution_status",
+    "speaker_source",
+    "person_id",
+    "person_href",
+    "name",
+    "gender",
+    "nationality",
+    "birth_date",
+    "current_party",
+    "current_party_href",
+    "speaker_data_status",
+]
+
+
+def build_coding_chunks_long(dataframe: pd.DataFrame) -> pd.DataFrame:
+    """Materializa una fila por chunk codificable con IDs y offsets estables."""
+    required = {
+        "utterance_id",
+        "document_uri",
+        "utterance_order",
+        "kind",
+        "content",
+        "bill_number",
+        "analysis_included",
+        "is_preamble",
+    }
+    missing = sorted(required.difference(dataframe.columns))
+    if missing:
+        raise ValueError(f"Faltan columnas para construir chunks: {missing}")
+
+    mask = (
+        dataframe["kind"].eq("participation")
+        & dataframe["analysis_included"].fillna(False).astype(bool)
+        & ~dataframe["is_preamble"].fillna(False).astype(bool)
+    )
+    source = dataframe.loc[mask].copy()
+    source["content"] = source["content"].fillna("").astype(str)
+    source = source.loc[source["content"].str.strip().ne("")].copy()
+    if source.empty:
+        raise ValueError("El filtro no produjo intervenciones codificables")
+    if source["utterance_id"].duplicated().any():
+        duplicates = source.loc[
+            source["utterance_id"].duplicated(), "utterance_id"
+        ].tolist()
+        raise ValueError(f"utterance_id duplicado antes del chunking: {duplicates[:3]}")
+
+    source = source.sort_values(
+        ["document_uri", "utterance_order"], kind="stable"
+    ).reset_index(drop=True)
+    metadata_columns = [
+        column for column in CODING_METADATA_COLUMNS if column in source.columns
+    ]
+    chunk_rows = []
+    for _, row in source.iterrows():
+        text = str(row["content"])
+        paragraphs = paragraph_fragments(text)
+        for paragraph_number, paragraph in enumerate(paragraphs, start=1):
+            paragraph["paragraph_number"] = paragraph_number
+        blocks = paragraph_blocks(
+            paragraphs,
+            short_paragraph_words=SHORT_PARAGRAPH_WORDS,
+            target_block_words=TARGET_BLOCK_WORDS,
+            max_block_words=MAX_BLOCK_WORDS,
+        )
+        source_n_words = row.get("n_words")
+        try:
+            source_n_words = int(source_n_words)
+        except (TypeError, ValueError):
+            source_n_words = count_words(text)
+
+        for block in blocks:
+            if block["n_words"] < MINIMUM_WORDS:
+                continue
+            first_segment = block["_members"][0]
+            last_segment = block["_members"][-1]
+            start_token = segment_token(first_segment)
+            end_token = segment_token(last_segment)
+            unit_suffix = (
+                start_token if start_token == end_token else f"{start_token}-{end_token}"
+            )
+            chunk_id = f"{row['utterance_id']}::{unit_suffix}"
+            chunk_rows.append(
+                {
+                    **{column: row[column] for column in metadata_columns},
+                    "chunk_id": chunk_id,
+                    "unit_id": chunk_id,
+                    "unit_kind": "paragraph_block",
+                    "chunk_schema_version": CODING_CHUNKS_SCHEMA_VERSION,
+                    "paragraph_number": block["paragraph_start"],
+                    "paragraph_start": block["paragraph_start"],
+                    "paragraph_end": block["paragraph_end"],
+                    "block_paragraph_count": block["block_paragraph_count"],
+                    "paragraph_count": len(paragraphs),
+                    "source_start_char": block["source_start_char"],
+                    "source_end_char": block["source_end_char"],
+                    "source_segments_json": block["source_segments_json"],
+                    "source_utterance_n_words": source_n_words,
+                    "content": block["content"],
+                    "content_sha256": block["content_sha256"],
+                    "n_words": block["n_words"],
+                    "length_bin": length_bin(block["n_words"]),
+                    "minimum_words": MINIMUM_WORDS,
+                    "short_paragraph_words": SHORT_PARAGRAPH_WORDS,
+                    "target_block_words": TARGET_BLOCK_WORDS,
+                    "max_block_words": MAX_BLOCK_WORDS,
+                }
+            )
+
+    chunks = pd.DataFrame(chunk_rows)
+    if chunks.empty:
+        raise ValueError("El chunking no produjo unidades codificables")
+    if chunks["chunk_id"].duplicated().any():
+        duplicates = chunks.loc[chunks["chunk_id"].duplicated(), "chunk_id"].tolist()
+        raise ValueError(f"chunk_id duplicado: {duplicates[:3]}")
+    if chunks["n_words"].gt(MAX_BLOCK_WORDS).any():
+        raise ValueError("Hay chunks que exceden el máximo estricto")
+
+    chunks["utterance_chunk_number"] = (
+        chunks.groupby("utterance_id", sort=False).cumcount() + 1
+    )
+    chunks["utterance_chunk_count"] = chunks.groupby(
+        "utterance_id", sort=False
+    )["chunk_id"].transform("size")
+    chunks["document_chunk_order"] = (
+        chunks.groupby("document_uri", sort=False).cumcount() + 1
+    )
+    chunks["previous_chunk_id"] = chunks.groupby("document_uri", sort=False)[
+        "chunk_id"
+    ].shift(1)
+    chunks["next_chunk_id"] = chunks.groupby("document_uri", sort=False)[
+        "chunk_id"
+    ].shift(-1)
+
+    for utterance_id, group in chunks.groupby("utterance_id", sort=False):
+        starts = group["source_start_char"].tolist()
+        ends = group["source_end_char"].tolist()
+        if starts != sorted(starts):
+            raise ValueError(f"El orden de chunks retrocede dentro de {utterance_id}")
+        if any(previous_end > next_start for previous_end, next_start in zip(ends, starts[1:])):
+            raise ValueError(f"Hay chunks solapados dentro de {utterance_id}")
+
+    leading_columns = [
+        "chunk_id",
+        "unit_id",
+        "unit_kind",
+        "chunk_schema_version",
+        "utterance_id",
+        "document_uri",
+        "utterance_order",
+        "document_chunk_order",
+        "utterance_chunk_number",
+        "utterance_chunk_count",
+        "paragraph_number",
+        "paragraph_start",
+        "paragraph_end",
+        "block_paragraph_count",
+        "paragraph_count",
+        "source_start_char",
+        "source_end_char",
+        "source_segments_json",
+        "source_utterance_n_words",
+        "content",
+        "content_sha256",
+        "n_words",
+        "length_bin",
+        "previous_chunk_id",
+        "next_chunk_id",
+        "minimum_words",
+        "short_paragraph_words",
+        "target_block_words",
+        "max_block_words",
+    ]
+    remaining_columns = [
+        column for column in chunks.columns if column not in leading_columns
+    ]
+    return chunks[leading_columns + remaining_columns].reset_index(drop=True)
+
+
+coding_chunks_long = build_coding_chunks_long(speech_df)
+coding_chunks_long.to_parquet(
+    PROC_DATA_DIR / "coding_chunks_long.parquet",
+    index=False,
+    engine="pyarrow",
+)
+```
+
+Se verifica el artefacto persistido —no solo el objeto en memoria— para asegurar que Parquet conserva el contrato que leerán los consumidores.
+
+```{python}
+coding_chunks_check = pd.read_parquet(
+    PROC_DATA_DIR / "coding_chunks_long.parquet",
+    engine="pyarrow",
+)
+
+if not coding_chunks_check["chunk_id"].is_unique:
+    raise ValueError("El Parquet definitivo contiene chunk_id duplicados")
+if not coding_chunks_check["content_sha256"].eq(
+    coding_chunks_check["content"].map(text_sha256)
+).all():
+    raise ValueError("El texto persistido no coincide con content_sha256")
+if not coding_chunks_check["n_words"].between(
+    MINIMUM_WORDS, MAX_BLOCK_WORDS
+).all():
+    raise ValueError("El Parquet definitivo viola los límites de longitud")
+if not coding_chunks_check["chunk_schema_version"].eq(
+    CODING_CHUNKS_SCHEMA_VERSION
+).all():
+    raise ValueError("El Parquet definitivo contiene una versión de esquema inesperada")
+if set(coding_chunks_check["bill_number"].astype(str)) != {BILL_NUMBER}:
+    raise ValueError("El Parquet definitivo contiene un boletín distinto al esperado")
+expected_chunk_documents = set(
+    corpus_manifest.loc[
+        corpus_manifest["include_in_speech_pipeline"], "document_uri"
+    ]
+)
+if set(coding_chunks_check["document_uri"]) != expected_chunk_documents:
+    raise ValueError(
+        "El Parquet definitivo no cubre exactamente los debates del manifiesto"
+    )
+
+for column in coding_chunks_check.columns:
+    if coding_chunks_check[column].dropna().map(
+        lambda value: isinstance(value, (dict, list, set, tuple))
+    ).any():
+        raise ValueError(f"La columna {column} contiene objetos anidados")
+
+source_content_by_id = speech_df.set_index("utterance_id")["content"].astype(str)
+for _, chunk in coding_chunks_check.iterrows():
+    source_content = source_content_by_id.loc[chunk["utterance_id"]]
+    source_segments = json.loads(chunk["source_segments_json"])
+    if not source_segments:
+        raise ValueError(f"{chunk['chunk_id']} no registra segmentos de origen")
+    for segment in source_segments:
+        source_text = source_content[
+            segment["source_start_char"] : segment["source_end_char"]
+        ]
+        if text_sha256(source_text) != segment["content_sha256"]:
+            raise ValueError(
+                f"Los offsets de {chunk['chunk_id']} no coinciden con speech_df"
+            )
+
+chunk_summary = pd.DataFrame(
+    {
+        "métrica": [
+            "ley",
+            "boletín",
+            "intervenciones fuente",
+            "chunks definitivos",
+            "documentos",
+            "mínimo de palabras",
+            "mediana de palabras",
+            "máximo de palabras",
+        ],
+        "valor": [
+            LAW_NUMBER,
+            BILL_NUMBER,
+            coding_chunks_check["utterance_id"].nunique(),
+            len(coding_chunks_check),
+            coding_chunks_check["document_uri"].nunique(),
+            int(coding_chunks_check["n_words"].min()),
+            float(coding_chunks_check["n_words"].median()),
+            int(coding_chunks_check["n_words"].max()),
+        ],
+    }
+)
+chunk_summary
+```
+
+La tabla resume el corpus efectivamente persistido. Todos sus registros son bloques codificables con un identificador único, contenido verificable por hash y una extensión dentro de los límites declarados; `coding_chunks_long.parquet` es desde ahora el insumo común para la validación manual y la futura codificación con LLM.

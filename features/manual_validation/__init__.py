@@ -1,9 +1,7 @@
 """Manual sampling and validation feature for discourse coding."""
 
 from .service import (
-    DEFAULT_MIN_WORDS,
-    DEFAULT_SHORT_PARAGRAPH_WORDS,
-    DEFAULT_TARGET_BLOCK_WORDS,
+    CHUNK_SCHEMA_VERSION,
     SCHEMA_VERSION,
     ValidationError,
     ValidationService,
@@ -12,9 +10,7 @@ from .service import (
 )
 
 __all__ = [
-    "DEFAULT_MIN_WORDS",
-    "DEFAULT_SHORT_PARAGRAPH_WORDS",
-    "DEFAULT_TARGET_BLOCK_WORDS",
+    "CHUNK_SCHEMA_VERSION",
     "SCHEMA_VERSION",
     "ValidationError",
     "ValidationService",

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import tempfile
 import threading
@@ -14,8 +15,6 @@ from features.manual_validation.service import (
     SCHEMA_VERSION,
     ValidationError,
     ValidationService,
-    _paragraph_blocks,
-    _paragraphs,
     create_server,
     sample_records,
 )
@@ -29,7 +28,7 @@ class ManualValidationTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
-        self.source_path = self.root / "speech_df.parquet"
+        self.source_path = self.root / "coding_chunks_long.parquet"
         self.codebook_path = self.root / "codebook.json"
         self.output_dir = self.root / "validation"
         self._write_corpus()
@@ -44,160 +43,190 @@ class ManualValidationTestCase(unittest.TestCase):
         self.temporary.cleanup()
 
     def _write_corpus(self) -> None:
-        rows = [
-            {
-                "utterance_id": "doc-a-1",
-                "document_uri": "doc-a",
-                "utterance_order": 1,
-                "kind": "participation",
-                "content": "La solidaridad debe mejorar las pensiones.\nSí.",
-                "bill_number": "15480-13",
-                "section_name": "Discusión",
-                "is_preamble": False,
-                "date": "2024-01-01",
-                "constitutional_stage": "Primer trámite",
-                "title": "Sesión A",
-                "n_words": 7,
-                "speaker": "Nombre que no debe exponerse",
-                "speaker_id": "persona-secreta-1",
-                "current_party": "Partido secreto",
-                "gender": "F",
-            },
-            {
-                "utterance_id": "doc-a-2",
-                "document_uri": "doc-a",
-                "utterance_order": 2,
-                "kind": "participation",
-                "content": (
-                    "Rechazo que el ahorro individual pierda su propiedad.\n"
-                    "Este párrafo adicional sostiene una segunda razón previsional."
-                ),
-                "bill_number": "15480-13",
-                "section_name": "Discusión",
-                "is_preamble": False,
-                "date": "2024-01-01",
-                "constitutional_stage": "Primer trámite",
-                "title": "Sesión A",
-                "n_words": 16,
-                "speaker": "Segundo nombre oculto",
-                "speaker_id": "persona-secreta-2",
-                "current_party": "Otro partido secreto",
-                "gender": "M",
-            },
-            {
-                "utterance_id": "doc-a-3",
-                "document_uri": "doc-a",
-                "utterance_order": 3,
-                "kind": "participation",
-                "content": (
-                    "El costo fiscal debe poder sostenerse durante muchos años. " * 10
-                    + "\n"
-                    + "La responsabilidad previsional requiere una regla estable y transparente. " * 10
-                ),
-                "bill_number": "15480-13",
-                "section_name": "Discusión",
-                "is_preamble": False,
-                "date": "2024-01-01",
-                "constitutional_stage": "Primer trámite",
-                "title": "Sesión A",
-                "n_words": 180,
-                "speaker": "Tercer nombre oculto",
-                "speaker_id": "persona-secreta-3",
-                "current_party": "Partido secreto",
-                "gender": "M",
-            },
-            {
-                "utterance_id": "doc-b-1",
-                "document_uri": "doc-b",
-                "utterance_order": 1,
-                "kind": "participation",
-                "content": "Una pensión suficiente permite vivir con dignidad.",
-                "bill_number": "15480-13",
-                "section_name": "Discusión",
-                "is_preamble": False,
-                "date": "2025-01-02",
-                "constitutional_stage": "Segundo trámite",
-                "title": "Sesión B",
-                "n_words": 7,
-                "speaker": "Cuarto nombre oculto",
-                "speaker_id": "persona-secreta-4",
-                "current_party": "Partido secreto",
-                "gender": "F",
-            },
-            {
-                "utterance_id": "doc-b-2",
-                "document_uri": "doc-b",
-                "utterance_order": 2,
-                "kind": "participation",
-                "content": "La tabla es la siguiente y cedo la palabra.",
-                "bill_number": "15480-13",
-                "section_name": "Discusión",
-                "is_preamble": False,
-                "date": "2025-01-02",
-                "constitutional_stage": "Segundo trámite",
-                "title": "Sesión B",
-                "n_words": 8,
-                "speaker": "Quinto nombre oculto",
-                "speaker_id": "persona-secreta-5",
-                "current_party": "Partido secreto",
-                "gender": "M",
-            },
-            {
-                "utterance_id": "excluded-vote",
-                "document_uri": "doc-b",
-                "utterance_order": 3,
-                "kind": "participation",
-                "content": "Resultado de la votación nominal registrado por la secretaría.",
-                "bill_number": "15480-13",
-                "section_name": "Votacion",
-                "is_preamble": False,
-                "date": "2025-01-02",
-                "constitutional_stage": "Segundo trámite",
-                "title": "Sesión B",
-                "n_words": 9,
-                "analysis_included": False,
-            },
-            {
-                "utterance_id": "excluded-event",
-                "document_uri": "doc-b",
-                "utterance_order": 4,
-                "kind": "transcription_event",
-                "content": "Aplausos.",
-                "bill_number": "15480-13",
-                "section_name": "Discusión",
-                "is_preamble": False,
-                "date": "2025-01-02",
-                "constitutional_stage": "Segundo trámite",
-                "title": "Sesión B",
-                "n_words": 1,
-            },
-            {
-                "utterance_id": "excluded-bill",
-                "document_uri": "doc-c",
-                "utterance_order": 1,
-                "kind": "participation",
-                "content": "Discusión de otro proyecto.",
-                "bill_number": "99999-99",
-                "section_name": "Discusión",
-                "is_preamble": False,
-                "date": "2025-01-02",
-                "constitutional_stage": "Primer trámite",
-                "title": "Sesión C",
-                "n_words": 4,
-            },
-        ]
-        excluded_analysis = dict(rows[0])
-        excluded_analysis.update(
-            {
-                "utterance_id": "excluded-analysis",
-                "document_uri": "doc-d",
-                "content": "Intervención excluida por la definición del corpus analítico.",
-                "analysis_included": False,
-            }
+        long_first = "El costo fiscal debe poder sostenerse durante muchos años. " * 10
+        long_second = (
+            "La responsabilidad previsional requiere una regla estable y transparente. "
+            * 10
         )
-        rows.append(excluded_analysis)
-        for row in rows:
-            row.setdefault("analysis_included", True)
+        chunk_specs = [
+            (
+                "doc-a-1::p0001-p0002",
+                "doc-a-1",
+                "doc-a",
+                1,
+                1,
+                "La solidaridad debe mejorar las pensiones.\n\nSí.",
+                1,
+                2,
+                2,
+                1,
+                None,
+                "doc-a-2::p0001-p0002",
+            ),
+            (
+                "doc-a-2::p0001-p0002",
+                "doc-a-2",
+                "doc-a",
+                2,
+                2,
+                "Rechazo que el ahorro individual pierda su propiedad.\n\n"
+                "Este párrafo adicional sostiene una segunda razón previsional.",
+                1,
+                2,
+                2,
+                1,
+                "doc-a-1::p0001-p0002",
+                "doc-a-3::p0001",
+            ),
+            (
+                "doc-a-3::p0001",
+                "doc-a-3",
+                "doc-a",
+                3,
+                3,
+                long_first.strip(),
+                1,
+                1,
+                1,
+                2,
+                "doc-a-2::p0001-p0002",
+                "doc-a-3::p0002",
+            ),
+            (
+                "doc-a-3::p0002",
+                "doc-a-3",
+                "doc-a",
+                3,
+                4,
+                long_second.strip(),
+                2,
+                2,
+                1,
+                2,
+                "doc-a-3::p0001",
+                None,
+            ),
+            (
+                "doc-b-1::p0001",
+                "doc-b-1",
+                "doc-b",
+                1,
+                1,
+                "Una pensión suficiente permite vivir con dignidad.",
+                1,
+                1,
+                1,
+                1,
+                None,
+                "doc-b-2::p0001",
+            ),
+            (
+                "doc-b-2::p0001",
+                "doc-b-2",
+                "doc-b",
+                2,
+                2,
+                "La tabla es la siguiente y cedo la palabra.",
+                1,
+                1,
+                1,
+                1,
+                "doc-b-1::p0001",
+                "excluded-vote::p0001",
+            ),
+            (
+                "excluded-vote::p0001",
+                "excluded-vote",
+                "doc-b",
+                3,
+                3,
+                "Resultado de la votación nominal registrado por la secretaría.",
+                1,
+                1,
+                1,
+                1,
+                "doc-b-2::p0001",
+                None,
+            ),
+        ]
+        rows = []
+        for (
+            unit_id,
+            utterance_id,
+            document_uri,
+            utterance_order,
+            document_chunk_order,
+            content,
+            paragraph_start,
+            paragraph_end,
+            block_paragraph_count,
+            utterance_chunk_count,
+            previous_chunk_id,
+            next_chunk_id,
+        ) in chunk_specs:
+            n_words = len(content.split())
+            source_start_char = (
+                len(long_first) + 1 if unit_id == "doc-a-3::p0002" else 0
+            )
+            segment = {
+                "paragraph_number": paragraph_start,
+                "paragraph_segment_number": 1,
+                "paragraph_segment_count": 1,
+                "source_start_char": source_start_char,
+                "source_end_char": source_start_char + len(content),
+                "n_words": n_words,
+                "content_sha256": hashlib.sha256(content.encode()).hexdigest(),
+            }
+            source_segments = [segment] * block_paragraph_count
+            rows.append(
+                {
+                    "chunk_id": unit_id,
+                    "chunk_schema_version": "coding-chunks-1.0.0",
+                    "unit_id": unit_id,
+                    "unit_kind": "paragraph_block",
+                    "utterance_id": utterance_id,
+                    "document_uri": document_uri,
+                    "utterance_order": utterance_order,
+                    "document_chunk_order": document_chunk_order,
+                    "utterance_chunk_number": (
+                        2 if unit_id == "doc-a-3::p0002" else 1
+                    ),
+                    "utterance_chunk_count": utterance_chunk_count,
+                    "paragraph_number": paragraph_start,
+                    "paragraph_start": paragraph_start,
+                    "paragraph_end": paragraph_end,
+                    "block_paragraph_count": block_paragraph_count,
+                    "paragraph_count": paragraph_end,
+                    "source_start_char": source_start_char,
+                    "source_end_char": source_start_char + len(content),
+                    "source_segments_json": json.dumps(source_segments),
+                    "source_utterance_n_words": (
+                        180 if utterance_id == "doc-a-3" else n_words
+                    ),
+                    "date": "2024-01-01" if document_uri == "doc-a" else "2025-01-02",
+                    "constitutional_stage": (
+                        "Primer trámite" if document_uri == "doc-a" else "Segundo trámite"
+                    ),
+                    "title": "Sesión A" if document_uri == "doc-a" else "Sesión B",
+                    "bill_number": "15480-13",
+                    "content": content,
+                    "content_sha256": hashlib.sha256(content.encode()).hexdigest(),
+                    "n_words": n_words,
+                    "length_bin": (
+                        "short_000_075" if n_words <= 75 else "medium_076_500"
+                    ),
+                    "previous_chunk_id": previous_chunk_id,
+                    "next_chunk_id": next_chunk_id,
+                    "minimum_words": 5,
+                    "short_paragraph_words": 50,
+                    "target_block_words": 100,
+                    "max_block_words": 150,
+                    "speaker": "Nombre que no debe exponerse",
+                    "speaker_id": "persona-secreta",
+                    "current_party": "Partido secreto",
+                    "gender": "F",
+                }
+            )
         pd.DataFrame(rows).to_parquet(self.source_path, index=False)
 
     def _write_codebook(self) -> None:
@@ -240,7 +269,7 @@ class ManualValidationTestCase(unittest.TestCase):
     def _session_payload(self, session_id: str) -> dict:
         return json.loads((self.output_dir / f"{session_id}.json").read_text(encoding="utf-8"))
 
-    def test_corpus_builds_short_paragraph_blocks_and_keeps_votes(self) -> None:
+    def test_corpus_loads_finalized_long_chunks_and_keeps_context(self) -> None:
         self.assertEqual(len(self.service.records), 7)
         self.assertTrue(all(record["n_words"] >= 5 for record in self.service.records))
         self.assertTrue(all(record["n_words"] <= 150 for record in self.service.records))
@@ -265,42 +294,17 @@ class ManualValidationTestCase(unittest.TestCase):
         self.assertIsNone(by_id["doc-b-1::p0001"]["previous_context"])
         self.assertIn("excluded-vote::p0001", by_id)
 
-    def test_chunking_prefers_previous_context_and_enforces_strict_maximum(self) -> None:
-        text = "\n".join(
-            " ".join([f"p{paragraph_number}"] * words)
-            for paragraph_number, words in enumerate([60, 35, 17, 147, 34], start=1)
-        )
-        paragraphs = _paragraphs(text)
-        for paragraph_number, paragraph in enumerate(paragraphs, start=1):
-            paragraph["paragraph_number"] = paragraph_number
-        blocks = _paragraph_blocks(
-            paragraphs,
-            short_paragraph_words=50,
-            target_block_words=100,
-            max_block_words=150,
-        )
-        self.assertEqual([block["n_words"] for block in blocks], [112, 147, 34])
-        self.assertEqual(blocks[0]["paragraph_start"], 1)
-        self.assertEqual(blocks[0]["paragraph_end"], 3)
-        self.assertTrue(all(block["n_words"] <= 150 for block in blocks))
-
-        long_paragraph = _paragraphs(" ".join(["palabra"] * 320))
-        long_paragraph[0]["paragraph_number"] = 1
-        split_blocks = _paragraph_blocks(
-            long_paragraph,
-            short_paragraph_words=50,
-            target_block_words=100,
-            max_block_words=150,
-        )
-        self.assertEqual(sum(block["n_words"] for block in split_blocks), 320)
-        self.assertTrue(all(block["n_words"] <= 150 for block in split_blocks))
-        self.assertTrue(
-            all(
-                segment["paragraph_segment_count"] == len(split_blocks)
-                for block in split_blocks
-                for segment in block["source_segments"]
+    def test_loader_rejects_a_chunk_with_a_tampered_hash(self) -> None:
+        dataframe = pd.read_parquet(self.source_path)
+        dataframe.loc[0, "content_sha256"] = "0" * 64
+        tampered_path = self.root / "tampered_chunks.parquet"
+        dataframe.to_parquet(tampered_path, index=False)
+        with self.assertRaisesRegex(ValidationError, "content_sha256"):
+            ValidationService(
+                source_path=tampered_path,
+                codebook_path=self.codebook_path,
+                output_dir=self.root / "tampered-output",
             )
-        )
 
     def test_stratified_sampling_is_deterministic_and_unique(self) -> None:
         first = sample_records(self.service.records, 4, 77, "stratified")
@@ -378,11 +382,15 @@ class ManualValidationTestCase(unittest.TestCase):
         item = persisted["items"][0]
         self.assertEqual(persisted["schema_version"], SCHEMA_VERSION)
         self.assertEqual(persisted["source"]["unit_of_analysis"], "paragraph_block")
+        self.assertEqual(
+            persisted["source"]["chunk_schema_version"], "coding-chunks-1.0.0"
+        )
         self.assertEqual(persisted["sampling"]["minimum_words"], 5)
         self.assertEqual(persisted["sampling"]["short_paragraph_words"], 50)
         self.assertEqual(persisted["sampling"]["target_block_words"], 100)
         self.assertEqual(persisted["sampling"]["max_block_words"], 150)
         self.assertEqual(item["unit_kind"], "paragraph_block")
+        self.assertEqual(item["chunk_id"], item["unit_id"])
         self.assertEqual(item["revision"], 1)
         self.assertEqual(item["general_comment"], "El bloque combina dos argumentos.")
         self.assertEqual(item["quality_flags"], ["insufficient_context"])

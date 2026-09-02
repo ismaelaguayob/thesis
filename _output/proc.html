@@ -8,7 +8,7 @@
 
 <meta name="author" content="Ismael Aguayo">
 
-<title>Reporte de Avance: Metodología, evaluación de datos y extración masiva de la Biblioteca del Congreso Nacional</title>
+<title>Procesamiento de datos de la Biblioteca del Congreso Nacional (leyes 21.735 y 21.736)</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -24,30 +24,10 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-/* CSS for citations */
-div.csl-bib-body { }
-div.csl-entry {
-  clear: both;
-  margin-bottom: 0em;
-}
-.hanging-indent div.csl-entry {
-  margin-left:2em;
-  text-indent:-2em;
-}
-div.csl-left-margin {
-  min-width:2em;
-  float:left;
-}
-div.csl-right-inline {
-  margin-left:2em;
-  padding-left:1em;
-}
-div.csl-indent {
-  margin-left: 2em;
-}</style>
+</style>
 
 
-<script src="proc_files/libs/clipboard/clipboard.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script><script src="proc_files/libs/clipboard/clipboard.min.js"></script>
 <script src="proc_files/libs/quarto-html/quarto.js" type="module"></script>
 <script src="proc_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="proc_files/libs/quarto-html/popper.min.js"></script>
@@ -75,6 +55,9 @@ div.csl-indent {
     document.body.classList.add('hypothesis-enabled');
   });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.6/require.min.js" integrity="sha384-c9c+LnTbwQ3aujuU7ULEPVvgLs+Fn6fJUvIGTsuu1ZcCf11fiEubah0ttpca4ntM sha384-6V1/AdqZRWk1KAlWbKBlGhN7VG4iE/yAZcO6NZPMF8od0vukrvr0tg4qY6NSrItx" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
 
 
 <link rel="stylesheet" href="styles.css">
@@ -247,7 +230,7 @@ div.csl-indent {
 <header id="title-block-header" class="quarto-title-block default toc-left page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title">Reporte de Avance: Metodología, evaluación de datos y extración masiva de la Biblioteca del Congreso Nacional</h1>
+      <h1 class="title">Procesamiento de datos de la Biblioteca del Congreso Nacional (leyes 21.735 y 21.736)</h1>
                       </div>
   </div>
     
@@ -272,35 +255,29 @@ div.csl-indent {
     <h2 id="toc-title">Índice</h2>
    
   <ul>
-  <li><a href="#resumen-metodológico" id="toc-resumen-metodológico" class="nav-link active" data-scroll-target="#resumen-metodológico"><span class="header-section-number">0.1</span> Resumen metodológico</a>
+  <li><a href="#línea-de-tiempo-y-revisión-de-datos-ley-21.735" id="toc-línea-de-tiempo-y-revisión-de-datos-ley-21.735" class="nav-link active" data-scroll-target="#línea-de-tiempo-y-revisión-de-datos-ley-21.735"><span class="header-section-number">0.1</span> Línea de tiempo y revisión de datos ley 21.735</a>
   <ul>
-  <li><a href="#variables" id="toc-variables" class="nav-link" data-scroll-target="#variables"><span class="header-section-number">0.1.1</span> Variables:</a></li>
-  <li><a href="#ejemplo-de-codificación" id="toc-ejemplo-de-codificación" class="nav-link" data-scroll-target="#ejemplo-de-codificación"><span class="header-section-number">0.1.2</span> Ejemplo de codificación</a></li>
+  <li><a href="#primer-trámite-constitucional-cámara-de-diputados-20221107---20240124" id="toc-primer-trámite-constitucional-cámara-de-diputados-20221107---20240124" class="nav-link" data-scroll-target="#primer-trámite-constitucional-cámara-de-diputados-20221107---20240124"><span class="header-section-number">0.1.1</span> Primer Trámite Constitucional: Cámara de Diputados (2022/11/07 - 2024/01/24)</a></li>
+  <li><a href="#segundo-trámite-constitucional-senado-20250122---20250129" id="toc-segundo-trámite-constitucional-senado-20250122---20250129" class="nav-link" data-scroll-target="#segundo-trámite-constitucional-senado-20250122---20250129"><span class="header-section-number">0.1.2</span> Segundo trámite constitucional: Senado (2025/01/22 - 2025/01/29)</a></li>
+  <li><a href="#tercer-trámite-constitucional-cámara-de-diputados-20250129---20250129" id="toc-tercer-trámite-constitucional-cámara-de-diputados-20250129---20250129" class="nav-link" data-scroll-target="#tercer-trámite-constitucional-cámara-de-diputados-20250129---20250129"><span class="header-section-number">0.1.3</span> Tercer trámite constitucional: Cámara de Diputados (2025/01/29 - 2025/01/29)</a></li>
+  <li><a href="#cuarto-trámite-constitucional-tribunal-constitucional-20250129---20250307" id="toc-cuarto-trámite-constitucional-tribunal-constitucional-20250129---20250307" class="nav-link" data-scroll-target="#cuarto-trámite-constitucional-tribunal-constitucional-20250129---20250307"><span class="header-section-number">0.1.4</span> Cuarto trámite constitucional: Tribunal Constitucional (2025/01/29 - 2025/03/07)</a></li>
+  <li><a href="#quinto-trámite-constitucional-trámite-de-finalización-cámara-de-diputados-20250311---20250311" id="toc-quinto-trámite-constitucional-trámite-de-finalización-cámara-de-diputados-20250311---20250311" class="nav-link" data-scroll-target="#quinto-trámite-constitucional-trámite-de-finalización-cámara-de-diputados-20250311---20250311"><span class="header-section-number">0.1.5</span> Quinto trámite constitucional: Trámite de Finalización, Cámara de Diputados (2025/03/11 - 2025/03/11)</a></li>
+  <li><a href="#sexto-trámite-constitucional-promulgación-de-ley-en-diaro-oficial-20250320---20250320" id="toc-sexto-trámite-constitucional-promulgación-de-ley-en-diaro-oficial-20250320---20250320" class="nav-link" data-scroll-target="#sexto-trámite-constitucional-promulgación-de-ley-en-diaro-oficial-20250320---20250320"><span class="header-section-number">0.1.6</span> Sexto trámite constitucional: Promulgación de Ley en Diaro Oficial (2025/03/20 - 2025/03/20)</a></li>
   </ul></li>
-  <li><a href="#línea-de-tiempo-y-revisión-de-datos-ley-21.735" id="toc-línea-de-tiempo-y-revisión-de-datos-ley-21.735" class="nav-link" data-scroll-target="#línea-de-tiempo-y-revisión-de-datos-ley-21.735"><span class="header-section-number">0.2</span> Línea de tiempo y revisión de datos ley 21.735</a>
+  <li><a href="#procesamiento-de-datos" id="toc-procesamiento-de-datos" class="nav-link" data-scroll-target="#procesamiento-de-datos"><span class="header-section-number">0.2</span> Procesamiento de datos</a>
   <ul>
-  <li><a href="#primer-trámite-constitucional-cámara-de-diputados-20221107---20240124" id="toc-primer-trámite-constitucional-cámara-de-diputados-20221107---20240124" class="nav-link" data-scroll-target="#primer-trámite-constitucional-cámara-de-diputados-20221107---20240124"><span class="header-section-number">0.2.1</span> Primer Trámite Constitucional: Cámara de Diputados (2022/11/07 - 2024/01/24)</a></li>
-  <li><a href="#segundo-trámite-constitucional-senado-20250122---20250129" id="toc-segundo-trámite-constitucional-senado-20250122---20250129" class="nav-link" data-scroll-target="#segundo-trámite-constitucional-senado-20250122---20250129"><span class="header-section-number">0.2.2</span> Segundo trámite constitucional: Senado (2025/01/22 - 2025/01/29)</a></li>
-  <li><a href="#tercer-trámite-constitucional-cámara-de-diputados-20250129---20250129" id="toc-tercer-trámite-constitucional-cámara-de-diputados-20250129---20250129" class="nav-link" data-scroll-target="#tercer-trámite-constitucional-cámara-de-diputados-20250129---20250129"><span class="header-section-number">0.2.3</span> Tercer trámite constitucional: Cámara de Diputados (2025/01/29 - 2025/01/29)</a></li>
-  <li><a href="#cuarto-trámite-constitucional-tribunal-constitucional-20250129---20250307" id="toc-cuarto-trámite-constitucional-tribunal-constitucional-20250129---20250307" class="nav-link" data-scroll-target="#cuarto-trámite-constitucional-tribunal-constitucional-20250129---20250307"><span class="header-section-number">0.2.4</span> Cuarto trámite constitucional: Tribunal Constitucional (2025/01/29 - 2025/03/07)</a></li>
-  <li><a href="#quinto-trámite-constitucional-trámite-de-finalización-cámara-de-diputados-20250311---20250311" id="toc-quinto-trámite-constitucional-trámite-de-finalización-cámara-de-diputados-20250311---20250311" class="nav-link" data-scroll-target="#quinto-trámite-constitucional-trámite-de-finalización-cámara-de-diputados-20250311---20250311"><span class="header-section-number">0.2.5</span> Quinto trámite constitucional: Trámite de Finalización, Cámara de Diputados (2025/03/11 - 2025/03/11)</a></li>
-  <li><a href="#sexto-trámite-constitucional-promulgación-de-ley-en-diaro-oficial-20250320---20250320" id="toc-sexto-trámite-constitucional-promulgación-de-ley-en-diaro-oficial-20250320---20250320" class="nav-link" data-scroll-target="#sexto-trámite-constitucional-promulgación-de-ley-en-diaro-oficial-20250320---20250320"><span class="header-section-number">0.2.6</span> Sexto trámite constitucional: Promulgación de Ley en Diaro Oficial (2025/03/20 - 2025/03/20)</a></li>
+  <li><a href="#descarga-de-datos" id="toc-descarga-de-datos" class="nav-link" data-scroll-target="#descarga-de-datos"><span class="header-section-number">0.2.1</span> Descarga de datos</a></li>
+  <li><a href="#filtrado-de-trámites-irrelevantes" id="toc-filtrado-de-trámites-irrelevantes" class="nav-link" data-scroll-target="#filtrado-de-trámites-irrelevantes"><span class="header-section-number">0.2.2</span> Filtrado de trámites irrelevantes</a></li>
+  <li><a href="#extracción-y-normalización-de-datos-discursivos" id="toc-extracción-y-normalización-de-datos-discursivos" class="nav-link" data-scroll-target="#extracción-y-normalización-de-datos-discursivos"><span class="header-section-number">0.2.3</span> Extracción y normalización de datos discursivos</a></li>
   </ul></li>
-  <li><a href="#procesamiento-de-datos" id="toc-procesamiento-de-datos" class="nav-link" data-scroll-target="#procesamiento-de-datos"><span class="header-section-number">0.3</span> Procesamiento de datos</a>
-  <ul>
-  <li><a href="#descarga-de-datos" id="toc-descarga-de-datos" class="nav-link" data-scroll-target="#descarga-de-datos"><span class="header-section-number">0.3.1</span> Descarga de datos</a></li>
-  <li><a href="#filtrado-de-trámites-irrelevantes" id="toc-filtrado-de-trámites-irrelevantes" class="nav-link" data-scroll-target="#filtrado-de-trámites-irrelevantes"><span class="header-section-number">0.3.2</span> Filtrado de trámites irrelevantes</a></li>
-  <li><a href="#extracción-y-normalización-de-datos-discursivos" id="toc-extracción-y-normalización-de-datos-discursivos" class="nav-link" data-scroll-target="#extracción-y-normalización-de-datos-discursivos"><span class="header-section-number">0.3.3</span> Extracción y normalización de datos discursivos</a></li>
-  </ul></li>
-  <li><a href="#extracción-de-datos-de-parlamentarios" id="toc-extracción-de-datos-de-parlamentarios" class="nav-link" data-scroll-target="#extracción-de-datos-de-parlamentarios"><span class="header-section-number">0.4</span> Extracción de datos de parlamentarios</a></li>
-  <li><a href="#dataframe-consolidado" id="toc-dataframe-consolidado" class="nav-link" data-scroll-target="#dataframe-consolidado"><span class="header-section-number">0.5</span> Dataframe consolidado</a></li>
+  <li><a href="#extracción-de-datos-de-parlamentarios" id="toc-extracción-de-datos-de-parlamentarios" class="nav-link" data-scroll-target="#extracción-de-datos-de-parlamentarios"><span class="header-section-number">0.3</span> Extracción de datos de parlamentarios</a></li>
+  <li><a href="#dataframe-consolidado" id="toc-dataframe-consolidado" class="nav-link" data-scroll-target="#dataframe-consolidado"><span class="header-section-number">0.4</span> Dataframe consolidado</a></li>
   <li><a href="#identificación-de-sesiones-en-comisiones-técnicas" id="toc-identificación-de-sesiones-en-comisiones-técnicas" class="nav-link" data-scroll-target="#identificación-de-sesiones-en-comisiones-técnicas"><span class="header-section-number">1</span> Identificación de sesiones en comisiones técnicas</a></li>
   <li><a href="#descarga-de-videos-de-sesiones-en-senadotv-y-cámara-de-diputados" id="toc-descarga-de-videos-de-sesiones-en-senadotv-y-cámara-de-diputados" class="nav-link" data-scroll-target="#descarga-de-videos-de-sesiones-en-senadotv-y-cámara-de-diputados"><span class="header-section-number">2</span> Descarga de videos de sesiones en SenadoTV y cámara de diputados</a></li>
   <li><a href="#reconocimiento-automático-de-hablantes-asr" id="toc-reconocimiento-automático-de-hablantes-asr" class="nav-link" data-scroll-target="#reconocimiento-automático-de-hablantes-asr"><span class="header-section-number">3</span> Reconocimiento automático de hablantes (ASR)</a></li>
   <li><a href="#matching-manual-con-personas-reales" id="toc-matching-manual-con-personas-reales" class="nav-link" data-scroll-target="#matching-manual-con-personas-reales"><span class="header-section-number">4</span> Matching manual con personas reales</a></li>
   <li><a href="#identificación-de-hablantes" id="toc-identificación-de-hablantes" class="nav-link" data-scroll-target="#identificación-de-hablantes"><span class="header-section-number">5</span> Identificación de hablantes</a></li>
-  <li><a href="#dataframe-a-formato-long-y-lógica-de-chunking" id="toc-dataframe-a-formato-long-y-lógica-de-chunking" class="nav-link" data-scroll-target="#dataframe-a-formato-long-y-lógica-de-chunking"><span class="header-section-number">6</span> Dataframe a formato long y lógica de chunking</a></li>
-  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section"><span class="header-section-number">7</span> </a></li>
+  <li><a href="#corpus-definitivo-de-chunks-en-formato-long" id="toc-corpus-definitivo-de-chunks-en-formato-long" class="nav-link" data-scroll-target="#corpus-definitivo-de-chunks-en-formato-long"><span class="header-section-number">6</span> Corpus definitivo de chunks en formato long</a></li>
   </ul>
 </nav>
 </div>
@@ -313,42 +290,11 @@ div.csl-indent {
 
 
 
-<section id="resumen-metodológico" class="level2" data-number="0.1">
-<h2 data-number="0.1" class="anchored" data-anchor-id="resumen-metodológico"><span class="header-section-number">0.1</span> Resumen metodológico</h2>
-<p>Aunque aún no definida por completo, la metodología escogida nos otorga los supuestos relevantes para extraer y limpiar los datos de forma que sean útiles posteriormente. Tentativamente, utilizaremos <strong>Discourse Network Analysis</strong> <span class="citation" data-cites="leifeld_discourse_2017">(<a href="#ref-leifeld_discourse_2017" role="doc-biblioref">Leifeld, 2017</a>)</span>, que entiende el discurso como un fenómeno de red, ya que las declaraciones de los actores son interdependientes entre sí, de forma temporal y transversal, y comúnmente están dirigidas hacia otros actores, lo que constituye una <strong>acción relacional.</strong> El DNA combina técnicas de análisis de contenido discursivo, análisis descriptivo de redes y análisis inferencial de redes para describir las estructuras de los discursos políticos y comprender sus procesos generativos. Esta técnica permite capturar la agrupación de actores (<strong>coaliciones</strong>), la agrupación temporal (<strong>ciclos de atención</strong>) y la agrupación en torno a conceptos (<strong>frames</strong>). Esto nos permitirá, entre otras cosas, evaluar el nivel de cooperación y conflicto y la polarización en el debate, entender sistemáticamente como el poder da forma al discurso, y tomar en consideración el tiempo y la competencia entre coaliciones opuestas al analizar los conceptos teóricos que nos interesan. El mayor potencial que tiene esta perspectiva para nuestra investigación es lograr transformar el debate, por naturaleza no estructurado y disperso, en contenido con estructura clara y analizable, para atacar de forma efectiva las hipótesis y preguntas que nos interesan. Sumado a esto, el DNA ofrece categorías y variables claras y delimitadas, perfectas para realizar un análisis con Inteligencia Aumentada como el que propone esta investigación.</p>
-<section id="variables" class="level3" data-number="0.1.1">
-<h3 data-number="0.1.1" class="anchored" data-anchor-id="variables"><span class="header-section-number">0.1.1</span> Variables:</h3>
-<p>La unidad básica de análisis en el DNA es una declaración <strong>(statement).</strong> Se compone de las siguientes variables:</p>
-<ul>
-<li><p><strong>Actores:</strong> Organizaciones o sujetos. Deben definirse de forma clara antes de empezar a analizar. En este caso, utilizaremos a los sujetos, añadiendo la organización (comúnmente el partido) como una categoría adicional de análisis a posteriori.</p></li>
-<li><p><strong>Conceptos:</strong> puede ser tanto afirmaciones sobre políticas (desde la perspectiva de las <em>advocacy coalitions</em>) o justificaciones/narrativas (desde la perspectiva de las <em>discourse coalitions</em>). Para nuestra investigación, probablemente utilizaremos <em>discourse coalitions</em>, pero es algo que queda por definir y requiere de una teoría auxiliar para ser operacionalizado.</p></li>
-<li><p><strong>Acuerdo:</strong> Relación de acuerdo entre el actor y el concepto. Es un calificador dicotómico, tomando valor 1 si el actor se refiere al concepto de forma afirmatoria, y 2 si el actor rechaza el concepto o usa una connotación negativa. Es una distinción crucial, ya que los actores usualmente discuten los mismos conceptos, pero con un posicionamiento diferente o muchas veces opuesto. Metodologías como el análisis de tópicos no serían capaces de capturar esta complejidad.</p></li>
-<li><p><strong>Tiempo:</strong> El momento en que la declaración se emite. Por el momento, la estamos operacionalizando de dos formas:</p>
-<ol type="1">
-<li><p>Utilizamos el día de la discusión para temporalizar cada debate entre sí.</p></li>
-<li><p>Utilizamos un time step discreto interno a cada debate, para capturar posibles influencias entre actores o referencias a otras declaraciones (t=1, t=2, …, t=n).</p></li>
-</ol></li>
-</ul>
-</section>
-<section id="ejemplo-de-codificación" class="level3" data-number="0.1.2">
-<h3 data-number="0.1.2" class="anchored" data-anchor-id="ejemplo-de-codificación"><span class="header-section-number">0.1.2</span> Ejemplo de codificación</h3>
-<p>Existen métodos inferenciales que aún no he explorado (y pueden llegar a influenciar el procedimiento), pero por el momento esta sería la forma más básica de codificación:</p>
-<p><strong>Actor -&gt; acuerdo -&gt; concepto (en un time step específico)</strong></p>
-<p>Para nuestro caso podría ser:</p>
-<p>Johannes Kayser -&gt; Desacuerdo -&gt; Solidaridad Intergeneracional</p>
-<p>O también:</p>
-<p><strong>Johannes Kayser -&gt; Acuerdo -&gt; Estado ineficiente</strong></p>
-<p>Una posibilidad es construir diccionarios de conceptos análogos a nuestras categorías teóricas, como en este ejemplo muy simplificado:</p>
-<p>Esta es una forma muy simplificada (y por desarrollarse), ya que en realidad debería ser más parecido a esto:</p>
-<p>En último término, esto permite construir grafos y analizar el dinamismo de los clusters de forma descriptiva (aún sin utilizar métodos más avanzados), como en este ejemplo del análisis del discurso en torno a las pensiones en Alemania <span class="citation" data-cites="leifeld_reconceptualizing_2013">(<a href="#ref-leifeld_reconceptualizing_2013" role="doc-biblioref">Leifeld, 2013</a>)</span>:</p>
-<p><img src="output/figures/paste-3.png" class="img-fluid"></p>
-</section>
-</section>
-<section id="línea-de-tiempo-y-revisión-de-datos-ley-21.735" class="level2" data-number="0.2">
-<h2 data-number="0.2" class="anchored" data-anchor-id="línea-de-tiempo-y-revisión-de-datos-ley-21.735"><span class="header-section-number">0.2</span> Línea de tiempo y revisión de datos ley 21.735</h2>
+<section id="línea-de-tiempo-y-revisión-de-datos-ley-21.735" class="level2" data-number="0.1">
+<h2 data-number="0.1" class="anchored" data-anchor-id="línea-de-tiempo-y-revisión-de-datos-ley-21.735"><span class="header-section-number">0.1</span> Línea de tiempo y revisión de datos ley 21.735</h2>
 <p>Se revisó la calidad de los datos extraídos (más adelante en el documento) y el contenido de cada documento, para identificar cuáles contienen información discursiva relevante para analizar y caracterizar temporalmente eventos relevantes en la historia de la ley.</p>
-<section id="primer-trámite-constitucional-cámara-de-diputados-20221107---20240124" class="level3" data-number="0.2.1">
-<h3 data-number="0.2.1" class="anchored" data-anchor-id="primer-trámite-constitucional-cámara-de-diputados-20221107---20240124"><span class="header-section-number">0.2.1</span> Primer Trámite Constitucional: Cámara de Diputados (2022/11/07 - 2024/01/24)</h3>
+<section id="primer-trámite-constitucional-cámara-de-diputados-20221107---20240124" class="level3" data-number="0.1.1">
+<h3 data-number="0.1.1" class="anchored" data-anchor-id="primer-trámite-constitucional-cámara-de-diputados-20221107---20240124"><span class="header-section-number">0.1.1</span> Primer Trámite Constitucional: Cámara de Diputados (2022/11/07 - 2024/01/24)</h3>
 <ul>
 <li><p>1.1 Mensaje inicial (2022/11/07): xml y texto limpio revisados. Mensaje inicial del presidente de la república y primera versión de la ley. <strong>Relevancia alta</strong> para el análisis, especialmente el discurso inicial que contiene la justificación de la ley.</p></li>
 <li><p>Informes asociados (2022/11/07): <a href="data/raw_data/informes/informe_financiero.pdf">Informe Financiero</a>, <a href="data/raw_data/informes/informe_sustentabilidad_fondos_cesantia.pdf">Informe de Sustentabilidad de los Fondos de Cesantía</a>, <a href="data/raw_data/informes/informe_impacto_regulatorio.pdf">Informe de Impacto Regulatorio</a>, <a href="data/raw_data/informes/informe_tecnico.pdf">Informe Técnico</a></p></li>
@@ -375,8 +321,8 @@ div.csl-indent {
 <li>1.14 Oficio de Cámara Origen a Cámara Revisora (2024/01/24): xml y texto limpio revisados. Entrega del proyecto de ley aprobado luego de las discusiones y comisiones técnicas al Senado. <strong>Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.</strong></li>
 </ul>
 </section>
-<section id="segundo-trámite-constitucional-senado-20250122---20250129" class="level3" data-number="0.2.2">
-<h3 data-number="0.2.2" class="anchored" data-anchor-id="segundo-trámite-constitucional-senado-20250122---20250129"><span class="header-section-number">0.2.2</span> Segundo trámite constitucional: Senado (2025/01/22 - 2025/01/29)</h3>
+<section id="segundo-trámite-constitucional-senado-20250122---20250129" class="level3" data-number="0.1.2">
+<h3 data-number="0.1.2" class="anchored" data-anchor-id="segundo-trámite-constitucional-senado-20250122---20250129"><span class="header-section-number">0.1.2</span> Segundo trámite constitucional: Senado (2025/01/22 - 2025/01/29)</h3>
 <p>p. 293-468 requerimiento de inconstitucionalidad: - 15 de enero de 2025: Se recibió el <a href="data/raw_data/informes/indicaciones_presidente.pdf">Oficio N° 312-372 del Presidente de la República</a>, que formuló 176 páginas de indicaciones al proyecto.</p>
 <ul>
 <li><p>2.1 Informe de Comisión de Trabajo Senado (2025/01/22): xml y texto limpio revisados. Contiene un resumen de las sesiones, los asistentes a ellas, mucha información técnica, y los resultados del informe (votaciones, cambios al proyecto), pero no aporta contenido discursivo significativo. <strong>Relevancia baja/nula para el análisis, relevancia alta para el procesamiento de los videos de sesiones, relevancia alta para generar línea de tiempo de cambios del proyecto.</strong></p></li>
@@ -387,15 +333,15 @@ div.csl-indent {
 <li><p>2.6 Oficio de la Corte Suprema a la Comisión (2025/01/29): xml y texto limpio revisados. Realiza un análisis de la constitucionalidad de la ley, principalmente las últimas modificaciones realizadas en respuesta al último informe de la corte suprema. <strong>Relevancia baja/nula para el análisis.</strong></p></li>
 </ul>
 </section>
-<section id="tercer-trámite-constitucional-cámara-de-diputados-20250129---20250129" class="level3" data-number="0.2.3">
-<h3 data-number="0.2.3" class="anchored" data-anchor-id="tercer-trámite-constitucional-cámara-de-diputados-20250129---20250129"><span class="header-section-number">0.2.3</span> Tercer trámite constitucional: Cámara de Diputados (2025/01/29 - 2025/01/29)</h3>
+<section id="tercer-trámite-constitucional-cámara-de-diputados-20250129---20250129" class="level3" data-number="0.1.3">
+<h3 data-number="0.1.3" class="anchored" data-anchor-id="tercer-trámite-constitucional-cámara-de-diputados-20250129---20250129"><span class="header-section-number">0.1.3</span> Tercer trámite constitucional: Cámara de Diputados (2025/01/29 - 2025/01/29)</h3>
 <ul>
 <li><p>3.1 Discusión en Sala (2025/01/29): xml y texto limpio revisados (xml Akoma Ntoso buggeado). Contiene el discurso de los parlamentarios en la discusión en sala, con un alto contenido discursivo significativo. Discusión donde se revisan y discuten los cambios realizados por el Senado y el proyecto final para aprobarlo de forma definitiva. <strong>Relevancia alta para el análisis.</strong></p></li>
 <li><p>3.2 Oficio de Cámara Revisora a Cámara Origen (2025/01/29): xml y texto limpio revisados. Aprobación de modificaciones realizadas por el Senado. <strong>Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.</strong></p></li>
 </ul>
 </section>
-<section id="cuarto-trámite-constitucional-tribunal-constitucional-20250129---20250307" class="level3" data-number="0.2.4">
-<h3 data-number="0.2.4" class="anchored" data-anchor-id="cuarto-trámite-constitucional-tribunal-constitucional-20250129---20250307"><span class="header-section-number">0.2.4</span> Cuarto trámite constitucional: Tribunal Constitucional (2025/01/29 - 2025/03/07)</h3>
+<section id="cuarto-trámite-constitucional-tribunal-constitucional-20250129---20250307" class="level3" data-number="0.1.4">
+<h3 data-number="0.1.4" class="anchored" data-anchor-id="cuarto-trámite-constitucional-tribunal-constitucional-20250129---20250307"><span class="header-section-number">0.1.4</span> Cuarto trámite constitucional: Tribunal Constitucional (2025/01/29 - 2025/03/07)</h3>
 <ul>
 <li>4.1 Oficio de Cámara de Origen al Ejecutivo (2025/01/29): xml y texto limpio revisados. Envío del proyecto de ley aprobado por ambas cámaras al ejecutivo para su promulgación, consulta de facultad de veto. <strong>Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.</strong></li>
 </ul>
@@ -412,33 +358,33 @@ div.csl-indent {
 <li><p>4.5 Oficio del Tribunal Constitucional (2025/03/07): xml y texto limpio revisados. Sentenceia del Tribunal Constitucional. Declara constitucional todo lo consultado. <strong>Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.</strong></p></li>
 </ul>
 </section>
-<section id="quinto-trámite-constitucional-trámite-de-finalización-cámara-de-diputados-20250311---20250311" class="level3" data-number="0.2.5">
-<h3 data-number="0.2.5" class="anchored" data-anchor-id="quinto-trámite-constitucional-trámite-de-finalización-cámara-de-diputados-20250311---20250311"><span class="header-section-number">0.2.5</span> Quinto trámite constitucional: Trámite de Finalización, Cámara de Diputados (2025/03/11 - 2025/03/11)</h3>
+<section id="quinto-trámite-constitucional-trámite-de-finalización-cámara-de-diputados-20250311---20250311" class="level3" data-number="0.1.5">
+<h3 data-number="0.1.5" class="anchored" data-anchor-id="quinto-trámite-constitucional-trámite-de-finalización-cámara-de-diputados-20250311---20250311"><span class="header-section-number">0.1.5</span> Quinto trámite constitucional: Trámite de Finalización, Cámara de Diputados (2025/03/11 - 2025/03/11)</h3>
 <ul>
 <li>5.1 Oficio de Cámara de Origen al Ejecutivo (2025/03/11): xml y texto limpio revisados. Envío del proyecto finalizado para firma del presidente. <strong>Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.</strong></li>
 </ul>
 </section>
-<section id="sexto-trámite-constitucional-promulgación-de-ley-en-diaro-oficial-20250320---20250320" class="level3" data-number="0.2.6">
-<h3 data-number="0.2.6" class="anchored" data-anchor-id="sexto-trámite-constitucional-promulgación-de-ley-en-diaro-oficial-20250320---20250320"><span class="header-section-number">0.2.6</span> Sexto trámite constitucional: Promulgación de Ley en Diaro Oficial (2025/03/20 - 2025/03/20)</h3>
+<section id="sexto-trámite-constitucional-promulgación-de-ley-en-diaro-oficial-20250320---20250320" class="level3" data-number="0.1.6">
+<h3 data-number="0.1.6" class="anchored" data-anchor-id="sexto-trámite-constitucional-promulgación-de-ley-en-diaro-oficial-20250320---20250320"><span class="header-section-number">0.1.6</span> Sexto trámite constitucional: Promulgación de Ley en Diaro Oficial (2025/03/20 - 2025/03/20)</h3>
 <ul>
 <li>6.1 Publicación en Diario Oficial (2025/03/20): xml y texto limpio revisados. Publicación de la ley en el diario oficial, con el texto final aprobado por el Tribunal Constitucional. <strong>Relevancia baja/nula para el análisis, relevancia alta para generar línea de tiempo de cambios del proyecto.</strong></li>
 </ul>
 </section>
 </section>
-<section id="procesamiento-de-datos" class="level2" data-number="0.3">
-<h2 data-number="0.3" class="anchored" data-anchor-id="procesamiento-de-datos"><span class="header-section-number">0.3</span> Procesamiento de datos</h2>
+<section id="procesamiento-de-datos" class="level2" data-number="0.2">
+<h2 data-number="0.2" class="anchored" data-anchor-id="procesamiento-de-datos"><span class="header-section-number">0.2</span> Procesamiento de datos</h2>
 <p>Todas las rutas del procesamiento se definen según su función. Los insumos originales permanecen en <code>data/raw_data</code>, las tablas intermedias y analíticas en <code>data/proc_data</code>, y los reportes tabulares legibles en <code>output/tables</code>.</p>
-<section id="descarga-de-datos" class="level3" data-number="0.3.1">
-<h3 data-number="0.3.1" class="anchored" data-anchor-id="descarga-de-datos"><span class="header-section-number">0.3.1</span> Descarga de datos</h3>
+<section id="descarga-de-datos" class="level3" data-number="0.2.1">
+<h3 data-number="0.2.1" class="anchored" data-anchor-id="descarga-de-datos"><span class="header-section-number">0.2.1</span> Descarga de datos</h3>
 <p>Utilizamos el paquete de python <code>bcn_scraper</code> de desarrollo propio para descargar de forma automatizada los datos tramitación de la ley 21.735, y procesar los datos para obtener el discurso de forma limpia, normalizada y enriquecida. En primer lugar, descargamos todos los datos de la tramitación ingresando el número de ley. La función nos otorga un dataframe con todos los documentos de cada trámite y metadatos como la fecha, número de trámite y URL de cada documento. Este bloque de código demora un tiempo considerable, ya que se descargan los documentos y el Akoma Ntoso (AKN) de cada trámite, y se procesan para obtener el texto limpio. Específicamente para el AKN, se requirió desarrollar una función para reintentar la descarga con un mayor tiempo de espera, ya que solían presentar errores.</p>
 <p>La descarga anterior se ejecuta solo cuando es necesario refrescar la fuente. El resto del reporte utiliza el CSV persistido, por lo que no vuelve a consultar BCN en cada render.</p>
 </section>
-<section id="filtrado-de-trámites-irrelevantes" class="level3" data-number="0.3.2">
-<h3 data-number="0.3.2" class="anchored" data-anchor-id="filtrado-de-trámites-irrelevantes"><span class="header-section-number">0.3.2</span> Filtrado de trámites irrelevantes</h3>
+<section id="filtrado-de-trámites-irrelevantes" class="level3" data-number="0.2.2">
+<h3 data-number="0.2.2" class="anchored" data-anchor-id="filtrado-de-trámites-irrelevantes"><span class="header-section-number">0.2.2</span> Filtrado de trámites irrelevantes</h3>
 <p>Para el análisis final se mantiene un manifiesto explícito con las cuatro discusiones en Sala y, por separado, el mensaje inicial. Los informes y oficios no entran a la pipeline discursiva. Esto evita que una búsqueda amplia por palabras en el título cambie accidentalmente el corpus.</p>
 </section>
-<section id="extracción-y-normalización-de-datos-discursivos" class="level3" data-number="0.3.3">
-<h3 data-number="0.3.3" class="anchored" data-anchor-id="extracción-y-normalización-de-datos-discursivos"><span class="header-section-number">0.3.3</span> Extracción y normalización de datos discursivos</h3>
+<section id="extracción-y-normalización-de-datos-discursivos" class="level3" data-number="0.2.3">
+<h3 data-number="0.2.3" class="anchored" data-anchor-id="extracción-y-normalización-de-datos-discursivos"><span class="header-section-number">0.2.3</span> Extracción y normalización de datos discursivos</h3>
 <p>Extraemos el discurso desde los diarios de sesión, dividido por párrafo y separado por hablante. Los datos ya están en su gran mayoría etiquetados, ya que estamos utilizando los identificadores de hablantes y tipos de intervenciones presentes en el Akoma Ntoso (AKN) de la Biblioteca del Congreso Nacional. Para esto, utilizamos la función <code>add_speech_content</code>.</p>
 <p>A continuación, se muestra un ejemplo de un documento AKN que fue procesado:</p>
 <pre class="{xml}"><code>&lt;!-- Metadata al principio documento con id del diputado. Luego nos será de gran utilidad. --&gt;
@@ -468,12 +414,47 @@ Por eso, estimados colegas, hoy hago un llamado a la empatía. Muy pronto veremo
 &lt;/debateSection&gt;</code></pre>
 <p>Sin embargo, parte del discurso no está etiquetado, principalmente el discurso de los ministros, que no son parlamentarios, y por lo tanto no cuentan con identificador ni etiquetas en el Akoma Ntoso. Para esto, se realizó un proceso de normalización del discurso, donde se identifican los fragmentos de texto no etiquetados, y se genera la misma estructura presente en las demás intervenciones. Además, se identificaron eventos como los preámbulos (cuando se le da la palabra al hablante) y los eventos como aplausos o manifestaciones de las tribunas, etiquetandolos y dividiendolos de la intervención. Se utiliza la función <code>normalize_speech_content</code>.</p>
 <p>Hay intervenciones que no están etiquetadas, especialmente las de hablantes no pertenecientes al congreso (ministros, secretario general) y también intervenciones extra oficiales, como las interrupciones que suceden mucho a lo largo de las sesiones. Para diagnosticar esto, generamos la función <code>collect_unlabeled_speaker_candidates</code>, y permitimos un nuevo parámetro dentro de <code>normalize_speech_content</code> para entregar un diccionario. Este último puede contener tanto datos manualmente ingresados como los ids de los parlamentarios para realizar un matching automático.</p>
+<div id="fbe03593" class="cell" data-execution_count="5">
+<div class="cell-output cell-output-display" data-execution_count="4">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">identity_status</th>
+<th data-quarto-table-cell-role="th">candidates</th>
+<th data-quarto-table-cell-role="th">occurrences</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">0</th>
+<td>resolved</td>
+<td>138</td>
+<td>704</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
 <p>El resumen distingue candidatos resueltos mediante el diccionario o los metadatos AKN, candidatos reconocidos solo por la expresión regular y casos todavía no resueltos o conflictivos. Los dos Parquet conservan el detalle completo y los pendientes de cada ejecución.</p>
 <p>Así quedan los datos (simplificados) luego de normalizarlos, con el ejemplo de la intervención de Jeanette Jara que no estaba etiquetada en el AKN:</p>
+<div id="9756b19c" class="cell" data-execution_count="6">
+<div class="cell-output cell-output-display" data-execution_count="5">
+<pre><code>{'kind': 'transcription_event',
+ 'time_step': 27,
+ 'type': 'Transcription event',
+ 'content': ['(Aplausos)']}</code></pre>
+</div>
+</div>
 </section>
 </section>
-<section id="extracción-de-datos-de-parlamentarios" class="level2" data-number="0.4">
-<h2 data-number="0.4" class="anchored" data-anchor-id="extracción-de-datos-de-parlamentarios"><span class="header-section-number">0.4</span> Extracción de datos de parlamentarios</h2>
+<section id="extracción-de-datos-de-parlamentarios" class="level2" data-number="0.3">
+<h2 data-number="0.3" class="anchored" data-anchor-id="extracción-de-datos-de-parlamentarios"><span class="header-section-number">0.3</span> Extracción de datos de parlamentarios</h2>
 <p>Luego, se extrayeron los datos relevantes de los parlamentarios, estructurándolos en un dataframe. Se tomaron dos estrategias:</p>
 <ul>
 <li><p>Para los parlamentarios etiquetados en el AKN, se obtuvieron los datos desde la misma plataforma.</p></li>
@@ -482,9 +463,169 @@ Por eso, estimados colegas, hoy hago un llamado a la empatía. Muy pronto veremo
 <p>BCN tiene una gran base de datos no estructurada. Una página de parlamentario se ve asi. Tomamos el mismo ejemplo que se mostró más arriba:</p>
 <p><img src="output/figures/paste-4.png" class="img-fluid">Se accedió al formato JSON de esta misma plataforma, extrayendo todos los datos relevantes, como el género, el partido y la edad. En algunos casos, como en el del partido, fue necesario acceder a dos URL adicionales luego de esta. El siguiente bloque de código puede demorar mucho tiempo (~30 minutos). Solo se extrayó la última militancia de cada parlamentario por el largo tiempo de espera.</p>
 </section>
-<section id="dataframe-consolidado" class="level2" data-number="0.5">
-<h2 data-number="0.5" class="anchored" data-anchor-id="dataframe-consolidado"><span class="header-section-number">0.5</span> Dataframe consolidado</h2>
+<section id="dataframe-consolidado" class="level2" data-number="0.4">
+<h2 data-number="0.4" class="anchored" data-anchor-id="dataframe-consolidado"><span class="header-section-number">0.4</span> Dataframe consolidado</h2>
 <p>Por último, aplanamos el corpus en una fila por unidad ordenada. La tabla analítica conserva tanto las intervenciones como los eventos de transcripción (aplausos, manifestaciones, interrupciones colectivas, etc.); excluye únicamente preámbulos, texto no resuelto y la fase <code>Votacion</code> de 3.1.</p>
+<div id="3c62aa9b" class="cell" data-execution_count="8">
+<div class="cell-output cell-output-display" data-execution_count="6">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">expected_title</th>
+<th data-quarto-table-cell-role="th">speech_source</th>
+<th data-quarto-table-cell-role="th">quality_status</th>
+<th data-quarto-table-cell-role="th">speech_rows</th>
+<th data-quarto-table-cell-role="th">participation_rows</th>
+<th data-quarto-table-cell-role="th">analytical_transcription_event_rows</th>
+<th data-quarto-table-cell-role="th">full_rows</th>
+<th data-quarto-table-cell-role="th">transcription_event_rows</th>
+<th data-quarto-table-cell-role="th">discussion_rows</th>
+<th data-quarto-table-cell-role="th">voting_rows</th>
+<th data-quarto-table-cell-role="th">...</th>
+<th data-quarto-table-cell-role="th">duplicate_utterance_id_rows</th>
+<th data-quarto-table-cell-role="th">duplicate_utterance_order_rows</th>
+<th data-quarto-table-cell-role="th">unresolved_identity_rows</th>
+<th data-quarto-table-cell-role="th">unstable_bcn_speaker_id_rows</th>
+<th data-quarto-table-cell-role="th">local_primary_speaker_id_rows</th>
+<th data-quarto-table-cell-role="th">unresolved_content_rows</th>
+<th data-quarto-table-cell-role="th">identity_only_speaker_rows</th>
+<th data-quarto-table-cell-role="th">missing_speaker_data_rows</th>
+<th data-quarto-table-cell-role="th">issues</th>
+<th data-quarto-table-cell-role="th">warnings</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">0</th>
+<td>1.1. Mensaje</td>
+<td>history_xml</td>
+<td>pass</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>...</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>[]</td>
+<td>[]</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
+<td>1.12. Discusión en Sala</td>
+<td>akn</td>
+<td>pass</td>
+<td>102</td>
+<td>63</td>
+<td>39</td>
+<td>146</td>
+<td>39</td>
+<td>0</td>
+<td>0</td>
+<td>...</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>6</td>
+<td>0</td>
+<td>[]</td>
+<td>[]</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">2</th>
+<td>1.13. Discusión en Sala</td>
+<td>akn</td>
+<td>pass</td>
+<td>342</td>
+<td>261</td>
+<td>81</td>
+<td>440</td>
+<td>81</td>
+<td>0</td>
+<td>0</td>
+<td>...</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>23</td>
+<td>0</td>
+<td>[]</td>
+<td>[]</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">3</th>
+<td>2.4. Discusión en Sala</td>
+<td>akn</td>
+<td>warning</td>
+<td>306</td>
+<td>254</td>
+<td>52</td>
+<td>372</td>
+<td>52</td>
+<td>0</td>
+<td>0</td>
+<td>...</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>9</td>
+<td>0</td>
+<td>[]</td>
+<td>[unresolved_content_rows=1]</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">4</th>
+<td>3.1. Discusión en Sala</td>
+<td>history_xml_fallback</td>
+<td>pass</td>
+<td>276</td>
+<td>196</td>
+<td>80</td>
+<td>541</td>
+<td>82</td>
+<td>276</td>
+<td>121</td>
+<td>...</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>48</td>
+<td>0</td>
+<td>[]</td>
+<td>[]</td>
+</tr>
+</tbody>
+</table>
+
+<p>5 rows × 21 columns</p>
+</div>
+</div>
+</div>
 <p><code>speaker_id</code> es el identificador canónico: <code>PersonaBCN&lt;id&gt;</code> para recursos de personas BCN y <code>PersonaExt&lt;n&gt;</code> para actores externos que no tienen un recurso BCN conocido. <code>speaker_bcn_id</code> conserva además el número puro de BCN; <code>speaker_local_id</code> guarda el identificador de la aparición actual y <code>speaker_local_ids</code> reúne todos los IDs locales observados. Como un <code>perN</code> puede pertenecer a personas distintas en documentos diferentes, <code>speaker_local_refs</code> agrega siempre el <code>document_uri</code> y es la procedencia no ambigua.</p>
 <p><code>utterance_id</code> identifica de manera determinística cada unidad a partir del documento y su ruta estructural, mientras <code>utterance_order</code> reconstruye el orden completo del debate. Los eventos tienen ambos campos, aunque correctamente no tienen hablante. Los estados <code>pass</code> no presentan errores en estas invariantes principales. En el fallback, el reporte exige contenido en <code>Discusion</code>, conserva <code>Votacion</code> en la salida completa y comprueba que esa fase no pase al corpus analítico. <code>warning</code> mantiene visible contenido que requiere revisión —actualmente solo el cierre procedimental de 2.4— sin confundirlo con un fallo silencioso. Los registros <code>identity_only</code> conservan nombre e ID estable entre refrescos; sus atributos biográficos se completan al volver a ejecutar el bloque lento de parlamentarios.</p>
 </section>
@@ -503,22 +644,66 @@ Por eso, estimados colegas, hoy hago un llamado a la empatía. Muy pronto veremo
 <section id="identificación-de-hablantes" class="level1" data-number="5">
 <h1 data-number="5"><span class="header-section-number">5</span> Identificación de hablantes</h1>
 </section>
-<section id="dataframe-a-formato-long-y-lógica-de-chunking" class="level1" data-number="6">
-<h1 data-number="6"><span class="header-section-number">6</span> Dataframe a formato long y lógica de chunking</h1>
-</section>
-<section id="section" class="level1 unnumbered" data-number="7">
+<section id="corpus-definitivo-de-chunks-en-formato-long" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Corpus definitivo de chunks en formato long</h1>
+<p>La unidad definitiva para la codificación es el bloque de párrafos. La segmentación se materializa en este reporte, en lugar de reconstruirse al iniciar una aplicación consumidora. Así, la validación manual y la futura codificación asistida por LLM reciben exactamente las mismas unidades, IDs, offsets y reglas de longitud.</p>
+<p>Los párrafos con menos de 50 palabras se agregan preferentemente al bloque anterior, hasta un objetivo de 100 palabras y sin superar 150. Un párrafo que excede el máximo se divide primero por límites de oración y, solo si es imprescindible, por límites de palabra. Los residuos con menos de 5 palabras no forman una unidad codificable.</p>
+<p>La siguiente transformación aplica esas reglas al corpus analítico consolidado. Solo incorpora participaciones no vacías que ya fueron marcadas para análisis; los eventos de transcripción permanecen en <code>speech_df.parquet</code>, pero no se convierten en unidades de codificación. Se repiten únicamente metadatos escalares útiles para análisis o auditoría, lo que mantiene una observación por fila y evita columnas anidadas.</p>
+<p>Se verifica el artefacto persistido —no solo el objeto en memoria— para asegurar que Parquet conserva el contrato que leerán los consumidores.</p>
+<div id="75a60c79" class="cell" data-execution_count="11">
+<div class="cell-output cell-output-display" data-execution_count="9">
+<div>
 
 
-</section>
+<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">métrica</th>
+<th data-quarto-table-cell-role="th">valor</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">0</th>
+<td>intervenciones fuente</td>
+<td>723.0</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
+<td>chunks definitivos</td>
+<td>2553.0</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">2</th>
+<td>documentos</td>
+<td>4.0</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">3</th>
+<td>mínimo de palabras</td>
+<td>5.0</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">4</th>
+<td>mediana de palabras</td>
+<td>94.0</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">5</th>
+<td>máximo de palabras</td>
+<td>150.0</td>
+</tr>
+</tbody>
+</table>
 
-<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">7 </h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" data-line-spacing="2" role="list">
-<div id="ref-leifeld_reconceptualizing_2013" class="csl-entry" role="listitem">
-Leifeld, P. (2013). Reconceptualizing <span>Major Policy Change</span> in the <span>Advocacy Coalition Framework</span>: <span>A Discourse Network Analysis</span> of <span>German Pension Politics</span>. <em>Policy Studies Journal</em>, <em>41</em>(1), 169-198. <a href="https://doi.org/10.1111/psj.12007">https://doi.org/10.1111/psj.12007</a>
 </div>
-<div id="ref-leifeld_discourse_2017" class="csl-entry" role="listitem">
-Leifeld, P. (2017). Discourse <span>Network Analysis</span>: <span>Policy Debates</span> as <span>Dynamic Networks</span>. En J. N. Victor, A. H. Montgomery, &amp; M. Lubell (Eds.), <em>The <span>Oxford Handbook</span> of <span>Political Networks</span></em> (p. 0). Oxford University Press. <a href="https://doi.org/10.1093/oxfordhb/9780190228217.013.25">https://doi.org/10.1093/oxfordhb/9780190228217.013.25</a>
 </div>
-</div></section></div></main>
+</div>
+<p>La tabla resume el corpus efectivamente persistido. Todos sus registros son bloques codificables con un identificador único, contenido verificable por hash y una extensión dentro de los límites declarados; <code>coding_chunks_long.parquet</code> es desde ahora el insumo común para la validación manual y la futura codificación con LLM.</p>
+</section>
+
+</main>
 <!-- /main column -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
