@@ -20,7 +20,7 @@ from features.manual_validation.service import (  # noqa: E402
 
 
 def default_source() -> Path:
-    return PROJECT_ROOT / "data" / "proc_data" / "coding_chunks_long.parquet"
+    return PROJECT_ROOT / "data" / "proc_data"
 
 
 def parse_args() -> argparse.Namespace:
@@ -31,7 +31,7 @@ def parse_args() -> argparse.Namespace:
         "--source",
         type=Path,
         default=default_source(),
-        help="Parquet long de chunks generado por proc.qmd.",
+        help="Carpeta con ley_*/coding_chunks_long.parquet o un único Parquet de chunks.",
     )
     parser.add_argument(
         "--codebook-workbook",

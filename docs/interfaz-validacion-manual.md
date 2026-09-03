@@ -2,7 +2,7 @@
 
 ## Propósito
 
-Esta aplicación local permite construir una muestra reproducible del corpus del boletín 15480-13 y codificar declaraciones delimitadas por un *span* textual, su concepto y su orientación de apoyo o rechazo. La unidad textual que recibe la persona o el LLM es un bloque objetivo formado por uno o más párrafos de una misma intervención, acompañado por los bloques inmediatamente anterior y siguiente.
+Esta aplicación local permite construir una muestra reproducible de las leyes 21.735, 21.419 y 21.538, juntas o por separado, y codificar declaraciones delimitadas por un *span* textual, su concepto y su orientación de apoyo o rechazo. La unidad textual que recibe la persona o el LLM es un bloque objetivo formado por uno o más párrafos de una misma intervención, acompañado por los bloques inmediatamente anterior y siguiente.
 
 La aplicación no llama a OpenAI ni a ningún otro servicio externo. La clave de API no se carga ni se envía al navegador. Su objetivo es depurar el libro de códigos y producir una referencia humana antes de diseñar el prompt y evaluar las anotaciones automáticas.
 
@@ -20,28 +20,38 @@ Luego abrir <http://127.0.0.1:8765>. Para usar otro puerto:
 uv run python -m features.manual_validation --port 8877
 ```
 
-Por defecto la aplicación consume `data/proc_data/speech_df.parquet`. Los resultados se guardan como un JSON por sesión en:
+Por defecto la aplicación lee `data/proc_data/ley_*/coding_chunks_long.parquet`. La copia antigua en la raíz de `proc_data` no se incorpora, para evitar duplicar la ley 21.735. Los resultados se guardan como un JSON por sesión en:
 
 ```text
 output/validation/
 ```
 
-La ruta del corpus, el XLSX editable, el JSON derivado, el output, el boletín y los umbrales también se pueden reemplazar mediante `--source`, `--codebook-workbook`, `--codebook-json`, `--output-dir`, `--bill-number`, `--min-words`, `--short-paragraph-words`, `--target-block-words` y `--max-block-words`. `--codebook` se conserva como alias de `--codebook-json`.
+La ruta del corpus, el XLSX editable, el JSON derivado y el output se pueden reemplazar mediante `--source`, `--codebook-workbook`, `--codebook-json` y `--output-dir`. `--source` acepta la carpeta que contiene las subcarpetas `ley_*` o un único Parquet; `--codebook` se conserva como alias de `--codebook-json`. Los umbrales de segmentación se leen de los Parquet.
+
+### Probar una ley y después otra
+
+1. En **Ley de la muestra**, elige **Ley 21.419**, configura tamaño, semilla y estrategia, y pulsa **Crear muestra y comenzar**. Solo se sortean bloques de esa ley.
+2. Guarda las decisiones y pulsa **Cambiar sesión** para volver al inicio. Elige **Ley 21.538** y crea otra muestra. Ambas sesiones quedan guardadas por separado.
+3. Para una muestra conjunta, selecciona **Todas las leyes**. La estrategia estratificada mantiene el equilibrio por documento y longitud; la aleatoria simple sortea sobre todos los bloques disponibles.
+
+Las sesiones nuevas registran la ley seleccionada, el boletín de cada bloque y las rutas y checksums de los Parquet utilizados. La lista para reanudar y la pantalla de codificación muestran la ley. Las sesiones anteriores de la ley 21.735 siguen disponibles con su libro de códigos original.
+
+El enlace [comenzar con la ley 21.419](http://127.0.0.1:8765/?law=21419) deja esa opción seleccionada, sin crear una sesión. Para la ley 21.538 se puede usar `?law=21538`.
 
 ## Flujo de datos
 
 El procesamiento que consume la aplicación queda dividido en dos capas explícitas:
 
-1. `proc.qmd` construye el corpus analítico y escribe `data/proc_data/speech_df.parquet`.
+1. `proc.qmd` construye el corpus analítico y escribe `data/proc_data/ley_<número>/coding_chunks_long.parquet`.
 2. `features/manual_validation/run.py` genera el JSON del libro desde el XLSX y crea el servicio local.
-3. `features/manual_validation/service.py` lee el parquet, aplica los filtros de participación, construye los bloques de párrafos, adjunta el contexto y realiza el muestreo.
+3. `features/manual_validation/service.py` lee los bloques definitivos, adjunta su contexto dentro de cada documento, filtra la ley seleccionada y realiza el muestreo.
 4. El navegador recibe únicamente las unidades muestreadas y el snapshot del libro. Los nombres, partidos, identificadores y género de los hablantes permanecen fuera del payload.
 
-La transformación específica de la aplicación está en Python y se prueba de manera independiente. El parquet conserva sus intervenciones originales, lo que permite cambiar la regla de segmentación sin regenerar ni sobrescribir el corpus.
+La app utiliza los IDs, offsets y reglas de segmentación ya materializados en los Parquet. No descarga datos ni vuelve a segmentar las intervenciones.
 
 ## Procedimiento de codificación
 
-1. Crear una sesión indicando tamaño, semilla y estrategia de muestreo. El identificador del codificador es opcional.
+1. Crear una sesión indicando ley, tamaño, semilla y estrategia de muestreo. El identificador del codificador es opcional.
 2. Leer el bloque anterior y el siguiente solo como contexto.
 3. Leer el bloque objetivo. La interfaz no muestra ni recibe el nombre, el identificador, el partido o el género del hablante.
 4. Seleccionar con el cursor el fragmento mínimo que contiene una afirmación completa.

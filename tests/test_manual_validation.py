@@ -494,6 +494,108 @@ class ManualValidationTestCase(unittest.TestCase):
         self.assertIn("#fde68a", styles)
         self.assertIn("máximo estricto", javascript)
 
+    def _multi_law_service(self) -> ValidationService:
+        original = pd.read_parquet(self.source_path)
+        for law, bill in (("21735", "15480-13"), ("21419", "14588-13"), ("21538", "15625-13")):
+            corpus = original.copy()
+            corpus["bill_number"] = bill
+            for field in ("unit_id", "chunk_id", "utterance_id", "document_uri",
+                          "previous_chunk_id", "next_chunk_id"):
+                corpus[field] = corpus[field].map(
+                    lambda value: f"{law}/{value}" if pd.notna(value) else None
+                )
+            folder = self.root / f"ley_{law}"
+            folder.mkdir()
+            corpus.to_parquet(folder / "coding_chunks_long.parquet", index=False)
+        return ValidationService(self.root, self.codebook_path, self.output_dir)
+
+    def test_directory_loads_each_law_once_and_ignores_legacy_copy(self) -> None:
+        service = self._multi_law_service()
+        config = service.config()
+        self.assertEqual(config["corpus"]["available_units"], 21)
+        self.assertEqual(
+            [(law["law_number"], law["available_units"]) for law in config["laws"]],
+            [("21419", 7), ("21538", 7), ("21735", 7)],
+        )
+        self.assertEqual(len({record["unit_id"] for record in service.records}), 21)
+
+    def test_law_filter_limits_items_context_and_persisted_source(self) -> None:
+        service = self._multi_law_service()
+        for law in ("21419", "21538"):
+            with self.subTest(law=law):
+                summary = service.create_session({"law_number": law, "sample_size": 7})
+                session = self._session_payload(summary["session_id"])
+                self.assertEqual(summary["law_number"], law)
+                self.assertEqual(session["law_numbers"], [law])
+                self.assertEqual(session["sampling"]["law_number"], law)
+                self.assertEqual(session["source"]["available_units"], 7)
+                self.assertEqual(len(session["source"]["files"]), 1)
+                self.assertEqual(session["source"]["files"][0]["law_number"], law)
+                source = Path(session["source"]["path"])
+                self.assertEqual(session["source"]["sha256"], hashlib.sha256(source.read_bytes()).hexdigest())
+                self.assertEqual(session["codebook"]["version"], "test-0.1")
+                for item in session["items"]:
+                    self.assertEqual(item["law_number"], law)
+                    self.assertEqual(item["bill_number"], session["bill_number"])
+                    for context in (item["previous_context"], item["next_context"]):
+                        if context:
+                            self.assertTrue(context["unit_id"].startswith(f"{law}/"))
+                self.assertEqual(service.open_item(summary["session_id"], 0)["item"]["law_label"], summary["law_label"])
+
+    def test_all_laws_sampling_is_reproducible_and_preserves_all_sources(self) -> None:
+        service = self._multi_law_service()
+        for strategy in ("stratified", "random"):
+            with self.subTest(strategy=strategy):
+                payload = {"law_number": "all", "sample_size": 21, "seed": 77, "strategy": strategy}
+                first = self._session_payload(service.create_session(payload)["session_id"])
+                second = self._session_payload(service.create_session(payload)["session_id"])
+                self.assertEqual([item["unit_id"] for item in first["items"]],
+                                 [item["unit_id"] for item in second["items"]])
+                self.assertEqual({item["law_number"] for item in first["items"]}, {"21419", "21538", "21735"})
+                self.assertEqual(len(first["source"]["files"]), 3)
+                self.assertEqual(first["source"]["available_units"], 21)
+                self.assertEqual(first["source"]["sha256"], second["source"]["sha256"])
+                self.assertIsNone(first["bill_number"])
+
+    def test_invalid_law_or_oversized_filtered_sample_creates_no_session(self) -> None:
+        service = self._multi_law_service()
+        for payload in ({"law_number": "99999", "sample_size": 1},
+                        {"law_number": "21538", "sample_size": 8}):
+            with self.subTest(payload=payload), self.assertRaises(ValidationError):
+                service.create_session(payload)
+        self.assertEqual(list(self.output_dir.glob("validation_*.json")), [])
+
+    def test_switching_laws_keeps_saved_annotations_and_codebook(self) -> None:
+        service = self._multi_law_service()
+        first = service.create_session({"law_number": "21419", "sample_size": 2})
+        service.save_item(first["session_id"], 0, {
+            "decision": "no_statements", "annotations": [], "general_comment": "Revisión de prueba",
+        })
+        before = (self.output_dir / f"{first['session_id']}.json").read_bytes()
+        service.create_session({"law_number": "21538", "sample_size": 2})
+        self.assertEqual((self.output_dir / f"{first['session_id']}.json").read_bytes(), before)
+        resumed = service.open_item(first["session_id"], 0)
+        self.assertEqual(resumed["item"]["general_comment"], "Revisión de prueba")
+        self.assertEqual(resumed["session"]["completed"], 1)
+        self.assertEqual(resumed["session"]["law_number"], "21419")
+        self.assertEqual(resumed["codebook"]["version"], "test-0.1")
+
+    def test_legacy_sessions_infer_law_from_bill_and_still_resume(self) -> None:
+        summary = self._session()
+        session = self._session_payload(summary["session_id"])
+        session.pop("law_number")
+        session.pop("law_numbers")
+        for item in session["items"]:
+            item.pop("law_number")
+            item.pop("bill_number")
+        path = self.output_dir / f"{summary['session_id']}.json"
+        path.write_text(json.dumps(session), encoding="utf-8")
+        service = self._multi_law_service()
+        legacy = service.list_sessions()[0]
+        self.assertEqual(legacy["law_number"], "21735")
+        self.assertEqual(legacy["law_label"], "Ley 21.735")
+        self.assertEqual(service.open_item(summary["session_id"], 0)["item"]["law_label"], "Ley 21.735")
+
 
 if __name__ == "__main__":
     unittest.main()

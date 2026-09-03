@@ -81,13 +81,26 @@ function showCoding() {
 function renderCorpusSummary() {
   const corpus = state.config.corpus;
   const codebook = state.config.codebook;
+  const law = state.config.laws.find((entry) => entry.law_number === elements.lawNumber.value);
+  const available = law ? law.available_units : corpus.available_units;
+  elements.sampleSize.max = available;
   elements.corpusSummary.textContent = [
-    `${corpus.available_units} bloques disponibles`,
-    `párrafos < ${corpus.short_paragraph_words} palabras se acumulan hacia ${corpus.target_block_words}; máximo estricto ${corpus.max_block_words}`,
-    `boletín ${state.config.bill_number}`,
+    law ? `${law.label} · boletín ${law.bill_number}` : `Todas las leyes (${state.config.laws.length})`,
+    `${available} bloques disponibles`,
+    `máximo estricto ${corpus.max_block_words} palabras`,
     `${codebook.concepts.length} conceptos`,
     `libro ${codebook.version}`,
   ].join(" · ");
+}
+
+function renderLawOptions() {
+  const selected = elements.lawNumber.value;
+  elements.lawNumber.replaceChildren(new Option("Todas las leyes", "all"));
+  state.config.laws.forEach((law) => {
+    elements.lawNumber.add(new Option(law.label, law.law_number));
+  });
+  elements.lawNumber.value = selected;
+  if (!elements.lawNumber.value) elements.lawNumber.value = "all";
 }
 
 function renderQualityFlagOptions() {
@@ -131,7 +144,7 @@ function renderSessions(sessions) {
     });
     const meta = document.createElement("p");
     const coder = session.coder_id ? ` · ${session.coder_id}` : "";
-    meta.textContent = `${formatDateTime(session.updated_at_utc)} · libro ${session.codebook_version}${coder}`;
+    meta.textContent = `${session.law_label} · ${formatDateTime(session.updated_at_utc)} · libro ${session.codebook_version}${coder}`;
     entry.append(button, meta);
     elements.sessionsList.append(entry);
   });
@@ -366,6 +379,7 @@ function renderItem() {
       : `párrafos ${state.item.paragraph_start}–${state.item.paragraph_end} de ${state.item.paragraph_count}`
     : "sesión heredada: intervención completa";
   [
+    state.item.law_label,
     state.item.date,
     state.item.constitutional_stage,
     paragraphPosition,
@@ -564,7 +578,7 @@ async function loadItem(index) {
   state.session = result.session;
   state.item = result.item;
   state.codebook = result.codebook;
-  elements.sessionLabel.textContent = `Sesión ${state.session.session_id.slice(-8)} · libro ${state.session.codebook_version}`;
+  elements.sessionLabel.textContent = `${state.session.law_label} · sesión ${state.session.session_id.slice(-8)} · libro ${state.session.codebook_version}`;
   renderConceptOptions();
   renderCodebook();
   renderItem();
@@ -582,6 +596,7 @@ async function resumeSession(sessionId, index) {
 
 async function refreshConfig() {
   state.config = await fetchJSON("/api/config");
+  renderLawOptions();
   renderCorpusSummary();
   renderQualityFlagOptions();
   renderSessions(state.config.sessions);
@@ -595,6 +610,7 @@ async function createSession(event) {
     const summary = await fetchJSON("/api/sessions", {
       method: "POST",
       body: JSON.stringify({
+        law_number: elements.lawNumber.value,
         coder_id: elements.coderId.value.trim(),
         sample_size: Number(elements.sampleSize.value),
         seed: Number(elements.sampleSeed.value),
@@ -615,6 +631,7 @@ function confirmDiscard() {
 }
 
 function bindEvents() {
+  elements.lawNumber.addEventListener("change", renderCorpusSummary);
   elements.sessionForm.addEventListener("submit", createSession);
   elements.conceptSelect.addEventListener("change", renderConceptDefinition);
   elements.addAnnotation.addEventListener("click", addAnnotation);
@@ -666,6 +683,7 @@ async function initialize() {
     "setup-view",
     "coding-view",
     "session-form",
+    "law-number",
     "coder-id",
     "sample-size",
     "sample-seed",
@@ -707,6 +725,11 @@ async function initialize() {
   bindEvents();
   try {
     await refreshConfig();
+    const requestedLaw = new URLSearchParams(window.location.search).get("law");
+    if (state.config.laws.some((law) => law.law_number === requestedLaw)) {
+      elements.lawNumber.value = requestedLaw;
+      renderCorpusSummary();
+    }
     elements.sampleSize.value = state.config.defaults.sample_size;
     elements.sampleSeed.value = state.config.defaults.seed;
     elements.samplingStrategy.value = state.config.defaults.strategy;

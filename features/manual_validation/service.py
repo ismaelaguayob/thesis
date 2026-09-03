@@ -26,8 +26,9 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 
-SCHEMA_VERSION = "manual-validation-2.3.0"
+SCHEMA_VERSION = "manual-validation-2.4.0"
 CHUNK_SCHEMA_VERSION = "coding-chunks-1.0.0"
+LAW_BY_BILL = {"15480-13": "21735", "14588-13": "21419", "15625-13": "21538"}
 DEFAULT_TIMEZONE = "America/Santiago"
 SESSION_ID_RE = re.compile(r"^validation_\d{8}T\d{12}Z_[0-9a-f]{8}$")
 ALLOWED_STANCES = {"support", "oppose"}
@@ -44,6 +45,14 @@ QUALITY_FLAGS = {
     "other": "Otro problema",
 }
 MAX_REQUEST_BYTES = 2_000_000
+
+
+def law_label(law_number: str) -> str:
+    if law_number == "all":
+        return "Todas las leyes"
+    if law_number.isdigit():
+        return f"Ley {int(law_number):,}".replace(",", ".")
+    return f"Boletín {law_number}"
 
 
 class ValidationError(ValueError):
@@ -479,21 +488,58 @@ class ValidationService:
         self.output_dir = output_dir.resolve()
         self.timezone_name = timezone_name
         self.codebook = load_codebook(self.codebook_path)
-        self.records = load_corpus_records(self.source_path)
+        paths = (
+            sorted(self.source_path.glob("ley_*/coding_chunks_long.parquet"))
+            if self.source_path.is_dir()
+            else [self.source_path]
+        )
+        if not paths:
+            raise ValidationError("No se encontraron corpus en ley_*/coding_chunks_long.parquet")
+        self.records = []
+        self.sources = []
+        for path in paths:
+            records = load_corpus_records(path)
+            bill_number = str(records[0]["bill_number"])
+            law_number = LAW_BY_BILL.get(bill_number, bill_number)
+            for record in records:
+                record["law_number"] = law_number
+            self.records.extend(records)
+            self.sources.append({
+                "law_number": law_number,
+                "label": law_label(law_number),
+                "bill_number": bill_number,
+                "path": str(path),
+                "sha256": sha256_file(path),
+                "available_units": len(records),
+            })
+        if len({record["unit_id"] for record in self.records}) != len(self.records):
+            raise ValidationError("Hay unit_id duplicados entre los corpus de las leyes")
+        if len({source["law_number"] for source in self.sources}) != len(self.sources):
+            raise ValidationError("Hay más de un corpus para la misma ley")
         first_record = self.records[0]
         self.chunk_schema_version = str(first_record["chunk_schema_version"])
-        self.bill_number = str(first_record["bill_number"])
+        self.bill_number = self.sources[0]["bill_number"] if len(self.sources) == 1 else None
         self.min_words = int(first_record["minimum_words"])
         self.short_paragraph_words = int(first_record["short_paragraph_words"])
         self.target_block_words = int(first_record["target_block_words"])
         self.max_block_words = int(first_record["max_block_words"])
-        self.source_sha256 = sha256_file(self.source_path)
+        for field in ("chunk_schema_version", "minimum_words", "short_paragraph_words",
+                      "target_block_words", "max_block_words"):
+            if any(record[field] != first_record[field] for record in self.records):
+                raise ValidationError(f"Los corpus de las leyes difieren en {field}")
+        self.source_sha256 = self._source_fingerprint(self.sources)
         self.codebook_sha256 = sha256_file(self.codebook_path)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     @property
     def concept_ids(self) -> set[str]:
         return {str(concept["id"]) for concept in self.codebook["concepts"]}
+
+    @staticmethod
+    def _source_fingerprint(sources: list[dict[str, Any]]) -> str:
+        if len(sources) == 1:
+            return sources[0]["sha256"]
+        return sha256_text(json.dumps(sources, sort_keys=True, ensure_ascii=False))
 
     def config(self) -> dict[str, Any]:
         by_document: dict[str, int] = defaultdict(int)
@@ -504,6 +550,7 @@ class ValidationService:
         return {
             "schema_version": SCHEMA_VERSION,
             "bill_number": self.bill_number,
+            "laws": self.sources,
             "corpus": {
                 "path": str(self.source_path),
                 "sha256": self.source_sha256,
@@ -567,6 +614,9 @@ class ValidationService:
             (index for index, item in enumerate(items) if item.get("status") != "completed"),
             None,
         )
+        law_number = session.get("law_number") or LAW_BY_BILL.get(
+            session.get("bill_number"), session.get("bill_number") or "all"
+        )
         return {
             "session_id": session["session_id"],
             "coder_id": session.get("coder_id", ""),
@@ -579,6 +629,8 @@ class ValidationService:
             "codebook_version": session.get("codebook", {}).get("version"),
             "sampling_strategy": session.get("sampling", {}).get("strategy"),
             "sampling_seed": session.get("sampling", {}).get("seed"),
+            "law_number": law_number,
+            "law_label": law_label(law_number),
         }
 
     def list_sessions(self) -> list[dict[str, Any]]:
@@ -600,7 +652,16 @@ class ValidationService:
             raise ValidationError("sample_size y seed deben ser números enteros") from exc
         strategy = _limited_text(payload.get("strategy", "stratified"), "strategy", 30)
         coder_id = _limited_text(payload.get("coder_id", ""), "coder_id", 120)
-        selected = sample_records(self.records, sample_size, seed, strategy)
+        law_number = _limited_text(payload.get("law_number", "all"), "law_number", 30)
+        if law_number != "all" and law_number not in {
+            source["law_number"] for source in self.sources
+        }:
+            raise ValidationError("Selecciona una ley disponible o todas las leyes")
+        sources = [source for source in self.sources
+                   if law_number == "all" or source["law_number"] == law_number]
+        eligible = [record for record in self.records
+                    if law_number == "all" or record["law_number"] == law_number]
+        selected = sample_records(eligible, sample_size, seed, strategy)
         timestamps = timestamp_pair(self.timezone_name)
         session_id = f"validation_{_session_timestamp()}_{uuid.uuid4().hex[:8]}"
         items: list[dict[str, Any]] = []
@@ -608,6 +669,8 @@ class ValidationService:
             items.append(
                 {
                     "sample_index": index,
+                    "law_number": record["law_number"],
+                    "bill_number": record["bill_number"],
                     "chunk_id": record["chunk_id"],
                     "unit_id": record["unit_id"],
                     "unit_kind": record["unit_kind"],
@@ -654,21 +717,24 @@ class ValidationService:
             "session_id": session_id,
             "timezone": self.timezone_name,
             "coder_id": coder_id,
-            "bill_number": self.bill_number,
+            "law_number": law_number,
+            "law_numbers": [source["law_number"] for source in sources],
+            "bill_number": sources[0]["bill_number"] if len(sources) == 1 else None,
             "created_at_utc": timestamps["utc"],
             "created_at_local": timestamps["local"],
             "updated_at_utc": timestamps["utc"],
             "updated_at_local": timestamps["local"],
             "source": {
-                "path": str(self.source_path),
-                "sha256": self.source_sha256,
+                "path": sources[0]["path"] if len(sources) == 1 else str(self.source_path),
+                "sha256": self._source_fingerprint(sources),
+                "files": sources,
                 "chunk_schema_version": self.chunk_schema_version,
                 "unit_of_analysis": "paragraph_block",
                 "minimum_words": self.min_words,
                 "short_paragraph_words": self.short_paragraph_words,
                 "target_block_words": self.target_block_words,
                 "max_block_words": self.max_block_words,
-                "available_units": len(self.records),
+                "available_units": len(eligible),
             },
             "codebook": {
                 **self.codebook,
@@ -676,6 +742,7 @@ class ValidationService:
                 "sha256": self.codebook_sha256,
             },
             "sampling": {
+                "law_number": law_number,
                 "strategy": strategy,
                 "seed": seed,
                 "requested_size": sample_size,
@@ -709,6 +776,9 @@ class ValidationService:
         item["last_opened_at_local"] = timestamps["local"]
         self._save_session(session)
         public_item = {
+            "law_label": law_label(item.get("law_number") or LAW_BY_BILL.get(
+                session.get("bill_number"), session.get("bill_number") or "all"
+            )),
             "sample_index": item["sample_index"],
             "chunk_id": item.get(
                 "chunk_id", item.get("unit_id", item.get("utterance_id", ""))
