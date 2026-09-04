@@ -87,7 +87,7 @@ function renderCorpusSummary() {
   elements.corpusSummary.textContent = [
     law ? `${law.label} · boletín ${law.bill_number}` : `Todas las leyes (${state.config.laws.length})`,
     `${available} bloques disponibles`,
-    `máximo estricto ${corpus.max_block_words} palabras`,
+    `${corpus.chunk_schema_version === "coding-chunks-2.0.0" ? "límite flexible" : "máximo estricto"} ${corpus.max_block_words} palabras`,
     `${codebook.concepts.length} conceptos`,
     `libro ${codebook.version}`,
   ].join(" · ");

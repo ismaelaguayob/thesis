@@ -27,7 +27,8 @@ import pandas as pd
 
 
 SCHEMA_VERSION = "manual-validation-2.4.0"
-CHUNK_SCHEMA_VERSION = "coding-chunks-1.0.0"
+CHUNK_SCHEMA_VERSION = "coding-chunks-2.0.0"
+CHUNK_SCHEMA_VERSIONS = {"coding-chunks-1.0.0", CHUNK_SCHEMA_VERSION}
 LAW_BY_BILL = {"15480-13": "21735", "14588-13": "21419", "15625-13": "21538"}
 DEFAULT_TIMEZONE = "America/Santiago"
 SESSION_ID_RE = re.compile(r"^validation_\d{8}T\d{12}Z_[0-9a-f]{8}$")
@@ -284,7 +285,7 @@ def load_corpus_records(
     target_block_words = int(dataframe["target_block_words"].iloc[0])
     max_block_words = int(dataframe["max_block_words"].iloc[0])
     chunk_schema_version = str(dataframe["chunk_schema_version"].iloc[0])
-    if chunk_schema_version != CHUNK_SCHEMA_VERSION:
+    if chunk_schema_version not in CHUNK_SCHEMA_VERSIONS:
         raise ValidationError(
             f"Versión de corpus no soportada: {chunk_schema_version}"
         )
@@ -296,7 +297,17 @@ def load_corpus_records(
         raise ValidationError("El corpus contiene chunks sin texto")
     if dataframe["n_words"].lt(minimum_words).any():
         raise ValidationError("El corpus contiene chunks bajo el mínimo de palabras")
-    if dataframe["n_words"].gt(max_block_words).any():
+    # La versión 2 absorbe restos breves de ambos lados del corte inicial.
+    length_limit = max_block_words
+    if chunk_schema_version == "coding-chunks-2.0.0":
+        length_limit += 2 * (short_paragraph_words - 1)
+        short_fragments = dataframe["n_words"].lt(short_paragraph_words) & (
+            dataframe["source_utterance_n_words"].ge(short_paragraph_words)
+            | dataframe["utterance_chunk_count"].gt(1)
+        )
+        if short_fragments.any():
+            raise ValidationError("El corpus contiene fragmentos breves sin unir")
+    if dataframe["n_words"].gt(length_limit).any():
         raise ValidationError("El corpus contiene chunks sobre el máximo de palabras")
     expected_hashes = dataframe["content"].map(sha256_text)
     if not expected_hashes.eq(dataframe["content_sha256"].astype(str)).all():

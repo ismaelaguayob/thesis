@@ -198,7 +198,12 @@ def paragraph_blocks(
     target_block_words: int,
     max_block_words: int,
 ) -> list[dict[str, Any]]:
-    """Agrupa párrafos breves y divide párrafos extensos bajo un máximo estricto."""
+    """Agrupa una intervención con un máximo flexible para absorber bloques breves.
+
+    El corte inicial usa ``max_block_words``. Después se unen los bloques de
+    menos de ``short_paragraph_words`` al vecino más corto, aunque se supere ese
+    máximo. Solo una intervención completa puede quedar bajo el umbral breve.
+    """
     segments = []
     for paragraph in paragraphs:
         segments.extend(
@@ -251,6 +256,30 @@ def paragraph_blocks(
             flush_pending()
 
     flush_pending()
+
+    # Absorber los restos antes de filtrar por longitud conserva también los
+    # cierres de pocas palabras. Cada llamada contiene una sola intervención.
+    index = 0
+    while len(block_members) > 1 and index < len(block_members):
+        words = sum(member["n_words"] for member in block_members[index])
+        if words >= short_paragraph_words:
+            index += 1
+            continue
+        previous_words = (
+            sum(member["n_words"] for member in block_members[index - 1])
+            if index > 0 else float("inf")
+        )
+        next_words = (
+            sum(member["n_words"] for member in block_members[index + 1])
+            if index + 1 < len(block_members) else float("inf")
+        )
+        if previous_words <= next_words:
+            block_members[index - 1].extend(block_members.pop(index))
+            index -= 1
+        else:
+            members = block_members.pop(index)
+            block_members[index][:0] = members
+
     return [merge_segments(members) for members in block_members]
 
 

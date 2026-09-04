@@ -71,8 +71,8 @@ def main() -> int:
     print(
         f"Bloques disponibles: {len(service.records)} "
         f"(párrafos breves < {service.short_paragraph_words} palabras; "
-        f"objetivo {service.target_block_words}; máximo {service.max_block_words}; "
-        f"mínimo residual {service.min_words})"
+        f"objetivo {service.target_block_words}; límite inicial {service.max_block_words}; "
+        f"mínimo de intervención {service.min_words})"
     )
     print(f"Libro editable: {args.codebook_workbook.resolve()}")
     print(

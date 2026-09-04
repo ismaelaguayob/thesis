@@ -15,15 +15,3 @@ Estado de `proc.qmd`, sus artefactos y `../bcn-scraper`. Las tareas pendientes e
 - **Punto 4:** el reporte de calidad controla también las fases del fallback, IDs estables y unicidad de unidades. `1.1`, `1.12`, `1.13` y `3.1` pasan; `2.4` conserva una advertencia procedimental conocida. `bcn-scraper` pasa 72 tests.
 
 ## Pendientes
-
-1. **[S] Decidir el cierre de 2.4.** Clasificar la frase final como cierre procedimental o atribuirla al presidente con un override por ítem. No afecta `speech_df`.
-
-2. **[S–M, ejecución lenta] Refrescar parlamentarios.** Hay 40 recursos de Persona BCN nuevos respecto del caché. Sus IDs, hrefs y nombres ya están disponibles como `identity_only`; ejecutar el bloque de una hora completará partido y datos biográficos. No bloquea el análisis discursivo.
-
-3. **[M] Construir el manifiesto audiovisual.** Unificar Cámara y Senado con sesión, fecha/hora, boletín, página, MP4, tamaño, duración, estado y checksum; detectar partes, duplicados y sesiones multitema.
-
-4. **[M–L] Vincular asistencia, invitados y agenda.** Modelar reemplazos y rangos horarios, y delimitar en cada video el tramo del boletín 15480-13.
-
-5. **[L] Implementar descarga y audio reproducibles.** Descarga reanudable, `ffprobe`, checksum, fallos y audio mono/16 kHz; videos fuera de Git.
-
-6. **[L–XL] Crear piloto y pipeline audiovisual.** Anotar un conjunto heterogéneo, fijar métricas y luego ejecutar ASR, diarización y atribución con caché, roster y revisión humana.

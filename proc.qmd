@@ -544,16 +544,20 @@ tablas de la ley.
 ## Bloques de párrafos para codificación
 
 Los bloques se construyen dentro de cada intervención, conservando IDs, hashes y
-posiciones en el texto original. Los párrafos breves se agrupan hasta un objetivo
-de 100 palabras, sin superar 150; los extensos se dividen por oraciones y, cuando
-es necesario, por palabras. Los bloques de menos de 5 palabras se excluyen.
+posiciones en el texto original. El corte inicial busca bloques de 100 palabras
+y usa 150 como límite orientativo; los párrafos extensos se dividen por oraciones
+y, cuando es necesario, por palabras. Después, cada bloque de menos de 50 palabras
+se une al vecino más corto de la misma intervención, aunque el resultado supere
+150 palabras. Esto reduce los fragmentos aislados y las llamadas de codificación.
+Una intervención completa puede tener menos de 50 palabras: se conserva sin
+mezclar hablantes. Solo se excluyen intervenciones completas de menos de 5 palabras.
 
 ```{python}
 MINIMUM_WORDS = 5
 SHORT_PARAGRAPH_WORDS = 50
 TARGET_BLOCK_WORDS = 100
 MAX_BLOCK_WORDS = 150
-CODING_CHUNKS_SCHEMA_VERSION = "coding-chunks-1.0.0"
+CODING_CHUNKS_SCHEMA_VERSION = "coding-chunks-2.0.0"
 ```
 
 Seleccionamos las participaciones incluidas en el análisis y conservamos los
@@ -683,6 +687,8 @@ for _, row in source.iterrows():
 
 Construimos la tabla final, añadimos el orden y los bloques vecinos dentro de cada
 documento, y guardamos el Parquet que utilizan la validación manual y la codificación.
+Al cambiar de versión de segmentación, conservamos una copia del Parquet anterior;
+las sesiones de validación existentes mantienen sus propios textos y anotaciones.
 
 ```{python}
 coding_chunks_long = pd.DataFrame(chunk_rows)
@@ -738,7 +744,16 @@ remaining_columns = [
 ]
 coding_chunks_long = coding_chunks_long[leading_columns + remaining_columns]
 
-coding_chunks_long.to_parquet(PROC_DATA_DIR / "coding_chunks_long.parquet", index=False)
+chunks_path = PROC_DATA_DIR / "coding_chunks_long.parquet"
+if chunks_path.exists():
+    previous_version = pd.read_parquet(
+        chunks_path, columns=["chunk_schema_version"]
+    )["chunk_schema_version"].iloc[0]
+    if previous_version != CODING_CHUNKS_SCHEMA_VERSION:
+        archive_path = chunks_path.with_name(f"coding_chunks_long.{previous_version}.parquet")
+        if not archive_path.exists():
+            archive_path.write_bytes(chunks_path.read_bytes())
+coding_chunks_long.to_parquet(chunks_path, index=False)
 ```
 
 Resumimos el tamaño del corpus de bloques y sus longitudes para revisar el resultado
@@ -764,7 +779,8 @@ chunk_summary = pd.DataFrame({
 chunk_summary
 ```
 
-En las tres leyes revisadas, los bloques respetan los límites de longitud declarados.
+La longitud máxima puede superar 150 palabras por la absorción de fragmentos breves.
+Los bloques de menos de 50 palabras corresponden a intervenciones completas.
 La tabla distingue las intervenciones fuente de los bloques resultantes;
 `coding_chunks_long.parquet` conserva las unidades y su procedencia para las
 siguientes etapas de codificación.

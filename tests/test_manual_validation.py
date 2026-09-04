@@ -306,6 +306,37 @@ class ManualValidationTestCase(unittest.TestCase):
                 output_dir=self.root / "tampered-output",
             )
 
+    def test_flexible_corpus_accepts_longer_blocks_and_keeps_legacy_limit(self) -> None:
+        dataframe = pd.read_parquet(self.source_path)
+        index = dataframe.index[dataframe["unit_id"].eq("doc-b-1::p0001")][0]
+        content = " ".join(["pensión"] * 170)
+        digest = hashlib.sha256(content.encode()).hexdigest()
+        for field, value in {
+            "content": content, "content_sha256": digest, "n_words": 170,
+            "source_utterance_n_words": 170, "source_end_char": len(content),
+        }.items():
+            dataframe.loc[index, field] = value
+        segments = json.loads(dataframe.loc[index, "source_segments_json"])
+        segments[0].update(source_end_char=len(content), n_words=170, content_sha256=digest)
+        dataframe.loc[index, "source_segments_json"] = json.dumps(segments)
+        dataframe.to_parquet(self.source_path, index=False)
+        with self.assertRaisesRegex(ValidationError, "sobre el máximo"):
+            ValidationService(self.source_path, self.codebook_path, self.output_dir)
+
+        dataframe["chunk_schema_version"] = "coding-chunks-2.0.0"
+        dataframe.to_parquet(self.source_path, index=False)
+        service = ValidationService(self.source_path, self.codebook_path, self.output_dir)
+        self.assertEqual(service.chunk_schema_version, "coding-chunks-2.0.0")
+        self.assertTrue(any(record["n_words"] == 170 for record in service.records))
+
+    def test_flexible_corpus_rejects_short_fragment_in_long_utterance(self) -> None:
+        dataframe = pd.read_parquet(self.source_path)
+        dataframe["chunk_schema_version"] = "coding-chunks-2.0.0"
+        dataframe.loc[dataframe["unit_id"].eq("doc-a-3::p0001"), "n_words"] = 25
+        dataframe.to_parquet(self.source_path, index=False)
+        with self.assertRaisesRegex(ValidationError, "fragmentos breves sin unir"):
+            ValidationService(self.source_path, self.codebook_path, self.output_dir)
+
     def test_stratified_sampling_is_deterministic_and_unique(self) -> None:
         first = sample_records(self.service.records, 4, 77, "stratified")
         second = sample_records(self.service.records, 4, 77, "stratified")
