@@ -1,0 +1,195 @@
+{
+  "type": "object",
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": [
+        "statements",
+        "no_statements"
+      ]
+    },
+    "annotations": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "properties": {
+          "evidence_text": {
+            "type": "string"
+          },
+          "evidence_occurrence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "concept_status": {
+            "type": "string",
+            "enum": [
+              "in_codebook",
+              "review"
+            ]
+          },
+          "concept_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "capitalizacion_individual",
+              "propiedad_individual_fondos",
+              "reciprocidad_contributiva",
+              "control_responsabilidad_individual",
+              "actitud",
+              "identidad",
+              "necesidad_material",
+              "igualdad_universalismo",
+              "conciencia_costos",
+              "solidaridad_intergeneracional",
+              "ineficiencia_estado",
+              "prevision_como_mercado",
+              "ilegitimidad_origen_dictatorial",
+              "acuerdos_moderacion",
+              null
+            ]
+          },
+          "proposed_concept": {
+            "type": "string"
+          },
+          "stance": {
+            "type": "string",
+            "enum": [
+              "support",
+              "oppose"
+            ]
+          },
+          "justification": {
+            "type": "object",
+            "properties": {
+              "criterion_reference": {
+                "type": "string"
+              },
+              "coding": {
+                "type": "string"
+              },
+              "stance": {
+                "type": "string"
+              },
+              "alternatives": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "concept_id": {
+                      "type": "string",
+                      "enum": [
+                        "capitalizacion_individual",
+                        "propiedad_individual_fondos",
+                        "reciprocidad_contributiva",
+                        "control_responsabilidad_individual",
+                        "actitud",
+                        "identidad",
+                        "necesidad_material",
+                        "igualdad_universalismo",
+                        "conciencia_costos",
+                        "solidaridad_intergeneracional",
+                        "ineficiencia_estado",
+                        "prevision_como_mercado",
+                        "ilegitimidad_origen_dictatorial",
+                        "acuerdos_moderacion"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "concept_id",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "context_evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "previous_context",
+                        "next_context"
+                      ]
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "source",
+                    "text"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "uncertainty": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "criterion_reference",
+              "coding",
+              "stance",
+              "alternatives",
+              "context_evidence",
+              "uncertainty"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "evidence_text",
+          "evidence_occurrence",
+          "concept_status",
+          "concept_id",
+          "proposed_concept",
+          "stance",
+          "justification"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "decision_justification": {
+      "type": "string"
+    },
+    "quality_flags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "vote",
+          "procedural",
+          "too_short",
+          "truncated",
+          "insufficient_context",
+          "segmentation_problem",
+          "other"
+        ]
+      }
+    },
+    "needs_human_review": {
+      "type": "boolean"
+    },
+    "limitations": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "decision",
+    "annotations",
+    "decision_justification",
+    "quality_flags",
+    "needs_human_review",
+    "limitations"
+  ],
+  "additionalProperties": false
+}

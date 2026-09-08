@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revisión de anotaciones LLM</title><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/llm.css"></head>
+<body><main class="llm-main">
+<header class="llm-header"><div><p class="step-label">Piloto · revisión con respuestas visibles</p><h1>Revisión de anotaciones LLM</h1>
+<p>Inspecciona evidencia, códigos y justificaciones. Los juicios se guardan separados de la salida original.</p></div>
+<a href="/">Validación manual</a></header>
+<section class="panel llm-controls" aria-label="Seleccionar ejecución y bloque">
+<label>Ejecución<select id="run-select"><option>Cargando…</option></select></label>
+<label>Ley<select id="law-filter"><option value="all">Todas las leyes</option></select></label>
+<label>Mostrar<select id="item-filter"><option value="all">Todos los bloques</option><option value="unreviewed">Sin revisión humana</option><option value="flagged">Modelo solicita revisión</option><option value="no_statements">Sin declaraciones</option><option value="errors">Incidencias de ejecución</option></select></label>
+<button id="refresh" type="button" class="secondary-button">Actualizar</button>
+<label class="llm-block-select">Bloque<select id="item-select"></select></label>
+<p id="run-summary" class="llm-block-select"></p>
+</section>
+<p id="empty-state" class="summary-box hidden"></p>
+<section id="review-workspace" class="hidden">
+<div class="llm-navigation"><button id="previous" class="secondary-button">Anterior</button><p id="position"></p><button id="next" class="secondary-button">Siguiente</button></div>
+<div id="model-meta" class="summary-box"></div>
+<div class="llm-grid"><section class="llm-texts">
+<article class="intervention-card context-card"><h3>Bloque anterior <small>· contexto</small></h3><p id="previous-relation"></p><div id="previous-text" class="intervention-text"></div></article>
+<article class="intervention-card target-card"><h2>Bloque objetivo</h2><p id="target-meta"></p><p>Los colores identifican códigos. Selecciona una marca para ir a su justificación.</p><div id="target-text" class="intervention-text"></div><div id="code-legend" class="llm-legend"></div></article>
+<article class="intervention-card context-card"><h3>Bloque siguiente <small>· contexto</small></h3><p id="next-relation"></p><div id="next-text" class="intervention-text"></div></article>
+<details class="panel"><summary>Input completo enviado al modelo</summary><pre id="raw-input"></pre></details>
+<details class="panel"><summary>Output completo y respuesta de la API</summary><h3>Texto generado</h3><pre id="raw-output"></pre><h3>Respuesta completa</h3><pre id="raw-response"></pre></details>
+<details class="panel"><summary>Libro de códigos utilizado</summary><div id="codebook"></div></details>
+</section><aside class="llm-sidebar">
+<section class="panel"><p class="step-label">Decisión del modelo</p><h2 id="decision"></h2><p id="decision-justification"></p><p id="limitations"></p><p id="flags"></p><div id="execution-errors" role="status"></div></section>
+<section class="panel"><h2>Declaraciones y justificaciones</h2><div id="annotations"></div></section>
+<form id="review-form" class="panel"><h2>Juicio del revisor</h2><p>Revisa también posibles declaraciones omitidas.</p>
+<label>Identificador del revisor <span class="optional">opcional</span><input id="reviewer" maxlength="120"></label>
+<label>Resultado del bloque<select id="verdict" required><option value="">Seleccionar…</option><option value="accepted">Aceptar</option><option value="needs_changes">Requiere cambios</option><option value="discard">Descartar</option></select></label>
+<fieldset><legend>Problemas observados</legend><div id="issues" class="quality-flags"></div></fieldset>
+<label>Comentario o corrección propuesta<textarea id="review-note" rows="4" maxlength="6000" placeholder="Explica errores, omisiones o cambios al prompt o al libro"></textarea></label>
+<div class="llm-save"><button id="save" type="submit" class="primary-button">Guardar revisión</button><span id="save-status" role="status" aria-live="polite"></span></div>
+</form></aside></div></section>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+</main><script src="/llm.js" defer></script></body></html>

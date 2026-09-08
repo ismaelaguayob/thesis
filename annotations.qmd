@@ -1,9 +1,294 @@
+---
+title: "Piloto de anotación de justificaciones normativas con LLM"
+lang: es
+jupyter: python3
+format:
+  html:
+    toc: true
+    code-fold: true
+    embed-resources: true
+execute:
+  daemon: false
+  warning: true
+  error: false
+---
+
+## Propósito y alcance
+
+Esta primera muestra permite depurar el libro de códigos y comparar versiones del
+prompt. El universo son las intervenciones elegibles ya materializadas en los
+Parquet de `proc.qmd`, con las mismas exclusiones y segmentación de la app de
+validación. El 10% se calcula sobre intervenciones únicas, no sobre bloques ni
+sobre todas las intervenciones brutas descargadas. Se anotan **todos los bloques**
+de cada intervención seleccionada.
+
+La selección conserva las tres leyes y cada sesión (`document_uri`). Las cuotas
+son proporcionales al número de intervenciones por ley y sesión, con ajuste por
+restos y mínimo de una intervención por estrato hasta alcanzar `ceil(0.10 * N)`.
+Dentro de cada cuota se reutiliza el sorteo en rondas de la app por longitud,
+aplicado ahora a la longitud de la intervención. Esta adaptación favorece variedad
+para el piloto; las frecuencias de códigos no estiman prevalencias del corpus.
+
+## Configuración y fuentes
+
+Cargamos el servicio compartido de la app, las funciones de muestreo, el conversor
+XLSX y las herramientas de ejecución. El entorno se fija con `pyproject.toml` y
+`uv.lock`. La API solo se activa mediante `ANNOTATIONS_EXECUTE=1`; renderizar por
+defecto reutiliza respuestas guardadas y muestra los casos pendientes.
 
 ```{python}
+#| label: setup
+import json
+import os
+from pathlib import Path
+
 import pandas as pd
+from IPython.display import Markdown, display
 
-law_21735 = pd.read_parquet("data/proc_data/ley_21735/coding_chunks_long.parquet")
-law_21538 = pd.read_parquet("data/proc_data/ley_21538/coding_chunks_long.parquet")
-law_21419 = pd.read_parquet("data/proc_data/ley_21419/coding_chunks_long.parquet")
+from features.coding_chunks import length_bin
+from features.manual_validation.codebook_workbook import write_codebook_json
+from features.manual_validation.service import ValidationService, sample_records
+from features.llm_annotations.pipeline import allocate_quotas, prepare_run, run_annotations
 
+FRACTION = 0.10
+SEED = 20260908
+MODEL = "gpt-5.6-luna"
+REASONING_EFFORT = "max"
+PROMPT_PATH = Path(os.environ.get("ANNOTATIONS_PROMPT", "prompts/annotations_pilot.md"))
+CODEBOOK_WORKBOOK = Path("data/codebook/codebook_v0.3.xlsx")
+CODEBOOK_JSON = CODEBOOK_WORKBOOK.with_suffix(".json")
+RUN_ROOT = Path("output/annotations")
+TABLE_ROOT = Path("output/tables/annotations")
+TABLE_ROOT.mkdir(parents=True, exist_ok=True)
+EXECUTE_API = os.environ.get("ANNOTATIONS_EXECUTE", "0") == "1"
+API_LIMIT = int(os.environ["ANNOTATIONS_LIMIT"]) if os.environ.get("ANNOTATIONS_LIMIT") else None
+API_WORKERS = int(os.environ.get("ANNOTATIONS_WORKERS", "6"))
 ```
+
+Sincronizamos el JSON desde el XLSX, tal como hace la app al iniciar. Cargamos
+exclusivamente `ley_*/coding_chunks_long.parquet`; el servicio valida IDs, hashes,
+offsets, orden y contexto adyacente dentro de la sesión. La versión se toma de los
+metadatos internos del libro, que pueden diferir del nombre del archivo.
+
+```{python}
+#| label: corpus
+_ = write_codebook_json(CODEBOOK_WORKBOOK, CODEBOOK_JSON)
+service = ValidationService(Path("data/proc_data"), CODEBOOK_JSON, Path("output/validation"))
+blocks = pd.DataFrame(service.records)
+keys = ["law_number", "document_uri", "utterance_id"]
+utterances = (
+    blocks.sort_values(keys + ["utterance_chunk_number"])
+    .groupby(keys, as_index=False)
+    .agg(n_blocks=("unit_id", "size"), n_words=("source_utterance_n_words", "first"))
+)
+utterances["length_bin"] = utterances["n_words"].map(length_bin)
+corpus_summary = utterances.groupby("law_number", as_index=False).agg(
+    intervenciones=("utterance_id", "size"), sesiones=("document_uri", "nunique"),
+    bloques=("n_blocks", "sum")
+)
+display(corpus_summary)
+```
+
+El universo incluye `{python} len(utterances)` intervenciones,
+`{python} len(blocks)` bloques y `{python} utterances.groupby(['law_number', 'document_uri']).ngroups`
+sesiones. Las diferencias de tamaño entre leyes justifican asignar cuotas
+explícitas. Se usa el libro **`{python} service.codebook['version']`**, con
+`{python} len(service.codebook['concepts'])` conceptos. El denominador corresponde
+al corpus elegible de la app y conserva su umbral mínimo de
+`{python} service.min_words` palabras.
+
+## Muestra estratificada
+
+Calculamos las cuotas enteras por ley y sesión. La tabla muestra los nueve estratos
+completos y permite revisar el redondeo. La semilla fija el sorteo y los empates.
+
+```{python}
+#| label: cuotas
+counts = utterances.groupby(["law_number", "document_uri"], sort=True).size()
+quotas = allocate_quotas(counts, FRACTION)
+strata = pd.DataFrame({"intervenciones_universo": counts, "intervenciones_muestra": quotas}).reset_index()
+strata["fraccion_muestreada"] = strata["intervenciones_muestra"] / strata["intervenciones_universo"]
+strata["sesion"] = strata["document_uri"].str.rsplit("/", n=1).str[-1]
+display(strata[["law_number", "sesion", "intervenciones_universo", "intervenciones_muestra", "fraccion_muestreada"]])
+```
+
+La asignación selecciona `{python} int(quotas.sum())` intervenciones, equivalentes al
+`{python} f'{100 * quotas.sum() / counts.sum():.2f}'`% del universo. Las fracciones
+varían ligeramente por redondeo. Todas las sesiones tienen representación; esto
+no garantiza observar códigos infrecuentes ni ofrece por sí solo precisión
+estadística suficiente para medir desempeño.
+
+Sorteamos intervenciones completas dentro de cada cuota reutilizando
+`sample_records(..., strategy="stratified")`: rondas entre grupos de longitud de
+hasta 75, de 76 a 500 y de más de 500 palabras. Expandimos las intervenciones
+seleccionadas a sus bloques sin modificar el texto ni el contexto. Este sorteo
+por longitud es deliberadamente desproporcional, como en la app.
+
+```{python}
+#| label: sorteo
+selected_utterances = []
+for stratum_index, (stratum_key, quota) in enumerate(quotas.items()):
+    law, document = stratum_key
+    pool = utterances.loc[
+        utterances["law_number"].eq(law) & utterances["document_uri"].eq(document)
+    ].to_dict("records")
+    selected_utterances.extend(sample_records(pool, int(quota), SEED + stratum_index, "stratified"))
+selected_units = pd.DataFrame(selected_utterances)
+selected_keys = set(map(tuple, selected_units[keys].itertuples(index=False, name=None)))
+selected = [dict(record) for record in service.records
+            if tuple(record[key] for key in keys) in selected_keys]
+selected.sort(key=lambda r: (r["law_number"], r["document_uri"], r["utterance_order"], r["utterance_chunk_number"]))
+assert len(selected_keys) == int(quotas.sum())
+assert len(selected) == int(selected_units["n_blocks"].sum())
+selection_summary = selected_units.groupby("law_number", as_index=False).agg(
+    intervenciones=("utterance_id", "size"), bloques=("n_blocks", "sum"),
+    sesiones=("document_uri", "nunique")
+)
+display(selection_summary)
+```
+
+Las `{python} len(selected_units)` intervenciones sorteadas producen
+`{python} len(selected)` solicitudes, una por bloque objetivo. La unidad de
+muestreo y la unidad enviada al modelo son distintas. Los bloques adyacentes
+pueden provenir de intervenciones fuera de la muestra y se usan solo como
+contexto; no cuentan como objetivos adicionales.
+
+## Prompt, libro y trazabilidad
+
+El [prompt editable](prompts/annotations_pilot.md) define evidencia literal,
+orientación respecto del ancla de cada concepto y tratamiento de justificaciones
+ausentes del libro. Se adjunta el libro completo: definiciones, inclusión,
+exclusión y anclas. Solo se envían el objetivo, su contexto y los metadatos públicos
+que usa la app. Los campos de hablante, partido y género no se incluyen.
+
+La configuración usa `gpt-5.6-luna` y `reasoning.effort=max`, admitidos por la
+[documentación de Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna).
+La respuesta utiliza un [esquema JSON estricto](https://developers.openai.com/api/docs/guides/structured-outputs).
+La API no recibe una semilla: se reproduce la selección, los inputs y la
+configuración, pero nuevas generaciones pueden diferir.
+
+Guardamos un snapshot del prompt, libro, esquema, muestra y request exacto por
+bloque. El identificador de ejecución depende de su contenido y del programa.
+Cambiar el prompt produce otra ejecución sin sobrescribir la anterior.
+
+```{python}
+#| label: congelar-ejecucion
+sampling = {"fraction": FRACTION, "seed": SEED, "unit": "utterance",
+            "strata": ["law_number", "document_uri"],
+            "within_stratum": "manual_app_round_robin_intervention_length",
+            "eligible_interventions": len(utterances), "selected_interventions": len(selected_units),
+            "quotas": strata.to_dict("records")}
+run_dir = prepare_run(service, selected, sampling, PROMPT_PATH, RUN_ROOT, MODEL, REASONING_EFFORT)
+selected_units.to_parquet(run_dir / "selected_utterances.parquet", index=False)
+strata.to_parquet(run_dir / "strata.parquet", index=False)
+strata.to_csv(TABLE_ROOT / f"{run_dir.name}_strata.csv", index=False)
+```
+
+## Ejecución y controles de salida
+
+Para generar la muestra: `ANNOTATIONS_EXECUTE=1 uv run quarto render annotations.qmd`.
+`OPENAI_API_KEY` se carga desde `.env` solo al ejecutar llamadas en Python, nunca en
+el navegador. `ANNOTATIONS_LIMIT=1` limita a un bloque pendiente para una prueba;
+sin ese límite, la ejecución completa los pendientes. `ANNOTATIONS_WORKERS`
+controla concurrencia (seis por defecto). El SDK aplica hasta dos reintentos de
+transporte; cada respuesta recibida queda guardada antes de avanzar.
+
+La cita literal y su número de aparición determinan offsets en caracteres Unicode
+calculados localmente. Validamos el span con el contrato de la app, la pertenencia
+del código, la coherencia de decisión y anotaciones, las referencias al libro y
+las citas de contexto. Una salida inválida o incompleta queda separada de una
+decisión válida «sin declaraciones». Los intentos ya guardados, incluso fallidos,
+no se reenvían automáticamente al renderizar.
+
+```{python}
+#| label: ejecutar-anotaciones
+#| output: false
+results = run_annotations(run_dir, execute=EXECUTE_API, workers=API_WORKERS, limit=API_LIMIT)
+```
+
+La ejecución identificada como `{python} run_dir.name` contiene
+`{python} int(results.status.eq('completed').sum())` bloques con salida válida,
+`{python} int(results.status.eq('pending').sum())` pendientes y
+`{python} int((~results.status.isin(['completed', 'pending'])).sum())` con incidencias.
+Estas cifras describen ejecución y validez estructural; la corrección sustantiva
+requiere revisión humana.
+
+Resumimos decisiones y uso real de tokens. Los tokens de razonamiento están
+incluidos en los de salida y se muestran como diagnóstico del esfuerzo solicitado.
+
+```{python}
+#| label: balance-ejecucion
+execution_summary = results.groupby(["law_number", "status"], dropna=False, as_index=False).agg(
+    bloques=("unit_id", "size"), anotaciones=("n_annotations", "sum"),
+    tokens_entrada=("input_tokens", "sum"), tokens_salida=("output_tokens", "sum"),
+    tokens_razonamiento=("reasoning_tokens", "sum")
+)
+display(execution_summary.head(20))
+```
+
+Las salidas válidas incluyen `{python} int(results.n_annotations.sum())` anotaciones.
+Hay `{python} int(results.decision.eq('no_statements').sum())` bloques válidos sin
+declaraciones y `{python} int(results.needs_human_review.fillna(False).sum())` que
+solicitan revisión humana. Una salida válida puede contener errores de código,
+orientación, omisiones o una justificación poco fiel a la evidencia. Los resultados
+son provisionales y no constituyen una referencia humana de evaluación.
+
+## Justificaciones y revisión explicable
+
+El diseño adapta los principios de evidencia, comprensibilidad, fidelidad y límites
+de conocimiento del [NISTIR 8312](https://doi.org/10.6028/NIST.IR.8312). Cada anotación
+incluye una referencia al criterio del libro, un fundamento de código y orientación,
+alternativas pertinentes, citas del contexto utilizado y ambigüedades. Estas
+explicaciones generadas son hipótesis auditables sobre la decisión; su fidelidad
+no queda demostrada por ser plausibles ni se presupone acceso al razonamiento interno.
+
+Mostramos hasta cinco anotaciones en orden de muestra. Se recortan las citas solo
+para esta tabla; la exportación y la app conservan el texto completo.
+
+```{python}
+#| label: ejemplos-justificacion
+annotations = pd.read_parquet(run_dir / "annotations.parquet")
+examples = annotations.head(5).copy()
+if len(examples):
+    examples["evidencia"] = examples.evidence_text.str.slice(0, 180)
+    examples["fundamento"] = examples.justification.map(lambda value: json.loads(value)["coding"])
+    display(examples[["law_number", "concept_id", "stance", "evidencia", "fundamento"]])
+else:
+    display(Markdown("Todavía no hay anotaciones válidas con spans para mostrar."))
+```
+
+Se muestran `{python} len(examples)` ejemplos de las `{python} len(annotations)`
+anotaciones guardadas. Esta selección por orden facilita inspeccionar el formato;
+no mide la diversidad de códigos ni permite concluir que el modelo los aplica bien.
+Conviene revisar también los bloques sin declaraciones para detectar omisiones.
+
+Exportamos las tablas completas a CSV para lectura humana y conservamos Parquet
+como formato canónico. Los JSON de requests y responses son el registro exacto de
+cada intercambio, separado de los juicios posteriores del revisor.
+
+```{python}
+#| label: exportar-tablas
+results_csv = TABLE_ROOT / f"{run_dir.name}_results.csv"
+annotations_csv = TABLE_ROOT / f"{run_dir.name}_annotations.csv"
+results.to_csv(results_csv, index=False)
+annotations.to_csv(annotations_csv, index=False)
+execution_summary.to_csv(TABLE_ROOT / f"{run_dir.name}_execution.csv", index=False)
+```
+
+## Cómo revisar y repetir
+
+Inicia `uv run python -m features.manual_validation` y selecciona **Revisión de
+anotaciones LLM** en la app. Esta modalidad muestra el modelo devuelto por la API,
+el esfuerzo solicitado, el input y output completos, los spans destacados con su
+código y sus justificaciones. Los juicios humanos se guardan por separado; sirven
+para depurar prompts y códigos, y no deben mezclarse con la validación manual ciega.
+
+Para comparar prompts, edita el archivo o crea una copia y usa, por ejemplo,
+`ANNOTATIONS_PROMPT=prompts/mi_variante.md ANNOTATIONS_EXECUTE=1 uv run quarto render annotations.qmd`.
+La semilla y el corpus mantienen la misma muestra. La ejecución original conserva
+su propio prompt y libro aunque después se editen los archivos fuente.
+
+Los productos están en `output/annotations/` (una carpeta por ejecución), las
+tablas legibles en `output/tables/annotations/` y las revisiones diagnósticas en
+`output/annotation_reviews/`. Para abrir la interfaz local:
+[revisión de anotaciones LLM](http://127.0.0.1:8765/llm.html).

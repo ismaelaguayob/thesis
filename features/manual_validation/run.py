@@ -13,6 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from features.manual_validation.codebook_workbook import write_codebook_json  # noqa: E402
+from features.llm_annotations.review import AnnotationReviewService  # noqa: E402
 from features.manual_validation.service import (  # noqa: E402
     ValidationService,
     create_server,
@@ -54,6 +55,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--annotations-dir", type=Path,
+                        default=PROJECT_ROOT / "output" / "annotations")
+    parser.add_argument("--reviews-dir", type=Path,
+                        default=PROJECT_ROOT / "output" / "annotation_reviews")
     return parser.parse_args()
 
 
@@ -65,6 +70,7 @@ def main() -> int:
         codebook_path=args.codebook_json,
         output_dir=args.output_dir,
     )
+    service.llm_review = AnnotationReviewService(args.annotations_dir, args.reviews_dir)
     static_dir = Path(__file__).resolve().parent / "web"
     server = create_server(service, static_dir, args.host, args.port)
     print(f"Corpus: {service.source_path}")

@@ -4,7 +4,7 @@
 
 Esta aplicación local permite construir una muestra reproducible de las leyes 21.735, 21.419 y 21.538, juntas o por separado, y codificar declaraciones delimitadas por un *span* textual, su concepto y su orientación de apoyo o rechazo. La unidad textual que recibe la persona o el LLM es un bloque objetivo formado por uno o más párrafos de una misma intervención, acompañado por los bloques inmediatamente anterior y siguiente.
 
-La aplicación no llama a OpenAI ni a ningún otro servicio externo. La clave de API no se carga ni se envía al navegador. Su objetivo es depurar el libro de códigos y producir una referencia humana antes de diseñar el prompt y evaluar las anotaciones automáticas.
+La aplicación no llama a OpenAI ni a ningún otro servicio externo. La clave de API no se carga ni se envía al navegador. La modalidad manual permite depurar el libro de códigos y producir una referencia humana. La opción **Revisión de anotaciones LLM** abre una modalidad diagnóstica separada que lee las respuestas generadas desde `annotations.qmd`, muestra modelo, input, output y códigos destacados, y guarda los juicios humanos sin modificar esas respuestas. Consulta [la guía del piloto](piloto-anotaciones-llm.md).
 
 ## Iniciar la aplicación
 
