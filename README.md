@@ -27,8 +27,8 @@ con `gpt-5.6-luna`, esfuerzo `max`. El prompt se edita en
 uv sync --locked
 # Renderizar usando solamente resultados guardados:
 uv run quarto render annotations.qmd
-# Ejecutar los bloques pendientes con OPENAI_API_KEY de .env:
-ANNOTATIONS_EXECUTE=1 uv run quarto render annotations.qmd
+# La generación está desactivada por instrucción del usuario;
+# este reporte analiza la ejecución guardada sin nuevas llamadas.
 # Revisar modelo, input, output, códigos destacados y justificaciones:
 uv run python -m features.manual_validation
 ```
@@ -39,3 +39,5 @@ en <http://127.0.0.1:8765> o entra directamente en
 `output/annotations/`; los juicios diagnósticos se guardan por separado en
 `output/annotation_reviews/`. La [guía del piloto](docs/piloto-anotaciones-llm.md)
 explica ejecución, variantes y límites de interpretación.
+
+El [manifiesto del análisis del piloto](data/proc_data/llm_pilots/pilot_f3a69c2f81c587271ef5/manifest.json) resume tokens confirmados y métricas. La política `data/proc_data/llm_pilots/api_policy.json` bloquea nuevas llamadas.

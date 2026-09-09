@@ -22,6 +22,7 @@ from features.manual_validation.service import (
 
 PIPELINE_VERSION = "llm-pilot-1.0.0"
 RUN_ID_RE = re.compile(r"^pilot_[0-9a-f]{20}$")
+API_POLICY_PATH = Path(__file__).resolve().parents[2] / 'data/proc_data/llm_pilots/api_policy.json'
 
 
 def canonical(value: Any) -> str:
@@ -225,6 +226,10 @@ def load_sample(run_dir: Path) -> list[dict]:
 def run_annotations(run_dir: Path, execute: bool = False, workers: int = 6,
                     limit: int | None = None) -> pd.DataFrame:
     """Never resends existing attempts automatically, including failures/incomplete output."""
+    if execute and API_POLICY_PATH.exists():
+        policy = json.loads(API_POLICY_PATH.read_text(encoding='utf-8'))
+        if policy.get('allow_api_calls') is not True:
+            raise ValidationError('Las llamadas de anotación a la API están desactivadas por instrucción del usuario')
     manifest = json.loads((run_dir / 'manifest.json').read_text())
     if sha256_file(run_dir / 'sample.parquet') != manifest['sample_sha256']:
         raise ValidationError('La muestra congelada fue modificada')

@@ -25,6 +25,12 @@ interpretan como prevalencias poblacionales ni como estimaciones de desempeño.
 
 ## Configuración y ejecución
 
+**Estado actual:** el usuario detuvo el gasto de API. `annotations.qmd` está fijado
+a `pilot_f3a69c2f81c587271ef5`, con `EXECUTE_API=False`, y la política
+`data/proc_data/llm_pilots/api_policy.json` bloquea llamadas del ejecutor. Los
+comandos de generación siguientes documentan el procedimiento original y no
+reactivan la API en esta versión. El reporte se renderiza completamente sin API.
+
 Instala las dependencias con `uv sync --locked` y dispone de Quarto CLI en el PATH.
 La clave `OPENAI_API_KEY` debe estar en `.env` o en el entorno del proceso.
 No se imprime ni se incluye en requests guardados, HTML o payloads del navegador.
@@ -151,3 +157,12 @@ criterios inexistentes, contexto inventado, decisiones incoherentes, conceptos
 nuevos, exclusión de identidad en el input, ejecuciones sin API, reanudación,
 fallos de generación, variantes de prompt y persistencia de revisiones sin
 modificar respuestas. La validez estructural no evalúa la calidad sustantiva.
+
+## Balance y manifiesto offline
+
+El balance de la ejecución está al final de `annotations.qmd` y en su HTML.
+`data/proc_data/llm_pilots/pilot_f3a69c2f81c587271ef5/manifest.json` registra consumo
+confirmado, cobertura y métricas con sus denominadores. Los Parquet de la misma
+carpeta permiten auditar cada respuesta y las tablas derivadas. El total incluye
+la prueba inicial archivada; no presupone que intentos sin respuesta persistida
+tengan consumo cero. No contiene una estimación de precisión, recall ni F1.

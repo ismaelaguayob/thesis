@@ -2216,6 +2216,18 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
 
 
+<style type="text/css">.audit-table { width: 100%; font-size: .87rem; margin: 1rem 0 1.5rem; border-collapse: collapse; }
+.audit-table th, .audit-table td { padding: .45rem .55rem; border-bottom: 1px solid #dce1e6; vertical-align: top; }
+.audit-table th { background: #eff4f7; color: #253749; text-align: left; overflow-wrap: anywhere; }
+.audit-table td { overflow-wrap: anywhere; }
+.audit-table tbody tr:nth-child(even) { background: #fafbfc; }
+.example-card { padding: 1rem 1.2rem; margin: 1rem 0; border: 1px solid #dce1e6; border-radius: .5rem; background: #fafbfc; }
+.example-card strong { overflow-wrap: anywhere; }
+.example-card blockquote { margin-top: .7rem; font-size: .95rem; }
+#quarto-document-content p, #quarto-document-content li { line-height: 1.7; }
+#casos-concretos-para-modificar-el-prompt td { overflow-wrap: anywhere; }
+@media (max-width: 600px) { .audit-table { font-size: .75rem; } .audit-table th, .audit-table td { padding: .3rem; } }
+</style>
 </head>
 
 <body class="quarto-light">
@@ -2226,13 +2238,21 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
     <h2 id="toc-title">Tabla de contenidos</h2>
    
   <ul>
-  <li><a href="#propósito-y-alcance" id="toc-propósito-y-alcance" class="nav-link active" data-scroll-target="#propósito-y-alcance">Propósito y alcance</a></li>
+  <li><a href="#resultado-del-piloto" id="toc-resultado-del-piloto" class="nav-link active" data-scroll-target="#resultado-del-piloto">Resultado del piloto</a></li>
+  <li><a href="#propósito-y-alcance" id="toc-propósito-y-alcance" class="nav-link" data-scroll-target="#propósito-y-alcance">Propósito y alcance</a></li>
   <li><a href="#configuración-y-fuentes" id="toc-configuración-y-fuentes" class="nav-link" data-scroll-target="#configuración-y-fuentes">Configuración y fuentes</a></li>
   <li><a href="#muestra-estratificada" id="toc-muestra-estratificada" class="nav-link" data-scroll-target="#muestra-estratificada">Muestra estratificada</a></li>
   <li><a href="#prompt-libro-y-trazabilidad" id="toc-prompt-libro-y-trazabilidad" class="nav-link" data-scroll-target="#prompt-libro-y-trazabilidad">Prompt, libro y trazabilidad</a></li>
   <li><a href="#ejecución-y-controles-de-salida" id="toc-ejecución-y-controles-de-salida" class="nav-link" data-scroll-target="#ejecución-y-controles-de-salida">Ejecución y controles de salida</a></li>
   <li><a href="#justificaciones-y-revisión-explicable" id="toc-justificaciones-y-revisión-explicable" class="nav-link" data-scroll-target="#justificaciones-y-revisión-explicable">Justificaciones y revisión explicable</a></li>
   <li><a href="#cómo-revisar-y-repetir" id="toc-cómo-revisar-y-repetir" class="nav-link" data-scroll-target="#cómo-revisar-y-repetir">Cómo revisar y repetir</a></li>
+  <li><a href="#balance-de-la-ejecución-y-consumo-confirmado" id="toc-balance-de-la-ejecución-y-consumo-confirmado" class="nav-link" data-scroll-target="#balance-de-la-ejecución-y-consumo-confirmado">Balance de la ejecución y consumo confirmado</a></li>
+  <li><a href="#distribución-de-códigos-y-señales-para-revisión" id="toc-distribución-de-códigos-y-señales-para-revisión" class="nav-link" data-scroll-target="#distribución-de-códigos-y-señales-para-revisión">Distribución de códigos y señales para revisión</a></li>
+  <li><a href="#casos-concretos-para-modificar-el-prompt" id="toc-casos-concretos-para-modificar-el-prompt" class="nav-link" data-scroll-target="#casos-concretos-para-modificar-el-prompt">Casos concretos para modificar el prompt</a>
+  <ul class="collapse">
+  <li><a href="#prioridades-para-una-próxima-versión-sin-ejecutarla-ahora" id="toc-prioridades-para-una-próxima-versión-sin-ejecutarla-ahora" class="nav-link" data-scroll-target="#prioridades-para-una-próxima-versión-sin-ejecutarla-ahora">Prioridades para una próxima versión, sin ejecutarla ahora</a></li>
+  </ul></li>
+  <li><a href="#manifiesto-de-pruebas-y-tablas-completas" id="toc-manifiesto-de-pruebas-y-tablas-completas" class="nav-link" data-scroll-target="#manifiesto-de-pruebas-y-tablas-completas">Manifiesto de pruebas y tablas completas</a></li>
   </ul>
 </nav>
 </div>
@@ -2257,14 +2277,7 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 </header>
 
 
-<section id="propósito-y-alcance" class="level2">
-<h2 class="anchored" data-anchor-id="propósito-y-alcance">Propósito y alcance</h2>
-<p>Esta primera muestra permite depurar el libro de códigos y comparar versiones del prompt. El universo son las intervenciones elegibles ya materializadas en los Parquet de <code>proc.qmd</code>, con las mismas exclusiones y segmentación de la app de validación. El 10% se calcula sobre intervenciones únicas, no sobre bloques ni sobre todas las intervenciones brutas descargadas. Se anotan <strong>todos los bloques</strong> de cada intervención seleccionada.</p>
-<p>La selección conserva las tres leyes y cada sesión (<code>document_uri</code>). Las cuotas son proporcionales al número de intervenciones por ley y sesión, con ajuste por restos y mínimo de una intervención por estrato hasta alcanzar <code>ceil(0.10 * N)</code>. Dentro de cada cuota se reutiliza el sorteo en rondas de la app por longitud, aplicado ahora a la longitud de la intervención. Esta adaptación favorece variedad para el piloto; las frecuencias de códigos no estiman prevalencias del corpus.</p>
-</section>
-<section id="configuración-y-fuentes" class="level2">
-<h2 class="anchored" data-anchor-id="configuración-y-fuentes">Configuración y fuentes</h2>
-<p>Cargamos el servicio compartido de la app, las funciones de muestreo, el conversor XLSX y las herramientas de ejecución. El entorno se fija con <code>pyproject.toml</code> y <code>uv.lock</code>. La API solo se activa mediante <code>ANNOTATIONS_EXECUTE=1</code>; renderizar por defecto reutiliza respuestas guardadas y muestra los casos pendientes.</p>
+<p>Cargamos las respuestas persistidas y la configuración local para calcular el balance inicial. La generación de API permanece desactivada.</p>
 <div id="setup" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary>Código</summary>
@@ -2273,28 +2286,74 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> IPython.display <span class="im">import</span> Markdown, display</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> features.coding_chunks <span class="im">import</span> length_bin</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> features.manual_validation.codebook_workbook <span class="im">import</span> write_codebook_json</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> features.manual_validation.service <span class="im">import</span> ValidationService, sample_records</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> features.llm_annotations.pipeline <span class="im">import</span> allocate_quotas, prepare_run, run_annotations</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>FRACTION <span class="op">=</span> <span class="fl">0.10</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>SEED <span class="op">=</span> <span class="dv">20260908</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>MODEL <span class="op">=</span> <span class="st">&quot;gpt-5.6-luna&quot;</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>REASONING_EFFORT <span class="op">=</span> <span class="st">&quot;max&quot;</span></span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>PROMPT_PATH <span class="op">=</span> Path(os.environ.get(<span class="st">&quot;ANNOTATIONS_PROMPT&quot;</span>, <span class="st">&quot;prompts/annotations_pilot.md&quot;</span>))</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>CODEBOOK_WORKBOOK <span class="op">=</span> Path(<span class="st">&quot;data/codebook/codebook_v0.3.xlsx&quot;</span>)</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>CODEBOOK_JSON <span class="op">=</span> CODEBOOK_WORKBOOK.with_suffix(<span class="st">&quot;.json&quot;</span>)</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>RUN_ROOT <span class="op">=</span> Path(<span class="st">&quot;output/annotations&quot;</span>)</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>TABLE_ROOT <span class="op">=</span> Path(<span class="st">&quot;output/tables/annotations&quot;</span>)</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>TABLE_ROOT.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>EXECUTE_API <span class="op">=</span> os.environ.get(<span class="st">&quot;ANNOTATIONS_EXECUTE&quot;</span>, <span class="st">&quot;0&quot;</span>) <span class="op">==</span> <span class="st">&quot;1&quot;</span></span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>API_LIMIT <span class="op">=</span> <span class="bu">int</span>(os.environ[<span class="st">&quot;ANNOTATIONS_LIMIT&quot;</span>]) <span class="cf">if</span> os.environ.get(<span class="st">&quot;ANNOTATIONS_LIMIT&quot;</span>) <span class="cf">else</span> <span class="va">None</span></span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>API_WORKERS <span class="op">=</span> <span class="bu">int</span>(os.environ.get(<span class="st">&quot;ANNOTATIONS_WORKERS&quot;</span>, <span class="st">&quot;6&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> IPython.display <span class="im">import</span> HTML, Markdown, display</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> html <span class="im">import</span> escape</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> features.coding_chunks <span class="im">import</span> length_bin</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> features.manual_validation.codebook_workbook <span class="im">import</span> write_codebook_json</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> features.manual_validation.service <span class="im">import</span> ValidationService, sample_records</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> features.llm_annotations.pipeline <span class="im">import</span> allocate_quotas, run_annotations, load_sample</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> features.llm_annotations.audit <span class="im">import</span> read_response_ledger</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> features.manual_validation.service <span class="im">import</span> atomic_write_json, sha256_file</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> datetime <span class="im">import</span> datetime, timezone</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>FRACTION <span class="op">=</span> <span class="fl">0.10</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>SEED <span class="op">=</span> <span class="dv">20260908</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>MODEL <span class="op">=</span> <span class="st">&quot;gpt-5.6-luna&quot;</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>REASONING_EFFORT <span class="op">=</span> <span class="st">&quot;max&quot;</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>PROMPT_PATH <span class="op">=</span> Path(os.environ.get(<span class="st">&quot;ANNOTATIONS_PROMPT&quot;</span>, <span class="st">&quot;prompts/annotations_pilot.md&quot;</span>))</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>CODEBOOK_WORKBOOK <span class="op">=</span> Path(<span class="st">&quot;data/codebook/codebook_v0.3.xlsx&quot;</span>)</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>CODEBOOK_JSON <span class="op">=</span> CODEBOOK_WORKBOOK.with_suffix(<span class="st">&quot;.json&quot;</span>)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>RUN_ROOT <span class="op">=</span> Path(<span class="st">&quot;output/annotations&quot;</span>)</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>TABLE_ROOT <span class="op">=</span> Path(<span class="st">&quot;output/tables/annotations&quot;</span>)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>TABLE_ROOT.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>EXECUTE_API <span class="op">=</span> <span class="va">False</span>  <span class="co"># El usuario detuvo el gasto de API el 2026-09-08.</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>SAVED_RUN_ID <span class="op">=</span> <span class="st">&quot;pilot_f3a69c2f81c587271ef5&quot;</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>AUDIT_ROOT <span class="op">=</span> Path(<span class="st">&quot;data/proc_data/llm_pilots&quot;</span>) <span class="op">/</span> SAVED_RUN_ID</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>AUDIT_ROOT.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>API_LIMIT <span class="op">=</span> <span class="bu">int</span>(os.environ[<span class="st">&quot;ANNOTATIONS_LIMIT&quot;</span>]) <span class="cf">if</span> os.environ.get(<span class="st">&quot;ANNOTATIONS_LIMIT&quot;</span>) <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>API_WORKERS <span class="op">=</span> <span class="bu">int</span>(os.environ.get(<span class="st">&quot;ANNOTATIONS_WORKERS&quot;</span>, <span class="st">&quot;6&quot;</span>))</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> show_table(frame):</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    <span class="co">&quot;&quot;&quot;Consistent HTML for the small tables in this report; full tables are exported.&quot;&quot;&quot;</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> <span class="bu">len</span>(frame) <span class="op">&lt;=</span> <span class="dv">20</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    display(HTML(frame.to_html(index<span class="op">=</span><span class="va">False</span>, border<span class="op">=</span><span class="dv">0</span>, escape<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>                              classes<span class="op">=</span><span class="st">&quot;audit-table&quot;</span>, float_format<span class="op">=</span><span class="kw">lambda</span> x: <span class="ss">f&quot;</span><span class="sc">{</span>x<span class="sc">:.4f}</span><span class="ss">&quot;</span>)))</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Read persisted artifacts for the opening summary; no generation occurs here.</span></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>run_dir <span class="op">=</span> RUN_ROOT <span class="op">/</span> SAVED_RUN_ID</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>run_manifest <span class="op">=</span> json.loads((run_dir <span class="op">/</span> <span class="st">&quot;manifest.json&quot;</span>).read_text())</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> pd.read_parquet(run_dir <span class="op">/</span> <span class="st">&quot;results.parquet&quot;</span>)</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>annotations <span class="op">=</span> pd.read_parquet(run_dir <span class="op">/</span> <span class="st">&quot;annotations.parquet&quot;</span>)</span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>run_directories <span class="op">=</span> {</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;pilot&quot;</span>: run_dir,</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;canary&quot;</span>: Path(<span class="st">&quot;output/annotations_checks/pilot_96edb05d2754acc1d839&quot;</span>),</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>ledger <span class="op">=</span> read_response_ledger(run_directories)</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>counted <span class="op">=</span> ledger.loc[<span class="op">~</span>ledger.duplicate_response_id <span class="op">&amp;</span> ledger.usage_available].copy()</span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>token_columns <span class="op">=</span> [<span class="st">&quot;input_tokens&quot;</span>, <span class="st">&quot;cached_input_tokens&quot;</span>, <span class="st">&quot;output_tokens&quot;</span>, <span class="st">&quot;reasoning_tokens&quot;</span>, <span class="st">&quot;total_tokens&quot;</span>]</span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>token_totals <span class="op">=</span> {key: <span class="bu">int</span>(counted[key].<span class="bu">sum</span>()) <span class="cf">for</span> key <span class="kw">in</span> token_columns}</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>valid_blocks <span class="op">=</span> <span class="bu">int</span>(results.status.eq(<span class="st">&quot;completed&quot;</span>).<span class="bu">sum</span>())</span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>incomplete_blocks <span class="op">=</span> <span class="bu">int</span>(results.status.eq(<span class="st">&quot;incomplete&quot;</span>).<span class="bu">sum</span>())</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>invalid_blocks <span class="op">=</span> <span class="bu">int</span>(results.status.eq(<span class="st">&quot;invalid_output&quot;</span>).<span class="bu">sum</span>())</span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>complete_utterances <span class="op">=</span> <span class="bu">int</span>(results.groupby([<span class="st">&quot;law_number&quot;</span>, <span class="st">&quot;utterance_id&quot;</span>]).status.<span class="bu">apply</span>(</span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>    <span class="kw">lambda</span> states: states.eq(<span class="st">&quot;completed&quot;</span>).<span class="bu">all</span>()).<span class="bu">sum</span>())</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
+<section id="resultado-del-piloto" class="level2">
+<h2 class="anchored" data-anchor-id="resultado-del-piloto">Resultado del piloto</h2>
+<p>Se obtuvieron <strong>306 bloques con salida válida de 418</strong>, con 206 anotaciones. El problema principal fueron 109 respuestas incompletas por el límite de salida; otras 3 fallaron los controles locales. Solo 65 de las 110 intervenciones sorteadas tienen todos sus bloques válidos. El consumo confirmado fue de <strong>5,836,080 tokens</strong>, incluida la prueba inicial.</p>
+<p>Este reporte se generó <strong>sin nuevas llamadas a la API</strong>. La lectura sustantiva identifica fronteras entre descripción y justificación normativa que conviene aclarar en el prompt. Los <a href="#casos-concretos-para-modificar-el-prompt">casos inspeccionados</a> y el <a href="#balance-de-la-ejecución-y-consumo-confirmado">balance de consumo</a> desarrollan estos resultados. Las métricas describen ejecución y anotaciones del modelo; no miden precisión contra una referencia humana.</p>
+</section>
+<section id="propósito-y-alcance" class="level2">
+<h2 class="anchored" data-anchor-id="propósito-y-alcance">Propósito y alcance</h2>
+<p>Esta primera muestra permite depurar el libro de códigos y comparar versiones del prompt. El universo son las intervenciones elegibles ya materializadas en los Parquet de <code>proc.qmd</code>, con las mismas exclusiones y segmentación de la app de validación. El 10% se calcula sobre intervenciones únicas, no sobre bloques ni sobre todas las intervenciones brutas descargadas. Se anotan <strong>todos los bloques</strong> de cada intervención seleccionada.</p>
+<p>La selección conserva las tres leyes y cada sesión (<code>document_uri</code>). Las cuotas son proporcionales al número de intervenciones por ley y sesión, con ajuste por restos y mínimo de una intervención por estrato hasta alcanzar <code>ceil(0.10 * N)</code>. Dentro de cada cuota se reutiliza el sorteo en rondas de la app por longitud, aplicado ahora a la longitud de la intervención. Esta adaptación favorece variedad para el piloto; las frecuencias de códigos no estiman prevalencias del corpus.</p>
+</section>
+<section id="configuración-y-fuentes" class="level2">
+<h2 class="anchored" data-anchor-id="configuración-y-fuentes">Configuración y fuentes</h2>
+<p>Cargamos el servicio compartido de la app, las funciones de muestreo, el conversor XLSX y las herramientas de ejecución. El entorno se fija con <code>pyproject.toml</code> y <code>uv.lock</code>. La ejecución de API está desactivada por instrucción del usuario. Este reporte reutiliza exclusivamente respuestas guardadas y realiza cálculos locales.</p>
 <p>Sincronizamos el JSON desde el XLSX, tal como hace la app al iniciar. Cargamos exclusivamente <code>ley_*/coding_chunks_long.parquet</code>; el servicio valida IDs, hashes, offsets, orden y contexto adyacente dentro de la sesión. La versión se toma de los metadatos internos del libro, que pueden diferir del nombre del archivo.</p>
 <div id="cell-corpus" class="cell" data-execution_count="2">
 <details class="code-fold">
@@ -2313,39 +2372,32 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    intervenciones<span class="op">=</span>(<span class="st">&quot;utterance_id&quot;</span>, <span class="st">&quot;size&quot;</span>), sesiones<span class="op">=</span>(<span class="st">&quot;document_uri&quot;</span>, <span class="st">&quot;nunique&quot;</span>),</span>
 <span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    bloques<span class="op">=</span>(<span class="st">&quot;n_blocks&quot;</span>, <span class="st">&quot;sum&quot;</span>)</span>
 <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>display(corpus_summary)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>show_table(corpus_summary.rename(columns<span class="op">=</span>{<span class="st">&quot;law_number&quot;</span>: <span class="st">&quot;Ley&quot;</span>, <span class="st">&quot;intervenciones&quot;</span>: <span class="st">&quot;Intervenciones&quot;</span>, <span class="st">&quot;sesiones&quot;</span>: <span class="st">&quot;Sesiones&quot;</span>, <span class="st">&quot;bloques&quot;</span>: <span class="st">&quot;Bloques&quot;</span>}))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div id="corpus" class="cell-output cell-output-display">
-<div>
-
-
-<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<table class="dataframe audit-table caption-top table table-sm table-striped small">
 <thead>
 <tr class="header">
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th">law_number</th>
-<th data-quarto-table-cell-role="th">intervenciones</th>
-<th data-quarto-table-cell-role="th">sesiones</th>
-<th data-quarto-table-cell-role="th">bloques</th>
+<th data-quarto-table-cell-role="th">Ley</th>
+<th data-quarto-table-cell-role="th">Intervenciones</th>
+<th data-quarto-table-cell-role="th">Sesiones</th>
+<th data-quarto-table-cell-role="th">Bloques</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">0</th>
 <td>21419</td>
 <td>262</td>
 <td>3</td>
 <td>844</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">1</th>
 <td>21538</td>
 <td>111</td>
 <td>2</td>
 <td>326</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">2</th>
 <td>21735</td>
 <td>723</td>
 <td>4</td>
@@ -2353,8 +2405,6 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 </tr>
 </tbody>
 </table>
-
-</div>
 </div>
 </div>
 <p>El universo incluye 1096 intervenciones, 3609 bloques y 9 sesiones. Las diferencias de tamaño entre leyes justifican asignar cuotas explícitas. Se usa el libro <strong>0.4.0-pilot</strong>, con 14 conceptos. El denominador corresponde al corpus elegible de la app y conserva su umbral mínimo de 5 palabras.</p>
@@ -2370,100 +2420,85 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>strata <span class="op">=</span> pd.DataFrame({<span class="st">&quot;intervenciones_universo&quot;</span>: counts, <span class="st">&quot;intervenciones_muestra&quot;</span>: quotas}).reset_index()</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>strata[<span class="st">&quot;fraccion_muestreada&quot;</span>] <span class="op">=</span> strata[<span class="st">&quot;intervenciones_muestra&quot;</span>] <span class="op">/</span> strata[<span class="st">&quot;intervenciones_universo&quot;</span>]</span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>strata[<span class="st">&quot;sesion&quot;</span>] <span class="op">=</span> strata[<span class="st">&quot;document_uri&quot;</span>].<span class="bu">str</span>.rsplit(<span class="st">&quot;/&quot;</span>, n<span class="op">=</span><span class="dv">1</span>).<span class="bu">str</span>[<span class="op">-</span><span class="dv">1</span>]</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>display(strata[[<span class="st">&quot;law_number&quot;</span>, <span class="st">&quot;sesion&quot;</span>, <span class="st">&quot;intervenciones_universo&quot;</span>, <span class="st">&quot;intervenciones_muestra&quot;</span>, <span class="st">&quot;fraccion_muestreada&quot;</span>]])</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>show_table(strata[[<span class="st">&quot;law_number&quot;</span>, <span class="st">&quot;sesion&quot;</span>, <span class="st">&quot;intervenciones_universo&quot;</span>, <span class="st">&quot;intervenciones_muestra&quot;</span>, <span class="st">&quot;fraccion_muestreada&quot;</span>]].rename(columns<span class="op">=</span>{<span class="st">&quot;law_number&quot;</span>: <span class="st">&quot;Ley&quot;</span>, <span class="st">&quot;sesion&quot;</span>: <span class="st">&quot;Sesión&quot;</span>, <span class="st">&quot;intervenciones_universo&quot;</span>: <span class="st">&quot;Universo&quot;</span>, <span class="st">&quot;intervenciones_muestra&quot;</span>: <span class="st">&quot;Muestra&quot;</span>, <span class="st">&quot;fraccion_muestreada&quot;</span>: <span class="st">&quot;Fracción&quot;</span>}))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div id="cuotas" class="cell-output cell-output-display">
-<div>
-
-
-<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<table class="dataframe audit-table caption-top table table-sm table-striped small">
 <thead>
 <tr class="header">
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th">law_number</th>
-<th data-quarto-table-cell-role="th">sesion</th>
-<th data-quarto-table-cell-role="th">intervenciones_universo</th>
-<th data-quarto-table-cell-role="th">intervenciones_muestra</th>
-<th data-quarto-table-cell-role="th">fraccion_muestreada</th>
+<th data-quarto-table-cell-role="th">Ley</th>
+<th data-quarto-table-cell-role="th">Sesión</th>
+<th data-quarto-table-cell-role="th">Universo</th>
+<th data-quarto-table-cell-role="th">Muestra</th>
+<th data-quarto-table-cell-role="th">Fracción</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">0</th>
 <td>21419</td>
 <td>696951</td>
 <td>165</td>
 <td>17</td>
-<td>0.103030</td>
+<td>0.1030</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">1</th>
 <td>21419</td>
 <td>697505</td>
 <td>55</td>
 <td>6</td>
-<td>0.109091</td>
+<td>0.1091</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">2</th>
 <td>21419</td>
 <td>698998</td>
 <td>42</td>
 <td>4</td>
-<td>0.095238</td>
+<td>0.0952</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">3</th>
 <td>21538</td>
 <td>700181</td>
 <td>80</td>
 <td>8</td>
-<td>0.100000</td>
+<td>0.1000</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">4</th>
 <td>21538</td>
 <td>700224</td>
 <td>31</td>
 <td>3</td>
-<td>0.096774</td>
+<td>0.0968</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">5</th>
 <td>21735</td>
 <td>704058</td>
 <td>258</td>
 <td>26</td>
-<td>0.100775</td>
+<td>0.1008</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">6</th>
 <td>21735</td>
 <td>704142</td>
 <td>62</td>
 <td>6</td>
-<td>0.096774</td>
+<td>0.0968</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">7</th>
 <td>21735</td>
 <td>706982</td>
 <td>209</td>
 <td>21</td>
-<td>0.100478</td>
+<td>0.1005</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">8</th>
 <td>21735</td>
 <td>706988</td>
 <td>194</td>
 <td>19</td>
-<td>0.097938</td>
+<td>0.0979</td>
 </tr>
 </tbody>
 </table>
-
-</div>
 </div>
 </div>
 <p>La asignación selecciona 110 intervenciones, equivalentes al 10.04% del universo. Las fracciones varían ligeramente por redondeo. Todas las sesiones tienen representación; esto no garantiza observar códigos infrecuentes ni ofrece por sí solo precisión estadística suficiente para medir desempeño.</p>
@@ -2489,39 +2524,32 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    intervenciones<span class="op">=</span>(<span class="st">&quot;utterance_id&quot;</span>, <span class="st">&quot;size&quot;</span>), bloques<span class="op">=</span>(<span class="st">&quot;n_blocks&quot;</span>, <span class="st">&quot;sum&quot;</span>),</span>
 <span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    sesiones<span class="op">=</span>(<span class="st">&quot;document_uri&quot;</span>, <span class="st">&quot;nunique&quot;</span>)</span>
 <span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>display(selection_summary)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>show_table(selection_summary.rename(columns<span class="op">=</span>{<span class="st">&quot;law_number&quot;</span>: <span class="st">&quot;Ley&quot;</span>, <span class="st">&quot;intervenciones&quot;</span>: <span class="st">&quot;Intervenciones&quot;</span>, <span class="st">&quot;sesiones&quot;</span>: <span class="st">&quot;Sesiones&quot;</span>, <span class="st">&quot;bloques&quot;</span>: <span class="st">&quot;Bloques&quot;</span>}))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div id="sorteo" class="cell-output cell-output-display">
-<div>
-
-
-<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<table class="dataframe audit-table caption-top table table-sm table-striped small">
 <thead>
 <tr class="header">
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th">law_number</th>
-<th data-quarto-table-cell-role="th">intervenciones</th>
-<th data-quarto-table-cell-role="th">bloques</th>
-<th data-quarto-table-cell-role="th">sesiones</th>
+<th data-quarto-table-cell-role="th">Ley</th>
+<th data-quarto-table-cell-role="th">Intervenciones</th>
+<th data-quarto-table-cell-role="th">Bloques</th>
+<th data-quarto-table-cell-role="th">Sesiones</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">0</th>
 <td>21419</td>
 <td>27</td>
 <td>119</td>
 <td>3</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">1</th>
 <td>21538</td>
 <td>11</td>
 <td>32</td>
 <td>2</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">2</th>
 <td>21735</td>
 <td>72</td>
 <td>267</td>
@@ -2529,8 +2557,6 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 </tr>
 </tbody>
 </table>
-
-</div>
 </div>
 </div>
 <p>Las 110 intervenciones sorteadas producen 418 solicitudes, una por bloque objetivo. La unidad de muestreo y la unidad enviada al modelo son distintas. Los bloques adyacentes pueden provenir de intervenciones fuera de la muestra y se usan solo como contexto; no cuentan como objetivos adicionales.</p>
@@ -2548,16 +2574,20 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;within_stratum&quot;</span>: <span class="st">&quot;manual_app_round_robin_intervention_length&quot;</span>,</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;eligible_interventions&quot;</span>: <span class="bu">len</span>(utterances), <span class="st">&quot;selected_interventions&quot;</span>: <span class="bu">len</span>(selected_units),</span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;quotas&quot;</span>: strata.to_dict(<span class="st">&quot;records&quot;</span>)}</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>run_dir <span class="op">=</span> prepare_run(service, selected, sampling, PROMPT_PATH, RUN_ROOT, MODEL, REASONING_EFFORT)</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>selected_units.to_parquet(run_dir <span class="op">/</span> <span class="st">&quot;selected_utterances.parquet&quot;</span>, index<span class="op">=</span><span class="va">False</span>)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>strata.to_parquet(run_dir <span class="op">/</span> <span class="st">&quot;strata.parquet&quot;</span>, index<span class="op">=</span><span class="va">False</span>)</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>strata.to_csv(TABLE_ROOT <span class="op">/</span> <span class="ss">f&quot;</span><span class="sc">{</span>run_dir<span class="sc">.</span>name<span class="sc">}</span><span class="ss">_strata.csv&quot;</span>, index<span class="op">=</span><span class="va">False</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>run_dir <span class="op">=</span> RUN_ROOT <span class="op">/</span> SAVED_RUN_ID</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>run_manifest <span class="op">=</span> json.loads((run_dir <span class="op">/</span> <span class="st">&quot;manifest.json&quot;</span>).read_text())</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> [r[<span class="st">&quot;unit_id&quot;</span>] <span class="cf">for</span> r <span class="kw">in</span> selected] <span class="op">==</span> [r[<span class="st">&quot;unit_id&quot;</span>] <span class="cf">for</span> r <span class="kw">in</span> load_sample(run_dir)]</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> run_manifest[<span class="st">&quot;codebook_version&quot;</span>] <span class="op">==</span> service.codebook[<span class="st">&quot;version&quot;</span>]</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> sha256_file(CODEBOOK_JSON) <span class="op">==</span> run_manifest[<span class="st">&quot;spec&quot;</span>][<span class="st">&quot;codebook_sha256&quot;</span>]</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>selected_units.to_parquet(run_dir <span class="op">/</span> <span class="st">&quot;selected_utterances.parquet&quot;</span>, index<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>strata.to_parquet(run_dir <span class="op">/</span> <span class="st">&quot;strata.parquet&quot;</span>, index<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>strata.to_csv(TABLE_ROOT <span class="op">/</span> <span class="ss">f&quot;</span><span class="sc">{</span>run_dir<span class="sc">.</span>name<span class="sc">}</span><span class="ss">_strata.csv&quot;</span>, index<span class="op">=</span><span class="va">False</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 </section>
 <section id="ejecución-y-controles-de-salida" class="level2">
 <h2 class="anchored" data-anchor-id="ejecución-y-controles-de-salida">Ejecución y controles de salida</h2>
-<p>Para generar la muestra: <code>ANNOTATIONS_EXECUTE=1 uv run quarto render annotations.qmd</code>. <code>OPENAI_API_KEY</code> se carga desde <code>.env</code> solo al ejecutar llamadas en Python, nunca en el navegador. <code>ANNOTATIONS_LIMIT=1</code> limita a un bloque pendiente para una prueba; sin ese límite, la ejecución completa los pendientes. <code>ANNOTATIONS_WORKERS</code> controla concurrencia (seis por defecto). El SDK aplica hasta dos reintentos de transporte; cada respuesta recibida queda guardada antes de avanzar.</p>
+<p>La generación anterior usó <code>OPENAI_API_KEY</code> desde <code>.env</code>, Responses, Luna <code>max</code> y un máximo de 16.384 tokens de salida por bloque. La concurrencia se aumentó de seis a dieciséis solicitudes durante la ejecución. El SDK permitía hasta dos reintentos transitorios. <strong>Esta versión está fijada a la ejecución guardada y no hace llamadas a la API</strong>, incluso si <code>ANNOTATIONS_EXECUTE=1</code> permanece en el entorno. La política local <code>data/proc_data/llm_pilots/api_policy.json</code> también impide activar el ejecutor.</p>
 <p>La cita literal y su número de aparición determinan offsets en caracteres Unicode calculados localmente. Validamos el span con el contrato de la app, la pertenencia del código, la coherencia de decisión y anotaciones, las referencias al libro y las citas de contexto. Una salida inválida o incompleta queda separada de una decisión válida «sin declaraciones». Los intentos ya guardados, incluso fallidos, no se reenvían automáticamente al renderizar.</p>
 <div id="ejecutar-anotaciones" class="cell" data-execution_count="6">
 <details class="code-fold">
@@ -2575,28 +2605,23 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    tokens_entrada<span class="op">=</span>(<span class="st">&quot;input_tokens&quot;</span>, <span class="st">&quot;sum&quot;</span>), tokens_salida<span class="op">=</span>(<span class="st">&quot;output_tokens&quot;</span>, <span class="st">&quot;sum&quot;</span>),</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    tokens_razonamiento<span class="op">=</span>(<span class="st">&quot;reasoning_tokens&quot;</span>, <span class="st">&quot;sum&quot;</span>)</span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>display(execution_summary.head(<span class="dv">20</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>show_table(execution_summary.head(<span class="dv">20</span>).rename(columns<span class="op">=</span>{<span class="st">&quot;law_number&quot;</span>: <span class="st">&quot;Ley&quot;</span>, <span class="st">&quot;status&quot;</span>: <span class="st">&quot;Estado&quot;</span>, <span class="st">&quot;bloques&quot;</span>: <span class="st">&quot;Bloques&quot;</span>, <span class="st">&quot;anotaciones&quot;</span>: <span class="st">&quot;Anotaciones&quot;</span>, <span class="st">&quot;tokens_entrada&quot;</span>: <span class="st">&quot;Tokens entrada&quot;</span>, <span class="st">&quot;tokens_salida&quot;</span>: <span class="st">&quot;Tokens salida&quot;</span>, <span class="st">&quot;tokens_razonamiento&quot;</span>: <span class="st">&quot;Tokens razonamiento&quot;</span>}))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div id="balance-ejecucion" class="cell-output cell-output-display">
-<div>
-
-
-<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<table class="dataframe audit-table caption-top table table-sm table-striped small">
 <thead>
 <tr class="header">
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th">law_number</th>
-<th data-quarto-table-cell-role="th">status</th>
-<th data-quarto-table-cell-role="th">bloques</th>
-<th data-quarto-table-cell-role="th">anotaciones</th>
-<th data-quarto-table-cell-role="th">tokens_entrada</th>
-<th data-quarto-table-cell-role="th">tokens_salida</th>
-<th data-quarto-table-cell-role="th">tokens_razonamiento</th>
+<th data-quarto-table-cell-role="th">Ley</th>
+<th data-quarto-table-cell-role="th">Estado</th>
+<th data-quarto-table-cell-role="th">Bloques</th>
+<th data-quarto-table-cell-role="th">Anotaciones</th>
+<th data-quarto-table-cell-role="th">Tokens entrada</th>
+<th data-quarto-table-cell-role="th">Tokens salida</th>
+<th data-quarto-table-cell-role="th">Tokens razonamiento</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">0</th>
 <td>21419</td>
 <td>completed</td>
 <td>101</td>
@@ -2606,7 +2631,6 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <td>491814</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">1</th>
 <td>21419</td>
 <td>incomplete</td>
 <td>17</td>
@@ -2616,7 +2640,6 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <td>278249</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">2</th>
 <td>21419</td>
 <td>invalid_output</td>
 <td>1</td>
@@ -2626,7 +2649,6 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <td>13838</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">3</th>
 <td>21538</td>
 <td>completed</td>
 <td>22</td>
@@ -2636,7 +2658,6 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <td>95361</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">4</th>
 <td>21538</td>
 <td>incomplete</td>
 <td>9</td>
@@ -2646,7 +2667,6 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <td>146797</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">5</th>
 <td>21538</td>
 <td>invalid_output</td>
 <td>1</td>
@@ -2656,7 +2676,6 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <td>8701</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">6</th>
 <td>21735</td>
 <td>completed</td>
 <td>183</td>
@@ -2666,7 +2685,6 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <td>890968</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">7</th>
 <td>21735</td>
 <td>incomplete</td>
 <td>83</td>
@@ -2676,7 +2694,6 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <td>1358888</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">8</th>
 <td>21735</td>
 <td>invalid_output</td>
 <td>1</td>
@@ -2687,8 +2704,6 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 </tr>
 </tbody>
 </table>
-
-</div>
 </div>
 </div>
 <p>Las salidas válidas incluyen 206 anotaciones. Hay 161 bloques válidos sin declaraciones y 102 que solicitan revisión humana. Una salida válida puede contener errores de código, orientación, omisiones o una justificación poco fiel a la evidencia. Los resultados son provisionales y no constituyen una referencia humana de evaluación.</p>
@@ -2696,8 +2711,8 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <section id="justificaciones-y-revisión-explicable" class="level2">
 <h2 class="anchored" data-anchor-id="justificaciones-y-revisión-explicable">Justificaciones y revisión explicable</h2>
 <p>El diseño adapta los principios de evidencia, comprensibilidad, fidelidad y límites de conocimiento del <a href="https://doi.org/10.6028/NIST.IR.8312">NISTIR 8312</a>. Cada anotación incluye una referencia al criterio del libro, un fundamento de código y orientación, alternativas pertinentes, citas del contexto utilizado y ambigüedades. Estas explicaciones generadas son hipótesis auditables sobre la decisión; su fidelidad no queda demostrada por ser plausibles ni se presupone acceso al razonamiento interno.</p>
-<p>Mostramos hasta cinco anotaciones en orden de muestra. Se recortan las citas solo para esta tabla; la exportación y la app conservan el texto completo.</p>
-<div id="cell-ejemplos-justificacion" class="cell" data-execution_count="8">
+<p>Mostramos hasta cinco anotaciones en orden de muestra. Se recortan las citas solo para estas fichas; la exportación y la app conservan el texto completo.</p>
+<div id="ejemplos-justificacion" class="cell" data-execution_count="8">
 <details class="code-fold">
 <summary>Código</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>annotations <span class="op">=</span> pd.read_parquet(run_dir <span class="op">/</span> <span class="st">&quot;annotations.parquet&quot;</span>)</span>
@@ -2705,70 +2720,28 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">len</span>(examples):</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    examples[<span class="st">&quot;evidencia&quot;</span>] <span class="op">=</span> examples.evidence_text.<span class="bu">str</span>.<span class="bu">slice</span>(<span class="dv">0</span>, <span class="dv">180</span>)</span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    examples[<span class="st">&quot;fundamento&quot;</span>] <span class="op">=</span> examples.justification.<span class="bu">map</span>(<span class="kw">lambda</span> value: json.loads(value)[<span class="st">&quot;coding&quot;</span>])</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    display(examples[[<span class="st">&quot;law_number&quot;</span>, <span class="st">&quot;concept_id&quot;</span>, <span class="st">&quot;stance&quot;</span>, <span class="st">&quot;evidencia&quot;</span>, <span class="st">&quot;fundamento&quot;</span>]])</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    display(Markdown(<span class="st">&quot;Todavía no hay anotaciones válidas con spans para mostrar.&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> row <span class="kw">in</span> examples.itertuples():</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>        excerpt <span class="op">=</span> escape(row.evidencia) <span class="op">+</span> (<span class="st">&quot;…&quot;</span> <span class="cf">if</span> <span class="bu">len</span>(row.evidence_text) <span class="op">&gt;</span> <span class="dv">180</span> <span class="cf">else</span> <span class="st">&quot;&quot;</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>        display(HTML(<span class="ss">f&#39;&lt;article class=&quot;example-card&quot;&gt;&lt;strong&gt;Bloque </span><span class="sc">{</span>row<span class="sc">.</span>sample_index <span class="op">+</span> <span class="dv">1</span><span class="sc">}</span><span class="ss"> · &#39;</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                     <span class="ss">f&#39;</span><span class="sc">{</span>escape(<span class="bu">str</span>(row.concept_id))<span class="sc">}</span><span class="ss"> · </span><span class="sc">{</span>escape(row.stance)<span class="sc">}</span><span class="ss">&lt;/strong&gt;&#39;</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                     <span class="ss">f&#39;&lt;blockquote&gt;</span><span class="sc">{</span>excerpt<span class="sc">}</span><span class="ss">&lt;/blockquote&gt;&lt;p&gt;</span><span class="sc">{</span>escape(row.fundamento)<span class="sc">}</span><span class="ss">&lt;/p&gt;&lt;/article&gt;&#39;</span>))</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    display(Markdown(<span class="st">&quot;Todavía no hay anotaciones válidas con spans para mostrar.&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div id="ejemplos-justificacion" class="cell-output cell-output-display">
-<div>
-
-
-<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th">law_number</th>
-<th data-quarto-table-cell-role="th">concept_id</th>
-<th data-quarto-table-cell-role="th">stance</th>
-<th data-quarto-table-cell-role="th">evidencia</th>
-<th data-quarto-table-cell-role="th">fundamento</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<th data-quarto-table-cell-role="th">0</th>
-<td>21419</td>
-<td>igualdad_universalismo</td>
-<td>support</td>
-<td>El objetivo del proyecto es mejorar las pensio...</td>
-<td>La cita presenta como objetivo la creación de ...</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">1</th>
-<td>21419</td>
-<td>igualdad_universalismo</td>
-<td>support</td>
-<td>Podrán acceder al beneficio pensionados bajo c...</td>
-<td>La cláusula «sin distinción» establece una reg...</td>
-</tr>
-<tr class="odd">
-<th data-quarto-table-cell-role="th">2</th>
-<td>21419</td>
-<td>necesidad_material</td>
-<td>support</td>
-<td>se incorpora a 56 mil nuevos beneficiarios med...</td>
-<td>La ampliación de cobertura se dirige explícita...</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">3</th>
-<td>21419</td>
-<td>acuerdos_moderacion</td>
-<td>support</td>
-<td>Todo esto permitió un trabajo eficiente, colab...</td>
-<td>La cita presenta el trabajo colaborativo como ...</td>
-</tr>
-<tr class="odd">
-<th data-quarto-table-cell-role="th">4</th>
-<td>21419</td>
-<td>conciencia_costos</td>
-<td>oppose</td>
-<td>el de exenciones tributarias, que dará financi...</td>
-<td>La cita afirma explícitamente que el proyecto ...</td>
-</tr>
-</tbody>
-</table>
-
+<div id="ejemplos-justificacion-1" class="cell-output cell-output-display">
+<article class="example-card"><strong>Bloque 3 · igualdad_universalismo · support</strong><blockquote class="blockquote">El objetivo del proyecto es mejorar las pensiones de las y los actuales pensionadas y pensionados mediante la creación de una pensión garantizada universal de un monto máximo de 18…</blockquote><p>La cita presenta como objetivo la creación de una pensión garantizada universal, formulando la cobertura universal como mecanismo para mejorar la protección previsional.</p></article>
 </div>
+<div id="ejemplos-justificacion-2" class="cell-output cell-output-display">
+<article class="example-card"><strong>Bloque 5 · igualdad_universalismo · support</strong><blockquote class="blockquote">Podrán acceder al beneficio pensionados bajo cualquier modalidad, sin distinción.</blockquote><p>La cláusula «sin distinción» establece una regla de igualdad de acceso y de trato entre pensionados de distintas modalidades.</p></article>
+</div>
+<div id="ejemplos-justificacion-3" class="cell-output cell-output-display">
+<article class="example-card"><strong>Bloque 5 · necesidad_material · support</strong><blockquote class="blockquote">se incorpora a 56 mil nuevos beneficiarios mediante la ampliación de cobertura del 60 al 80 por ciento más vulnerable.</blockquote><p>La ampliación de cobertura se dirige explícitamente al grupo definido como «más vulnerable», usando la vulnerabilidad como criterio de asignación de protección.</p></article>
+</div>
+<div id="ejemplos-justificacion-4" class="cell-output cell-output-display">
+<article class="example-card"><strong>Bloque 11 · acuerdos_moderacion · support</strong><blockquote class="blockquote">Todo esto permitió un trabajo eficiente, colaborativo, que hizo posible mejorar sustantivamente no solo el proyecto de la PGU en la Comisión del Trabajo, y de su complemento, en la…</blockquote><p>La cita presenta el trabajo colaborativo como un instrumento que permitió mejorar sustantivamente la reforma previsional, otorgándole un valor positivo como forma de desarrollar la reforma.</p></article>
+</div>
+<div id="ejemplos-justificacion-5" class="cell-output cell-output-display">
+<article class="example-card"><strong>Bloque 11 · conciencia_costos · oppose</strong><blockquote class="blockquote">el de exenciones tributarias, que dará financiamiento a dicho beneficio</blockquote><p>La cita afirma explícitamente que el proyecto de exenciones tributarias dará financiamiento al beneficio, presentándolo como una reforma con una fuente de financiamiento.</p></article>
 </div>
 </div>
 <p>Se muestran 5 ejemplos de las 206 anotaciones guardadas. Esta selección por orden facilita inspeccionar el formato; no mide la diversidad de códigos ni permite concluir que el modelo los aplica bien. Conviene revisar también los bloques sin declaraciones para detectar omisiones.</p>
@@ -2787,8 +2760,515 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <section id="cómo-revisar-y-repetir" class="level2">
 <h2 class="anchored" data-anchor-id="cómo-revisar-y-repetir">Cómo revisar y repetir</h2>
 <p>Inicia <code>uv run python -m features.manual_validation</code> y selecciona <strong>Revisión de anotaciones LLM</strong> en la app. Esta modalidad muestra el modelo devuelto por la API, el esfuerzo solicitado, el input y output completos, los spans destacados con su código y sus justificaciones. Los juicios humanos se guardan por separado; sirven para depurar prompts y códigos, y no deben mezclarse con la validación manual ciega.</p>
-<p>Para comparar prompts, edita el archivo o crea una copia y usa, por ejemplo, <code>ANNOTATIONS_PROMPT=prompts/mi_variante.md ANNOTATIONS_EXECUTE=1 uv run quarto render annotations.qmd</code>. La semilla y el corpus mantienen la misma muestra. La ejecución original conserva su propio prompt y libro aunque después se editen los archivos fuente.</p>
+<p>Las recomendaciones siguientes permiten preparar una variante manual del prompt. No se ejecuta ninguna variante en este reporte. La ejecución original conserva su propio prompt y libro aunque después se editen los archivos fuente; el análisis actual permanece fijado a <code>SAVED_RUN_ID</code>.</p>
 <p>Los productos están en <code>output/annotations/</code> (una carpeta por ejecución), las tablas legibles en <code>output/tables/annotations/</code> y las revisiones diagnósticas en <code>output/annotation_reviews/</code>. Para abrir la interfaz local: <a href="http://127.0.0.1:8765/llm.html">revisión de anotaciones LLM</a>.</p>
+</section>
+<section id="balance-de-la-ejecución-y-consumo-confirmado" class="level2">
+<h2 class="anchored" data-anchor-id="balance-de-la-ejecución-y-consumo-confirmado">Balance de la ejecución y consumo confirmado</h2>
+<p>Leemos los registros de uso guardados de la ejecución principal y de la llamada de prueba inicial, conservada en <code>output/annotations_checks/</code>. Sumamos una vez cada ID de respuesta. Los tokens de entrada en caché son parte de la entrada; los de razonamiento son parte de la salida. No se suman de nuevo al total.</p>
+<div id="cell-consumo-registrado" class="cell" data-execution_count="10">
+<details class="code-fold">
+<summary>Código</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>usage_summary <span class="op">=</span> counted.groupby(<span class="st">&quot;run_role&quot;</span>, as_index<span class="op">=</span><span class="va">False</span>).agg(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    respuestas<span class="op">=</span>(<span class="st">&quot;response_id&quot;</span>, <span class="st">&quot;size&quot;</span>), entrada<span class="op">=</span>(<span class="st">&quot;input_tokens&quot;</span>, <span class="st">&quot;sum&quot;</span>),</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    entrada_cache<span class="op">=</span>(<span class="st">&quot;cached_input_tokens&quot;</span>, <span class="st">&quot;sum&quot;</span>), salida<span class="op">=</span>(<span class="st">&quot;output_tokens&quot;</span>, <span class="st">&quot;sum&quot;</span>),</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    razonamiento<span class="op">=</span>(<span class="st">&quot;reasoning_tokens&quot;</span>, <span class="st">&quot;sum&quot;</span>), total<span class="op">=</span>(<span class="st">&quot;total_tokens&quot;</span>, <span class="st">&quot;sum&quot;</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>reasoning_share <span class="op">=</span> token_totals[<span class="st">&quot;reasoning_tokens&quot;</span>] <span class="op">/</span> token_totals[<span class="st">&quot;output_tokens&quot;</span>]</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>pilot_ledger <span class="op">=</span> counted.loc[counted.run_role.eq(<span class="st">&quot;pilot&quot;</span>)].copy()</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>pilot_total_tokens <span class="op">=</span> <span class="bu">int</span>(pilot_ledger.total_tokens.<span class="bu">sum</span>())</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>failed_token_share <span class="op">=</span> <span class="bu">float</span>(pilot_ledger.loc[<span class="op">~</span>pilot_ledger.status.eq(<span class="st">&quot;completed&quot;</span>), <span class="st">&quot;total_tokens&quot;</span>].<span class="bu">sum</span>() <span class="op">/</span> pilot_total_tokens)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>show_table(usage_summary.rename(columns<span class="op">=</span>{<span class="st">&quot;run_role&quot;</span>: <span class="st">&quot;Ejecución&quot;</span>, <span class="st">&quot;respuestas&quot;</span>: <span class="st">&quot;Respuestas&quot;</span>, <span class="st">&quot;entrada&quot;</span>: <span class="st">&quot;Entrada&quot;</span>, <span class="st">&quot;entrada_cache&quot;</span>: <span class="st">&quot;Entrada caché&quot;</span>, <span class="st">&quot;salida&quot;</span>: <span class="st">&quot;Salida&quot;</span>, <span class="st">&quot;razonamiento&quot;</span>: <span class="st">&quot;Razonamiento&quot;</span>, <span class="st">&quot;total&quot;</span>: <span class="st">&quot;Total&quot;</span>}))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div id="consumo-registrado" class="cell-output cell-output-display">
+<table class="dataframe audit-table caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Ejecución</th>
+<th data-quarto-table-cell-role="th">Respuestas</th>
+<th data-quarto-table-cell-role="th">Entrada</th>
+<th data-quarto-table-cell-role="th">Entrada caché</th>
+<th data-quarto-table-cell-role="th">Salida</th>
+<th data-quarto-table-cell-role="th">Razonamiento</th>
+<th data-quarto-table-cell-role="th">Total</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>canary</td>
+<td>1</td>
+<td>5926</td>
+<td>0</td>
+<td>326</td>
+<td>220</td>
+<td>6252</td>
+</tr>
+<tr class="even">
+<td>pilot</td>
+<td>418</td>
+<td>2446306</td>
+<td>2234562</td>
+<td>3383522</td>
+<td>3294933</td>
+<td>5829828</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>El consumo confirmado suma <strong>5,836,080 tokens</strong>: 2,452,232 de entrada y 3,383,848 de salida. La prueba inicial está incluida; el piloto principal utilizó 5,829,828 tokens. El 97.38% de la salida corresponde a tokens de razonamiento. El 42.45% del consumo del piloto está asociado a respuestas que no produjeron una salida localmente válida.</p>
+<p><strong>Límite contable:</strong> estos son los tokens informados por respuestas persistidas, no una conciliación de facturación de la cuenta. Durante la ejecución hubo una interrupción y reanudación para aumentar concurrencia. Los intentos interrumpidos, reintentos del SDK o respuestas sustituidas sin registro independiente pueden haber consumido tokens adicionales. Ese consumo desconocido se guarda como <code>null</code>, no como cero. No se consultó ni se invocó la API para producir este balance.</p>
+<p>Calculamos cobertura por ley, estados de ejecución y completitud por intervención. Una intervención solo cuenta como completamente anotada cuando todos sus bloques producen salida válida. Incluimos tasas con denominadores explícitos.</p>
+<div id="cell-cobertura-efectiva" class="cell" data-execution_count="11">
+<details class="code-fold">
+<summary>Código</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>coverage <span class="op">=</span> results.groupby(<span class="st">&quot;law_number&quot;</span>, as_index<span class="op">=</span><span class="va">False</span>).agg(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    bloques<span class="op">=</span>(<span class="st">&quot;unit_id&quot;</span>, <span class="st">&quot;size&quot;</span>),</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    validos<span class="op">=</span>(<span class="st">&quot;status&quot;</span>, <span class="kw">lambda</span> x: <span class="bu">int</span>(x.eq(<span class="st">&quot;completed&quot;</span>).<span class="bu">sum</span>())),</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    incompletos<span class="op">=</span>(<span class="st">&quot;status&quot;</span>, <span class="kw">lambda</span> x: <span class="bu">int</span>(x.eq(<span class="st">&quot;incomplete&quot;</span>).<span class="bu">sum</span>())),</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    invalidos<span class="op">=</span>(<span class="st">&quot;status&quot;</span>, <span class="kw">lambda</span> x: <span class="bu">int</span>(x.eq(<span class="st">&quot;invalid_output&quot;</span>).<span class="bu">sum</span>())),</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    declaraciones<span class="op">=</span>(<span class="st">&quot;n_annotations&quot;</span>, <span class="st">&quot;sum&quot;</span>),</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>coverage[<span class="st">&quot;porcentaje_valido&quot;</span>] <span class="op">=</span> <span class="dv">100</span> <span class="op">*</span> coverage.validos <span class="op">/</span> coverage.bloques</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>utterance_coverage <span class="op">=</span> results.groupby([<span class="st">&quot;law_number&quot;</span>, <span class="st">&quot;utterance_id&quot;</span>], as_index<span class="op">=</span><span class="va">False</span>).agg(</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    blocks<span class="op">=</span>(<span class="st">&quot;unit_id&quot;</span>, <span class="st">&quot;size&quot;</span>), valid_blocks<span class="op">=</span>(<span class="st">&quot;status&quot;</span>, <span class="kw">lambda</span> x: <span class="bu">int</span>(x.eq(<span class="st">&quot;completed&quot;</span>).<span class="bu">sum</span>()))</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>utterance_coverage[<span class="st">&quot;coverage_status&quot;</span>] <span class="op">=</span> <span class="st">&quot;partial&quot;</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>utterance_coverage.loc[utterance_coverage.valid_blocks.eq(<span class="dv">0</span>), <span class="st">&quot;coverage_status&quot;</span>] <span class="op">=</span> <span class="st">&quot;none&quot;</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>utterance_coverage.loc[utterance_coverage.valid_blocks.eq(utterance_coverage.blocks), <span class="st">&quot;coverage_status&quot;</span>] <span class="op">=</span> <span class="st">&quot;complete&quot;</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>complete_utterances <span class="op">=</span> <span class="bu">int</span>(utterance_coverage.coverage_status.eq(<span class="st">&quot;complete&quot;</span>).<span class="bu">sum</span>())</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>none_utterances <span class="op">=</span> <span class="bu">int</span>(utterance_coverage.coverage_status.eq(<span class="st">&quot;none&quot;</span>).<span class="bu">sum</span>())</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>valid_blocks <span class="op">=</span> <span class="bu">int</span>(results.status.eq(<span class="st">&quot;completed&quot;</span>).<span class="bu">sum</span>())</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>incomplete_blocks <span class="op">=</span> <span class="bu">int</span>(results.status.eq(<span class="st">&quot;incomplete&quot;</span>).<span class="bu">sum</span>())</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>invalid_blocks <span class="op">=</span> <span class="bu">int</span>(results.status.eq(<span class="st">&quot;invalid_output&quot;</span>).<span class="bu">sum</span>())</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>incomplete_reasons <span class="op">=</span> pilot_ledger.loc[pilot_ledger.status.eq(<span class="st">&quot;incomplete&quot;</span>), <span class="st">&quot;incomplete_reason&quot;</span>].value_counts().to_dict()</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>length_diagnostics <span class="op">=</span> results.merge(blocks[[<span class="st">&quot;unit_id&quot;</span>, <span class="st">&quot;n_words&quot;</span>]], on<span class="op">=</span><span class="st">&quot;unit_id&quot;</span>, validate<span class="op">=</span><span class="st">&quot;one_to_one&quot;</span>).groupby(<span class="st">&quot;status&quot;</span>).agg(</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>    bloques<span class="op">=</span>(<span class="st">&quot;unit_id&quot;</span>, <span class="st">&quot;size&quot;</span>), palabras_mediana<span class="op">=</span>(<span class="st">&quot;n_words&quot;</span>, <span class="st">&quot;median&quot;</span>), palabras_promedio<span class="op">=</span>(<span class="st">&quot;n_words&quot;</span>, <span class="st">&quot;mean&quot;</span>)</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>).reset_index()</span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>show_table(coverage.rename(columns<span class="op">=</span>{<span class="st">&quot;law_number&quot;</span>: <span class="st">&quot;Ley&quot;</span>, <span class="st">&quot;bloques&quot;</span>: <span class="st">&quot;Bloques&quot;</span>, <span class="st">&quot;validos&quot;</span>: <span class="st">&quot;Válidos&quot;</span>, <span class="st">&quot;incompletos&quot;</span>: <span class="st">&quot;Incompletos&quot;</span>, <span class="st">&quot;invalidos&quot;</span>: <span class="st">&quot;Inválidos&quot;</span>, <span class="st">&quot;declaraciones&quot;</span>: <span class="st">&quot;Anotaciones&quot;</span>, <span class="st">&quot;porcentaje_valido&quot;</span>: <span class="st">&quot;% válido&quot;</span>}).<span class="bu">round</span>(<span class="dv">2</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div id="cobertura-efectiva" class="cell-output cell-output-display">
+<table class="dataframe audit-table caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Ley</th>
+<th data-quarto-table-cell-role="th">Bloques</th>
+<th data-quarto-table-cell-role="th">Válidos</th>
+<th data-quarto-table-cell-role="th">Incompletos</th>
+<th data-quarto-table-cell-role="th">Inválidos</th>
+<th data-quarto-table-cell-role="th">Anotaciones</th>
+<th data-quarto-table-cell-role="th">% válido</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>21419</td>
+<td>119</td>
+<td>101</td>
+<td>17</td>
+<td>1</td>
+<td>55</td>
+<td>84.8700</td>
+</tr>
+<tr class="even">
+<td>21538</td>
+<td>32</td>
+<td>22</td>
+<td>9</td>
+<td>1</td>
+<td>15</td>
+<td>68.7500</td>
+</tr>
+<tr class="odd">
+<td>21735</td>
+<td>267</td>
+<td>183</td>
+<td>83</td>
+<td>1</td>
+<td>136</td>
+<td>68.5400</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Se obtuvieron salidas válidas para 306 de 418 bloques (73.21%). Las respuestas incompletas son 109; todas registran <code>max_output_tokens</code> como motivo. El techo de 16.384 tokens incluye razonamiento y respuesta: alcanzar ese techo no significa que se haya producido JSON utilizable.</p>
+<p>Solo <strong>65 de 110 intervenciones</strong> tienen todos sus bloques válidos. Otras 40 tienen cobertura parcial y 5 no tienen ningún bloque válido. La muestra inicial alcanza el 10%; la cobertura completa efectiva equivale al 5.93% del universo elegible. Por tanto, no corresponde afirmar que el 10% quedó completamente anotado.</p>
+<p>La ley 21.735 tiene la mayor fracción de fallos. Las tasas de completitud difieren entre leyes, de modo que las frecuencias resultantes combinan selección inicial y pérdida de respuestas. No deben tratarse como una muestra efectiva equilibrada.</p>
+<p>Comparamos longitud de los bloques según resultado para explorar si las pérdidas podrían estar asociadas con la complejidad del input. Es un diagnóstico descriptivo.</p>
+<div id="cell-longitud-y-fallos" class="cell" data-execution_count="12">
+<details class="code-fold">
+<summary>Código</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>show_table(length_diagnostics.rename(columns<span class="op">=</span>{<span class="st">&quot;status&quot;</span>: <span class="st">&quot;Estado&quot;</span>, <span class="st">&quot;bloques&quot;</span>: <span class="st">&quot;Bloques&quot;</span>, <span class="st">&quot;palabras_mediana&quot;</span>: <span class="st">&quot;Palabras: mediana&quot;</span>, <span class="st">&quot;palabras_promedio&quot;</span>: <span class="st">&quot;Palabras: media&quot;</span>}).<span class="bu">round</span>(<span class="dv">2</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div id="longitud-y-fallos" class="cell-output cell-output-display">
+<table class="dataframe audit-table caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">Estado</th>
+<th data-quarto-table-cell-role="th">Bloques</th>
+<th data-quarto-table-cell-role="th">Palabras: mediana</th>
+<th data-quarto-table-cell-role="th">Palabras: media</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>completed</td>
+<td>306</td>
+<td>95.0000</td>
+<td>95.2300</td>
+</tr>
+<tr class="even">
+<td>incomplete</td>
+<td>109</td>
+<td>117.0000</td>
+<td>117.2600</td>
+</tr>
+<tr class="odd">
+<td>invalid_output</td>
+<td>3</td>
+<td>108.0000</td>
+<td>94.3300</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>La mediana de longitud es 95 palabras entre salidas válidas y 117 entre incompletas. La diferencia sugiere que las pérdidas podrían depender del contenido o su complejidad; no identifica su causa ni demuestra un efecto de longitud sobre el desempeño.</p>
+</section>
+<section id="distribución-de-códigos-y-señales-para-revisión" class="level2">
+<h2 class="anchored" data-anchor-id="distribución-de-códigos-y-señales-para-revisión">Distribución de códigos y señales para revisión</h2>
+<p>Contamos declaraciones por concepto y orientación, incluyendo ceros para los conceptos vigentes y una fila para propuestas ausentes del libro. Son frecuencias de anotaciones, no de personas ni de intervenciones.</p>
+<div id="cell-balance-codigos" class="cell" data-execution_count="13">
+<details class="code-fold">
+<summary>Código</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>concept_counts <span class="op">=</span> pd.crosstab(annotations.concept_id.fillna(<span class="st">&quot;__review__&quot;</span>), annotations.stance)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>concept_counts <span class="op">=</span> concept_counts.reindex(</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    [concept[<span class="st">&quot;id&quot;</span>] <span class="cf">for</span> concept <span class="kw">in</span> service.codebook[<span class="st">&quot;concepts&quot;</span>]] <span class="op">+</span> [<span class="st">&quot;__review__&quot;</span>],</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    columns<span class="op">=</span>[<span class="st">&quot;support&quot;</span>, <span class="st">&quot;oppose&quot;</span>], fill_value<span class="op">=</span><span class="dv">0</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>).rename_axis(<span class="st">&quot;codigo&quot;</span>).reset_index()</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>concept_counts[<span class="st">&quot;total&quot;</span>] <span class="op">=</span> concept_counts.support <span class="op">+</span> concept_counts.oppose</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>justifications <span class="op">=</span> annotations.justification.<span class="bu">map</span>(json.loads)</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>quality_metrics <span class="op">=</span> {</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;annotations&quot;</span>: <span class="bu">len</span>(annotations),</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;statements_blocks&quot;</span>: <span class="bu">int</span>(results.decision.eq(<span class="st">&quot;statements&quot;</span>).<span class="bu">sum</span>()),</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;no_statements_blocks&quot;</span>: <span class="bu">int</span>(results.decision.eq(<span class="st">&quot;no_statements&quot;</span>).<span class="bu">sum</span>()),</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;known_concept_annotations&quot;</span>: <span class="bu">int</span>(annotations.concept_status.eq(<span class="st">&quot;in_codebook&quot;</span>).<span class="bu">sum</span>()),</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;new_concept_annotations&quot;</span>: <span class="bu">int</span>(annotations.concept_status.eq(<span class="st">&quot;review&quot;</span>).<span class="bu">sum</span>()),</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;blocks_flagged_for_review&quot;</span>: <span class="bu">int</span>(results.needs_human_review.fillna(<span class="va">False</span>).<span class="bu">sum</span>()),</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;annotations_with_uncertainty&quot;</span>: <span class="bu">int</span>(justifications.<span class="bu">map</span>(<span class="kw">lambda</span> x: <span class="bu">bool</span>(x[<span class="st">&quot;uncertainty&quot;</span>].strip())).<span class="bu">sum</span>()),</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;annotations_with_context_evidence&quot;</span>: <span class="bu">int</span>(justifications.<span class="bu">map</span>(<span class="kw">lambda</span> x: <span class="bu">bool</span>(x[<span class="st">&quot;context_evidence&quot;</span>])).<span class="bu">sum</span>()),</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;annotations_with_alternatives&quot;</span>: <span class="bu">int</span>(justifications.<span class="bu">map</span>(<span class="kw">lambda</span> x: <span class="bu">bool</span>(x[<span class="st">&quot;alternatives&quot;</span>])).<span class="bu">sum</span>()),</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;support_annotations&quot;</span>: <span class="bu">int</span>(annotations.stance.eq(<span class="st">&quot;support&quot;</span>).<span class="bu">sum</span>()),</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;oppose_annotations&quot;</span>: <span class="bu">int</span>(annotations.stance.eq(<span class="st">&quot;oppose&quot;</span>).<span class="bu">sum</span>()),</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>show_table(concept_counts.rename(columns<span class="op">=</span>{<span class="st">&quot;codigo&quot;</span>: <span class="st">&quot;Código&quot;</span>, <span class="st">&quot;support&quot;</span>: <span class="st">&quot;Apoyo&quot;</span>, <span class="st">&quot;oppose&quot;</span>: <span class="st">&quot;Rechazo&quot;</span>, <span class="st">&quot;total&quot;</span>: <span class="st">&quot;Total&quot;</span>}))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div id="balance-codigos" class="cell-output cell-output-display">
+<table class="dataframe audit-table caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th">stance</th>
+<th data-quarto-table-cell-role="th">Código</th>
+<th data-quarto-table-cell-role="th">Apoyo</th>
+<th data-quarto-table-cell-role="th">Rechazo</th>
+<th data-quarto-table-cell-role="th">Total</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th data-quarto-table-cell-role="th"></th>
+<td>capitalizacion_individual</td>
+<td>9</td>
+<td>4</td>
+<td>13</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th"></th>
+<td>propiedad_individual_fondos</td>
+<td>9</td>
+<td>1</td>
+<td>10</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th"></th>
+<td>reciprocidad_contributiva</td>
+<td>4</td>
+<td>0</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th"></th>
+<td>control_responsabilidad_individual</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th"></th>
+<td>actitud</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th"></th>
+<td>identidad</td>
+<td>3</td>
+<td>0</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th"></th>
+<td>necesidad_material</td>
+<td>28</td>
+<td>0</td>
+<td>28</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th"></th>
+<td>igualdad_universalismo</td>
+<td>32</td>
+<td>1</td>
+<td>33</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th"></th>
+<td>conciencia_costos</td>
+<td>13</td>
+<td>4</td>
+<td>17</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th"></th>
+<td>solidaridad_intergeneracional</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th"></th>
+<td>ineficiencia_estado</td>
+<td>5</td>
+<td>6</td>
+<td>11</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th"></th>
+<td>prevision_como_mercado</td>
+<td>14</td>
+<td>6</td>
+<td>20</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th"></th>
+<td>ilegitimidad_origen_dictatorial</td>
+<td>3</td>
+<td>1</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th"></th>
+<td>acuerdos_moderacion</td>
+<td>34</td>
+<td>0</td>
+<td>34</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th"></th>
+<td>__review__</td>
+<td>28</td>
+<td>0</td>
+<td>28</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Las 206 anotaciones se concentran especialmente en acuerdos y moderación, igualdad y universalismo, y necesidad material. Hay 28 propuestas de conceptos nuevos, 182 apoyos y 24 rechazos.</p>
+<p>No aparecen anotaciones de <code>actitud</code> ni <code>solidaridad_intergeneracional</code>. Esto no prueba su ausencia en el corpus: puede deberse al muestreo, a fallos de ejecución, a omisiones del modelo o a la especificidad de las definiciones. La solidaridad genérica propuesta como concepto nuevo tampoco equivale automáticamente a solidaridad entre generaciones.</p>
+<p>El modelo solicita revisión en 102 bloques y expresa incertidumbre en 145 anotaciones. Solo 28 contienen citas de contexto y 127 discuten una alternativa. Son atributos declarados por el modelo, no medidas de fidelidad o calibración. No se calculan precisión, recall, F1 ni acuerdo entre codificadores, porque este piloto no cuenta con una referencia humana independiente alineada.</p>
+</section>
+<section id="casos-concretos-para-modificar-el-prompt" class="level2">
+<h2 class="anchored" data-anchor-id="casos-concretos-para-modificar-el-prompt">Casos concretos para modificar el prompt</h2>
+<p>La inspección dirigida siguiente contrasta los inputs y outputs guardados con las inclusiones y exclusiones del libro. Seleccionamos errores técnicos, fronteras conceptuales, ejemplos contrastantes y decisiones sin declaraciones. Esta revisión editorial no es una muestra aleatoria ni una adjudicación humana del corpus. Los números de bloque coinciden con la app; <code>sample_index</code> en los JSON empieza en cero.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Bloque</th>
+<th style="text-align: left;">Hallazgo inspeccionado</th>
+<th style="text-align: left;">Cambio propuesto</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><a href="http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&amp;item=2">3</a> y <a href="http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&amp;item=4">5</a></td>
+<td style="text-align: left;"><code>igualdad_universalismo</code> y <code>necesidad_material</code> se asignan a descripciones de objetivos y requisitos de la PGU. Las propias justificaciones reconocen la lectura descriptiva.</td>
+<td style="text-align: left;">Exigir una relación explícita entre un criterio normativo y una decisión distributiva; el nombre «Universal» y una regla de focalización no bastan.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><a href="http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&amp;item=10">11</a> y <a href="http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&amp;item=72">73</a></td>
+<td style="text-align: left;">Identificar una fuente de financiamiento se interpreta como rechazo de falta de sostenibilidad, sin que el pasaje afirme sostenibilidad.</td>
+<td style="text-align: left;">Distinguir financiamiento descriptivo de una defensa fiscal normativa; exigir evidencia de refutación para <code>oppose</code>.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><a href="http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&amp;item=16">17</a></td>
+<td style="text-align: left;">Un mismo fragmento apoya necesidad material y rechaza igualdad; el propio modelo advierte que puede ser una sola defensa de focalización.</td>
+<td style="text-align: left;">Aclarar cuándo un contraste justifica dos códigos y cuándo constituye exclusivamente el fundamento de uno.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><a href="http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&amp;item=41">42</a> y <a href="http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&amp;item=231">232</a></td>
+<td style="text-align: left;">El modelo deja sin códigos una mención descriptiva de acuerdos y una explicación técnica del reparto de cotizaciones.</td>
+<td style="text-align: left;">Incorporar estos casos como ejemplos negativos junto a los casos 11 y 73, para fijar la frontera.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><a href="http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&amp;item=57">58</a></td>
+<td style="text-align: left;">La cita cambia «Honestamente no me parece…» por «No me parece…», con mayúscula que no aparece en el fragmento.</td>
+<td style="text-align: left;">Copiar subcadenas literales sin corregir mayúsculas; conservar el control local.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><a href="http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&amp;item=142">143</a></td>
+<td style="text-align: left;">Se devuelve dos veces el mismo span y la misma propuesta de concepto.</td>
+<td style="text-align: left;">Exigir unicidad por cita, aparición y concepto antes de emitir el JSON.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><a href="http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&amp;item=147">148</a></td>
+<td style="text-align: left;">«Hay que ser didácticos» se propone como nuevo principio previsional. Puede ser una instrucción comunicativa ajena al alcance del instrumento.</td>
+<td style="text-align: left;">Delimitar <code>review</code>: debe aportar un fundamento normativo previsional, no cualquier deber de comunicación o trámite.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><a href="http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&amp;item=240">241</a></td>
+<td style="text-align: left;">La salida distingue rechazo de responsabilidad por no cotizar y apoyo al reconocimiento del trabajo de crianza.</td>
+<td style="text-align: left;">Usarlo como contraste de multicodificación fundamentada, sujeto a resolver si la definición vigente de reciprocidad cubre trabajo no remunerado.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><a href="http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&amp;item=389">390</a></td>
+<td style="text-align: left;">Se cita <code>include:4</code> de <code>ineficiencia_estado</code>, que solo tiene tres criterios de inclusión.</td>
+<td style="text-align: left;">Entregar IDs estables y restringir las referencias permitidas por concepto en el esquema; conservar el rechazo local de referencias inexistentes.</td>
+</tr>
+</tbody>
+</table>
+<p>Las anomalías técnicas están identificadas exactamente y no se repararon de forma silenciosa. Las fronteras conceptuales requieren tu decisión sustantiva. Las explicaciones ayudan a localizar problemas, pero en varios casos también racionalizan una lectura que amplía lo que la cita dice.</p>
+<section id="prioridades-para-una-próxima-versión-sin-ejecutarla-ahora" class="level3">
+<h3 class="anchored" data-anchor-id="prioridades-para-una-próxima-versión-sin-ejecutarla-ahora">Prioridades para una próxima versión, sin ejecutarla ahora</h3>
+<ol type="1">
+<li><strong>Separar decisión de elegibilidad y asignación de código.</strong> Hacer explícita la condición «el texto usa una razón normativa para justificar una opción previsional». Incluir pares contrastantes de descripción técnica y argumento normativo.</li>
+<li><strong>Acotar las explicaciones.</strong> Pedir una oración de fundamento para el código y una para la orientación; mantener alternativas y contexto solo cuando sean necesarios. Esto reduciría texto visible, pero no garantiza reducir el razonamiento interno ni resolver el agotamiento del límite.</li>
+<li><strong>Delimitar <code>review</code>.</strong> Distinguir un fundamento previsional ausente del libro de llamados genéricos a comunicar, tramitar o cumplir promesas. Decidir si se desea ampliar el instrumento antes de incorporar esos códigos.</li>
+<li><strong>Hacer más fuerte el contrato.</strong> Enumerar referencias válidas por concepto, controlar duplicados y mantener citas literales. Los tres fallos locales muestran que un JSON conforme al esquema general no garantiza coherencia semántica.</li>
+<li><strong>Reconsiderar la configuración de generación antes de otro lote.</strong> El cuello de botella observado es la combinación de esfuerzo <code>max</code> y techo de salida. Un techo mayor podría completar respuestas a costa de más consumo; un esfuerzo menor podría reducirlo, pero debe evaluarse y no se cambia ni ejecuta aquí.</li>
+<li><strong>Reservar una evaluación posterior.</strong> Tras ajustar el prompt, usar bloques distintos y referencia humana ciega para medir precisión, omisiones y orientación. Los casos usados para depurar este prompt ya pertenecen al conjunto de desarrollo.</li>
+</ol>
+</section>
+</section>
+<section id="manifiesto-de-pruebas-y-tablas-completas" class="level2">
+<h2 class="anchored" data-anchor-id="manifiesto-de-pruebas-y-tablas-completas">Manifiesto de pruebas y tablas completas</h2>
+<p>Exportamos un manifiesto JSON con consumo confirmado, cobertura, estados y métricas, además de un registro Parquet por respuesta para verificar los totales. Los IDs, hashes y rutas vinculan las métricas con las respuestas originales. Guardamos <code>null</code> para el consumo no registrado y para métricas que no pueden calcularse.</p>
+<div id="manifiesto-del-piloto" class="cell" data-execution_count="14">
+<details class="code-fold">
+<summary>Código</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>ledger.to_parquet(AUDIT_ROOT <span class="op">/</span> <span class="st">&quot;response_ledger.parquet&quot;</span>, index<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>coverage.to_parquet(AUDIT_ROOT <span class="op">/</span> <span class="st">&quot;coverage_by_law.parquet&quot;</span>, index<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>utterance_coverage.to_parquet(AUDIT_ROOT <span class="op">/</span> <span class="st">&quot;coverage_by_utterance.parquet&quot;</span>, index<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>concept_counts.to_parquet(AUDIT_ROOT <span class="op">/</span> <span class="st">&quot;concept_counts.parquet&quot;</span>, index<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>length_diagnostics.to_parquet(AUDIT_ROOT <span class="op">/</span> <span class="st">&quot;length_diagnostics.parquet&quot;</span>, index<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> name, table <span class="kw">in</span> {<span class="st">&quot;response_ledger&quot;</span>: ledger, <span class="st">&quot;coverage_by_law&quot;</span>: coverage,</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;coverage_by_utterance&quot;</span>: utterance_coverage, <span class="st">&quot;concept_counts&quot;</span>: concept_counts,</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;length_diagnostics&quot;</span>: length_diagnostics}.items():</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    table.to_csv(TABLE_ROOT <span class="op">/</span> <span class="ss">f&quot;</span><span class="sc">{</span>SAVED_RUN_ID<span class="sc">}</span><span class="ss">_</span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">.csv&quot;</span>, index<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>manifest <span class="op">=</span> {</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;schema_version&quot;</span>: <span class="st">&quot;llm-pilot-audit-1.0.0&quot;</span>,</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;generated_at_utc&quot;</span>: datetime.now(timezone.utc).isoformat(),</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;primary_run_id&quot;</span>: SAVED_RUN_ID,</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;analysis_mode&quot;</span>: <span class="st">&quot;offline_no_api_calls&quot;</span>,</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;api_calls_enabled&quot;</span>: <span class="va">False</span>,</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;model&quot;</span>: MODEL, <span class="st">&quot;reasoning_effort&quot;</span>: REASONING_EFFORT,</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;max_output_tokens_per_request&quot;</span>: run_manifest[<span class="st">&quot;spec&quot;</span>][<span class="st">&quot;max_output_tokens&quot;</span>],</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;codebook_version&quot;</span>: run_manifest[<span class="st">&quot;codebook_version&quot;</span>],</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;prompt_sha256&quot;</span>: run_manifest[<span class="st">&quot;spec&quot;</span>][<span class="st">&quot;prompt_sha256&quot;</span>],</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;sampling&quot;</span>: {</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;seed&quot;</span>: SEED, <span class="st">&quot;target_fraction&quot;</span>: FRACTION,</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;eligible_interventions&quot;</span>: <span class="bu">len</span>(utterances), <span class="st">&quot;selected_interventions&quot;</span>: <span class="bu">len</span>(selected_units),</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;sample_fraction&quot;</span>: <span class="bu">len</span>(selected_units) <span class="op">/</span> <span class="bu">len</span>(utterances),</span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;selected_blocks&quot;</span>: <span class="bu">len</span>(selected), <span class="st">&quot;session_strata&quot;</span>: <span class="bu">len</span>(strata),</span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;complete_interventions&quot;</span>: complete_utterances,</span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;partial_interventions&quot;</span>: <span class="bu">len</span>(utterance_coverage) <span class="op">-</span> complete_utterances <span class="op">-</span> none_utterances,</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;interventions_without_valid_blocks&quot;</span>: none_utterances,</span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;complete_interventions_fraction_of_corpus&quot;</span>: complete_utterances <span class="op">/</span> <span class="bu">len</span>(utterances),</span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;token_usage&quot;</span>: {</span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;scope&quot;</span>: <span class="st">&quot;Unique persisted responses from the primary pilot and initial canary&quot;</span>,</span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;confirmed_recorded_total_tokens&quot;</span>: token_totals[<span class="st">&quot;total_tokens&quot;</span>],</span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a>        <span class="op">**</span>token_totals,</span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;noncached_input_tokens&quot;</span>: token_totals[<span class="st">&quot;input_tokens&quot;</span>] <span class="op">-</span> token_totals[<span class="st">&quot;cached_input_tokens&quot;</span>],</span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;nonreasoning_output_tokens&quot;</span>: token_totals[<span class="st">&quot;output_tokens&quot;</span>] <span class="op">-</span> token_totals[<span class="st">&quot;reasoning_tokens&quot;</span>],</span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;reasoning_fraction_of_output&quot;</span>: reasoning_share,</span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;cached_fraction_of_input&quot;</span>: token_totals[<span class="st">&quot;cached_input_tokens&quot;</span>] <span class="op">/</span> token_totals[<span class="st">&quot;input_tokens&quot;</span>],</span>
+<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;primary_run_total_tokens&quot;</span>: pilot_total_tokens,</span>
+<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;primary_run_tokens_per_valid_block&quot;</span>: pilot_total_tokens <span class="op">/</span> valid_blocks,</span>
+<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;primary_run_tokens_per_valid_annotation&quot;</span>: pilot_total_tokens <span class="op">/</span> <span class="bu">len</span>(annotations),</span>
+<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;primary_run_fraction_on_nonvalid_outputs&quot;</span>: failed_token_share,</span>
+<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;recorded_responses&quot;</span>: <span class="bu">len</span>(ledger), <span class="st">&quot;unique_responses_counted&quot;</span>: <span class="bu">len</span>(counted),</span>
+<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;duplicate_response_records&quot;</span>: <span class="bu">int</span>(ledger.duplicate_response_id.<span class="bu">sum</span>()),</span>
+<span id="cb14-45"><a href="#cb14-45" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;records_without_usage&quot;</span>: <span class="bu">int</span>((<span class="op">~</span>ledger.usage_available).<span class="bu">sum</span>()),</span>
+<span id="cb14-46"><a href="#cb14-46" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;unrecorded_tokens&quot;</span>: <span class="va">None</span>, <span class="st">&quot;account_billed_total_tokens&quot;</span>: <span class="va">None</span>,</span>
+<span id="cb14-47"><a href="#cb14-47" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;is_exact_account_total&quot;</span>: <span class="va">False</span>,</span>
+<span id="cb14-48"><a href="#cb14-48" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;caveat&quot;</span>: <span class="st">&quot;Totals cover persisted responses only. Interrupted requests, SDK retries or overwritten unarchived responses may have additional unrecorded usage; unknown is not zero. No billing reconciliation was performed.&quot;</span>,</span>
+<span id="cb14-49"><a href="#cb14-49" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;counting_rules&quot;</span>: <span class="st">&quot;total=input+output; cached input and reasoning output are subsets, not additional tokens&quot;</span>,</span>
+<span id="cb14-50"><a href="#cb14-50" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;by_run&quot;</span>: usage_summary.to_dict(<span class="st">&quot;records&quot;</span>),</span>
+<span id="cb14-51"><a href="#cb14-51" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb14-52"><a href="#cb14-52" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;execution&quot;</span>: {</span>
+<span id="cb14-53"><a href="#cb14-53" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;status_counts&quot;</span>: {<span class="bu">str</span>(k): <span class="bu">int</span>(v) <span class="cf">for</span> k, v <span class="kw">in</span> results.status.value_counts().items()},</span>
+<span id="cb14-54"><a href="#cb14-54" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;valid_output_rate&quot;</span>: valid_blocks <span class="op">/</span> <span class="bu">len</span>(results),</span>
+<span id="cb14-55"><a href="#cb14-55" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;incomplete_output_rate&quot;</span>: incomplete_blocks <span class="op">/</span> <span class="bu">len</span>(results),</span>
+<span id="cb14-56"><a href="#cb14-56" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;invalid_output_rate&quot;</span>: invalid_blocks <span class="op">/</span> <span class="bu">len</span>(results),</span>
+<span id="cb14-57"><a href="#cb14-57" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;incomplete_reasons&quot;</span>: {<span class="bu">str</span>(k): <span class="bu">int</span>(v) <span class="cf">for</span> k, v <span class="kw">in</span> incomplete_reasons.items()},</span>
+<span id="cb14-58"><a href="#cb14-58" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;coverage_by_law&quot;</span>: coverage.to_dict(<span class="st">&quot;records&quot;</span>),</span>
+<span id="cb14-59"><a href="#cb14-59" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb14-60"><a href="#cb14-60" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;annotation_metrics&quot;</span>: quality_metrics,</span>
+<span id="cb14-61"><a href="#cb14-61" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;concept_counts&quot;</span>: concept_counts.to_dict(<span class="st">&quot;records&quot;</span>),</span>
+<span id="cb14-62"><a href="#cb14-62" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;quality_metrics_unavailable&quot;</span>: {</span>
+<span id="cb14-63"><a href="#cb14-63" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;precision&quot;</span>: <span class="va">None</span>, <span class="st">&quot;recall&quot;</span>: <span class="va">None</span>, <span class="st">&quot;f1&quot;</span>: <span class="va">None</span>, <span class="st">&quot;intercoder_agreement&quot;</span>: <span class="va">None</span>,</span>
+<span id="cb14-64"><a href="#cb14-64" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;reason&quot;</span>: <span class="st">&quot;No independent aligned human gold annotations for this pilot; structural validity is not annotation accuracy&quot;</span>,</span>
+<span id="cb14-65"><a href="#cb14-65" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb14-66"><a href="#cb14-66" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;source_runs&quot;</span>: [{<span class="st">&quot;role&quot;</span>: role, <span class="st">&quot;path&quot;</span>: <span class="bu">str</span>(path),</span>
+<span id="cb14-67"><a href="#cb14-67" aria-hidden="true" tabindex="-1"></a>                     <span class="st">&quot;manifest_sha256&quot;</span>: sha256_file(path <span class="op">/</span> <span class="st">&quot;manifest.json&quot;</span>)}</span>
+<span id="cb14-68"><a href="#cb14-68" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">for</span> role, path <span class="kw">in</span> run_directories.items()],</span>
+<span id="cb14-69"><a href="#cb14-69" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;artifacts&quot;</span>: {path.name: {<span class="st">&quot;path&quot;</span>: <span class="bu">str</span>(path), <span class="st">&quot;sha256&quot;</span>: sha256_file(path)}</span>
+<span id="cb14-70"><a href="#cb14-70" aria-hidden="true" tabindex="-1"></a>                  <span class="cf">for</span> path <span class="kw">in</span> <span class="bu">sorted</span>(AUDIT_ROOT.glob(<span class="st">&quot;*.parquet&quot;</span>))},</span>
+<span id="cb14-71"><a href="#cb14-71" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb14-72"><a href="#cb14-72" aria-hidden="true" tabindex="-1"></a>atomic_write_json(AUDIT_ROOT <span class="op">/</span> <span class="st">&quot;manifest.json&quot;</span>, manifest)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>El manifiesto deja explícito que el análisis fue local, contabiliza los tokens confirmados y evita confundir salidas válidas con exactitud de anotación. La base por respuesta permite auditar sumas y procedencia. Las tablas completas son preferibles a interpretar los ejemplos como resultados representativos.</p>
+<p>Copiamos únicamente el manifiesto, el prompt y las tablas enlazadas al directorio del HTML, para que los enlaces del reporte funcionen también fuera del editor.</p>
+<div id="cell-enlaces-del-reporte" class="cell" data-execution_count="15">
+<details class="code-fold">
+<summary>Código</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> shutil</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>linked_files <span class="op">=</span> [AUDIT_ROOT <span class="op">/</span> <span class="st">&quot;manifest.json&quot;</span>, PROMPT_PATH, results_csv, annotations_csv,</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                <span class="op">*</span><span class="bu">sorted</span>(TABLE_ROOT.glob(<span class="ss">f&quot;</span><span class="sc">{</span>SAVED_RUN_ID<span class="sc">}</span><span class="ss">_*ledger.csv&quot;</span>)),</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>                <span class="op">*</span><span class="bu">sorted</span>(TABLE_ROOT.glob(<span class="ss">f&quot;</span><span class="sc">{</span>SAVED_RUN_ID<span class="sc">}</span><span class="ss">_coverage*.csv&quot;</span>)),</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                TABLE_ROOT <span class="op">/</span> <span class="ss">f&quot;</span><span class="sc">{</span>SAVED_RUN_ID<span class="sc">}</span><span class="ss">_concept_counts.csv&quot;</span>]</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> path <span class="kw">in</span> linked_files:</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    target <span class="op">=</span> Path(<span class="st">&quot;_output&quot;</span>) <span class="op">/</span> path</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    target.parent.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    shutil.copy2(path, target)</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>display(Markdown(<span class="st">&quot;</span><span class="ch">\n\n</span><span class="st">&quot;</span>.join(<span class="ss">f&quot;[</span><span class="sc">{</span>path<span class="sc">.</span>name<span class="sc">}</span><span class="ss">](</span><span class="sc">{</span>path<span class="sc">.</span>as_posix()<span class="sc">}</span><span class="ss">)&quot;</span> <span class="cf">for</span> path <span class="kw">in</span> linked_files)))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div id="enlaces-del-reporte" class="cell-output cell-output-display cell-output-markdown">
+<p><a href="data/proc_data/llm_pilots/pilot_f3a69c2f81c587271ef5/manifest.json">manifest.json</a></p>
+<p><a href="prompts/annotations_pilot.md">annotations_pilot.md</a></p>
+<p><a href="output/tables/annotations/pilot_f3a69c2f81c587271ef5_results.csv">pilot_f3a69c2f81c587271ef5_results.csv</a></p>
+<p><a href="output/tables/annotations/pilot_f3a69c2f81c587271ef5_annotations.csv">pilot_f3a69c2f81c587271ef5_annotations.csv</a></p>
+<p><a href="output/tables/annotations/pilot_f3a69c2f81c587271ef5_response_ledger.csv">pilot_f3a69c2f81c587271ef5_response_ledger.csv</a></p>
+<p><a href="output/tables/annotations/pilot_f3a69c2f81c587271ef5_coverage_by_law.csv">pilot_f3a69c2f81c587271ef5_coverage_by_law.csv</a></p>
+<p><a href="output/tables/annotations/pilot_f3a69c2f81c587271ef5_coverage_by_utterance.csv">pilot_f3a69c2f81c587271ef5_coverage_by_utterance.csv</a></p>
+<p><a href="output/tables/annotations/pilot_f3a69c2f81c587271ef5_concept_counts.csv">pilot_f3a69c2f81c587271ef5_concept_counts.csv</a></p>
+</div>
+</div>
 </section>
 
 </main>

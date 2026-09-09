@@ -232,5 +232,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const item = reviewState.filtered[position + direction]; if (item) return loadItem(item.sample_index);
   }));
   window.addEventListener('beforeunload', e => { if (reviewState.dirty) { e.preventDefault(); e.returnValue = ''; } });
-  try { await refresh(); } catch (error) { notify(error.message, true); }
+  try {
+    await refresh();
+    const query = new URLSearchParams(window.location.search);
+    const requestedRun = query.get('run');
+    if (requestedRun && [...$('run-select').options].some(option => option.value === requestedRun)) {
+      $('run-select').value = requestedRun;
+      await loadRun();
+    }
+    const requestedItem = Number(query.get('item'));
+    if (query.has('item') && Number.isInteger(requestedItem) &&
+        reviewState.items.some(item => item.sample_index === requestedItem)) {
+      await loadItem(requestedItem);
+    }
+  } catch (error) { notify(error.message, true); }
 });

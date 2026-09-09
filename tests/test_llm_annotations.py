@@ -23,6 +23,9 @@ class LLMPilotTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
+        policy_patch = patch('features.llm_annotations.pipeline.API_POLICY_PATH', self.root / 'api_policy.json')
+        policy_patch.start()
+        self.addCleanup(policy_patch.stop)
         self.book = {'version': 'test', 'concepts': [
             {'id': 'solidaridad', 'label': 'Solidaridad', 'definition': 'Compartir riesgos.',
              'include': ['Distribución solidaria.'], 'exclude': [], 'orientation_anchor': 'Compartir riesgos.'}]}
@@ -118,6 +121,15 @@ class LLMPilotTests(unittest.TestCase):
             self.assertEqual(before, (directory / 'results/00000.json').read_bytes())
         self.assertEqual('completed', results.iloc[0].status)
         self.assertEqual(1, len(pd.read_parquet(directory / 'annotations.parquet')))
+
+    def test_user_stop_policy_blocks_even_when_execute_is_true(self):
+        directory = self.make_run()
+        (self.root / 'api_policy.json').write_text('{"allow_api_calls": false}')
+        with patch('features.llm_annotations.pipeline.OpenAI') as constructor:
+            with self.assertRaises(ValidationError):
+                run_annotations(directory, execute=True)
+            constructor.assert_not_called()
+            self.assertEqual('pending', run_annotations(directory).iloc[0].status)
 
     def test_invalid_and_incomplete_are_not_no_statements(self):
         for status, raw, expected in [('incomplete', self.raw, 'incomplete'),

@@ -7,11 +7,94 @@ format:
     toc: true
     code-fold: true
     embed-resources: true
+    css: annotations.css
 execute:
   daemon: false
   warning: true
   error: false
 ---
+
+Cargamos las respuestas persistidas y la configuración local para calcular el
+balance inicial. La generación de API permanece desactivada.
+
+```{python}
+#| label: setup
+import json
+import os
+from pathlib import Path
+
+import pandas as pd
+from IPython.display import HTML, Markdown, display
+from html import escape
+
+from features.coding_chunks import length_bin
+from features.manual_validation.codebook_workbook import write_codebook_json
+from features.manual_validation.service import ValidationService, sample_records
+from features.llm_annotations.pipeline import allocate_quotas, run_annotations, load_sample
+from features.llm_annotations.audit import read_response_ledger
+from features.manual_validation.service import atomic_write_json, sha256_file
+from datetime import datetime, timezone
+
+FRACTION = 0.10
+SEED = 20260908
+MODEL = "gpt-5.6-luna"
+REASONING_EFFORT = "max"
+PROMPT_PATH = Path(os.environ.get("ANNOTATIONS_PROMPT", "prompts/annotations_pilot.md"))
+CODEBOOK_WORKBOOK = Path("data/codebook/codebook_v0.3.xlsx")
+CODEBOOK_JSON = CODEBOOK_WORKBOOK.with_suffix(".json")
+RUN_ROOT = Path("output/annotations")
+TABLE_ROOT = Path("output/tables/annotations")
+TABLE_ROOT.mkdir(parents=True, exist_ok=True)
+EXECUTE_API = False  # El usuario detuvo el gasto de API el 2026-09-08.
+SAVED_RUN_ID = "pilot_f3a69c2f81c587271ef5"
+AUDIT_ROOT = Path("data/proc_data/llm_pilots") / SAVED_RUN_ID
+AUDIT_ROOT.mkdir(parents=True, exist_ok=True)
+API_LIMIT = int(os.environ["ANNOTATIONS_LIMIT"]) if os.environ.get("ANNOTATIONS_LIMIT") else None
+API_WORKERS = int(os.environ.get("ANNOTATIONS_WORKERS", "6"))
+
+
+def show_table(frame):
+    """Consistent HTML for the small tables in this report; full tables are exported."""
+    assert len(frame) <= 20
+    display(HTML(frame.to_html(index=False, border=0, escape=True,
+                              classes="audit-table", float_format=lambda x: f"{x:.4f}")))
+
+# Read persisted artifacts for the opening summary; no generation occurs here.
+run_dir = RUN_ROOT / SAVED_RUN_ID
+run_manifest = json.loads((run_dir / "manifest.json").read_text())
+results = pd.read_parquet(run_dir / "results.parquet")
+annotations = pd.read_parquet(run_dir / "annotations.parquet")
+run_directories = {
+    "pilot": run_dir,
+    "canary": Path("output/annotations_checks/pilot_96edb05d2754acc1d839"),
+}
+ledger = read_response_ledger(run_directories)
+counted = ledger.loc[~ledger.duplicate_response_id & ledger.usage_available].copy()
+token_columns = ["input_tokens", "cached_input_tokens", "output_tokens", "reasoning_tokens", "total_tokens"]
+token_totals = {key: int(counted[key].sum()) for key in token_columns}
+valid_blocks = int(results.status.eq("completed").sum())
+incomplete_blocks = int(results.status.eq("incomplete").sum())
+invalid_blocks = int(results.status.eq("invalid_output").sum())
+complete_utterances = int(results.groupby(["law_number", "utterance_id"]).status.apply(
+    lambda states: states.eq("completed").all()).sum())
+```
+
+## Resultado del piloto
+
+Se obtuvieron **`{python} valid_blocks` bloques con salida válida de `{python} len(results)`**,
+con `{python} len(annotations)` anotaciones. El problema principal fueron
+`{python} incomplete_blocks` respuestas incompletas por el límite de salida;
+otras `{python} invalid_blocks` fallaron los controles locales. Solo
+`{python} complete_utterances` de las 110 intervenciones sorteadas tienen todos sus
+bloques válidos. El consumo confirmado fue de
+**`{python} f'{token_totals["total_tokens"]:,}'` tokens**, incluida la prueba inicial.
+
+Este reporte se generó **sin nuevas llamadas a la API**. La lectura sustantiva
+identifica fronteras entre descripción y justificación normativa que conviene
+aclarar en el prompt. Los [casos inspeccionados](#casos-concretos-para-modificar-el-prompt)
+y el [balance de consumo](#balance-de-la-ejecución-y-consumo-confirmado) desarrollan
+estos resultados. Las métricas describen ejecución y anotaciones del modelo; no
+miden precisión contra una referencia humana.
 
 ## Propósito y alcance
 
@@ -33,37 +116,10 @@ para el piloto; las frecuencias de códigos no estiman prevalencias del corpus.
 
 Cargamos el servicio compartido de la app, las funciones de muestreo, el conversor
 XLSX y las herramientas de ejecución. El entorno se fija con `pyproject.toml` y
-`uv.lock`. La API solo se activa mediante `ANNOTATIONS_EXECUTE=1`; renderizar por
-defecto reutiliza respuestas guardadas y muestra los casos pendientes.
+`uv.lock`. La ejecución de API está desactivada por instrucción del usuario. Este
+reporte reutiliza exclusivamente respuestas guardadas y realiza cálculos locales.
 
-```{python}
-#| label: setup
-import json
-import os
-from pathlib import Path
 
-import pandas as pd
-from IPython.display import Markdown, display
-
-from features.coding_chunks import length_bin
-from features.manual_validation.codebook_workbook import write_codebook_json
-from features.manual_validation.service import ValidationService, sample_records
-from features.llm_annotations.pipeline import allocate_quotas, prepare_run, run_annotations
-
-FRACTION = 0.10
-SEED = 20260908
-MODEL = "gpt-5.6-luna"
-REASONING_EFFORT = "max"
-PROMPT_PATH = Path(os.environ.get("ANNOTATIONS_PROMPT", "prompts/annotations_pilot.md"))
-CODEBOOK_WORKBOOK = Path("data/codebook/codebook_v0.3.xlsx")
-CODEBOOK_JSON = CODEBOOK_WORKBOOK.with_suffix(".json")
-RUN_ROOT = Path("output/annotations")
-TABLE_ROOT = Path("output/tables/annotations")
-TABLE_ROOT.mkdir(parents=True, exist_ok=True)
-EXECUTE_API = os.environ.get("ANNOTATIONS_EXECUTE", "0") == "1"
-API_LIMIT = int(os.environ["ANNOTATIONS_LIMIT"]) if os.environ.get("ANNOTATIONS_LIMIT") else None
-API_WORKERS = int(os.environ.get("ANNOTATIONS_WORKERS", "6"))
-```
 
 Sincronizamos el JSON desde el XLSX, tal como hace la app al iniciar. Cargamos
 exclusivamente `ley_*/coding_chunks_long.parquet`; el servicio valida IDs, hashes,
@@ -86,7 +142,7 @@ corpus_summary = utterances.groupby("law_number", as_index=False).agg(
     intervenciones=("utterance_id", "size"), sesiones=("document_uri", "nunique"),
     bloques=("n_blocks", "sum")
 )
-display(corpus_summary)
+show_table(corpus_summary.rename(columns={"law_number": "Ley", "intervenciones": "Intervenciones", "sesiones": "Sesiones", "bloques": "Bloques"}))
 ```
 
 El universo incluye `{python} len(utterances)` intervenciones,
@@ -109,7 +165,7 @@ quotas = allocate_quotas(counts, FRACTION)
 strata = pd.DataFrame({"intervenciones_universo": counts, "intervenciones_muestra": quotas}).reset_index()
 strata["fraccion_muestreada"] = strata["intervenciones_muestra"] / strata["intervenciones_universo"]
 strata["sesion"] = strata["document_uri"].str.rsplit("/", n=1).str[-1]
-display(strata[["law_number", "sesion", "intervenciones_universo", "intervenciones_muestra", "fraccion_muestreada"]])
+show_table(strata[["law_number", "sesion", "intervenciones_universo", "intervenciones_muestra", "fraccion_muestreada"]].rename(columns={"law_number": "Ley", "sesion": "Sesión", "intervenciones_universo": "Universo", "intervenciones_muestra": "Muestra", "fraccion_muestreada": "Fracción"}))
 ```
 
 La asignación selecciona `{python} int(quotas.sum())` intervenciones, equivalentes al
@@ -144,7 +200,7 @@ selection_summary = selected_units.groupby("law_number", as_index=False).agg(
     intervenciones=("utterance_id", "size"), bloques=("n_blocks", "sum"),
     sesiones=("document_uri", "nunique")
 )
-display(selection_summary)
+show_table(selection_summary.rename(columns={"law_number": "Ley", "intervenciones": "Intervenciones", "sesiones": "Sesiones", "bloques": "Bloques"}))
 ```
 
 Las `{python} len(selected_units)` intervenciones sorteadas producen
@@ -178,7 +234,11 @@ sampling = {"fraction": FRACTION, "seed": SEED, "unit": "utterance",
             "within_stratum": "manual_app_round_robin_intervention_length",
             "eligible_interventions": len(utterances), "selected_interventions": len(selected_units),
             "quotas": strata.to_dict("records")}
-run_dir = prepare_run(service, selected, sampling, PROMPT_PATH, RUN_ROOT, MODEL, REASONING_EFFORT)
+run_dir = RUN_ROOT / SAVED_RUN_ID
+run_manifest = json.loads((run_dir / "manifest.json").read_text())
+assert [r["unit_id"] for r in selected] == [r["unit_id"] for r in load_sample(run_dir)]
+assert run_manifest["codebook_version"] == service.codebook["version"]
+assert sha256_file(CODEBOOK_JSON) == run_manifest["spec"]["codebook_sha256"]
 selected_units.to_parquet(run_dir / "selected_utterances.parquet", index=False)
 strata.to_parquet(run_dir / "strata.parquet", index=False)
 strata.to_csv(TABLE_ROOT / f"{run_dir.name}_strata.csv", index=False)
@@ -186,12 +246,12 @@ strata.to_csv(TABLE_ROOT / f"{run_dir.name}_strata.csv", index=False)
 
 ## Ejecución y controles de salida
 
-Para generar la muestra: `ANNOTATIONS_EXECUTE=1 uv run quarto render annotations.qmd`.
-`OPENAI_API_KEY` se carga desde `.env` solo al ejecutar llamadas en Python, nunca en
-el navegador. `ANNOTATIONS_LIMIT=1` limita a un bloque pendiente para una prueba;
-sin ese límite, la ejecución completa los pendientes. `ANNOTATIONS_WORKERS`
-controla concurrencia (seis por defecto). El SDK aplica hasta dos reintentos de
-transporte; cada respuesta recibida queda guardada antes de avanzar.
+La generación anterior usó `OPENAI_API_KEY` desde `.env`, Responses, Luna `max` y
+un máximo de 16.384 tokens de salida por bloque. La concurrencia se aumentó de seis
+a dieciséis solicitudes durante la ejecución. El SDK permitía hasta dos reintentos
+transitorios. **Esta versión está fijada a la ejecución guardada y no hace llamadas
+a la API**, incluso si `ANNOTATIONS_EXECUTE=1` permanece en el entorno. La política
+local `data/proc_data/llm_pilots/api_policy.json` también impide activar el ejecutor.
 
 La cita literal y su número de aparición determinan offsets en caracteres Unicode
 calculados localmente. Validamos el span con el contrato de la app, la pertenencia
@@ -223,7 +283,7 @@ execution_summary = results.groupby(["law_number", "status"], dropna=False, as_i
     tokens_entrada=("input_tokens", "sum"), tokens_salida=("output_tokens", "sum"),
     tokens_razonamiento=("reasoning_tokens", "sum")
 )
-display(execution_summary.head(20))
+show_table(execution_summary.head(20).rename(columns={"law_number": "Ley", "status": "Estado", "bloques": "Bloques", "anotaciones": "Anotaciones", "tokens_entrada": "Tokens entrada", "tokens_salida": "Tokens salida", "tokens_razonamiento": "Tokens razonamiento"}))
 ```
 
 Las salidas válidas incluyen `{python} int(results.n_annotations.sum())` anotaciones.
@@ -243,7 +303,7 @@ explicaciones generadas son hipótesis auditables sobre la decisión; su fidelid
 no queda demostrada por ser plausibles ni se presupone acceso al razonamiento interno.
 
 Mostramos hasta cinco anotaciones en orden de muestra. Se recortan las citas solo
-para esta tabla; la exportación y la app conservan el texto completo.
+para estas fichas; la exportación y la app conservan el texto completo.
 
 ```{python}
 #| label: ejemplos-justificacion
@@ -252,7 +312,11 @@ examples = annotations.head(5).copy()
 if len(examples):
     examples["evidencia"] = examples.evidence_text.str.slice(0, 180)
     examples["fundamento"] = examples.justification.map(lambda value: json.loads(value)["coding"])
-    display(examples[["law_number", "concept_id", "stance", "evidencia", "fundamento"]])
+    for row in examples.itertuples():
+        excerpt = escape(row.evidencia) + ("…" if len(row.evidence_text) > 180 else "")
+        display(HTML(f'<article class="example-card"><strong>Bloque {row.sample_index + 1} · '
+                     f'{escape(str(row.concept_id))} · {escape(row.stance)}</strong>'
+                     f'<blockquote>{excerpt}</blockquote><p>{escape(row.fundamento)}</p></article>'))
 else:
     display(Markdown("Todavía no hay anotaciones válidas con spans para mostrar."))
 ```
@@ -283,12 +347,320 @@ el esfuerzo solicitado, el input y output completos, los spans destacados con su
 código y sus justificaciones. Los juicios humanos se guardan por separado; sirven
 para depurar prompts y códigos, y no deben mezclarse con la validación manual ciega.
 
-Para comparar prompts, edita el archivo o crea una copia y usa, por ejemplo,
-`ANNOTATIONS_PROMPT=prompts/mi_variante.md ANNOTATIONS_EXECUTE=1 uv run quarto render annotations.qmd`.
-La semilla y el corpus mantienen la misma muestra. La ejecución original conserva
-su propio prompt y libro aunque después se editen los archivos fuente.
+Las recomendaciones siguientes permiten preparar una variante manual del prompt.
+No se ejecuta ninguna variante en este reporte. La ejecución original conserva su
+propio prompt y libro aunque después se editen los archivos fuente; el análisis
+actual permanece fijado a `SAVED_RUN_ID`.
 
 Los productos están en `output/annotations/` (una carpeta por ejecución), las
 tablas legibles en `output/tables/annotations/` y las revisiones diagnósticas en
 `output/annotation_reviews/`. Para abrir la interfaz local:
 [revisión de anotaciones LLM](http://127.0.0.1:8765/llm.html).
+
+## Balance de la ejecución y consumo confirmado
+
+Leemos los registros de uso guardados de la ejecución principal y de la llamada
+de prueba inicial, conservada en `output/annotations_checks/`. Sumamos una vez
+cada ID de respuesta. Los tokens de entrada en caché son parte de la entrada;
+los de razonamiento son parte de la salida. No se suman de nuevo al total.
+
+```{python}
+#| label: consumo-registrado
+usage_summary = counted.groupby("run_role", as_index=False).agg(
+    respuestas=("response_id", "size"), entrada=("input_tokens", "sum"),
+    entrada_cache=("cached_input_tokens", "sum"), salida=("output_tokens", "sum"),
+    razonamiento=("reasoning_tokens", "sum"), total=("total_tokens", "sum")
+)
+reasoning_share = token_totals["reasoning_tokens"] / token_totals["output_tokens"]
+pilot_ledger = counted.loc[counted.run_role.eq("pilot")].copy()
+pilot_total_tokens = int(pilot_ledger.total_tokens.sum())
+failed_token_share = float(pilot_ledger.loc[~pilot_ledger.status.eq("completed"), "total_tokens"].sum() / pilot_total_tokens)
+show_table(usage_summary.rename(columns={"run_role": "Ejecución", "respuestas": "Respuestas", "entrada": "Entrada", "entrada_cache": "Entrada caché", "salida": "Salida", "razonamiento": "Razonamiento", "total": "Total"}))
+```
+
+El consumo confirmado suma **`{python} f'{token_totals["total_tokens"]:,}'` tokens**:
+`{python} f'{token_totals["input_tokens"]:,}'` de entrada y
+`{python} f'{token_totals["output_tokens"]:,}'` de salida. La prueba inicial está
+incluida; el piloto principal utilizó `{python} f'{pilot_total_tokens:,}'` tokens.
+El `{python} f'{100 * reasoning_share:.2f}'`% de la salida corresponde a tokens de
+razonamiento. El `{python} f'{100 * failed_token_share:.2f}'`% del consumo del piloto
+está asociado a respuestas que no produjeron una salida localmente válida.
+
+**Límite contable:** estos son los tokens informados por respuestas persistidas,
+no una conciliación de facturación de la cuenta. Durante la ejecución hubo una
+interrupción y reanudación para aumentar concurrencia. Los intentos interrumpidos,
+reintentos del SDK o respuestas sustituidas sin registro independiente pueden
+haber consumido tokens adicionales. Ese consumo desconocido se guarda como `null`,
+no como cero. No se consultó ni se invocó la API para producir este balance.
+
+Calculamos cobertura por ley, estados de ejecución y completitud por intervención.
+Una intervención solo cuenta como completamente anotada cuando todos sus bloques
+producen salida válida. Incluimos tasas con denominadores explícitos.
+
+```{python}
+#| label: cobertura-efectiva
+coverage = results.groupby("law_number", as_index=False).agg(
+    bloques=("unit_id", "size"),
+    validos=("status", lambda x: int(x.eq("completed").sum())),
+    incompletos=("status", lambda x: int(x.eq("incomplete").sum())),
+    invalidos=("status", lambda x: int(x.eq("invalid_output").sum())),
+    declaraciones=("n_annotations", "sum"),
+)
+coverage["porcentaje_valido"] = 100 * coverage.validos / coverage.bloques
+utterance_coverage = results.groupby(["law_number", "utterance_id"], as_index=False).agg(
+    blocks=("unit_id", "size"), valid_blocks=("status", lambda x: int(x.eq("completed").sum()))
+)
+utterance_coverage["coverage_status"] = "partial"
+utterance_coverage.loc[utterance_coverage.valid_blocks.eq(0), "coverage_status"] = "none"
+utterance_coverage.loc[utterance_coverage.valid_blocks.eq(utterance_coverage.blocks), "coverage_status"] = "complete"
+complete_utterances = int(utterance_coverage.coverage_status.eq("complete").sum())
+none_utterances = int(utterance_coverage.coverage_status.eq("none").sum())
+valid_blocks = int(results.status.eq("completed").sum())
+incomplete_blocks = int(results.status.eq("incomplete").sum())
+invalid_blocks = int(results.status.eq("invalid_output").sum())
+incomplete_reasons = pilot_ledger.loc[pilot_ledger.status.eq("incomplete"), "incomplete_reason"].value_counts().to_dict()
+length_diagnostics = results.merge(blocks[["unit_id", "n_words"]], on="unit_id", validate="one_to_one").groupby("status").agg(
+    bloques=("unit_id", "size"), palabras_mediana=("n_words", "median"), palabras_promedio=("n_words", "mean")
+).reset_index()
+show_table(coverage.rename(columns={"law_number": "Ley", "bloques": "Bloques", "validos": "Válidos", "incompletos": "Incompletos", "invalidos": "Inválidos", "declaraciones": "Anotaciones", "porcentaje_valido": "% válido"}).round(2))
+```
+
+Se obtuvieron salidas válidas para `{python} valid_blocks` de `{python} len(results)`
+bloques (`{python} f'{100 * valid_blocks / len(results):.2f}'`%). Las respuestas
+incompletas son `{python} incomplete_blocks`; todas registran
+`max_output_tokens` como motivo. El techo de 16.384 tokens incluye razonamiento y
+respuesta: alcanzar ese techo no significa que se haya producido JSON utilizable.
+
+Solo **`{python} complete_utterances` de `{python} len(utterance_coverage)`
+intervenciones** tienen todos sus bloques válidos. Otras
+`{python} len(utterance_coverage) - complete_utterances - none_utterances` tienen
+cobertura parcial y `{python} none_utterances` no tienen ningún bloque válido.
+La muestra inicial alcanza el 10%; la cobertura completa efectiva equivale al
+`{python} f'{100 * complete_utterances / len(utterances):.2f}'`% del universo elegible.
+Por tanto, no corresponde afirmar que el 10% quedó completamente anotado.
+
+La ley 21.735 tiene la mayor fracción de fallos. Las tasas de completitud difieren
+entre leyes, de modo que las frecuencias resultantes combinan selección inicial y
+pérdida de respuestas. No deben tratarse como una muestra efectiva equilibrada.
+
+Comparamos longitud de los bloques según resultado para explorar si las pérdidas
+podrían estar asociadas con la complejidad del input. Es un diagnóstico descriptivo.
+
+```{python}
+#| label: longitud-y-fallos
+show_table(length_diagnostics.rename(columns={"status": "Estado", "bloques": "Bloques", "palabras_mediana": "Palabras: mediana", "palabras_promedio": "Palabras: media"}).round(2))
+```
+
+La mediana de longitud es
+`{python} int(length_diagnostics.set_index('status').loc['completed', 'palabras_mediana'])`
+palabras entre salidas válidas y
+`{python} int(length_diagnostics.set_index('status').loc['incomplete', 'palabras_mediana'])`
+entre incompletas. La diferencia sugiere que las pérdidas podrían depender del
+contenido o su complejidad; no identifica su causa ni demuestra un efecto de
+longitud sobre el desempeño.
+
+## Distribución de códigos y señales para revisión
+
+Contamos declaraciones por concepto y orientación, incluyendo ceros para los
+conceptos vigentes y una fila para propuestas ausentes del libro. Son frecuencias
+de anotaciones, no de personas ni de intervenciones.
+
+```{python}
+#| label: balance-codigos
+concept_counts = pd.crosstab(annotations.concept_id.fillna("__review__"), annotations.stance)
+concept_counts = concept_counts.reindex(
+    [concept["id"] for concept in service.codebook["concepts"]] + ["__review__"],
+    columns=["support", "oppose"], fill_value=0
+).rename_axis("codigo").reset_index()
+concept_counts["total"] = concept_counts.support + concept_counts.oppose
+justifications = annotations.justification.map(json.loads)
+quality_metrics = {
+    "annotations": len(annotations),
+    "statements_blocks": int(results.decision.eq("statements").sum()),
+    "no_statements_blocks": int(results.decision.eq("no_statements").sum()),
+    "known_concept_annotations": int(annotations.concept_status.eq("in_codebook").sum()),
+    "new_concept_annotations": int(annotations.concept_status.eq("review").sum()),
+    "blocks_flagged_for_review": int(results.needs_human_review.fillna(False).sum()),
+    "annotations_with_uncertainty": int(justifications.map(lambda x: bool(x["uncertainty"].strip())).sum()),
+    "annotations_with_context_evidence": int(justifications.map(lambda x: bool(x["context_evidence"])).sum()),
+    "annotations_with_alternatives": int(justifications.map(lambda x: bool(x["alternatives"])).sum()),
+    "support_annotations": int(annotations.stance.eq("support").sum()),
+    "oppose_annotations": int(annotations.stance.eq("oppose").sum()),
+}
+show_table(concept_counts.rename(columns={"codigo": "Código", "support": "Apoyo", "oppose": "Rechazo", "total": "Total"}))
+```
+
+Las `{python} len(annotations)` anotaciones se concentran especialmente en acuerdos
+y moderación, igualdad y universalismo, y necesidad material. Hay
+`{python} quality_metrics['new_concept_annotations']` propuestas de conceptos nuevos,
+`{python} quality_metrics['support_annotations']` apoyos y
+`{python} quality_metrics['oppose_annotations']` rechazos.
+
+No aparecen anotaciones de `actitud` ni `solidaridad_intergeneracional`. Esto no
+prueba su ausencia en el corpus: puede deberse al muestreo, a fallos de ejecución,
+a omisiones del modelo o a la especificidad de las definiciones. La solidaridad
+genérica propuesta como concepto nuevo tampoco equivale automáticamente a
+solidaridad entre generaciones.
+
+El modelo solicita revisión en `{python} quality_metrics['blocks_flagged_for_review']`
+bloques y expresa incertidumbre en
+`{python} quality_metrics['annotations_with_uncertainty']` anotaciones. Solo
+`{python} quality_metrics['annotations_with_context_evidence']` contienen citas de
+contexto y `{python} quality_metrics['annotations_with_alternatives']` discuten una
+alternativa. Son atributos declarados por el modelo, no medidas de fidelidad o
+calibración. No se calculan precisión, recall, F1 ni acuerdo entre codificadores,
+porque este piloto no cuenta con una referencia humana independiente alineada.
+
+## Casos concretos para modificar el prompt
+
+La inspección dirigida siguiente contrasta los inputs y outputs guardados con las
+inclusiones y exclusiones del libro. Seleccionamos errores técnicos, fronteras
+conceptuales, ejemplos contrastantes y decisiones sin declaraciones. Esta revisión
+editorial no es una muestra aleatoria ni una adjudicación humana del corpus.
+Los números de bloque coinciden con la app; `sample_index` en los JSON empieza en cero.
+
+| Bloque | Hallazgo inspeccionado | Cambio propuesto |
+|:--|:--|:--|
+| [3](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=2) y [5](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=4) | `igualdad_universalismo` y `necesidad_material` se asignan a descripciones de objetivos y requisitos de la PGU. Las propias justificaciones reconocen la lectura descriptiva. | Exigir una relación explícita entre un criterio normativo y una decisión distributiva; el nombre «Universal» y una regla de focalización no bastan. |
+| [11](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=10) y [73](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=72) | Identificar una fuente de financiamiento se interpreta como rechazo de falta de sostenibilidad, sin que el pasaje afirme sostenibilidad. | Distinguir financiamiento descriptivo de una defensa fiscal normativa; exigir evidencia de refutación para `oppose`. |
+| [17](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=16) | Un mismo fragmento apoya necesidad material y rechaza igualdad; el propio modelo advierte que puede ser una sola defensa de focalización. | Aclarar cuándo un contraste justifica dos códigos y cuándo constituye exclusivamente el fundamento de uno. |
+| [42](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=41) y [232](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=231) | El modelo deja sin códigos una mención descriptiva de acuerdos y una explicación técnica del reparto de cotizaciones. | Incorporar estos casos como ejemplos negativos junto a los casos 11 y 73, para fijar la frontera. |
+| [58](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=57) | La cita cambia «Honestamente no me parece…» por «No me parece…», con mayúscula que no aparece en el fragmento. | Copiar subcadenas literales sin corregir mayúsculas; conservar el control local. |
+| [143](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=142) | Se devuelve dos veces el mismo span y la misma propuesta de concepto. | Exigir unicidad por cita, aparición y concepto antes de emitir el JSON. |
+| [148](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=147) | «Hay que ser didácticos» se propone como nuevo principio previsional. Puede ser una instrucción comunicativa ajena al alcance del instrumento. | Delimitar `review`: debe aportar un fundamento normativo previsional, no cualquier deber de comunicación o trámite. |
+| [241](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=240) | La salida distingue rechazo de responsabilidad por no cotizar y apoyo al reconocimiento del trabajo de crianza. | Usarlo como contraste de multicodificación fundamentada, sujeto a resolver si la definición vigente de reciprocidad cubre trabajo no remunerado. |
+| [390](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=389) | Se cita `include:4` de `ineficiencia_estado`, que solo tiene tres criterios de inclusión. | Entregar IDs estables y restringir las referencias permitidas por concepto en el esquema; conservar el rechazo local de referencias inexistentes. |
+
+Las anomalías técnicas están identificadas exactamente y no se repararon de forma
+silenciosa. Las fronteras conceptuales requieren tu decisión sustantiva. Las
+explicaciones ayudan a localizar problemas, pero en varios casos también
+racionalizan una lectura que amplía lo que la cita dice.
+
+### Prioridades para una próxima versión, sin ejecutarla ahora
+
+1. **Separar decisión de elegibilidad y asignación de código.** Hacer explícita la
+   condición «el texto usa una razón normativa para justificar una opción previsional».
+   Incluir pares contrastantes de descripción técnica y argumento normativo.
+2. **Acotar las explicaciones.** Pedir una oración de fundamento para el código y
+   una para la orientación; mantener alternativas y contexto solo cuando sean
+   necesarios. Esto reduciría texto visible, pero no garantiza reducir el
+   razonamiento interno ni resolver el agotamiento del límite.
+3. **Delimitar `review`.** Distinguir un fundamento previsional ausente del libro de
+   llamados genéricos a comunicar, tramitar o cumplir promesas. Decidir si se desea
+   ampliar el instrumento antes de incorporar esos códigos.
+4. **Hacer más fuerte el contrato.** Enumerar referencias válidas por concepto,
+   controlar duplicados y mantener citas literales. Los tres fallos locales
+   muestran que un JSON conforme al esquema general no garantiza coherencia semántica.
+5. **Reconsiderar la configuración de generación antes de otro lote.** El cuello de
+   botella observado es la combinación de esfuerzo `max` y techo de salida. Un
+   techo mayor podría completar respuestas a costa de más consumo; un esfuerzo
+   menor podría reducirlo, pero debe evaluarse y no se cambia ni ejecuta aquí.
+6. **Reservar una evaluación posterior.** Tras ajustar el prompt, usar bloques
+   distintos y referencia humana ciega para medir precisión, omisiones y orientación.
+   Los casos usados para depurar este prompt ya pertenecen al conjunto de desarrollo.
+
+## Manifiesto de pruebas y tablas completas
+
+Exportamos un manifiesto JSON con consumo confirmado, cobertura, estados y métricas,
+además de un registro Parquet por respuesta para verificar los totales. Los IDs,
+hashes y rutas vinculan las métricas con las respuestas originales. Guardamos
+`null` para el consumo no registrado y para métricas que no pueden calcularse.
+
+```{python}
+#| label: manifiesto-del-piloto
+ledger.to_parquet(AUDIT_ROOT / "response_ledger.parquet", index=False)
+coverage.to_parquet(AUDIT_ROOT / "coverage_by_law.parquet", index=False)
+utterance_coverage.to_parquet(AUDIT_ROOT / "coverage_by_utterance.parquet", index=False)
+concept_counts.to_parquet(AUDIT_ROOT / "concept_counts.parquet", index=False)
+length_diagnostics.to_parquet(AUDIT_ROOT / "length_diagnostics.parquet", index=False)
+for name, table in {"response_ledger": ledger, "coverage_by_law": coverage,
+                    "coverage_by_utterance": utterance_coverage, "concept_counts": concept_counts,
+                    "length_diagnostics": length_diagnostics}.items():
+    table.to_csv(TABLE_ROOT / f"{SAVED_RUN_ID}_{name}.csv", index=False)
+
+manifest = {
+    "schema_version": "llm-pilot-audit-1.0.0",
+    "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+    "primary_run_id": SAVED_RUN_ID,
+    "analysis_mode": "offline_no_api_calls",
+    "api_calls_enabled": False,
+    "model": MODEL, "reasoning_effort": REASONING_EFFORT,
+    "max_output_tokens_per_request": run_manifest["spec"]["max_output_tokens"],
+    "codebook_version": run_manifest["codebook_version"],
+    "prompt_sha256": run_manifest["spec"]["prompt_sha256"],
+    "sampling": {
+        "seed": SEED, "target_fraction": FRACTION,
+        "eligible_interventions": len(utterances), "selected_interventions": len(selected_units),
+        "sample_fraction": len(selected_units) / len(utterances),
+        "selected_blocks": len(selected), "session_strata": len(strata),
+        "complete_interventions": complete_utterances,
+        "partial_interventions": len(utterance_coverage) - complete_utterances - none_utterances,
+        "interventions_without_valid_blocks": none_utterances,
+        "complete_interventions_fraction_of_corpus": complete_utterances / len(utterances),
+    },
+    "token_usage": {
+        "scope": "Unique persisted responses from the primary pilot and initial canary",
+        "confirmed_recorded_total_tokens": token_totals["total_tokens"],
+        **token_totals,
+        "noncached_input_tokens": token_totals["input_tokens"] - token_totals["cached_input_tokens"],
+        "nonreasoning_output_tokens": token_totals["output_tokens"] - token_totals["reasoning_tokens"],
+        "reasoning_fraction_of_output": reasoning_share,
+        "cached_fraction_of_input": token_totals["cached_input_tokens"] / token_totals["input_tokens"],
+        "primary_run_total_tokens": pilot_total_tokens,
+        "primary_run_tokens_per_valid_block": pilot_total_tokens / valid_blocks,
+        "primary_run_tokens_per_valid_annotation": pilot_total_tokens / len(annotations),
+        "primary_run_fraction_on_nonvalid_outputs": failed_token_share,
+        "recorded_responses": len(ledger), "unique_responses_counted": len(counted),
+        "duplicate_response_records": int(ledger.duplicate_response_id.sum()),
+        "records_without_usage": int((~ledger.usage_available).sum()),
+        "unrecorded_tokens": None, "account_billed_total_tokens": None,
+        "is_exact_account_total": False,
+        "caveat": "Totals cover persisted responses only. Interrupted requests, SDK retries or overwritten unarchived responses may have additional unrecorded usage; unknown is not zero. No billing reconciliation was performed.",
+        "counting_rules": "total=input+output; cached input and reasoning output are subsets, not additional tokens",
+        "by_run": usage_summary.to_dict("records"),
+    },
+    "execution": {
+        "status_counts": {str(k): int(v) for k, v in results.status.value_counts().items()},
+        "valid_output_rate": valid_blocks / len(results),
+        "incomplete_output_rate": incomplete_blocks / len(results),
+        "invalid_output_rate": invalid_blocks / len(results),
+        "incomplete_reasons": {str(k): int(v) for k, v in incomplete_reasons.items()},
+        "coverage_by_law": coverage.to_dict("records"),
+    },
+    "annotation_metrics": quality_metrics,
+    "concept_counts": concept_counts.to_dict("records"),
+    "quality_metrics_unavailable": {
+        "precision": None, "recall": None, "f1": None, "intercoder_agreement": None,
+        "reason": "No independent aligned human gold annotations for this pilot; structural validity is not annotation accuracy",
+    },
+    "source_runs": [{"role": role, "path": str(path),
+                     "manifest_sha256": sha256_file(path / "manifest.json")}
+                    for role, path in run_directories.items()],
+    "artifacts": {path.name: {"path": str(path), "sha256": sha256_file(path)}
+                  for path in sorted(AUDIT_ROOT.glob("*.parquet"))},
+}
+atomic_write_json(AUDIT_ROOT / "manifest.json", manifest)
+```
+
+El manifiesto deja explícito que el análisis fue local, contabiliza los tokens
+confirmados y evita confundir salidas válidas con exactitud de anotación. La base
+por respuesta permite auditar sumas y procedencia. Las tablas completas son
+preferibles a interpretar los ejemplos como resultados representativos.
+
+Copiamos únicamente el manifiesto, el prompt y las tablas enlazadas al directorio
+del HTML, para que los enlaces del reporte funcionen también fuera del editor.
+
+```{python}
+#| label: enlaces-del-reporte
+import shutil
+
+linked_files = [AUDIT_ROOT / "manifest.json", PROMPT_PATH, results_csv, annotations_csv,
+                *sorted(TABLE_ROOT.glob(f"{SAVED_RUN_ID}_*ledger.csv")),
+                *sorted(TABLE_ROOT.glob(f"{SAVED_RUN_ID}_coverage*.csv")),
+                TABLE_ROOT / f"{SAVED_RUN_ID}_concept_counts.csv"]
+for path in linked_files:
+    target = Path("_output") / path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(path, target)
+display(Markdown("\n\n".join(f"[{path.name}]({path.as_posix()})" for path in linked_files)))
+```
