@@ -25,11 +25,12 @@ interpretan como prevalencias poblacionales ni como estimaciones de desempeño.
 
 ## Configuración y ejecución
 
-**Estado actual:** el usuario detuvo el gasto de API. `annotations.qmd` está fijado
-a `pilot_f3a69c2f81c587271ef5`, con `EXECUTE_API=False`, y la política
-`data/proc_data/llm_pilots/api_policy.json` bloquea llamadas del ejecutor. Los
-comandos de generación siguientes documentan el procedimiento original y no
-reactivan la API en esta versión. El reporte se renderiza completamente sin API.
+**Estado actual:** `annotations.qmd` sigue fijado al piloto histórico
+`pilot_f3a69c2f81c587271ef5`, con `EXECUTE_API=False`. El 14 de septiembre de 2026
+se autorizó una comprobación separada de hasta cinco llamadas con Luna `low`.
+La política global permanece desactivada; las excepciones de `authorized_runs`
+se restringen al directorio, identificador, modelo, esfuerzo y tamaño de muestra
+expresamente autorizados. Renderizar el reporte histórico no genera llamadas.
 
 Instala las dependencias con `uv sync --locked` y dispone de Quarto CLI en el PATH.
 La clave `OPENAI_API_KEY` debe estar en `.env` o en el entorno del proceso.
@@ -38,25 +39,36 @@ No se imprime ni se incluye en requests guardados, HTML o payloads del navegador
 ```bash
 # Solo carga resultados previos: no utiliza la clave ni llama a la API.
 uv run quarto render annotations.qmd
-
-# Ejecuta todos los bloques sin intento guardado.
-ANNOTATIONS_EXECUTE=1 uv run quarto render annotations.qmd
-
-# Prueba inicial con el primer bloque pendiente.
-ANNOTATIONS_EXECUTE=1 ANNOTATIONS_LIMIT=1 uv run quarto render annotations.qmd
-
-# Variante: la misma muestra y un nuevo prompt manual.
-ANNOTATIONS_PROMPT=prompts/mi_variante.md ANNOTATIONS_EXECUTE=1 uv run quarto render annotations.qmd
 ```
 
-`ANNOTATIONS_WORKERS` fija la concurrencia (6 por defecto, máximo 16).
-`ANNOTATIONS_LIMIT` limita solicitudes pendientes, no el tamaño de la muestra.
-La API usa Responses con `gpt-5.6-luna`, `reasoning.effort=max`, `store=false`,
-esquema JSON estricto y máximo de 16.384 tokens de salida por bloque, incluido el
-razonamiento. No hay sustitución automática de modelo ni `temperature` o semilla
-de generación. El muestreo es determinista; una nueva generación puede variar.
-El proceso consulta acceso al modelo antes de solicitar anotaciones. Cada llamada
-puede aplicar hasta dos reintentos del SDK ante errores transitorios.
+Las variables `ANNOTATIONS_EXECUTE` y `ANNOTATIONS_PROMPT` no convierten este
+reporte histórico en un ejecutor de nuevas variantes. Para preparar una nueva
+muestra se usa `features.llm_annotations.pipeline.prepare_run`, con el servicio,
+registros seleccionados, metadatos de muestreo, ruta del prompt y directorio de
+salida. Sus valores predeterminados son `gpt-5.6-luna`, `effort="low"` y
+`max_output_tokens=32768`. Preparar una ejecución es una operación local.
+`run_annotations(run_dir, execute=True, limit=N)` solo genera si la política
+permite esa ejecución; `limit=0` no envía nada y los límites negativos se rechazan.
+
+La API usa Responses, `store=false` y esquema JSON estricto. El límite de salida
+incluye razonamiento y texto visible. El piloto original utilizó `max` y 16.384
+tokens: 109 respuestas se interrumpieron por agotamiento del límite. La
+[guía de razonamiento de OpenAI](https://developers.openai.com/api/docs/guides/reasoning)
+explica este comportamiento y recomienda reservar al menos 25.000 tokens al
+comenzar a experimentar. El nuevo techo de 32.768 deja un margen adicional;
+el modelo puede terminar antes. La [ficha de Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna)
+admite esfuerzo `low` y hasta 128.000 tokens de salida. Estos ajustes reducen el
+riesgo observado; ningún límite finito garantiza todas las respuestas futuras.
+
+El SDK instalado es `openai==3.9.0`. El cliente usa `max_retries=0` y un timeout
+de 600 segundos. Cada bloque produce como máximo un intento HTTP, sin consulta
+previa al endpoint de modelos. Un bloqueo de proceso impide ejecutar el mismo
+lote simultáneamente. El estado `started` se guarda antes de enviar la solicitud:
+si el proceso se interrumpe, el intento permanece visible y no se reenvía al
+reanudar. Se conserva `incomplete_details.reason`, además del estado de API y
+su código de error, en los resultados y sus exportaciones. Las respuestas
+incompletas nunca se normalizan como anotaciones válidas. Repetir un fallo exige
+preparar una ejecución nueva y contar con autorización para ella.
 
 El documento desactiva el kernel persistente de Quarto para que cambios en las
 variables de entorno se apliquen en cada renderizado. Si el entorno restringe las
@@ -66,7 +78,7 @@ carpetas de caché del usuario, asigna `UV_CACHE_DIR`, `IPYTHONDIR`,
 
 ## Libro y prompt
 
-`data/codebook/codebook_v0.3.xlsx` es la fuente editable vigente. Sus metadatos
+`features/codebook/codebook_v0.3.xlsx` es la fuente editable vigente. Sus metadatos
 internos declaran **0.4.0-pilot**, con 14 conceptos; el nombre del archivo se
 conserva para compartir la misma configuración que la app. El JSON se sincroniza
 mediante el conversor existente antes de cada preparación.
@@ -112,7 +124,7 @@ Cada `output/annotations/pilot_<hash>/` contiene:
 Las tablas legibles se exportan además a `output/tables/annotations/` en CSV.
 Las respuestas recibidas se guardan antes de normalizarlas. Solo `completed`
 contiene una decisión estructuralmente validada. `invalid_output`, `incomplete`,
-`error`, `transport_error` y `received` requieren inspección; `pending` significa
+`error`, `transport_error`, `started` y `received` requieren inspección; `pending` significa
 que no hay intento guardado. Ninguno equivale a `no_statements`.
 
 Renderizar vuelve a leer resultados guardados y no reenvía intentos existentes,

@@ -349,6 +349,14 @@ valores en `annotations.parquet` y `results.parquet`, respectivamente. Los CSV
 exportados arriba conservan las mismas columnas. La confianza del bloque incluye
 las decisiones `no_statements`, necesarias para revisar posibles omisiones.
 
+Para nuevas ejecuciones, `prepare_run` usa ahora Luna con esfuerzo `low` y un
+máximo de 32.768 tokens, compartido entre razonamiento y texto visible. Los
+resultados exportan `response_status`, `incomplete_reason`, `api_error_code`,
+`max_output_tokens` y `reasoning_effort` para identificar los fallos de generación.
+El ejecutor realiza un solo intento HTTP por bloque y conserva los intentos
+interrumpidos. El [registro de corrección](docs/correccion-anotaciones-tokens.md)
+documenta la comprobación separada sobre cinco bloques que habían agotado el límite.
+
 El piloto histórico se ejecutó con el prompt anterior y carece de estos valores:
 las nuevas columnas quedan nulas al reexportarlo. Una explicación vacía no se
 convierte en confianza alta. Este reporte continúa fijado al piloto histórico;

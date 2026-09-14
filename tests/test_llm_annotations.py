@@ -228,6 +228,114 @@ class LLMPilotTests(unittest.TestCase):
         with self.assertRaises(ValidationError): reviewer.open_item(directory.name, -1)
         self.assertEqual('accepted', reviewer.list_items(directory.name)['items'][0]['review_verdict'])
 
+    def test_reviews_can_judge_each_annotation_without_global_verdict(self):
+        directory = self.make_run()
+        with patch('features.llm_annotations.pipeline.OpenAI', return_value=self.fake_client()):
+            run_annotations(directory, execute=True)
+        reviewer = AnnotationReviewService(self.root/'runs', self.root/'reviews')
+        item = reviewer.open_item(directory.name, 0)
+        payload = {'result_sha256': item['result_sha256'], 'verdict': None, 'revision': 0,
+                   'issues': [], 'note': '',
+                   'annotations': [{'annotation_id': 'llm_000', 'verdict': 'needs_changes',
+                                    'note': 'Ajustar el código propuesto.'}]}
+        review = reviewer.save_review(directory.name, 0, payload)['review']
+        self.assertIsNone(review['verdict'])
+        listed = reviewer.list_items(directory.name)['items'][0]
+        self.assertTrue(listed['review_complete'])
+        self.assertEqual('annotations_reviewed', listed['review_verdict'])
+
+    def test_new_run_defaults_and_budget_validation(self):
+        self.make_run()
+        service = SimpleNamespace(codebook=self.book, codebook_sha256='fixture', sources=[])
+        directory = prepare_run(service, [self.record], {}, self.root / 'prompt.md', self.root / 'defaults')
+        request = json.loads((directory / 'requests/00000.json').read_text())['body']
+        self.assertEqual('low', request['reasoning']['effort'])
+        self.assertEqual(32768, request['max_output_tokens'])
+        for budget in (0, -1, True, 128001):
+            with self.assertRaises(ValueError):
+                prepare_run(service, [self.record], {}, self.root / 'prompt.md', self.root,
+                            max_output_tokens=budget)
+        for limit in (-1, True, 1.5):
+            with self.assertRaises(ValueError):
+                run_annotations(directory, execute=True, limit=limit)
+
+    def test_token_exhaustion_is_persisted_without_retry(self):
+        directory = self.make_run()
+        client = self.fake_client(status='incomplete')
+        client.responses.create.return_value.output_text = ''
+        client.responses.create.return_value.model_dump.return_value.update(
+            incomplete_details={'reason': 'max_output_tokens'},
+            usage={'output_tokens': 32768, 'output_tokens_details': {'reasoning_tokens': 32768}})
+        with patch('features.llm_annotations.pipeline.OpenAI', return_value=client) as constructor:
+            frame = run_annotations(directory, execute=True)
+            run_annotations(directory, execute=True)
+        self.assertEqual(0, constructor.call_args.kwargs['max_retries'])
+        client.models.retrieve.assert_not_called()
+        self.assertEqual(1, client.responses.create.call_count)
+        self.assertEqual('max_output_tokens', frame.iloc[0].incomplete_reason)
+        self.assertEqual(32768, frame.iloc[0].reasoning_tokens)
+        self.assertIn('max_output_tokens', frame.iloc[0].validation_errors)
+        self.assertIsNone(frame.iloc[0].decision)
+        client.close.assert_called_once()
+
+    def test_interrupted_attempt_is_reserved_before_send(self):
+        directory = self.make_run()
+        client = self.fake_client()
+        def interrupt(**kwargs):
+            saved = json.loads((directory / 'results/00000.json').read_text())
+            self.assertEqual('started', saved['status'])
+            raise KeyboardInterrupt()
+        client.responses.create.side_effect = interrupt
+        with patch('features.llm_annotations.pipeline.OpenAI', return_value=client):
+            with self.assertRaises(KeyboardInterrupt):
+                run_annotations(directory, execute=True)
+            frame = run_annotations(directory, execute=True)
+        self.assertEqual('started', frame.iloc[0].status)
+        self.assertEqual(1, client.responses.create.call_count)
+        client.close.assert_called_once()
+
+    def test_scoped_authorization_checks_run_and_model(self):
+        directory = self.make_run()
+        grant = {'model': 'gpt-5.6-luna', 'reasoning_effort': 'max',
+                 'run_dir': str(directory.resolve()), 'max_calls': 1}
+        policy = {'allow_api_calls': False, 'authorized_runs': {directory.name: grant}}
+        policy_path = self.root / 'api_policy.json'
+        for key, value in [('model', 'other'), ('reasoning_effort', 'low'),
+                           ('max_calls', 0), ('run_dir', '/tmp/other')]:
+            invalid = copy.deepcopy(policy)
+            invalid['authorized_runs'][directory.name][key] = value
+            policy_path.write_text(json.dumps(invalid))
+            with patch('features.llm_annotations.pipeline.OpenAI') as constructor:
+                with self.assertRaises(ValidationError):
+                    run_annotations(directory, execute=True)
+                constructor.assert_not_called()
+        policy_path.write_text(json.dumps(policy))
+        client = self.fake_client()
+        with patch('features.llm_annotations.pipeline.OpenAI', return_value=client):
+            run_annotations(directory, execute=True)
+            run_annotations(directory, execute=True)
+        self.assertEqual(1, client.responses.create.call_count)
+
+    def test_concurrent_run_is_rejected(self):
+        import fcntl
+        directory = self.make_run()
+        with (directory / '.execution.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            with patch('features.llm_annotations.pipeline.OpenAI') as constructor:
+                with self.assertRaises(ValidationError):
+                    run_annotations(directory, execute=True)
+                constructor.assert_not_called()
+
+    def test_api_failure_status_is_not_token_exhaustion(self):
+        directory = self.make_run()
+        client = self.fake_client(status='failed')
+        client.responses.create.return_value.model_dump.return_value['error'] = {'code': 'server_error'}
+        with patch('features.llm_annotations.pipeline.OpenAI', return_value=client):
+            frame = run_annotations(directory, execute=True)
+        self.assertEqual('error', frame.iloc[0].status)
+        self.assertEqual('server_error', frame.iloc[0].api_error_code)
+        self.assertIsNone(frame.iloc[0].incomplete_reason)
+
 
 if __name__ == '__main__':
     unittest.main()

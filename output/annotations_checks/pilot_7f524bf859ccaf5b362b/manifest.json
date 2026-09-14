@@ -1,0 +1,276 @@
+{
+  "schema_version": "llm-pilot-1.2.0",
+  "run_id": "pilot_7f524bf859ccaf5b362b",
+  "spec": {
+    "pipeline_version": "llm-pilot-1.2.0",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "low",
+    "max_output_tokens": 32768,
+    "sampling": {
+      "purpose": "token-exhaustion-regression-check",
+      "source_run": "pilot_f3a69c2f81c587271ef5",
+      "source_indices": [
+        20,
+        123,
+        227,
+        342,
+        84
+      ],
+      "selection": "Three laws; long and short blocks; partial and empty historical outputs. Deliberate diagnostic sample."
+    },
+    "sdk_max_retries": 0,
+    "request_timeout_seconds": 600,
+    "sources": [
+      {
+        "law_number": "21419",
+        "sha256": "b92508651bb7486812d89d636d13f66305f9dcffee8b775c7523422892f37c6b"
+      },
+      {
+        "law_number": "21538",
+        "sha256": "5fa6ad11d912a2276a9d738e38c2e9f1b1dd4b29b056c5b9ef8ae8998e20abbe"
+      },
+      {
+        "law_number": "21735",
+        "sha256": "640e6504561423610f8f5d30cba2c1575e4e6cd3a8708fd3a859f2b534fab323"
+      }
+    ],
+    "prompt_sha256": "e610787ae9a70a281eec8d2ae35d0c02c85361f9ff9769302abd89a69653a0c3",
+    "codebook_sha256": "b0b5a39cea7e55d7cde39e7cfcdf67d86b827370818b4475800e147f1ec16c8e",
+    "output_schema": {
+      "type": "object",
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": [
+            "statements",
+            "no_statements"
+          ]
+        },
+        "annotations": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "properties": {
+              "evidence_text": {
+                "type": "string"
+              },
+              "evidence_occurrence": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "concept_status": {
+                "type": "string",
+                "enum": [
+                  "in_codebook",
+                  "review"
+                ]
+              },
+              "concept_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "capitalizacion_individual",
+                  "propiedad_individual_fondos",
+                  "reciprocidad_contributiva",
+                  "control_responsabilidad_individual",
+                  "actitud",
+                  "identidad",
+                  "necesidad_material",
+                  "igualdad_universalismo",
+                  "conciencia_costos",
+                  "solidaridad_intergeneracional",
+                  "ineficiencia_estado",
+                  "prevision_como_mercado",
+                  "ilegitimidad_origen_dictatorial",
+                  "acuerdos_moderacion",
+                  null
+                ]
+              },
+              "proposed_concept": {
+                "type": "string"
+              },
+              "stance": {
+                "type": "string",
+                "enum": [
+                  "support",
+                  "oppose"
+                ]
+              },
+              "justification": {
+                "type": "object",
+                "properties": {
+                  "criterion_reference": {
+                    "type": "string"
+                  },
+                  "coding": {
+                    "type": "string"
+                  },
+                  "stance": {
+                    "type": "string"
+                  },
+                  "alternatives": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "concept_id": {
+                          "type": "string",
+                          "enum": [
+                            "capitalizacion_individual",
+                            "propiedad_individual_fondos",
+                            "reciprocidad_contributiva",
+                            "control_responsabilidad_individual",
+                            "actitud",
+                            "identidad",
+                            "necesidad_material",
+                            "igualdad_universalismo",
+                            "conciencia_costos",
+                            "solidaridad_intergeneracional",
+                            "ineficiencia_estado",
+                            "prevision_como_mercado",
+                            "ilegitimidad_origen_dictatorial",
+                            "acuerdos_moderacion"
+                          ]
+                        },
+                        "reason": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "concept_id",
+                        "reason"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "context_evidence": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "string",
+                          "enum": [
+                            "previous_context",
+                            "next_context"
+                          ]
+                        },
+                        "text": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "source",
+                        "text"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "uncertainty": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "criterion_reference",
+                  "coding",
+                  "stance",
+                  "alternatives",
+                  "context_evidence",
+                  "uncertainty"
+                ],
+                "additionalProperties": false
+              },
+              "confidence": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ]
+              }
+            },
+            "required": [
+              "evidence_text",
+              "evidence_occurrence",
+              "concept_status",
+              "concept_id",
+              "proposed_concept",
+              "stance",
+              "justification",
+              "confidence"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "decision_justification": {
+          "type": "string"
+        },
+        "quality_flags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "vote",
+              "procedural",
+              "too_short",
+              "truncated",
+              "insufficient_context",
+              "segmentation_problem",
+              "other"
+            ]
+          }
+        },
+        "needs_human_review": {
+          "type": "boolean"
+        },
+        "limitations": {
+          "type": "string"
+        },
+        "decision_confidence": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        }
+      },
+      "required": [
+        "decision",
+        "annotations",
+        "decision_justification",
+        "quality_flags",
+        "needs_human_review",
+        "limitations",
+        "decision_confidence"
+      ],
+      "additionalProperties": false
+    },
+    "requests_sha256": "d79ddc53f588450e8f54b320be143463eb97f02905909ae39e570e296a28bc1d",
+    "runner_sha256": "70b5cdad65349f6dffd1caadf319ce6ce429df5eb3636b8b39b321c4b4d7b822",
+    "validation_contract_sha256": "e030e2485227e7161424d8e95492640290962cfd301fba22adaf24913c86b92b"
+  },
+  "created_at_utc": "2026-09-14T20:45:13.459568+00:00",
+  "codebook_version": "0.4.0-pilot",
+  "prompt_path": "prompts/annotations_pilot_v1_confidence.md",
+  "sample_size": 5,
+  "sample_sha256": "5a3b3438293adbdf0a972776d8e53b3b7e60e71187b33d0f135bc3c2a97afeb9",
+  "artifact_sha256": {
+    "prompt.md": "e610787ae9a70a281eec8d2ae35d0c02c85361f9ff9769302abd89a69653a0c3",
+    "codebook.json": "b0b5a39cea7e55d7cde39e7cfcdf67d86b827370818b4475800e147f1ec16c8e",
+    "output_schema.json": "c7a16b746d47983b11a6d25bdef205864eac45cb9c11ebe28e84cabfb695d3c8",
+    "requests/00000.json": "d526be613f02eb44146345e4989c386d7436411f2fc1e7c3010ad17fc8b1e94d",
+    "requests/00001.json": "8f5034b7346b1d83f6141f8de1ffa20ffabf23fdd0d17e9a481dfea7c40a55b7",
+    "requests/00002.json": "978cd891fbec2f67c786d33f71e55975b9123ee1916840e4fffc029bd0e108b8",
+    "requests/00003.json": "09698e1da0d9310d2b5e3de1c832cea3fe750ecb1db9becc976472a7844b1a08",
+    "requests/00004.json": "faa2b789f907ab946c7e6535169e912d121ea37be9244e2d9ce9fc145c4a7b5c"
+  },
+  "packages": {
+    "openai": "3.9.0",
+    "pandas": "3.0.2",
+    "pyarrow": "24.0.0"
+  }
+}

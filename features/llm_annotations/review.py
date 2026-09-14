@@ -57,13 +57,28 @@ class AnnotationReviewService:
             review_path = self._review_path(run_id, index)
             review = json.loads(review_path.read_text()) if review_path.exists() else {}
             normalized = result.get('normalized') or {}
+            model_annotations = normalized.get('annotations', [])
+            valid_ids = {annotation['annotation_id'] for annotation in model_annotations}
+            saved_annotations = review.get('annotations', [])
+            saved_ids = {annotation.get('annotation_id') for annotation in saved_annotations}
+            annotations_reviewed = bool(valid_ids) and valid_ids == saved_ids and all(
+                annotation.get('verdict') in VERDICTS for annotation in saved_annotations
+            )
+            review_complete = (
+                (not valid_ids and review.get('verdict') in VERDICTS)
+                or annotations_reviewed
+            )
+            review_verdict = review.get('verdict') if review.get('verdict') in VERDICTS else (
+                'annotations_reviewed' if annotations_reviewed else None
+            )
             items.append({'sample_index': index, 'law_number': record['law_number'],
                           'session': record['document_uri'].rsplit('/', 1)[-1],
                           'unit_id': record['unit_id'], 'status': result.get('status', 'pending'),
                           'decision': normalized.get('decision'),
-                          'n_annotations': len(normalized.get('annotations', [])),
+                          'n_annotations': len(model_annotations),
                           'needs_human_review': normalized.get('needs_human_review', False),
-                          'review_verdict': review.get('verdict')})
+                          'review_verdict': review_verdict,
+                          'review_complete': review_complete})
         return {'manifest': manifest, 'items': items}
 
     def open_item(self, run_id: str, index: int) -> dict:
@@ -94,11 +109,9 @@ class AnnotationReviewService:
             old = item['review'] or {}
             if payload.get('revision', 0) != old.get('revision', 0):
                 raise ValidationError('Otra revisión fue guardada; vuelve a abrir el bloque')
-            verdict = payload.get('verdict')
-            if verdict not in VERDICTS:
-                raise ValidationError('Selecciona una decisión de revisión')
-            if verdict == 'accepted' and result['status'] != 'completed':
-                raise ValidationError('Una respuesta inválida o fallida no puede aceptarse')
+            verdict = payload.get('verdict') or None
+            if verdict is not None and verdict not in VERDICTS:
+                raise ValidationError('Decisión de revisión inválida')
             issues = payload.get('issues', [])
             if not isinstance(issues, list) or any(not isinstance(x, str) or x not in ISSUES for x in issues):
                 raise ValidationError('Tipo de problema inválido')
@@ -106,12 +119,19 @@ class AnnotationReviewService:
             reviewer = payload.get('reviewer', '')
             if not isinstance(note, str) or len(note) > 6000 or not isinstance(reviewer, str) or len(reviewer) > 120:
                 raise ValidationError('Comentario o identificador inválido')
-            if verdict != 'accepted' and not note.strip():
-                raise ValidationError('Describe qué debe cambiar o por qué se descarta el bloque')
             annotations = payload.get('annotations', [])
             valid_ids = {a['annotation_id'] for a in (result.get('normalized') or {}).get('annotations', [])}
+            has_annotations = bool(valid_ids)
+            if not has_annotations and verdict is None:
+                raise ValidationError('Selecciona una decisión para el bloque sin códigos')
+            if verdict == 'accepted' and result['status'] != 'completed':
+                raise ValidationError('Una respuesta inválida o fallida no puede aceptarse')
+            if verdict is not None and verdict != 'accepted' and not note.strip():
+                raise ValidationError('Describe qué debe cambiar o por qué se descarta el bloque')
+            if has_annotations and verdict is None and issues:
+                raise ValidationError('Los problemas generales solo aplican a bloques sin códigos')
             if not isinstance(annotations, list) or len(annotations) != len(valid_ids):
-                raise ValidationError('Revisa cada anotación, aunque el bloque también tenga un juicio global')
+                raise ValidationError('Revisa cada código antes de guardar')
             seen = set()
             for entry in annotations:
                 if not isinstance(entry, dict) or entry.get('annotation_id') not in valid_ids:
@@ -121,6 +141,10 @@ class AnnotationReviewService:
                 seen.add(entry['annotation_id'])
                 if not isinstance(entry.get('note', ''), str) or len(entry.get('note', '')) > 2000:
                     raise ValidationError('Comentario de anotación inválido')
+                if entry['verdict'] == 'accepted' and result['status'] != 'completed':
+                    raise ValidationError('Una respuesta inválida o fallida no puede aceptar códigos')
+                if entry['verdict'] != 'accepted' and not entry.get('note', '').strip():
+                    raise ValidationError('Describe qué debe cambiar o por qué se descarta el código')
             if verdict == 'accepted' and (issues or any(a['verdict'] != 'accepted' for a in annotations)):
                 raise ValidationError('Aceptar el bloque requiere aceptar sus anotaciones y no marcar problemas')
             now = dt.datetime.now(dt.timezone.utc).isoformat()
