@@ -38,11 +38,11 @@ class LLMPilotTests(unittest.TestCase):
                            next_context=None, source_segments=[])
         self.raw = {'decision': 'statements', 'annotations': [{
             'evidence_text': 'Sí.', 'evidence_occurrence': 2, 'concept_status': 'in_codebook',
-            'concept_id': 'solidaridad', 'proposed_concept': '', 'stance': 'support',
+            'concept_id': 'solidaridad', 'proposed_concept': '', 'stance': 'support', 'confidence': 'high',
             'justification': {'criterion_reference': 'include:1', 'coding': 'Afirma solidaridad.',
                 'stance': 'La acepta.', 'alternatives': [], 'context_evidence': [], 'uncertainty': ''}}],
             'decision_justification': 'Expresa un fundamento.', 'quality_flags': [],
-            'needs_human_review': False, 'limitations': ''}
+            'needs_human_review': False, 'limitations': '', 'decision_confidence': 'high'}
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -121,6 +121,63 @@ class LLMPilotTests(unittest.TestCase):
             self.assertEqual(before, (directory / 'results/00000.json').read_bytes())
         self.assertEqual('completed', results.iloc[0].status)
         self.assertEqual(1, len(pd.read_parquet(directory / 'annotations.parquet')))
+
+    def test_confidence_validation_and_normalization(self):
+        for level in ('medium', 'low'):
+            raw = copy.deepcopy(self.raw)
+            raw['annotations'][0]['confidence'] = level
+            raw['annotations'][0]['justification']['uncertainty'] = 'La orientación es dudosa.'
+            with self.assertRaises(ValidationError):
+                validate_output(raw, self.record, self.book, self.schema)
+            raw['needs_human_review'] = True
+            normalized = validate_output(raw, self.record, self.book, self.schema)
+            self.assertEqual(level, normalized['annotations'][0]['confidence'])
+        for level in (None, '', 0.8, 'alta'):
+            raw = copy.deepcopy(self.raw)
+            raw['annotations'][0]['confidence'] = level
+            with self.assertRaises(jsonschema.ValidationError):
+                validate_output(raw, self.record, self.book, self.schema)
+
+    def test_no_statements_confidence(self):
+        raw = {**self.raw, 'decision': 'no_statements', 'annotations': [],
+               'decision_confidence': 'low', 'needs_human_review': True}
+        with self.assertRaises(ValidationError):
+            validate_output(raw, self.record, self.book, self.schema)
+        raw['limitations'] = 'El objetivo está truncado.'
+        self.assertEqual('low', validate_output(raw, self.record, self.book, self.schema)['decision_confidence'])
+        directory = self.make_run()
+        with patch('features.llm_annotations.pipeline.OpenAI', return_value=self.fake_client(raw)):
+            frame = run_annotations(directory, execute=True)
+        self.assertEqual('low', frame.iloc[0].decision_confidence)
+        spans = pd.read_parquet(directory / 'annotations.parquet')
+        self.assertTrue(spans.empty)
+        self.assertIn('confidence', spans.columns)
+
+    def test_confidence_roundtrip_and_legacy_missing_values(self):
+        directory = self.make_run()
+        with patch('features.llm_annotations.pipeline.OpenAI', return_value=self.fake_client()):
+            run_annotations(directory, execute=True)
+        for filename, column in [('results', 'decision_confidence'), ('annotations', 'confidence')]:
+            frame = pd.read_parquet(directory / f'{filename}.parquet')
+            self.assertEqual('high', frame.iloc[0][column])
+            frame.to_csv(directory / f'{filename}.csv', index=False)
+            self.assertEqual('high', pd.read_csv(directory / f'{filename}.csv').iloc[0][column])
+        legacy = copy.deepcopy(self.raw)
+        del legacy['decision_confidence']
+        del legacy['annotations'][0]['confidence']
+        schema = copy.deepcopy(self.schema)
+        for obj, key in [(schema, 'decision_confidence'),
+                         (schema['properties']['annotations']['items'], 'confidence')]:
+            del obj['properties'][key]
+            obj['required'].remove(key)
+        normalized = validate_output(legacy, self.record, self.book, schema)
+        result_path = directory / 'results/00000.json'
+        saved = json.loads(result_path.read_text())
+        saved['normalized'] = normalized
+        result_path.write_text(json.dumps(saved))
+        frame = run_annotations(directory)
+        self.assertTrue(pd.isna(frame.iloc[0].decision_confidence))
+        self.assertTrue(pd.isna(pd.read_parquet(directory / 'annotations.parquet').iloc[0].confidence))
 
     def test_user_stop_policy_blocks_even_when_execute_is_true(self):
         directory = self.make_run()

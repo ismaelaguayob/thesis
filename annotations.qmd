@@ -339,6 +339,30 @@ annotations.to_csv(annotations_csv, index=False)
 execution_summary.to_csv(TABLE_ROOT / f"{run_dir.name}_execution.csv", index=False)
 ```
 
+## Confianza en la versión nueva del prompt
+
+La [versión en desarrollo](prompts/annotations_pilot_v1_confidence.md) conserva
+los campos de justificación y añade `confidence` por anotación y
+`decision_confidence` por bloque, ambos con niveles `high`, `medium` y `low`.
+El esquema y el exportador de `features/llm_annotations/pipeline.py` guardan esos
+valores en `annotations.parquet` y `results.parquet`, respectivamente. Los CSV
+exportados arriba conservan las mismas columnas. La confianza del bloque incluye
+las decisiones `no_statements`, necesarias para revisar posibles omisiones.
+
+El piloto histórico se ejecutó con el prompt anterior y carece de estos valores:
+las nuevas columnas quedan nulas al reexportarlo. Una explicación vacía no se
+convierte en confianza alta. Este reporte continúa fijado al piloto histórico;
+para evaluar la versión nueva se debe preparar otra ejecución con su prompt y
+esquema, conservando la muestra para la comparación. Cambiar `ANNOTATIONS_PROMPT`
+por sí solo no crea ni ejecuta otro piloto en este reporte.
+
+Para priorizar la evaluación manual, se pueden combinar confianza baja o media,
+`needs_human_review`, conceptos `review`, incidencias de calidad y fallos de
+validación. Conviene reservar además una muestra de confianza alta y bloques sin
+declaraciones para detectar errores que el modelo no advierte. La relación entre
+confianza y aciertos debe evaluarse contra codificación humana; los niveles
+ordinales no son equivalentes al umbral numérico `<0.8` aún mencionado en la tesis.
+
 ## Cómo revisar y repetir
 
 Inicia `uv run python -m features.manual_validation` y selecciona **Revisión de

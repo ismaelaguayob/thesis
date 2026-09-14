@@ -20,7 +20,7 @@ from features.manual_validation.service import (
     sha256_file, sha256_text,
 )
 
-PIPELINE_VERSION = "llm-pilot-1.0.0"
+PIPELINE_VERSION = "llm-pilot-1.1.0"
 RUN_ID_RE = re.compile(r"^pilot_[0-9a-f]{20}$")
 API_POLICY_PATH = Path(__file__).resolve().parents[2] / 'data/proc_data/llm_pilots/api_policy.json'
 
@@ -55,6 +55,7 @@ def object_schema(properties: dict) -> dict:
 
 def output_schema(codebook: dict) -> dict:
     string = {"type": "string"}
+    confidence = {"type": "string", "enum": ["high", "medium", "low"]}
     ids = [c["id"] for c in codebook["concepts"]]
     justification = object_schema({
         "criterion_reference": string, "coding": string, "stance": string,
@@ -73,6 +74,7 @@ def output_schema(codebook: dict) -> dict:
         "proposed_concept": string,
         "stance": {"type": "string", "enum": ["support", "oppose"]},
         "justification": justification,
+        "confidence": confidence,
     })
     return object_schema({
         "decision": {"type": "string", "enum": ["statements", "no_statements"]},
@@ -81,6 +83,7 @@ def output_schema(codebook: dict) -> dict:
         "quality_flags": {"type": "array", "items": {"type": "string", "enum": list(QUALITY_FLAGS)}},
         "needs_human_review": {"type": "boolean"},
         "limitations": string,
+        "decision_confidence": confidence,
     })
 
 
@@ -170,6 +173,19 @@ def validate_output(raw: dict, record: dict, codebook: dict, schema: dict) -> di
         raise ValidationError("Decisión y presencia de declaraciones inconsistentes")
     if not raw["decision_justification"].strip():
         raise ValidationError("Falta justificación de la decisión del bloque")
+    # Frozen legacy schemas remain valid; missing confidence is never inferred.
+    if "decision_confidence" in raw:
+        uncertain = raw["decision_confidence"] != "high"
+        if uncertain and not raw["limitations"].strip():
+            raise ValidationError("La confianza de decisión requiere explicar la limitación")
+        for annotation in raw["annotations"]:
+            level = annotation["confidence"]
+            doubt = bool(annotation["justification"]["uncertainty"].strip())
+            if doubt != (level != "high"):
+                raise ValidationError("Confianza y explicación de incertidumbre inconsistentes")
+            uncertain |= level != "high"
+        if uncertain and not raw["needs_human_review"]:
+            raise ValidationError("La confianza media o baja requiere revisión humana")
     concepts = {c["id"]: c for c in codebook["concepts"]}
     normalized = []
     seen = set()
@@ -211,6 +227,8 @@ def validate_output(raw: dict, record: dict, codebook: dict, schema: dict) -> di
         if identity in seen:
             raise ValidationError("Se repitió el mismo span/concepto")
         seen.add(identity)
+        if 'confidence' in annotation:
+            normalized_annotation['confidence'] = annotation['confidence']
         normalized_annotation['justification'] = justification
         normalized.append(normalized_annotation)
     return {**raw, 'annotations': normalized}
@@ -304,6 +322,7 @@ def export_results(run_dir: Path) -> pd.DataFrame:
                    needs_human_review=output.get('needs_human_review'),
                    decision_justification=output.get('decision_justification'),
                    limitations=output.get('limitations'),
+                   decision_confidence=output.get('decision_confidence'),
                    quality_flags=canonical(output.get('quality_flags', [])),
                    validation_errors=canonical(result.get('validation_errors', [])),
                    input_tokens=usage.get('input_tokens', 0), output_tokens=usage.get('output_tokens', 0),
@@ -317,12 +336,13 @@ def export_results(run_dir: Path) -> pd.DataFrame:
                           'proposed_concept': annotation['proposed_concept'], 'stance': annotation['stance'],
                           'start_char': annotation['span']['start_char'], 'end_char': annotation['span']['end_char'],
                           'evidence_text': annotation['span']['text'],
+                          'confidence': annotation.get('confidence'),
                           'justification': canonical(annotation['justification'])})
     frame = pd.DataFrame(rows)
     frame.to_parquet(run_dir / 'results.parquet', index=False)
     span_frame = pd.DataFrame(spans, columns=['sample_index','unit_id','utterance_id','law_number',
         'document_uri','annotation_id','concept_status','concept_id','proposed_concept','stance',
-        'start_char','end_char','evidence_text','justification'])
+        'start_char','end_char','evidence_text','justification','confidence'])
     span_frame.to_parquet(run_dir / 'annotations.parquet', index=False)
     atomic_write_json(run_dir / 'status.json', {'run_id': run_dir.name,
         'counts': {str(k): int(v) for k,v in frame['status'].value_counts().items()},
