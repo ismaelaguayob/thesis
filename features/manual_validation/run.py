@@ -37,7 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--codebook-workbook",
         type=Path,
-        default=PROJECT_ROOT / "data" / "codebook" / "codebook_v0.3.xlsx",
+        default=PROJECT_ROOT / "features" / "codebook" / "codebook_v0.3.xlsx",
         help="XLSX editable que actúa como fuente del libro de códigos.",
     )
     parser.add_argument(
@@ -45,7 +45,7 @@ def parse_args() -> argparse.Namespace:
         "--codebook",
         dest="codebook_json",
         type=Path,
-        default=PROJECT_ROOT / "data" / "codebook" / "codebook_v0.3.json",
+        default=PROJECT_ROOT / "features" / "codebook" / "codebook_v0.3.json",
         help="JSON derivado que consumirá la interfaz.",
     )
     parser.add_argument(

@@ -30,7 +30,7 @@ Memoria desarrollada en el marco del proyecto de Fondecyt Nº 1250518 y el Centr
 
 [**2\. Robustez ideacional y legitimación discursiva	11**](#2.-robustez-ideacional-y-legitimación-discursiva)
 
-[2.1. Robustez ideacional y el rol de las ideas	11](#2.1.-robustez-ideacional-y-el-rol-de-las-ideas)
+[2.1. Robustez neoliberal y el rol de las ideas	11](#2.1.-robustez-ideacional-y-el-rol-de-las-ideas)
 
 [2.2 Las coaliciones discursivas y la hegemonía	12](#2.2-las-coaliciones-discursivas-y-la-hegemonía)
 
@@ -48,17 +48,17 @@ Memoria desarrollada en el marco del proyecto de Fondecyt Nº 1250518 y el Centr
 
 [4.3.1 Estrategia de codificación y validación	20](#4.3.1-estrategia-de-codificación-y-validación)
 
-[4.3.2 Análisis descriptivo y modelamiento de patrones discursivos	21](#analisis-patrones-discursivos)
+[4.3.2 Análisis descriptivo y modelamiento de patrones discursivos	21](?tab=t.0#heading=h.2r5b44c3kdrc)
 
 [**Referencias	24**](#referencias)
 
-## **Abstract**
+## **Abstract** {#abstract}
 
 El sistema chileno de pensiones de capitalización individual ha persistido pese a crisis de legitimidad, alta conflictividad social y sucesivos intentos de reforma estructural. Esta investigación analiza cómo distintas concepciones de justicia social son movilizadas en el debate legislativo de la Ley Nº 21.735 (2022–2025) para defender, reformar o disputar las bases normativas de este modelo. La Ley N.º 21.735 constituye el caso principal, con discusiones en Sala en 2024 y 2025\. Se incorporan como antecedentes comparativos la creación de la Pensión Garantizada Universal (PGU), Ley N.º 21.419, y la ampliación de su universo de focalización, Ley N.º 21.538, cuyos debates en Sala corresponden a 2022 y 2023, respectivamente. El estudio evalúa si la persistencia institucional de la capitalización individual estuvo acompañada por la robustez ideacional de los principios que la legitiman. Esta robustez se examinará mediante tres dimensiones diferenciadas: la permanencia de la propiedad individual de los fondos, la capitalización, la reciprocidad contributiva, el control y la sostenibilidad financiera; la difusión de ese repertorio hacia actores inicialmente reformistas; y su adaptación mediante la incorporación de propuestas solidarias bajo restricciones contributivas, focalizadas o financieras. Se hipotetiza que el debate se estructura en dos polos discursivos principales: uno de preservación, que articula la propiedad y la capitalización individual con la reciprocidad contributiva, el control y la sostenibilidad financiera, y otro de transformación, que vincula la solidaridad y la suficiencia de las pensiones con el criterio de necesidad. Se espera que algunos actores de centroizquierda ocupen posiciones de intermediación entre ambos polos. Asimismo, se examinará cómo estos polos y las posiciones mediadoras se asocian con distintas estrategias de legitimación. Metodológicamente, el estudio aplica análisis de redes discursivas (DNA) a un corpus textual de nueve discusiones en Sala de la Cámara de Diputadas y Diputados y del Senado, que reúne 1.096 intervenciones elegibles, segmentadas en 3.609 fragmentos, de las tres leyes. La codificación será asistida por grandes modelos de lenguaje, validada manualmente y complementada con modelos multinivel de clasificación cruzada. Con ello, la investigación busca aportar evidencia sobre el rol de las ideas, la justicia social y la legitimación discursiva en la estructuración del debate previsional chileno.
 
 **Palabras clave:** capitalización individual; reforma previsional; justicia social; merecimiento; análisis de redes discursivas.
 
-## **Introducción**
+## **Introducción** {#introducción}
 
 Los sistemas de pensiones constituyen una de las instituciones de protección social más determinantes en el ciclo de vida, al organizar la distribución de recursos en la vejez y al proteger a las personas frente a dificultades económicas (Ebbinghaus & Wiß, 2024). Desde la sociología de la justicia, las políticas sociales cristalizan concepciones normativas sobre qué se considera una distribución legítima del bienestar, y esas concepciones se vuelven especialmente visibles cuando una reforma cuestiona el equilibrio entre Estado, mercado y familia (Esping-Andersen, 1990; Liebig & Sauer, 2016; Sachweh, 2016). En el caso de las pensiones, esta disputa puede organizarse en torno a la tensión entre la *justicia de mercado*, que legitima la asignación de beneficios según el esfuerzo, la contribución y la responsabilidad individual, y la *justicia política*, que enfatiza la igualdad, la necesidad y la intervención colectiva frente a los riesgos sociales (Lane, 1986). Esta investigación analiza la estructuración discursiva del debate legislativo chileno sobre la reforma previsional de 2022-2025, entendido como una arena en la que distintos actores movilizan concepciones de justicia social, criterios de merecimiento y estrategias de legitimación para defender, reformar o disputar la capitalización individual.
 
@@ -74,11 +74,11 @@ Para evaluar esto, la presente investigación utiliza una metodología de análi
 
 El presente manuscrito se organiza de la siguiente manera. Las secciones 1 a 3 desarrollan los antecedentes conceptuales y empíricos y derivan las expectativas del estudio. La sección 4 detalla los datos, las variables y la estrategia de análisis.
 
-## **1\. La dimensión moral y normativa en el debate previsional**
+## **1\. La dimensión moral y normativa en el debate previsional** {#1.-la-dimensión-moral-y-normativa-en-el-debate-previsional}
 
-### **1.1. Justicia de mercado vs. Justicia política: Los mercados como economías morales**
+### **1.1. Justicia de mercado vs. Justicia política: Los mercados como economías morales** {#1.1.-justicia-de-mercado-vs.-justicia-política:-los-mercados-como-economías-morales}
 
-Los arreglos del Estado de bienestar cristalizan concepciones sobre la distribución legítima de recursos y responsabilidades (Sachweh, 2016). La noción de *economías morales* permite examinar los juicios sobre derechos, obligaciones y merecimiento que sostienen esas concepciones. Los mercados participan en la producción de este orden moral al establecer criterios de valoración de las personas y de sus conductas, como muestran Fourcade y Healy (2007). En el ámbito previsional, esta perspectiva dirige la atención hacia las razones por las que el ahorro propio, el trabajo realizado, la necesidad material o la pertenencia a una comunidad se consideran fundamentos legítimos de protección. El debate político constituye una arena en la que los actores articulan y disputan estos criterios para defender distintos diseños institucionales (Béland, 2005; Liebig & Sauer, 2016).
+Los arreglos del Estado de bienestar operan como la cristalización institucional de un orden moral (Sachweh, 2016). Sus políticas sociales poseen una orientación normativa inherente que resuena con los valores de la ciudadanía (Schmidt, 2008). Estas concepciones compartidas son objeto de constantes disputas discursivas en las esferas públicas. El debate político se convierte así en una arena en la que los actores movilizan estratégicamente distintas nociones del valor moral para legitimar o disputar el diseño institucional vigente (Béland, 2005; Liebig & Sauer, 2016).
 
 Esta contienda discursiva puede entenderse a partir de la tensión entre dos paradigmas contrapuestos: la justicia de mercado y la justicia política (Lane, 1986). La justicia de mercado opera bajo una lógica procedimental pura, concibiendo la distribución ideal como el resultado natural de transacciones competitivas. Su fundamento normativo es el principio de los méritos ganados, donde el sistema recompensa la productividad y el esfuerzo individual. En el caso previsional, esta lógica convierte la capitalización individual en un mecanismo normativo de valorización de los sujetos, donde el saldo acumulado puede presentarse como indicador legítimo de esfuerzo, responsabilidad y mérito (Fourcade & Healy, 2007). En contraposición, la justicia política obliga a considerar a la sociedad en su conjunto. Este paradigma se rige por los criterios de igualdad y necesidad, exigiendo la intervención estatal mediante mecanismos redistributivos para corregir las fallas del mercado y proteger a quienes carecen de recursos (Lane, 1986).
 
@@ -86,7 +86,7 @@ En esta investigación, la justicia de mercado y la justicia política se utiliz
 
 La evidencia empírica en política social respalda la utilidad de analizar las pensiones como instituciones moralmente cargadas. Históricamente, la jubilación ha prometido reciprocidad futura a quienes participan del trabajo formal (Kohli, 1987), mientras las evaluaciones ciudadanas del bienestar combinan principios de reciprocidad, igualdad y responsabilidad individual (Taylor-Gooby et al., 2019). En los debates previsionales, incluso un lenguaje aparentemente técnico sobre sostenibilidad o eficiencia transporta juicios sobre merecimiento, solidaridad y justicia colectiva, y problemas demográficos semejantes pueden justificar cursos de acción distributivamente distintos (Anderson, 2018; Ring et al., 2020; Väänänen & Liukko, 2022). Estos antecedentes muestran que una misma idea, como la solidaridad o la sostenibilidad, puede justificar diseños distributivos distintos. Por ello, su sentido normativo se interpretará según la postura que se movilice, sin asignarla de antemano a la justicia de mercado o a la justicia política.
 
-### **1.2. La condicionalidad de la seguridad social en la vejez**
+### **1.2. La condicionalidad de la seguridad social en la vejez** {#1.2.-la-condicionalidad-de-la-seguridad-social-en-la-vejez}
 
 En el análisis de las políticas sociales, el merecimiento refiere a los juicios morales mediante los cuales se evalúa qué personas o grupos deberían recibir beneficios o protección, en qué medida y bajo qué condiciones. El marco CARIN organiza estos juicios en cinco criterios que le dan el nombre a las siglas (Knotz et al., 2022; van Oorschot, 2000): *control* (si la situación de dificultad es causada por la acción o inacción de la persona), *actitud* (la docilidad o el agradecimiento ante el apoyo como gestos simbólicos), *reciprocidad* (la contribución realizada previamente a los demás), *identidad* (el grado de pertenencia a grupos sociales considerados próximos) y *necesidad* (el grado de dificultad material). Estas categorías permiten examinar cómo los parlamentarios justifican un diseño previsional concreto en función del merecimiento.
 
@@ -98,15 +98,17 @@ En Chile, un país caracterizado por una alta privatización del bienestar (Ferr
 
 La aplicación del marco CARIN a datos textuales ha sido históricamente limitada (Laenen et al., 2019), aunque estudios recientes lo han utilizado con métodos cualitativos o computacionales (Hilmar, 2025; Siviş, 2022; Summers et al., 2025; Theiss, 2023). Laenen et al. (2019) proponen identificar declaraciones que articulen una afirmación de justicia, una prestación social y una justificación de su otorgamiento. Su análisis reconoce, además de CARIN, criterios contextuales referidos a la organización del bienestar: igualdad o universalismo, conciencia de costos e inversión social. Este estudio incorpora los dos primeros. La igualdad o el universalismo justifican el acceso, el trato o la protección mediante una regla igualitaria; la conciencia de costos introduce consideraciones sobre la disponibilidad de recursos y los costos de las prestaciones. Estas categorías, junto con CARIN y las justificaciones específicas del caso chileno, constituyen los nodos conceptuales de la red. Las aristas registran el acuerdo o desacuerdo de los actores con las proposiciones que expresa cada código.
 
-## **2\. Robustez ideacional y legitimación discursiva**
+## **2\. Robustez ideacional y legitimación discursiva** {#2.-robustez-ideacional-y-legitimación-discursiva}
 
-### **2.1. Robustez ideacional y el rol de las ideas**
+### **2.1. Robustez ideacional y el rol de las ideas** {#2.1.-robustez-ideacional-y-el-rol-de-las-ideas}
 
-Las ideas contribuyen a la continuidad y al cambio de las políticas al definir intereses, orientar decisiones y legitimar alternativas (Béland & Mandelkern, 2024). En Chile, Madariaga (2020) explica la persistencia del modelo neoliberal mediante la interacción entre intereses empresariales, instituciones políticas e ideas económicas dominantes. En el ámbito previsional, la continuidad de la capitalización individual ha coexistido con reformas que amplían la protección social y conservan componentes centrales del arreglo privatizado (Castiglioni, 2018). Esta investigación aborda su dimensión ideacional a través de las justificaciones con las que los actores defienden o disputan el modelo en el debate legislativo.
+Las ideas contribuyen a la continuidad y al cambio de las políticas al definir intereses, orientar decisiones y legitimar alternativas (Béland & Mandelkern, 2024; Schmidt, 2016). En Chile, Madariaga (2020) explica la persistencia del modelo neoliberal mediante la interacción entre intereses empresariales, instituciones políticas e ideas económicas dominantes. En el ámbito previsional, la continuidad de la capitalización individual ha coexistido con reformas que amplían la protección social y conservan componentes centrales del arreglo privatizado (Castiglioni, 2018), a la vez que las percepciones ciudadanas pueden contener simultáneamente ideas afines a la justicia de mercado, cómo el mérito, y una valorización de un mayor rol proyector del Estado (Castillo et al., 2019). Esta investigación aborda la dimensión ideacional de la capitalización individual a través de las justificaciones con las que los actores defienden o disputan el modelo en el debate legislativo.
 
-Migone et al. (2024) denominan *robustez ideacional* a la capacidad de las ideas que sustentan una política para conservar su orientación general mediante ajustes ante cambios en los actores y en el entorno. El concepto permite interrogar cómo un repertorio incorpora nuevas demandas y mantiene sus principios básicos. La persistencia institucional de la capitalización individual constituye el contexto del estudio; su dimensión discursiva se examina mediante la permanencia, difusión y adaptación de las justificaciones durante la tramitación. El análisis se circunscribe a las declaraciones legislativas y a sus relaciones, sin estimar su efecto causal sobre el resultado institucional.
+Migone et al. (2024) denominan *robustez ideacional* a la capacidad de las ideas que sustentan una política para conservar su orientación general mediante ajustes ante cambios en los actores y en el entorno. El concepto permite interrogar cómo un repertorio incorpora nuevas demandas mientras mantiene sus principios básicos. La persistencia institucional de la capitalización individual constituye el contexto del estudio; su dimensión discursiva se examina mediante la permanencia, difusión y adaptación de las justificaciones durante la tramitación. El análisis se circunscribe a las declaraciones legislativas y a sus relaciones, sin estimar su efecto causal sobre el resultado institucional.
 
-### **2.2 Las coaliciones discursivas y la hegemonía**
+### 
+
+### **2.2 Las coaliciones discursivas y la hegemonía** {#2.2-las-coaliciones-discursivas-y-la-hegemonía}
 
 Para comprender la dinámica de las instituciones, es fundamental analizar los procesos ideacionales que las sostienen. Desde el institucionalismo discursivo, la estabilidad o la transformación de una política descansa en la interacción constante entre ideas cognitivas y normativas (Schmidt, 2008). Mientras las primeras ofrecen mapas de ruta técnicos sobre "qué hacer" para resolver problemas específicos, las ideas normativas operan en el plano valórico, definiendo lo que es bueno y legitimando las soluciones técnicas ante la sociedad.
 
@@ -118,7 +120,7 @@ Según Hajer (1997), un discurso alcanza hegemonía institucional cuando logra d
 
 La articulación entre robustez ideacional y estructuración discursiva da lugar a tres expectativas temporalmente diferenciadas. La permanencia evalúa el componente de conservación de la robustez: si las ideas mantienen presencia, orientación y articulación relacional a lo largo del proceso (Migone et al., 2024). La difusión examina el alcance de la estructuración: si el repertorio de preservación atraviesa la frontera de su coalición inicial y pasa a organizar afirmaciones de actores transformadores (Hajer, 1997; Leifeld & Haunss, 2012). La adaptación observa si ese repertorio incorpora demandas solidarias bajo nuevas combinaciones sin abandonar sus restricciones contributivas, focalizadas o financieras (Migone et al., 2024; Schmidt, 2016). Las tres dimensiones se informarán por separado y se comprobarán mediante lectura cualitativa de las declaraciones que sostengan los patrones cuantitativos.
 
-### **2.3 Las estrategias de legitimación**
+### **2.3 Las estrategias de legitimación** {#2.3-las-estrategias-de-legitimación}
 
 Las estrategias de legitimación permiten observar cómo una afirmación se presenta como razonable, necesaria o moralmente aceptable. La legitimación institucional puede desplegarse mediante cinco estrategias discursivas: la *racionalización*, que justifica las decisiones apelando a su utilidad técnica, eficiencia y resultados proyectados; la *moralización*, que evalúa las políticas basándose en sistemas de valores y principios éticos; la *narrativización*, que dota a las medidas abstractas de una estructura dramática o histórica para hacerlas comprensibles; la *autorización*, que recurre al respaldo de expertos, leyes o entidades abstractas; y la *normalización*, que presenta cambios radicales como comportamientos naturales o ineludibles (Vaara et al., 2006; Van Leeuwen, 2007).
 
@@ -128,7 +130,7 @@ En esta investigación, se examinará cómo varía el uso de estas estrategias e
 
 En conjunto, los marcos cumplen funciones analíticas diferenciadas. Los criterios CARIN y las categorías justificativas derivadas de la evidencia nacional constituyen los nodos conceptuales de la red; el acuerdo o desacuerdo de los actores frente a ellos permite detectar coaliciones discursivas. La distinción entre *justicia de mercado* y *justicia política* interpreta, en un nivel superior, los patrones formados por esos conceptos. Las estrategias de legitimación describen cómo se vuelve aceptable cada afirmación y se codifican separadamente, sin intervenir en la construcción de la red. Finalmente, la robustez ideacional se evalúa mediante la permanencia, la difusión y la adaptación de los conceptos.
 
-## **3\. El debate previsional chileno: polos discursivos y actores mediadores**
+## **3\. El debate previsional chileno: polos discursivos y actores mediadores** {#3.-el-debate-previsional-chileno:-polos-discursivos-y-actores-mediadores}
 
 La tensión entre la justicia de mercado y la justicia política encuentra en la trayectoria del sistema previsional chileno una manifestación empírica crítica. Desde la imposición del modelo en dictadura, sus reformas (2008 y 2025\) y los intentos fallidos de transformación estructural (2015 y 2018), la disputa previsional ha enfrentado justificaciones rivales sobre el alcance de la propiedad individual, la responsabilidad colectiva y la intervención estatal (Borzutzky, 2019; Larrañaga, 2024; Mesa-Lago & Bertranou, 2016). Esta trayectoria permite derivar expectativas sobre dos líneas argumentales recurrentes y sobre la posible intermediación de la centroizquierda.
 
@@ -152,9 +154,9 @@ A partir de esta revisión se formula una hipótesis sobre la estructura del deb
 
 * *H3c. Adaptación:* Durante la tramitación, el repertorio de preservación incorporará la solidaridad bajo restricciones contributivas, focalizadas o financieras sin abandonar la orientación básica de la capitalización individual.
 
-## **4\. Metodología**
+## **4\. Metodología** {#4.-metodología}
 
-### **4.1 Datos**
+### **4.1 Datos** {#4.1-datos}
 
 El corpus reúne las discusiones en Sala de tres procesos legislativos: la creación de la Pensión Garantizada Universal, Ley N.º 21.419 (boletín 14588-13); la ampliación de su universo de focalización, Ley N.º 21.538 (boletín 15625-13); y la reforma previsional, Ley N.º 21.735 (boletín 15480-13). Se mantiene un diseño asimétrico: la reforma previsional constituye el caso principal para analizar coaliciones y estrategias de legitimación, mientras las dos leyes relativas a la PGU aportan antecedentes comparativos.
 
@@ -175,34 +177,32 @@ Las intervenciones se segmentaron mediante *chunking* en fragmentos de entre 5 y
 
 Los eventos de transcripción, como aplausos y manifestaciones, se conservan como registro contextual y quedan fuera del conjunto de fragmentos enviado a codificación. Las intervenciones procedimentales y las nóminas de votación que permanecen dentro de las secciones de discusión se revisan durante la codificación para determinar si contienen declaraciones pertinentes.
 
-### **4.2 Variables**
+### **4.2 Variables** {#4.2-variables}
 
 La investigación utiliza la metodología de análisis de redes discursivas (DNA), que combina codificación cualitativa y modelamiento de redes. Siguiendo a Leifeld (2017), la unidad principal de análisis es la declaración. En este estudio se identifican las afirmaciones que expresan justificaciones normativas sobre la organización, distribución, financiamiento o gobierno de la protección previsional. Una intervención puede contener varias declaraciones, y un mismo pasaje puede recibir más de un código cuando expresa razones diferenciables. Las variables de cada declaración se operacionalizan de la siguiente manera:
 
-1. Actores: las personas que emiten la declaración en Sala, incluidos parlamentarios, integrantes del Ejecutivo y autoridades de las cámaras. Se registran su género, su afiliación partidaria y su edad al momento de la discusión.
-2. Conceptos: las justificaciones normativas que conformarán los nodos conceptuales de la red. El libro de códigos, disponible en el material complementario, se construyó a partir de los criterios CARIN y de categorías justificativas del caso chileno, y se revisó mediante rondas de calibración manual y en muestras piloto con el LLM.
-3. Acuerdo: variable dicotómica que indica la orientación de cada declaración. Es positivo (1) si el actor respalda el concepto y negativo (0) si lo rechaza o le atribuye una connotación negativa.
+1. Actores: las personas que emiten la declaración en Sala, incluidos parlamentarios, integrantes del Ejecutivo y autoridades de las cámaras. Se registran su género, su afiliación partidaria y su edad al momento de la discusión.  
+2. Conceptos: las justificaciones normativas que conformarán los nodos conceptuales de la red. El libro de códigos, disponible en el material complementario, se construyó a partir de los criterios CARIN y de las categorías justificativas del caso chileno, y se revisó mediante rondas de calibración manual y en muestras piloto con el LLM.  
+3. Acuerdo: variable dicotómica que indica la orientación de cada declaración. Es positivo (1) si el actor respalda el concepto y negativo (0) si lo rechaza o le atribuye una connotación negativa.  
 4. Tiempo: cada declaración se asociará con la ley, la fecha y la sesión en que fue emitida. Dentro de cada sesión, las intervenciones mantienen el orden en que fueron emitidas.
 
-En una etapa adicional se codificarán las estrategias de legitimación empleadas por los actores (Vaara et al., 2006; Van Leeuwen, 2007). Dentro de cada fragmento se delimitarán segmentos justificativos y se clasificará cada uno como *moralización*, *racionalización*, *narrativización*, *normalización* o *autorización*. Un fragmento podrá contener varios segmentos y, por tanto, distintas estrategias. Estas anotaciones se vincularán con su actor y fragmento de origen, y se utilizarán en un análisis separado de la construcción de la red de actores y conceptos.
+En una etapa adicional se codificarán las estrategias de legitimación empleadas por los actores (Vaara et al., 2006; Van Leeuwen, 2007). En cada fragmento se delimitarán segmentos justificativos y se clasificará cada uno como *moralización*, *racionalización*, *narrativización*, *normalización* o *autorización*. Un fragmento podrá contener varios segmentos y, por tanto, distintas estrategias. Estas anotaciones se vincularán con su actor y fragmento de origen y se utilizarán en un análisis separado de la construcción de la red de actores y conceptos.
 
-### **4.3 Estrategia de análisis**
+### **4.3 Estrategia de análisis** {#4.3-estrategia-de-análisis}
 
 **Figura 1:**
 
 *Resumen de la estrategia de análisis* 
 
-#### *4.3.1 Estrategia de codificación y validación*
+#### *4.3.1 Estrategia de codificación y validación* {#4.3.1-estrategia-de-codificación-y-validación}
 
-Debido al volumen del corpus, un LLM (gpt-5.6-luna) asistirá en la aplicación del libro de códigos, manteniendo la interpretación sustantiva a cargo del investigador. En cada fragmento se identificarán primero las declaraciones que expresan posiciones sobre los conceptos normativos del libro. El modelo deberá aportar una cita literal y una justificación breve de la asignación del concepto y de su orientación, indicando el criterio aplicado. También registrará las ambigüedades y, cuando utilice contexto adyacente, los pasajes que sustentan su interpretación. Los casos con evidencia insuficiente, incertidumbre reportada por el modelo, dependencia excesiva del contexto o falta de correspondencia con el libro de códigos serán marcados como ambiguos y remitidos a revisión manual (Ashwin et al., 2025; Dunivin, 2025).
+Debido al volumen del corpus, un LLM (gpt-5.6-luna) asistirá en la aplicación del libro de códigos, manteniendo la interpretación sustantiva a cargo del investigador. En cada fragmento se identificarán primero las declaraciones que expresan posiciones sobre los conceptos normativos del libro. El modelo deberá aportar una cita literal y una justificación breve de la asignación del concepto y de su orientación, indicando el criterio aplicado. También registrará las ambigüedades y, cuando utilice contexto adyacente, los pasajes que sustentan su interpretación. Los casos con evidencia insuficiente, incertidumbre reportada por el modelo (\<0.8), dependencia excesiva del contexto o falta de correspondencia con el libro de códigos serán marcados como ambiguos y remitidos a revisión manual (Ashwin et al., 2025; Dunivin, 2025).
 
 Dos antecedentes orientan especialmente este procedimiento. Randerson et al. (2025) emplearon GPT-4 para apoyar la construcción inductiva de un libro de códigos para DNA: recuperaron más de dos tercios de los conceptos identificados por los investigadores, pero el modelo también produjo numerosas categorías irrelevantes que requirieron revisión humana. Angst et al. (2025) automatizaron la extracción de redes actor-creencia mediante tareas separadas de reconocimiento y vinculación de entidades, clasificación supervisada y detección de postura con un LLM y la evaluaron contra datos codificados manualmente. En este estudio, esas lecciones se traducen en el uso de un libro de códigos deductivo, la evaluación independiente de cada tarea y la revisión humana de los casos ambiguos.
 
-El procedimiento de validación se organiza en tres etapas iterativas. En primer lugar, el libro de códigos fue evaluado en múltiples rondas de codificación manual por el investigador, utilizando muestras estratificadas por sesión y por longitud. En segundo lugar, se realizaron iteraciones piloto con el LLM, revisando manualmente las anotaciones realizadas por el modelo, en particular, las marcadas como ambiguas. Para finalizar, luego de la codificación definitiva se codificará manualmente una muestra estratificada por ley, cámara, partido, género y tipo de actor (Bosley, 2025), reportando precisión, F1, y kappa de Cohen para la codificación de conceptos y postura y de estrategia de legitimación. Los casos ambiguos se adjudicarán manualmente, conservando su estado de revisión, y se examinará si se concentran por ley, tipo de actor, género o partido. Los casos irresolubles no se convertirán en una categoría sustantiva. Si una tarea o categoría no alcanza un desempeño suficiente, se revisará el instrumento y se repetirá la evaluación antes de escalar el procesamiento (Crupi et al., 2025; Dunivin, 2025). El contrato de salida, las reglas de adjudicación y los diagnósticos detallados se conservarán en el material suplementario.
+El procedimiento de validación se organiza en tres etapas iterativas. En primer lugar, el libro de códigos fue evaluado en múltiples rondas de codificación manual por el investigador, utilizando muestras estratificadas por sesión y por longitud. En segundo lugar, se realizaron iteraciones piloto con el LLM, revisando manualmente las anotaciones realizadas por el modelo, en particular, las marcadas como ambiguas. Para finalizar, luego de la codificación definitiva se coidificará manualmente una muestra estratificada por ley, cámara, partido, género y tipo de actor (Bosley, 2025), reportando precisión, F1, y kappa de Cohen para la codificación de conceptos y postura y de estrategia de legitimación. Los casos ambiguos se adjudicarán manualmente, conservando su estado de revisión, y se examinará si se concentran por ley, tipo de actor, género o partido. Los casos irresolubles no se convertirán en una categoría sustantiva. Si una tarea o categoría no alcanza un desempeño suficiente, se revisará el instrumento y se repetirá la evaluación antes de escalar el procesamiento (Crupi et al., 2025; Dunivin, 2025). El contrato de salida, las reglas de adjudicación y los diagnósticos detallados se conservarán en el material suplementario.
 
 Al finalizar esta etapa, se dispondrá de una base analítica de declaraciones normativas y segmentos de legitimación procedentes de las nueve discusiones en Sala. Cada anotación conservará su ley, boletín, documento, actor, intervención y fragmento de origen. Las declaraciones normativas registrarán el concepto y su orientación; los segmentos justificativos, la estrategia de legitimación. En ambos casos se conservarán la evidencia textual, la justificación del modelo, el grado de confianza y las revisiones manuales.
-
-<a id="analisis-patrones-discursivos"></a>
 
 #### *4.3.2 Análisis descriptivo y modelamiento de patrones discursivos*
 
@@ -224,7 +224,7 @@ La *adaptación (H3c)* se medirá preservando el vínculo entre declaraciones un
 
 El desplazamiento de las ideas asociadas a la capitalización, su concentración exclusiva en el polo de preservación o la expansión transversal de argumentos solidarios no condicionados se interpretarán como evidencia contraria a H3a-H3c. La persistencia institucional del sistema se mantendrá como contexto del caso y no se modelará como un resultado atribuible a las ideas.
 
-## **Referencias**
+## **Referencias** {#referencias}
 
 Alemparte, B. (2025). Privatizing Social Rights: The Law and Political Economy of Chile’s Pension Transformation. *German Law Journal*, *26*(8), 1468–1496. https://doi.org/10.1017/glj.2026.10178 
 
@@ -237,8 +237,6 @@ Ashwin, J., Chhabra, A., & Rao, V. (2025). Using Large Language Models for Quali
 Barozet, E. (2025). Las fluctuaciones de los modelos de justicia social de la izquierda chilena, entre las demandas de garantía de derechos y el ejercicio del poder (1990-2025). *Cahiers des Amériques latines*, (107). https://doi.org/10.4000/15qy7 
 
 Béland, D. (2005). Ideas and Social Policy: An Institutionalist Perspective. *Social Policy & Administration*, *39*(1), 1–18. https://doi.org/10.1111/j.1467-9515.2005.00421.x 
-
-Béland, D. (2019). Narrative stories, institutional rules, and the politics of pension policy in Canada and the United States. *Policy and Society*, *38*(3), 356–372. https://doi.org/10.1080/14494035.2019.1644071 
 
 Béland, D., & Cox, R. H. (2016). Ideas as coalition magnets: Coalition building, policy entrepreneurs, and power relations. *Journal of European Public Policy*, *23*(3), 428–445. https://doi.org/10.1080/13501763.2015.1115533 
 
@@ -253,8 +251,6 @@ Borzutzky, S. (2005). From Chicago to Santiago: Neoliberalism and Social Securit
 Borzutzky, S. (2019). You Win Some, You Lose Some: Pension Reform in Bachelet’s First and Second Administrations. *Journal of Politics in Latin America*, *11*(2), 204–230. https://doi.org/10.1177/1866802X19861491 
 
 Bosley, M. (2025). Towards Qualitative Measurement at Scale: A Prompt-Engineering Framework for Large-Scale Analysis of Deliberative Quality in Parliamentary Debates. *Journal of Political Institutions and Political Economy*, *6*(3–4), 355–383. https://doi.org/10.1561/113.00000128 
-
-Bril-Mascarenhas, T., & Maillet, A. (2019). How to Build and Wield Business Power: The Political Economy of Pension Regulation in Chile, 1990–2018. *Latin American Politics and Society*, *61*(1), 101–125. https://doi.org/10.1017/lap.2018.61 
 
 Campos-Rojas, C., & González-Arias, C. (2022). Apelando a la emoción: El sistema de pensiones en el discurso de expertos económicos en la prensa chilena. *Íkala, Revista de Lenguaje y Cultura*, *27*(2), 357–374. https://doi.org/10.17533/udea.ikala.v27n2a04 
 
@@ -349,8 +345,6 @@ Mulligan, E., Nally, B. M., van den Heuvel \- Warren, J., & Bassey, E. (2026). C
 Parada-Contzen, M. (2023). Gender, family status and health characteristics: Understanding retirement inequalities in the Chilean pension model. *International Labour Review*, *162*(2), 271–303. https://doi.org/10.1111/ilr.12365 
 
 Parada-Contzen, M., & Sanhueza, I. (2025). On the Evolution of Population Preferences toward Retirement System Design and Savings Withdrawal: Evidence from Chile. *The Journal of Retirement*, *12*(3), 68–90. https://doi.org/10.3905/jor.2024.1.167 
-
-Peters, B. G., Pierre, J., & King, D. S. (2005). The Politics of Path Dependency: Political Conflict in Historical Institutionalism. *Journal of Politics*, *67*(4), 1275–1300. https://doi.org/10.1111/j.1468-2508.2005.00360.x 
 
 Randerson, S., Graydon-Guy, T., Lin, E.-Y., & Casswell, S. (2025). Exploring the Use of a Large Language Model for Inductive Content Analysis in a Discourse Network Analysis Study. *Social Science Computer Review*, 08944393251326175\. https://doi.org/10.1177/08944393251326175 
 
