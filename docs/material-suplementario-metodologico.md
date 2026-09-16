@@ -1,359 +1,299 @@
 # Material suplementario metodológico
 
-Versión de trabajo 0.1  
-Estado: documento acumulativo en desarrollo
+Este documento detalla las reglas de codificación, construcción de redes y comparación estadística que respaldan la metodología de [la tesis](../thesis.md). La exposición principal presenta la secuencia del análisis y su relación con las hipótesis; este suplemento precisa las unidades, los denominadores, las fórmulas y los criterios de interpretación necesarios para reproducirlo.
 
-## Propósito
+## 1. Unidades y trazabilidad
 
-Este suplemento conserva las decisiones operativas y técnicas que respaldan la metodología de la tesis, pero cuyo detalle interrumpiría la exposición sociológica del manuscrito principal. La primera versión reúne la codificación de estrategias de legitimación a nivel de declaración, el contrato de salida esperado del LLM, el tratamiento de casos ambiguos y las decisiones preliminares para la medición de H1 y H3.
+| Unidad | Definición y función |
+| --- | --- |
+| Proyecto de ley | Proceso legislativo identificado por ley y boletín. La creación de la PGU, su ampliación y la reforma previsional se comparan separadamente. |
+| Fase legislativa | Agrupación de discusiones según trámite y cámara. Organiza la comparación temporal dentro de la reforma. |
+| Discusión en Sala | Documento del corpus identificado por `document_uri`, con fecha, cámara y trámite. |
+| Intervención | Participación de un actor identificada por `utterance_id` dentro del documento. Es la unidad de los porcentajes de presencia y de los modelos logísticos. |
+| Fragmento | Bloque de texto identificado por `unit_id`, que recibe el LLM junto con su contexto adyacente. Una intervención puede dividirse en varios fragmentos. |
+| Declaración codificada | Afirmación que vincula un concepto con una postura y conserva su evidencia textual. Constituye la observación básica del DNA. |
+| Evidencia | Cita literal y posiciones dentro del fragmento que respaldan la anotación. Un mismo pasaje puede sustentar conceptos diferentes. |
 
-El documento se ampliará a medida que avancen el libro de códigos, el piloto y el procesamiento. Los umbrales de aceptación, los ejemplos empíricos definitivos y las versiones completas de los prompts se fijarán después del piloto.
+La identificación completa de una intervención combina ley, documento e identificador de intervención. Las anotaciones se identifican por ejecución, fragmento y `annotation_id`, ya que este último puede repetirse en otros fragmentos. Los metadatos del actor proceden del corpus y se incorporan mediante estas claves; el modelo no infiere partido, género ni ideología a partir del discurso.
 
-## 1. Jerarquía de unidades
+### 1.1 Segmentación y contexto
 
-1. **Etapa legislativa:** periodo institucional al que pertenece cada sesión.
-2. **Sesión:** evento legislativo identificado de manera única y realizado en una fecha-hora específica.
-3. **Intervención:** turno de habla de un actor dentro de una sesión. Es la unidad textual de entrada, conserva el orden interno del discurso y funciona como ventana de coocurrencia para H3c.
-4. **Declaración DNA:** afirmación unitaria que vincula actor, concepto y posición. Es la unidad de codificación y análisis de Q2.
-5. **Evidencia textual:** pasaje con offsets que respalda una etiqueta. Se conserva para trazabilidad y revisión, pero no genera una fila ni una unidad analítica independiente.
+`proc.qmd` conserva los textos y metadatos de las intervenciones y genera los bloques de codificación. La segmentación parte de párrafos; divide los extensos por oraciones y, cuando es necesario, por límites entre palabras. Agrupa segmentos breves dentro de la misma intervención, con un objetivo de 100 palabras y un máximo inicial de 150. Los bloques inferiores a 50 palabras se unen al vecino más corto; esta operación puede superar el máximo inicial. Se conservan intervenciones completas de entre 5 y 49 palabras. El corpus descrito en la tesis contiene fragmentos de entre 5 y 194 palabras.
 
-Una intervención puede contener varias declaraciones. Cada declaración puede no contener una legitimación explícita, contener una sola estrategia o combinar una estrategia principal y una secundaria.
+Cada bloque mantiene su posición en la intervención y la correspondencia con los segmentos originales. El contexto anterior y posterior puede pertenecer a otro hablante; se utiliza para interpretar referencias o negaciones, pero la evidencia codificada debe estar en el bloque objetivo. Los offsets de las anotaciones se refieren al texto de ese bloque. La reconstrucción de la ubicación en la intervención debe utilizar la correspondencia de segmentos conservada por el procesamiento.
 
-## 2. Estructura de la codificación
+### 1.2 Metadatos conservados
 
-### 2.1 Campos mínimos
+| Información | Campos del procesamiento |
+| --- | --- |
+| Proyecto y documento | `law_number`, `document_uri`, `bill_number` |
+| Fecha y trámite | `date`, `constitutional_stage`, `regulatory_stage` |
+| Intervención y orden | `utterance_id`, `utterance_order` |
+| Fragmento y procedencia textual | `unit_id`, `chunk_id`, `source_start_char`, `source_end_char`, `source_segments_json` |
+| Actor | `speaker_id`, `speaker_bcn_id`, nombre y función del hablante |
+| Características políticas y personales | Afiliación, género y fecha de nacimiento disponibles en los metadatos |
 
-| Campo | Tipo | Regla |
-|---|---|---|
-| `session_id` | identificador | Identifica una sesión única. |
-| `session_datetime` | fecha-hora | Fecha y hora de realización de la sesión. |
-| `legislative_stage` | categoría | Etapa legislativa a la que pertenece la sesión. |
-| `intervention_id` | identificador | Turno de habla dentro de la sesión. |
-| `intervention_order` | entero | Orden de la intervención; sólo trazabilidad. |
-| `declaration_id` | identificador | Declaración DNA única. |
-| `actor_id` | identificador | Actor que formula la declaración. |
-| `concept` | categoría | Concepto del libro de códigos. |
-| `position` | binaria | Apoyo o rechazo frente al concepto. |
-| `explicit_condition` | binaria | Indica si la afirmación supedita el acceso, el monto o el diseño de una prestación a un requisito. |
-| `condition_basis` | categoría o nulo | Concepto del libro de códigos que fundamenta la condición; durante el piloto admite la marca provisional `condicionalidad_no_CARIN`. |
-| `provisional_condition_subtype` | texto o nulo | Descripción normalizada de una condición aún no cubierta por el libro de códigos; sólo se utiliza en el piloto. |
-| `explicit_legitimation` | binaria | Indica si existe al menos un fundamento explícito de legitimación. |
-| `primary_strategy` | categoría o nulo | Estrategia que sostiene el vínculo justificativo central. |
-| `primary_evidence` | texto y offsets o nulo | Evidencia que respalda la estrategia principal. |
-| `secondary_strategy` | categoría o nulo | Estrategia adicional, distinta de la principal. |
-| `secondary_evidence` | texto y offsets o nulo | Evidencia que respalda la estrategia secundaria. |
-| `ambiguity_flag` | binaria | Indica si la clasificación requiere revisión manual. |
-| `ambiguity_reasons` | lista | Motivos normalizados de ambigüedad. |
-| `candidate_strategies` | lista | Alternativas plausibles detectadas antes de la revisión. |
-| `review_status` | categoría | `automatic`, `manually_resolved` o `unresolved`. |
-| `review_notes` | texto o nulo | Justificación de la adjudicación manual. |
+La clasificación en grupos políticos utilizará la afiliación correspondiente a la fecha del debate. El nombre `current_party` del campo de origen no garantiza por sí mismo esa correspondencia histórica. La tabla de equivalencias de partidos e independientes debe conservarse junto con la base analítica.
 
-Durante el piloto se aplicarán tres restricciones adicionales: si `explicit_condition = 0`, `condition_basis` y `provisional_condition_subtype` serán nulos; si `condition_basis = condicionalidad_no_CARIN`, deberá completarse `provisional_condition_subtype` y activarse la revisión manual; y esta marca provisional deberá resolverse antes de fijar el libro de códigos para el procesamiento completo.
+## 2. Libro de códigos y anotaciones
 
-### 2.2 Categorías de estrategia
+El libro reúne criterios CARIN, criterios contextuales y justificaciones distributivas e institucionales del caso chileno. `annotations.qmd` utiliza `features/codebook/codebook_v0.3.xlsx` y genera su representación JSON. Cada ejecución conserva una copia del instrumento y su hash; la versión interna del libro y su contenido identifican el instrumento aplicado.
 
-Las estrategias posibles son:
+La postura toma los valores `support` y `oppose` respecto de la proposición afirmativa definida en `orientation_anchor`. Por ejemplo, respaldar la ineficiencia y riesgo estatal significa aceptar que esos riesgos justifican limitar la administración estatal. La postura se refiere a esa proposición y se distingue del voto sobre la ley o del tono emocional del hablante.
 
-- `moralization`
-- `rationalization`
-- `narrativization`
-- `normalization`
-- `authorization`
+### 2.1 Contrato de salida
 
-`No explicit legitimation` no constituye una sexta estrategia. Cuando `explicit_legitimation = 0`, las estrategias principal y secundaria deben ser nulas por diseño.
+El contrato ejecutable se define en `output_schema()` y `validate_output()` de `features/llm_annotations/pipeline.py`. El prompt se conserva en `prompts/annotations_pilot.md` y se copia en cada ejecución. Sus campos principales son:
 
-## 3. Distinción entre estrategia principal y secundaria
+| Nivel | Campos | Función |
+| --- | --- | --- |
+| Bloque | `decision`, `decision_justification`, `annotations` | Distinguir declaraciones codificables de ausencia de declaraciones y justificar la decisión. |
+| Bloque | `quality_flags`, `needs_human_review`, `limitations`, `decision_confidence` | Registrar problemas del texto, incertidumbre y remisión a revisión. |
+| Anotación | `evidence_text`, `evidence_occurrence` | Identificar la cita literal y su aparición dentro del bloque. |
+| Anotación | `concept_status`, `concept_id`, `proposed_concept` | Identificar un concepto del libro o una propuesta que requiere revisión. |
+| Anotación | `stance`, `confidence` | Registrar orientación y confianza cualitativa. |
+| Justificación | `criterion_reference`, `coding`, `stance`, `alternatives`, `context_evidence`, `uncertainty` | Explicar la regla aplicada, la postura, las alternativas descartadas y el contexto utilizado. |
 
-### 3.1 Estrategia principal
+`decision` admite `statements` y `no_statements`. La segunda opción exige una lista vacía de anotaciones. Una respuesta inválida o incompleta se conserva como incidencia de procesamiento; no equivale a ausencia de declaraciones.
 
-La estrategia principal es el recurso que sostiene de manera más directa el vínculo entre:
+Los niveles de confianza son `high`, `medium` y `low`. La confianza media o baja exige una explicación y revisión humana. Estos niveles representan una valoración del modelo y no una probabilidad calibrada de acierto.
 
-1. la posición sustantiva expresada en la declaración; y
-2. la pretensión de que esa posición es válida, aceptable, necesaria o legítima.
+### 2.2 Controles de consistencia y revisión
 
-Para identificarla se utilizará la siguiente pregunta contrafactual:
+El programa comprueba que cada cita existe literalmente en el bloque objetivo, calcula sus offsets y valida la referencia al criterio del libro. Rechaza duplicaciones del mismo pasaje y concepto. La asignación de varios conceptos al mismo pasaje requiere un fundamento diferenciable para cada uno.
 
-> Si se retirara este recurso de la declaración, ¿se perdería el fundamento central mediante el cual la posición se presenta como aceptable?
+`concept_status=review` se reserva para una justificación explícita que no corresponde al libro. Exige `concept_id=null`, una propuesta conceptual y revisión humana. La duda entre dos códigos existentes se documenta en la justificación. Las propuestas nuevas deben adjudicarse antes de incorporarse a una red con un universo común de conceptos.
 
-Si la respuesta es afirmativa, el recurso es candidato a estrategia principal.
+La revisión examina el fragmento, su intervención y el contexto citado; registra la decisión y conserva el vínculo con la anotación original. Los casos que permanecen sin resolver se distinguen de las decisiones negativas y se contabilizan como información faltante. La base analítica utiliza la anotación adjudicada y mantiene las salidas automáticas para auditoría.
 
-### 3.2 Estrategia secundaria
+## 3. Validación y conservación de las ejecuciones
 
-La estrategia secundaria es un fundamento adicional e identificable que complementa o refuerza la estrategia principal, pero cuya eliminación no destruye el vínculo justificativo central.
+La validación distingue la identificación de declaraciones, la asignación de conceptos y la orientación frente a ellos. Randerson et al. (2025) y Angst et al. (2025) respaldan esta separación de tareas y la necesidad de contrastar la automatización con codificación humana.
 
-La secundaria:
+Las rondas de calibración manual y los pilotos preceden a la evaluación de una muestra estratificada por ley, cámara, partido, género y tipo de actor. La selección conserva todas las declaraciones de las intervenciones elegidas y la trazabilidad de sus fragmentos. El estrato y la probabilidad de selección deben acompañar cada caso cuando las fracciones de muestreo difieran. Los diagnósticos de desempeño distinguirán la muestra de evaluación de los casos revisados selectivamente por ambigüedad.
 
-- debe pertenecer a una categoría distinta de la principal;
-- debe contar con evidencia textual propia;
-- no se asigna sólo porque aparezca una palabra asociada a otra categoría;
-- no se asigna cuando la segunda categoría sea apenas una interpretación implícita del codificador;
-- nunca genera una fila adicional en la base principal.
+Se informarán precisión, sensibilidad y F1 por concepto y postura, matrices de confusión y kappa de Cohen. La evaluación de presencia por concepto-postura utilizará una rejilla común de unidades y categorías que incluya decisiones de ausencia. Para evaluar la postura se distinguirán los errores de orientación de los errores de detección del concepto. Las reglas de correspondencia entre evidencia humana y automática se fijarán antes de calcular métricas de extracción; un solapamiento de citas no implica necesariamente identidad de proposición.
 
-### 3.3 Criterios que no determinan primacía
+Las comparaciones entre tareas y categorías informarán sus denominadores y el número de casos. La revisión de incertidumbre describirá su concentración por ley, actor, partido y género, así como las modificaciones introducidas mediante adjudicación. Se conservarán las limitaciones de los casos irresolubles y su distribución en el corpus.
 
-No se elegirá la estrategia principal por:
+Cada ejecución registra el modelo, la configuración, la muestra, el prompt, el esquema de salida y los hashes del corpus, del código y del libro. `results.parquet` conserva decisiones e incidencias por bloque; `annotations.parquet` conserva las anotaciones y sus evidencias. La validez del formato de salida y la exhaustividad de una ejecución se describen separadamente de su concordancia con la codificación humana.
 
-- aparecer primero en la declaración;
-- ocupar una mayor extensión textual;
-- contener más palabras clave;
-- coincidir con la categoría más frecuente del actor o de su coalición;
-- ajustarse mejor a una expectativa teórica de Q2.
+## 4. Agregación y denominadores
 
-La clasificación debe depender de la función justificativa desempeñada en la declaración concreta.
+### 4.1 Conteo dentro de las intervenciones
 
-### 3.4 Configuraciones permitidas
-
-| Configuración | Codificación |
-|---|---|
-| 1:0 | `explicit_legitimation = 0`; principal y secundaria nulas. |
-| 1:1 | Una estrategia principal; secundaria nula. |
-| 1:2 | Una estrategia principal y una secundaria distinta. |
-| Jerarquía irresoluble | Se registran las candidatas, se marca ambigüedad y se deriva a revisión. |
-
-## 4. Casos ambiguos
-
-### 4.1 Motivos normalizados
-
-Un caso se marcará como ambiguo cuando ocurra al menos una de las siguientes situaciones:
-
-- `tie_between_strategies`: dos estrategias parecen igualmente centrales;
-- `insufficient_evidence`: el fundamento es demasiado implícito para sostener una etiqueta;
-- `category_boundary`: la evidencia se ubica en el límite entre dos definiciones;
-- `context_dependency`: la clasificación depende de texto que no forma parte de la declaración;
-- `outside_codebook`: existe un recurso justificativo que no corresponde claramente a las categorías;
-- `conflicting_evidence`: distintas partes de la declaración conducen a decisiones incompatibles.
-
-La ausencia de legitimación explícita no es, por sí sola, una ambigüedad.
-
-### 4.2 Procedimiento de revisión
-
-1. El LLM entrega las categorías candidatas, sus evidencias y el motivo de ambigüedad.
-2. El revisor examina la declaración dentro de la intervención completa.
-3. Si la evidencia pertenece a la misma intervención y revela que los límites de la declaración fueron demasiado estrechos, éstos pueden corregirse dejando registro del cambio.
-4. El revisor aplica nuevamente la prueba del fundamento central.
-5. El resultado se registra como `manually_resolved` o `unresolved`.
-6. Los casos irresolubles no reciben una categoría sustantiva forzada y no ingresan al multinomial principal.
-
-Durante la validación, una parte de los casos ambiguos será codificada independientemente antes de la adjudicación. Esto permitirá evaluar si la distinción principal-secundaria es reproducible y no sólo si el LLM coincide con una única decisión del investigador.
-
-## 5. Contrato preliminar de salida del prompt
-
-El prompt deberá solicitar una salida estructurada equivalente a la siguiente:
-
-```json
-{
-  "declaration_id": "string",
-  "explicit_legitimation": true,
-  "primary_strategy": "rationalization",
-  "primary_evidence": {
-    "text": "string",
-    "start_char": 0,
-    "end_char": 0
-  },
-  "secondary_strategy": "authorization",
-  "secondary_evidence": {
-    "text": "string",
-    "start_char": 0,
-    "end_char": 0
-  },
-  "ambiguity_flag": false,
-  "ambiguity_reasons": [],
-  "candidate_strategies": [],
-  "requires_manual_review": false,
-  "decision_rationale": "string"
-}
-```
+Sea \(u\) una intervención, \(c\) un concepto y \(s\in\{+,-\}\) una postura. Se define:
 
-### 5.1 Restricciones de consistencia
+\[
+D_{ucs}=\mathbf{1}\{\text{existe al menos una declaración adjudicada de }c\text{ con postura }s\text{ en }u\}.
+\]
 
-- Si `explicit_legitimation = false`, ambas estrategias y ambas evidencias deben ser nulas.
-- Si existe una estrategia principal, debe existir evidencia principal.
-- La estrategia secundaria es opcional y debe diferir de la principal.
-- Si existe una estrategia secundaria, debe existir evidencia secundaria.
-- No pueden asignarse más de dos estrategias.
-- Si el modelo no puede jerarquizar las candidatas con evidencia suficiente, debe activar `ambiguity_flag` y `requires_manual_review`.
-- La explicación no puede incorporar información que no esté en la intervención entregada como contexto.
-- El modelo no puede crear categorías nuevas durante la codificación principal.
+Una repetición del mismo concepto y postura en varios fragmentos de la intervención mantiene \(D_{ucs}=1\). Otra intervención del mismo actor genera otra observación. El apoyo y el rechazo pueden coexistir dentro de una intervención cuando distintos pasajes sustentan cada postura.
 
-## 6. Secuencia preliminar del prompt
+La presencia del concepto con independencia de su orientación es:
 
-La instrucción se organizará en pasos:
+\[
+P_{uc}=\max(D_{uc+},D_{uc-}).
+\]
 
-1. Identificar la proposición y la posición ya codificadas en la declaración.
-2. Determinar si la declaración ofrece una razón explícita para considerar válida o aceptable esa posición.
-3. Identificar todas las estrategias plausibles utilizando las definiciones y ejemplos del libro de códigos.
-4. Aplicar la prueba contrafactual del fundamento central para elegir una principal.
-5. Registrar una secundaria sólo cuando exista un segundo fundamento explícito e independiente.
-6. Citar evidencia textual y offsets para cada etiqueta.
-7. Marcar ambigüedad cuando la jerarquía o la categoría no pueda decidirse de manera fundada.
-8. Verificar las restricciones de consistencia antes de entregar el JSON.
+Así, una intervención que contiene apoyo y rechazo cuenta una vez para presencia y una vez en cada postura para los conteos desagregados. La suma de porcentajes de apoyo y rechazo puede superar el porcentaje de presencia.
 
-El prompt definitivo incluirá ejemplos positivos, negativos y fronterizos provenientes del piloto. Los ejemplos no se seleccionarán sólo por claridad; deberán incluir casos difíciles y desacuerdos reales.
+### 4.2 Frecuencias y cobertura
 
-## 7. Plan de validación
+Para una ventana \(t\), sea \(U_t\) el conjunto de intervenciones analizadas y \(A_t\) el conjunto de sus actores. Se calcularán:
 
-### 7.1 Tareas evaluadas por separado
+\[
+f_{cts}=\frac{\sum_{u\in U_t}D_{ucs}}{|U_t|},
+\qquad
+p_{ct}=\frac{\sum_{u\in U_t}P_{uc}}{|U_t|}.
+\]
 
-1. Extracción de la declaración y el concepto.
-2. Clasificación de la posición.
-3. Detección de legitimación explícita.
-4. Clasificación de la estrategia principal.
-5. Detección de una estrategia secundaria.
-6. Clasificación de la estrategia secundaria, condicionada a su presencia.
-7. Derivación de casos ambiguos.
-8. Concordancia exacta del registro completo.
+\(f_{cts}\) representa la proporción de intervenciones con una postura y \(p_{ct}\), la proporción que menciona el concepto. Para describir la extensión entre personas se utilizará:
 
-### 7.2 Resultados que se informarán
+\[
+a_{cts}=\frac{\left|\left\{a\in A_t:\sum_{u\in U_t:a(u)=a}D_{ucs}>0\right\}\right|}{|A_t|}.
+\]
 
-- precisión, sensibilidad y F1 por tarea y categoría;
-- macro-F1 para evitar que las categorías frecuentes oculten un bajo desempeño en las infrecuentes;
-- kappa de Cohen para las decisiones categóricas;
-- matrices de confusión para estrategia principal y secundaria;
-- concordancia exacta del registro completo;
-- proporción de registros derivados a revisión;
-- motivos de ambigüedad y tasa de resolución manual;
-- desempeño de los casos aceptados automáticamente frente al desempeño total después de la adjudicación.
+La cobertura cuenta personas para describir alcance. Las demás medidas conservan todas sus intervenciones. Un actor puede contribuir a las coberturas de todas las fases en que participa y a ambas posturas cuando expresa posiciones diferentes.
 
-Los umbrales de aceptación se fijarán antes de procesar el corpus completo, utilizando los resultados del piloto y la frecuencia observada de cada categoría.
+Los denominadores incluyen intervenciones analizadas sin declaraciones normativas. Los errores de ejecución o las adjudicaciones irresolubles no se convierten en ceros. La presencia está establecida cuando existe evidencia adjudicada; la ausencia requiere que la intervención esté completamente revisada o procesada con salidas válidas y sin decisiones pendientes. Se informarán por separado los casos cuyo estado impida establecerla. Cuando existan datos faltantes, cada proporción utilizará las intervenciones o actores con estado conocido para el concepto y la postura correspondientes, e informará ese denominador efectivo.
 
-### 7.3 Diagnóstico de ambigüedad
+El balance de posturas se describirá mediante las dos frecuencias y, cuando se sintetice, mediante \(f_{ct+}-f_{ct-}\). Multiplicado por 100, este balance expresa diferencias en puntos porcentuales; no mide intensidad individual de una creencia.
 
-La ambigüedad es un atributo del proceso de medición y no una estrategia sustantiva. Se comprobará si los casos derivados a revisión se concentran por:
+### 4.3 Ventanas de comparación
 
-- estrategia candidata;
-- etapa legislativa;
-- tipo de instancia;
-- tipo de actor;
-- partido;
-- género;
-- coalición discursiva, una vez estimadas las comunidades.
+H2 compara por separado las leyes 21.419, 21.538 y 21.735. H1a y H1b se aplican al conjunto de discusiones de la reforma 21.735. H3 distingue las siguientes ventanas dentro de esta reforma:
 
-Una concentración sistemática indicaría que el instrumento o el prompt funciona de manera desigual para ciertos lenguajes o actores y requeriría revisión antes de interpretar Q2.
+| Ventana | Cámara y fechas | Función |
+| --- | --- | --- |
+| Primer trámite | Cámara, 23 y 24 de enero de 2024 | Configuración inicial observada. |
+| Segundo trámite | Senado, 27 de enero de 2025 | Configuración del debate en el Senado. |
+| Tercer trámite | Cámara, 29 de enero de 2025 | Configuración final observada en la Cámara. |
 
-## 8. Especificación analítica de Q2
+H4 compara los actores comunes de la primera y tercera ventanas. Las diferencias entre Cámara y Senado describen composiciones del debate; el seguimiento individual corresponde a los participantes presentes en ambas ventanas de la Cámara.
 
-### 8.1 Modelo principal
+## 5. Redes de actores y detección de coaliciones
 
-- Unidad: declaración.
-- Universo: declaraciones con legitimación explícita y estrategia principal resuelta.
-- Resultado: estrategia principal, con cinco categorías mutuamente excluyentes.
-- Predictores fijos: coalición, partido, tipo de actor y etapa legislativa.
-- Posibles interacciones: se incorporarán sólo cuando respondan a una comparación temporal sustantiva, especialmente coalición por etapa.
-- Interceptos aleatorios cruzados: actor y sesión.
+### 5.1 Matrices de afiliación
 
-La sesión se identifica por su fecha-hora y representa el contexto compartido de las declaraciones producidas en ese evento. La intervención no se incorpora como efecto aleatorio en la especificación principal porque la declaración es la unidad de Q2 y no existen filas separadas por evidencia justificativa.
+Para cada ventana se construyen dos matrices de frecuencias:
 
-### 8.2 Declaraciones sin legitimación explícita
+\[
+X^s_{ac,t}=\sum_{u\in U_t:a(u)=a}D_{ucs}.
+\]
 
-Se informará su proporción por coalición. Si el piloto muestra que no son infrecuentes, se añadirá un modelo binario complementario para estimar la probabilidad de que una declaración contenga alguna legitimación explícita. El punto de corte para adoptar este modelo se fijará antes del procesamiento completo.
+Cada celda cuenta intervenciones del actor con una postura ante un concepto. La deduplicación dentro de la intervención evita que la segmentación o la repetición inmediata multipliquen artificialmente una afirmación. La acumulación entre intervenciones conserva su reiteración discursiva.
 
-### 8.3 Estrategias secundarias
+### 5.2 Congruencia y conflicto normalizados
 
-Las estrategias secundarias se analizarán mediante:
+Se utiliza un denominador común basado en la norma del perfil completo de cada actor:
 
-- una tabla de combinaciones principal-secundaria;
-- su frecuencia por coalición y etapa;
-- una sensibilidad basada en la presencia de cada estrategia como principal o secundaria, sin duplicar declaraciones.
+\[
+n_{a,t}=\sqrt{\sum_c\left[(X^+_{ac,t})^2+(X^-_{ac,t})^2\right]}.
+\]
 
-No se interpretará la secundaria como una segunda observación independiente.
+Para dos actores distintos:
 
-### 8.4 Sensibilidad a la adjudicación
+\[
+G_{ab,t}=\frac{\sum_c\left[X^+_{ac,t}X^+_{bc,t}+X^-_{ac,t}X^-_{bc,t}\right]}{n_{a,t}n_{b,t}},
+\]
 
-El modelo principal incluirá los casos resueltos manualmente. Como sensibilidad, se repetirá excluyendo todas las declaraciones inicialmente marcadas como ambiguas. Los casos irresolubles se contabilizarán y caracterizarán, pero permanecerán fuera del multinomial.
+\[
+C_{ab,t}=\frac{\sum_c\left[X^+_{ac,t}X^-_{bc,t}+X^-_{ac,t}X^+_{bc,t}\right]}{n_{a,t}n_{b,t}},
+\qquad S_{ab,t}=G_{ab,t}-C_{ab,t}.
+\]
 
-## 9. Próximas ampliaciones
+\(G\) compara posturas coincidentes y \(C\) compara el perfil de un actor con el del otro tras intercambiar apoyo y rechazo. Ambas son semejanzas coseno entre vectores no negativos; \(S\) expresa el saldo entre congruencia y conflicto. Se eliminan las diagonales. Los actores sin declaraciones codificadas tienen norma cero y se mantienen en los descriptivos del corpus, pero carecen de perfil para calcular estas semejanzas.
 
-Las siguientes versiones del suplemento incorporarán gradualmente:
+Leifeld (2017) desarrolla las proyecciones de congruencia y conflicto, las normalizaciones de perfiles y la resta entre ambas redes. La aplicación a frecuencias de intervenciones es la especificación adoptada aquí. La normalización es invariante a multiplicar todo el perfil de un actor por una constante: reduce el efecto de su volumen total de participación, aunque conserva las diferencias en el énfasis relativo de sus conceptos.
 
-- definiciones completas y ejemplos fronterizos del libro de códigos;
-- versiones numeradas de los prompts;
-- fórmulas de proyección y normalización de las redes de congruencia y conflicto;
-- detalles del algoritmo de comunidades con relaciones positivas y negativas;
-- especificaciones y diagnósticos de los modelos multinivel;
-- operacionalización completa de H3a, H3b y H3c;
-- registro de cambios introducidos después del piloto.
+Un valor \(S_{ab,t}=0\) puede resultar de ausencia de coincidencias o de un equilibrio entre congruencia y conflicto. Por ello, se conservan \(G\) y \(C\) para interpretar los vínculos y se utiliza \(S\) para detectar comunidades.
 
-## 10. Decisión pendiente: intermediación entre coaliciones
+### 5.3 Comunidades y estabilidad
 
-La detección de comunidades utilizará la red completa de congruencia y conflicto mediante una implementación que considere relaciones positivas y negativas. Permanece pendiente definir la medida con la que se evaluará si los actores de centroizquierda conectan ambos polos.
+Se aplicará *signed spin-glass* a \(S\), conservando pesos positivos y negativos, siguiendo el uso de redes con signo en Schaub (2021). En `igraph`, la implementación que admite pesos negativos se identifica como `neg`; el parámetro `spins` fija un máximo de grupos posibles, no su número observado. Se registrarán implementación, versión, máximo de grupos, parámetros de resolución, temperaturas, enfriamiento y semillas. Véase la [documentación oficial de `cluster_spinglass`](https://r.igraph.org/reference/cluster_spinglass.html).
 
-### 10.1 Problema de la especificación actual
+Las repeticiones con distintas semillas conservarán sus particiones y valores de ajuste. Se describirán la frecuencia de las soluciones y la proporción de ejecuciones en que cada par de actores queda en la misma comunidad. Los nodos aislados se reportarán sin atribuirles una coalición sustantiva. Si la red se analiza por componentes conectados, la partición y sus parámetros se conservarán por componente y las etiquetas no se equipararán automáticamente entre componentes o ventanas.
 
-La centralidad de intermediación estándar se basa en caminos mínimos. Si se calcula sin pesos, utiliza sólo la presencia de las aristas e ignora su signo y magnitud. Las semejanzas firmadas tampoco pueden incorporarse directamente como distancias: los vínculos negativos no representan caminos de conexión y una mayor congruencia positiva debería implicar una distancia menor, no mayor.
+La interpretación comparará conceptos y posturas dentro de cada comunidad y entre comunidades. Las etiquetas de preservación y transformación se asignarán según sus repertorios, después de estimar la partición. La identificación de dos grupos se acompañará por el examen de su contenido, porque la codificación de argumentos opuestos sobre un asunto puede favorecer la bipolarización (Leifeld, 2017).
 
-Por lo tanto, no se calculará la intermediación directamente sobre los pesos firmados ni sobre sus valores absolutos.
+## 6. Redes de conceptos y centralidad
 
-### 10.2 Alternativas bajo evaluación
+### 6.1 Presencia conceptual
 
-1. **Intermediación ponderada sobre la subred de congruencia positiva.** Se conservarían sólo los vínculos positivos y su fuerza se transformaría en distancia. Mantiene una medida conocida y requiere un cambio metodológico acotado, pero no incorpora directamente los vínculos negativos y puede discriminar poco si la proyección es muy densa.
-2. **Coeficiente de participación sobre vínculos positivos.** Evaluaría si la fuerza positiva de cada actor se distribuye entre comunidades. Se ajusta directamente a la idea de conexión intercomunitaria, pero depende de la partición detectada y debe acompañarse por la fuerza total para evitar considerar como mediador a un actor con vínculos equilibrados pero débiles.
-3. **Congruencia directa con ambos polos.** Compararía la semejanza de cada actor con los perfiles de preservación y transformación. Es sustantivamente transparente, pero exige construir una medida específica y evitar circularidad entre la definición de los polos y la evaluación de los actores.
+Se construye la matriz de frecuencias sin distinguir postura:
 
-### 10.3 Criterio provisional de mínima complejidad
+\[
+M_{ac,t}=\sum_{u\in U_t:a(u)=a}P_{uc}.
+\]
 
-La opción provisional es conservar la centralidad de intermediación, calculándola sólo sobre la subred de congruencia positiva y transformando fuerza en distancia. La red completa de congruencia y conflicto se mantendría para detectar las comunidades. Después se comprobaría descriptivamente que los actores con mayor intermediación tienen vínculos positivos con ambos polos.
+Esta matriz se obtiene directamente de \(P\), no de la suma de \(X^+\) y \(X^-\), para contar una sola vez las intervenciones que contienen ambas posturas. Dos conceptos se conectan según la semejanza de sus perfiles entre actores:
 
-Antes de cerrar esta decisión, el piloto deberá examinar:
+\[
+W^{P}_{cd,t}=\frac{\sum_aM_{ac,t}M_{ad,t}}
+{\sqrt{\sum_a M_{ac,t}^2}\sqrt{\sum_a M_{ad,t}^2}},\qquad c\ne d.
+\]
 
-- si la intermediación presenta variación suficiente;
-- si está dominada por la frecuencia de intervención o la fuerza total;
-- si los actores mejor posicionados se conectan efectivamente con ambas comunidades;
-- y si la densidad de la proyección vuelve la medida poco informativa.
+La fuerza del concepto es \(k_{c,t}=\sum_{d\ne c}W^{P}_{cd,t}\). Se compara su posición relativa entre conceptos y entre ventanas, utilizando el mismo universo del libro. Los conceptos ausentes tienen norma cero: sus vínculos se fijan en cero y mantienen fuerza cero; los empates conservan la misma posición. Se presentan las frecuencias junto con la centralidad, ya que una semejanza elevada entre perfiles escasos no equivale a una presencia extendida.
 
-El coeficiente de participación o la congruencia directa se incorporarían sólo si estos diagnósticos muestran que la intermediación positiva no representa adecuadamente la posición mediadora postulada en H1.
+La red incorpora apoyos y rechazos. La centralidad indica integración en los repertorios del debate, mientras las posturas muestran cómo se disputa el concepto. Esta distinción recoge el tratamiento de relaciones de afiliación y de centralidad conceptual de Leifeld y Haunss (2012).
 
-## 11. Núcleo teórico y seguimiento temporal de H3
+### 6.2 Congruencia conceptual
 
-### 11.1 Separación entre perfiles teóricos y comunidades empíricas
+La red de congruencia conecta conceptos usados por un mismo actor con la misma orientación. Se calcula:
 
-H3a y H3b utilizarán un núcleo de preservación definido antes del análisis principal:
+\[
+W^{G}_{cd,t}=\frac{\sum_a\left[X^+_{ac,t}X^+_{ad,t}+X^-_{ac,t}X^-_{ad,t}\right]}
+{\sqrt{\sum_a\left[(X^+_{ac,t})^2+(X^-_{ac,t})^2\right]}
+ \sqrt{\sum_a\left[(X^+_{ad,t})^2+(X^-_{ad,t})^2\right]}},\qquad c\ne d.
+\]
 
-- capitalización individual positiva;
-- propiedad individual positiva;
-- reciprocidad contributiva positiva;
-- control positivo;
-- sostenibilidad financiera positiva.
+Las diagonales y los vínculos de conceptos con norma cero se fijan en cero en ambas redes conceptuales. Las contribuciones de apoyo y rechazo se conservan para la interpretación, aunque se suman en el vínculo de congruencia. Esta red se utiliza para la intermediación de necesidad material en H1b. La proximidad entre dos conceptos significa que forman parte de repertorios de los mismos actores; la lectura textual determina si existe una relación argumental entre ellos.
 
-En esta lista, *reciprocidad contributiva* reemplaza a *correspondencia contributiva* para mantener la categoría teórica del marco CARIN. *Control positivo* designa el respaldo a utilizar la responsabilidad atribuida a las personas por su situación previsional como criterio distributivo. Las reglas precisas de inclusión y exclusión de cada concepto-postura se fijarán en el libro de códigos antes del procesamiento completo.
+### 6.3 Intermediación de actores y necesidad material
 
-La condicionalidad no integrará el núcleo como concepto unitario. Durante el piloto se registrará como una propiedad de la declaración y su fundamento se codificará, cuando sea posible, mediante los criterios CARIN. Una condición contributiva puede expresar reciprocidad; una exigencia asociada a la responsabilidad por la propia situación puede expresar control; y una focalización basada en insuficiencia material puede expresar necesidad. Por ello, *focalización no CARIN* no se utilizará como categoría general.
+La intermediación de actores se calcula sobre \(G\), la red de coincidencias de postura. La intermediación conceptual se calcula sobre \(W^G\). En ambas, un peso positivo \(w\) se transforma en distancia \(1/w\); un peso cero representa ausencia de vínculo. Los pesos negativos de \(S\) no se utilizan como distancias ni se sustituyen por su valor absoluto.
 
-Cuando una declaración establezca explícitamente una condición pero su fundamento no pueda asignarse justificadamente a un criterio existente, se activará la marca provisional `condicionalidad_no_CARIN` y se conservará una descripción breve de su subtipo. Esta marca servirá para reunir y comparar casos durante el piloto; no se incorporará automáticamente como nodo de la red ni como componente de H3. Sólo un patrón recurrente, internamente coherente y teóricamente interpretable dará lugar a una nueva categoría en el libro de códigos antes del procesamiento completo.
+Para un nodo \(v\), la intermediación suma la proporción de caminos mínimos entre otros pares de nodos que pasan por él (Freeman, 1977):
 
-Las comunidades se detectarán sin imponerles inicialmente las etiquetas de preservación o transformación. Después se compararán sus perfiles con el núcleo anterior y con el perfil teórico de transformación. Los conceptos compartidos, inesperados o aparentemente contradictorios se conservarán como resultados y no se incorporarán automáticamente a la definición de ninguno de los perfiles.
+\[
+B(v)=\sum_{i<j;\,i,j\ne v}\frac{\sigma_{ij}(v)}{\sigma_{ij}}.
+\]
 
-Esta separación evita que la comunidad empírica utilizada para clasificar a los actores determine también qué conceptos contarán posteriormente como evidencia de permanencia o difusión.
+Los pares sin camino aportan cero. La normalización para una red no dirigida divide por \((n-1)(n-2)/2\), cuando \(n>2\); los nodos aislados tienen intermediación cero. Se informa el tamaño de la red al comparar ventanas.
 
-### 11.2 H3a: permanencia
+Para H1b se compara la distribución de intermediación de parlamentarios de centroizquierda con la de los demás grupos, aunque la red de actores incluye también las otras funciones presentes en el debate. Necesidad material se compara con los demás conceptos y se examinan sus vínculos con los repertorios de ambos polos. La fuerza total, la densidad de la red y las conexiones efectivas entre coaliciones acompañan la interpretación: una proyección muy densa puede ofrecer escasa diferenciación mediante caminos mínimos. La lectura dirigida establece si la posición relacional corresponde a argumentos compartidos o a conexiones entre justificaciones diferentes.
 
-La permanencia se evaluará exclusivamente sobre el núcleo teórico fijo. Para cada componente se observarán:
+## 7. Comparación entre proyectos y modelos de H2
 
-- cobertura entre actores activos;
-- balance entre apoyo y rechazo;
-- fuerza de las conexiones con los demás componentes del núcleo.
+El repertorio asociado a la capitalización individual se mantiene fijo durante las comparaciones:
 
-Las conexiones entre el núcleo y solidaridad positiva se reservarán para H3c. Otros conceptos empíricamente relevantes podrán describirse, pero no se sumarán como indicadores de H3a.
+| Concepto | Identificador |
+| --- | --- |
+| Propiedad individual de los fondos | `propiedad_individual_fondos` |
+| Capitalización individual | `capitalizacion_individual` |
+| Reciprocidad contributiva | `reciprocidad_contributiva` |
+| Conciencia de costos | `conciencia_costos` |
+| Ineficiencia y riesgo estatal | `ineficiencia_estado` |
+| Previsión como mercado | `prevision_como_mercado` |
 
-### 11.3 H3b: cohorte inicial y movimiento de actores
+Para cada uno, H2 compara \(P_{uc}\), su frecuencia por ley y su centralidad en \(W^P\). Para necesidad material e igualdad/universalismo se analiza \(D_{uc+}\) y su cobertura entre grupos políticos. Los conceptos mantienen su identidad y se informan separadamente, sin agregarlos en una escala de justicia de mercado.
 
-La primera detección de comunidades se conservará como referencia para identificar la cohorte inicialmente orientada a la transformación. Fijar esa clasificación permite responder una pregunta direccional: si quienes partieron más alejados del núcleo de preservación comienzan posteriormente a utilizarlo.
+### 7.1 Especificación
 
-Esta fijación no supone que la pertenencia sea inmutable. Las comunidades se volverán a estimar en cada etapa y el movimiento de los actores se informará como resultado complementario. La distinción es:
+Se estima un modelo logístico por concepto. La variable dependiente \(Y_{uc}\) es presencia para los seis conceptos del repertorio y apoyo para necesidad e igualdad/universalismo:
 
-- **cohorte inicial fija:** define desde dónde se evalúa la trayectoria;
-- **pertenencia dinámica:** describe hacia dónde se desplazan los actores;
-- **núcleo teórico fijo:** define qué contenidos se transfieren.
+\[
+\operatorname{logit}\Pr(Y_{uc}=1)=
+\alpha_c+\beta_{c,L(u)}+\gamma_{c,G(u)}+
+\delta_{c,L(u),G(u)}+\boldsymbol{\theta}_c^\top\mathbf{Z}_u+b_{a(u),c}.
+\]
 
-La difusión se observará en los actores activos de la cohorte inicial mediante el uso posterior de conceptos-postura del núcleo, su amplitud dentro de éste y la diversidad partidaria y organizacional alcanzada. El criterio mínimo para distinguir una adopción sustantiva de una mención aislada se fijará después del piloto y antes del procesamiento completo.
+\(L\) representa la ley, \(G\) el grupo político y \(\delta\) su interacción. \(\mathbf Z\) contiene cámara, tipo de actor y longitud de la intervención. \(b_{a,c}\) es un intercepto aleatorio por actor, con distribución normal de media cero y varianza estimada, que recoge la dependencia de sus intervenciones. Cada modelo informará categorías de referencia, codificación de covariables y transformación utilizada para la longitud.
 
-Los actores que aparezcan por primera vez después de la etapa inicial no integrarán la cohorte direccional principal, porque no existe una posición inicial observada. Su uso del núcleo se reportará separadamente como expansión de alcance.
+La unidad es la intervención y no cada etiqueta emitida por el LLM. La comparación se apoya en probabilidades predichas y contrastes entre leyes y grupos, con intervalos de incertidumbre y una misma distribución de covariables de ajuste cuando se estandaricen resultados. Las combinaciones sin observaciones se identificarán y no se interpretarán como comparaciones empíricas respaldadas por el corpus.
 
-Si la primera etapa no produce comunidades claramente alineables con los perfiles teóricos, no se forzarán las etiquetas de preservación y transformación. En ese escenario deberá revisarse la operacionalización direccional de H3b y evaluarse una clasificación basada en el alineamiento inicial de cada actor con los perfiles teóricos.
+### 7.2 Diagnósticos e interpretación
 
-### 11.4 H3c: adaptación
+Se examinarán cobertura de las celdas ley por grupo, variación de los resultados, convergencia, separación y varianza del efecto de actor. Si una categoría no permite estimar el modelo completo, se reportará su descripción y se documentará cualquier simplificación de la especificación. La comparación de varios conceptos conservará los tamaños de las diferencias y su incertidumbre; la interpretación conjunta no dependerá de seleccionar únicamente los resultados significativos.
 
-Solidaridad positiva no formará parte por sí sola del núcleo de preservación. H3c evaluará su articulación, dentro de una misma intervención, con restricciones contributivas, focalizadas o financieras. Estas restricciones se identificarán por el contenido sustantivo de las declaraciones y no por la marca residual `condicionalidad_no_CARIN`. Esto permite distinguir:
+Las nueve discusiones y las tres leyes delimitan el alcance del diseño. Las intervenciones repetidas no constituyen reformas independientes. El modelo estima asociaciones entre los proyectos observados, sin identificar un efecto general del carácter estructural de una reforma.
 
-- solidaridad positiva no condicionada;
-- solidaridad incorporada bajo restricciones compatibles con el núcleo de preservación;
-- y conceptos compartidos desde la primera etapa que no representan cambio temporal.
+## 8. Persistencia y difusión
+
+### 8.1 Persistencia en H3
+
+Para los seis conceptos anteriores se compararán presencia, cobertura de apoyo, balance de posturas, fuerza y posición relativa en las tres ventanas de la reforma. Se conservarán las relaciones de reciprocidad, costos y justificaciones institucionales con propiedad y capitalización individual.
+
+La continuidad de centralidad con rechazo sostenido se interpretará como persistencia del concepto en la controversia. La continuidad de apoyo informa sobre su aceptación. Las trayectorias pueden diferir entre componentes; se reportarán esas diferencias y sus argumentos, sin asignar un resultado único al conjunto por una suma arbitraria de indicadores.
+
+La ausencia de significación estadística no demuestra estabilidad. La evaluación descriptiva informará magnitud y dirección de los cambios. Una prueba de equivalencia requeriría un margen sustantivo definido con anterioridad; las medidas descritas aquí no establecen ese margen ni constituyen por sí mismas una prueba de equivalencia.
+
+### 8.2 Seguimiento de H4
+
+La cohorte se define por la alineación con el repertorio de transformación en la primera ventana de la Cámara y se restringe a quienes también participan en la ventana final. Su composición inicial permanece fija. Los actores presentes solo en una ventana se describen en el alcance general, sin atribuirles una trayectoria individual observada.
+
+Para cada concepto se distinguen: apoyo presente desde el inicio, aparición posterior de apoyo, cambio explícito de rechazo a apoyo y continuidad del rechazo. También se conserva la coexistencia de ambas posturas. La falta de expresión inicial no se transforma en rechazo. Se informarán el tamaño de la cohorte, sus oportunidades de intervención y la cobertura de cada concepto en los dos momentos.
+
+La lectura de los pasajes establece si aparece una nueva justificación, si se reconoce una premisa antes cuestionada o si cambia la propuesta defendida. La nueva expresión de un concepto documenta un cambio en el repertorio observado; una interpretación de transmisión o cambio de creencia necesita evidencia adicional. Si los agrupamientos iniciales carecen de una correspondencia sustantiva con los perfiles teóricos, no se fuerza una cohorte reformista para contrastar la hipótesis.
+
+## 9. Selección de pasajes e interpretación de la estructuración
+
+La selección textual responde a resultados identificables: conceptos de alta centralidad, vínculos entre coaliciones, posiciones de intermediación y trayectorias de apoyo o rechazo. Incluye casos discrepantes y conserva los identificadores de actor, ley, fase, intervención y fragmento.
+
+Cada lectura registra la proposición defendida, sus fundamentos, el arreglo distributivo que justifica y su relación con premisas de otros repertorios. El predominio requiere mostrar que esas premisas son reconocidas o condicionan propuestas rivales. La presencia de una palabra o la proximidad de dos conceptos en la red sirve para seleccionar evidencia; la interpretación descansa en el argumento completo.
+
+Este procedimiento distingue conceptos centrales como objetos de controversia de principios aceptados como fundamentos de las propuestas. También examina si reciprocidad y restricciones de gasto sostienen la acumulación individual o arreglos colectivos, según sus relaciones con las demás justificaciones.
+
+## 10. Registro reproducible
+
+Las salidas del análisis conservarán:
+
+- La versión del corpus, el libro, el prompt y las anotaciones adjudicadas, con sus identificadores y hashes.
+- La tabla de grupos políticos, las ventanas temporales, las reglas de inclusión y los denominadores de cada comparación.
+- Las matrices \(X^+\), \(X^-\), \(M\), \(G\), \(C\), \(S\), \(W^P\) y \(W^G\), con nodos identificados y la misma ordenación de conceptos.
+- Las configuraciones y semillas de comunidades, las particiones obtenidas y sus diagnósticos de estabilidad.
+- Las especificaciones de los modelos, muestras efectivas, diagnósticos, probabilidades y contrastes informados.
+- Los pasajes seleccionados y las decisiones interpretativas que vinculan los patrones cuantitativos con los argumentos.
+
+Las fuentes académicas citadas se encuentran en la bibliografía de la tesis. Las fórmulas de este suplemento explicitan las decisiones de este estudio sobre las relaciones descritas por el DNA; el registro de ejecución documentará su aplicación al corpus.
