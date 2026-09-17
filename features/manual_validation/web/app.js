@@ -82,15 +82,43 @@ function renderCorpusSummary() {
   const corpus = state.config.corpus;
   const codebook = state.config.codebook;
   const law = state.config.laws.find((entry) => entry.law_number === elements.lawNumber.value);
-  const available = law ? law.available_units : corpus.available_units;
+  const unit = elements.samplingUnit.value || state.config.defaults.sampling_unit;
+  const available = unit === "utterance"
+    ? (law ? law.available_interventions : corpus.source_interventions)
+    : (law ? law.available_blocks : corpus.available_paragraph_blocks);
   elements.sampleSize.max = available;
   elements.corpusSummary.textContent = [
     law ? `${law.label} · boletín ${law.bill_number}` : `Todas las leyes (${state.config.laws.length})`,
-    `${available} bloques disponibles`,
+    `${available} ${unit === "utterance" ? "intervenciones" : "bloques"} disponibles`,
+    unit === "utterance" ? "se codificarán todos los bloques seleccionados" : "un bloque por unidad seleccionada",
     `${corpus.chunk_schema_version === "coding-chunks-2.0.0" ? "límite flexible" : "máximo estricto"} ${corpus.max_block_words} palabras`,
     `${codebook.concepts.length} conceptos`,
     `libro ${codebook.version}`,
   ].join(" · ");
+}
+
+function renderStratificationOptions() {
+  const existing = new Set(
+    [...elements.strataOptions.querySelectorAll('input[type="checkbox"]:checked')]
+      .map((input) => input.value),
+  );
+  const selected = existing.size ? existing : new Set(state.config.defaults.strata || []);
+  elements.strataOptions.replaceChildren();
+  state.config.stratification.fields.forEach((field) => {
+    const label = document.createElement("label");
+    label.className = "quality-flag-option";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.value = field.id;
+    input.checked = selected.has(field.id);
+    label.append(input, document.createTextNode(field.label));
+    elements.strataOptions.append(label);
+  });
+  updateStrategyState();
+}
+
+function updateStrategyState() {
+  elements.strataFieldset.disabled = elements.samplingStrategy.value !== "stratified";
 }
 
 function renderLawOptions() {
@@ -144,7 +172,11 @@ function renderSessions(sessions) {
     });
     const meta = document.createElement("p");
     const coder = session.coder_id ? ` · ${session.coder_id}` : "";
-    meta.textContent = `${session.law_label} · ${formatDateTime(session.updated_at_utc)} · libro ${session.codebook_version}${coder}`;
+    const unit = session.sampling_unit === "utterance" ? "intervenciones" : "bloques";
+    const design = session.sampling_unit === "utterance"
+      ? ` · ${session.selected_primary_units} ${unit} → ${session.sample_size} bloques`
+      : ` · ${session.sample_size} ${unit}`;
+    meta.textContent = `${session.law_label}${design} · ${formatDateTime(session.updated_at_utc)} · libro ${session.codebook_version}${coder}`;
     entry.append(button, meta);
     elements.sessionsList.append(entry);
   });
@@ -271,6 +303,7 @@ function conceptLabel(annotation) {
 
 function renderTargetText() {
   const text = state.item?.target_text || "";
+  const chars = Array.from(text);
   const valid = state.annotations
     .filter(
       (annotation) =>
@@ -278,10 +311,10 @@ function renderTargetText() {
         Number.isInteger(annotation.end_char) &&
         annotation.start_char >= 0 &&
         annotation.end_char > annotation.start_char &&
-        annotation.end_char <= text.length,
+        annotation.end_char <= chars.length,
     )
     .sort((left, right) => left.start_char - right.start_char || left.end_char - right.end_char);
-  const boundaries = new Set([0, text.length]);
+  const boundaries = new Set([0, chars.length]);
   valid.forEach((annotation) => {
     boundaries.add(annotation.start_char);
     boundaries.add(annotation.end_char);
@@ -292,7 +325,7 @@ function renderTargetText() {
     const start = points[index];
     const end = points[index + 1];
     if (end <= start) continue;
-    const segment = text.slice(start, end);
+    const segment = chars.slice(start, end).join("");
     const covering = valid.filter(
       (annotation) => annotation.start_char <= start && annotation.end_char >= end,
     );
@@ -434,10 +467,11 @@ function getSelectionOffsets(container) {
   const prefix = range.cloneRange();
   prefix.selectNodeContents(container);
   prefix.setEnd(range.startContainer, range.startOffset);
-  const start = prefix.toString().length;
+  const start = Array.from(prefix.toString()).length;
   const evidence = range.toString();
-  const end = start + evidence.length;
-  if (!evidence.trim() || container.textContent.slice(start, end) !== evidence) return null;
+  const end = start + Array.from(evidence).length;
+  const content = Array.from(container.textContent || "");
+  if (!evidence.trim() || content.slice(start, end).join("") !== evidence) return null;
   return { start_char: start, end_char: end, evidence_text: evidence };
 }
 
@@ -474,6 +508,10 @@ function addAnnotation() {
     return;
   }
   const conceptStatus = conceptValue === "__review__" ? "review" : "in_codebook";
+  if (conceptStatus === "review" && !elements.proposedConcept.value.trim()) {
+    showToast("Describe la justificación propuesta para revisión.", "error");
+    return;
+  }
   const annotation = {
     annotation_id: createAnnotationId(),
     ...state.selection,
@@ -615,6 +653,9 @@ async function createSession(event) {
         sample_size: Number(elements.sampleSize.value),
         seed: Number(elements.sampleSeed.value),
         strategy: elements.samplingStrategy.value,
+        sampling_unit: elements.samplingUnit.value,
+        strata: [...elements.strataOptions.querySelectorAll('input[type="checkbox"]:checked')]
+          .map((input) => input.value),
       }),
     });
     await refreshConfig();
@@ -632,6 +673,8 @@ function confirmDiscard() {
 
 function bindEvents() {
   elements.lawNumber.addEventListener("change", renderCorpusSummary);
+  elements.samplingUnit.addEventListener("change", renderCorpusSummary);
+  elements.samplingStrategy.addEventListener("change", updateStrategyState);
   elements.sessionForm.addEventListener("submit", createSession);
   elements.conceptSelect.addEventListener("change", renderConceptDefinition);
   elements.addAnnotation.addEventListener("click", addAnnotation);
@@ -688,6 +731,9 @@ async function initialize() {
     "sample-size",
     "sample-seed",
     "sampling-strategy",
+    "sampling-unit",
+    "strata-fieldset",
+    "strata-options",
     "corpus-summary",
     "sessions-list",
     "session-label",
@@ -733,6 +779,9 @@ async function initialize() {
     elements.sampleSize.value = state.config.defaults.sample_size;
     elements.sampleSeed.value = state.config.defaults.seed;
     elements.samplingStrategy.value = state.config.defaults.strategy;
+    elements.samplingUnit.value = state.config.defaults.sampling_unit;
+    renderStratificationOptions();
+    renderCorpusSummary();
     showSetup();
   } catch (error) {
     showToast(error.message, "error");

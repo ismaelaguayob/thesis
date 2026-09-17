@@ -87,7 +87,8 @@ def output_schema(codebook: dict) -> dict:
         "decision": {"type": "string", "enum": ["statements", "no_statements"]},
         "annotations": {"type": "array", "maxItems": 50, "items": annotation},
         "decision_justification": string,
-        "quality_flags": {"type": "array", "items": {"type": "string", "enum": list(QUALITY_FLAGS)}},
+        "quality_flags": {"type": "array", "uniqueItems": True,
+                          "items": {"type": "string", "enum": list(QUALITY_FLAGS)}},
         "needs_human_review": {"type": "boolean"},
         "limitations": string,
         "decision_confidence": confidence,
@@ -175,7 +176,9 @@ def prepare_run(service: ValidationService, selected: list[dict], sampling: dict
         "sample_size": len(selected), "sample_sha256": sha256_file(run_dir / 'sample.parquet'),
         "artifact_sha256": {str(path.relative_to(run_dir)): sha256_file(path)
                             for path in [run_dir/'prompt.md', run_dir/'codebook.json',
-                                         run_dir/'output_schema.json', *sorted((run_dir/'requests').glob('*.json'))]},
+                                         run_dir/'output_schema.json', run_dir/'pipeline.py',
+                                         run_dir/'validation_contract.py',
+                                         *sorted((run_dir/'requests').glob('*.json'))]},
         "packages": {p: importlib.metadata.version(p) for p in ['openai', 'pandas', 'pyarrow']},
     }
     atomic_write_json(manifest_path, manifest)
@@ -188,6 +191,14 @@ def validate_output(raw: dict, record: dict, codebook: dict, schema: dict) -> di
         raise ValidationError("Decisión y presencia de declaraciones inconsistentes")
     if not raw["decision_justification"].strip():
         raise ValidationError("Falta justificación de la decisión del bloque")
+    impactful_flags = {
+        "too_short", "truncated", "insufficient_context",
+        "segmentation_problem", "other",
+    }
+    if impactful_flags.intersection(raw["quality_flags"]) and not raw["needs_human_review"]:
+        raise ValidationError("Las incidencias de calidad requieren revisión humana")
+    if "other" in raw["quality_flags"] and not raw["limitations"].strip():
+        raise ValidationError("La flag other requiere describir la limitación")
     # Frozen legacy schemas remain valid; missing confidence is never inferred.
     if "decision_confidence" in raw:
         uncertain = raw["decision_confidence"] != "high"
@@ -216,16 +227,25 @@ def validate_output(raw: dict, record: dict, codebook: dict, schema: dict) -> di
         justification = annotation["justification"]
         if not justification['coding'].strip() or not justification['stance'].strip():
             raise ValidationError("Falta fundamento de código u orientación")
+        for alternative in justification['alternatives']:
+            if not alternative['reason'].strip():
+                raise ValidationError("Cada alternativa requiere una razón")
+            if alternative['concept_id'] == annotation['concept_id']:
+                raise ValidationError("Una alternativa no puede repetir el concepto elegido")
         reference = justification['criterion_reference']
         if annotation['concept_status'] == 'review':
             if annotation['concept_id'] is not None or not annotation['proposed_concept'].strip():
                 raise ValidationError("review requiere concept_id null y concepto propuesto")
             if reference != 'new_concept' or not raw['needs_human_review']:
                 raise ValidationError("Un concepto nuevo debe remitirse a revisión humana")
+            if not (justification['uncertainty'].strip() or raw['limitations'].strip()):
+                raise ValidationError("review requiere explicar la brecha conceptual")
         else:
             concept = concepts.get(annotation['concept_id'])
             if concept is None:
                 raise ValidationError("Concepto ausente del libro")
+            if annotation['proposed_concept'].strip():
+                raise ValidationError("in_codebook requiere proposed_concept vacío")
             valid_refs = {'definition', 'orientation_anchor'} | {
                 f'include:{i + 1}' for i in range(len(concept.get('include', [])))}
             if reference not in valid_refs or (reference == 'orientation_anchor' and not concept.get(reference)):
@@ -238,7 +258,12 @@ def validate_output(raw: dict, record: dict, codebook: dict, schema: dict) -> di
             **annotation, 'annotation_id': f'llm_{index:03d}', 'start_char': start,
             'end_char': start + len(evidence), 'note': '',
         }, record['content'], set(concepts), {})
-        identity = (start, start + len(evidence), annotation['concept_id'], annotation['proposed_concept'])
+        identity = (
+            start,
+            start + len(evidence),
+            annotation['concept_id'],
+            ' '.join(annotation['proposed_concept'].casefold().split()),
+        )
         if identity in seen:
             raise ValidationError("Se repitió el mismo span/concepto")
         seen.add(identity)

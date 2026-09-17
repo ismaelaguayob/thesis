@@ -83,7 +83,8 @@ internos declaran **0.4.0-pilot**, con 14 conceptos; el nombre del archivo se
 conserva para compartir la misma configuración que la app. El JSON se sincroniza
 mediante el conversor existente antes de cada preparación.
 
-`prompts/annotations_pilot.md` contiene las instrucciones editables. Cada ejecución
+`prompts/annotations_pilot_v1_confidence.md` contiene las instrucciones activas y
+editables. Cada ejecución
 congela el prompt y el libro completos. Un ID derivado de hashes separa variantes
 de prompt, libro, muestra, configuración y programa. Cambiar el código del
 procedimiento también crea otra ejecución, sin sobrescribir la original.

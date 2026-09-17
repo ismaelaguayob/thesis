@@ -97,7 +97,24 @@ class LLMPilotTests(unittest.TestCase):
         raw['annotations'][0]['justification']['criterion_reference'] = 'new_concept'
         with self.assertRaises(ValidationError): validate_output(raw, self.record, self.book, self.schema)
         raw['needs_human_review'] = True
+        raw['limitations'] = 'El libro no contiene esta justificación normativa.'
         self.assertEqual('review', validate_output(raw, self.record, self.book, self.schema)['annotations'][0]['concept_status'])
+
+    def test_cross_field_validation_matches_prompt_contract(self):
+        cases = []
+        raw = copy.deepcopy(self.raw); raw['quality_flags'] = ['truncated']; cases.append(raw)
+        raw = copy.deepcopy(self.raw); raw['quality_flags'] = ['other']; raw['needs_human_review'] = True; cases.append(raw)
+        raw = copy.deepcopy(self.raw); raw['annotations'][0]['proposed_concept'] = 'No corresponde'; cases.append(raw)
+        raw = copy.deepcopy(self.raw); raw['annotations'][0]['justification']['alternatives'] = [
+            {'concept_id': 'solidaridad', 'reason': 'Otra lectura'}]; cases.append(raw)
+        raw = copy.deepcopy(self.raw); raw['annotations'][0]['justification']['alternatives'] = [
+            {'concept_id': 'solidaridad', 'reason': ''}]; cases.append(raw)
+        for raw in cases:
+            with self.subTest(raw=raw), self.assertRaises(ValidationError):
+                validate_output(raw, self.record, self.book, self.schema)
+        raw = copy.deepcopy(self.raw); raw['quality_flags'] = ['vote', 'vote']
+        with self.assertRaises(jsonschema.ValidationError):
+            validate_output(raw, self.record, self.book, self.schema)
 
     def test_input_excludes_identity_fields_and_preserves_context(self):
         payload = model_input({**self.record, 'speaker_name': 'NO ENVIAR', 'party': 'NO ENVIAR'})
@@ -209,11 +226,28 @@ class LLMPilotTests(unittest.TestCase):
         self.assertNotEqual(first, second)
         self.assertEqual('Codifica con evidencia exacta.', (first/'prompt.md').read_text())
 
+    def test_active_prompt_documents_current_schema(self):
+        root = Path(__file__).resolve().parents[1]
+        report = (root / 'annotations.qmd').read_text(encoding='utf-8')
+        prompt = (root / 'prompts/annotations_pilot_v1_confidence.md').read_text(
+            encoding='utf-8'
+        )
+        self.assertIn('"prompts/annotations_pilot_v1_confidence.md"', report)
+        for field in ('decision_confidence', 'confidence', 'needs_human_review',
+                      'proposed_concept', 'limitations'):
+            self.assertIn(f'`{field}`', prompt)
+        self.assertIn('Usa únicamente estas flags, sin duplicarlas', prompt)
+
     def test_reviews_preserve_response_and_reject_stale_or_foreign_spans(self):
         directory = self.make_run()
         with patch('features.llm_annotations.pipeline.OpenAI', return_value=self.fake_client()):
             run_annotations(directory, execute=True)
-        reviewer = AnnotationReviewService(self.root/'runs', self.root/'reviews')
+        reviewer = AnnotationReviewService(
+            self.root/'runs', self.root/'reviews',
+            {'u1::p1': {'chamber': 'Senado', 'party': 'Independiente',
+                        'gender': 'F', 'actor_type': 'Parlamentario'}},
+            {'21419': 'fixture'},
+        )
         original = (directory/'results/00000.json').read_bytes()
         item = reviewer.open_item(directory.name, 0)
         payload = {'result_sha256': item['result_sha256'], 'verdict': 'accepted', 'revision': 0,
@@ -226,7 +260,11 @@ class LLMPilotTests(unittest.TestCase):
         with self.assertRaises(ValidationError): reviewer.save_review(directory.name, 0, payload)
         with self.assertRaises(ValidationError): reviewer.open_item('../escape', 0)
         with self.assertRaises(ValidationError): reviewer.open_item(directory.name, -1)
-        self.assertEqual('accepted', reviewer.list_items(directory.name)['items'][0]['review_verdict'])
+        listed = reviewer.list_items(directory.name)['items'][0]
+        self.assertEqual('accepted', listed['review_verdict'])
+        self.assertEqual('Senado', listed['strata']['chamber'])
+        self.assertEqual('Independiente', listed['strata']['party'])
+        self.assertTrue(listed['strata_source_matches_run'])
 
     def test_reviews_can_judge_each_annotation_without_global_verdict(self):
         directory = self.make_run()

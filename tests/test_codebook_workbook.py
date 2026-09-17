@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import unittest
 from pathlib import Path
 
@@ -11,9 +13,20 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class CodebookWorkbookTestCase(unittest.TestCase):
+    def test_default_generator_paths_are_current(self) -> None:
+        result = subprocess.run(
+            [sys.executable, "-m", "features.manual_validation.generate_codebook_json", "--check"],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("features/codebook/codebook_v0.3.xlsx", result.stdout)
+
     def test_v01_xlsx_remains_the_exact_source_of_its_json(self) -> None:
-        workbook = PROJECT_ROOT / "data" / "codebook" / "codebook_v0.1.xlsx"
-        generated_json = PROJECT_ROOT / "data" / "codebook" / "codebook_v0.1.json"
+        workbook = PROJECT_ROOT / "features" / "codebook" / "codebook_v0.1.xlsx"
+        generated_json = PROJECT_ROOT / "features" / "codebook" / "codebook_v0.1.json"
         expected = read_codebook_workbook(workbook)
         actual = json.loads(generated_json.read_text(encoding="utf-8"))
         self.assertEqual(expected, actual)
@@ -21,8 +34,8 @@ class CodebookWorkbookTestCase(unittest.TestCase):
         self.assertEqual(expected["concepts"][0]["id"], "capitalizacion_individual")
 
     def test_v02_xlsx_is_the_exact_source_of_the_generated_json(self) -> None:
-        workbook = PROJECT_ROOT / "data" / "codebook" / "codebook_v0.2.xlsx"
-        generated_json = PROJECT_ROOT / "data" / "codebook" / "codebook_v0.2.json"
+        workbook = PROJECT_ROOT / "features" / "codebook" / "codebook_v0.2.xlsx"
+        generated_json = PROJECT_ROOT / "features" / "codebook" / "codebook_v0.2.json"
         expected = read_codebook_workbook(workbook)
         actual = json.loads(generated_json.read_text(encoding="utf-8"))
         self.assertEqual(expected, actual)
@@ -82,8 +95,8 @@ class CodebookWorkbookTestCase(unittest.TestCase):
         )
 
     def test_v03_xlsx_is_the_exact_source_of_the_generated_json(self) -> None:
-        workbook = PROJECT_ROOT / "data" / "codebook" / "codebook_v0.3.xlsx"
-        generated_json = PROJECT_ROOT / "data" / "codebook" / "codebook_v0.3.json"
+        workbook = PROJECT_ROOT / "features" / "codebook" / "codebook_v0.3.xlsx"
+        generated_json = PROJECT_ROOT / "features" / "codebook" / "codebook_v0.3.json"
         expected = read_codebook_workbook(workbook)
         actual = json.loads(generated_json.read_text(encoding="utf-8"))
         self.assertEqual(expected, actual)

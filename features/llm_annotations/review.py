@@ -14,9 +14,13 @@ ISSUES = {'span', 'concept', 'stance', 'omission', 'justification', 'context', '
 
 
 class AnnotationReviewService:
-    def __init__(self, runs_dir: Path, reviews_dir: Path):
+    def __init__(self, runs_dir: Path, reviews_dir: Path,
+                 unit_metadata: dict[str, dict[str, str]] | None = None,
+                 source_hashes: dict[str, str] | None = None):
         self.runs_dir = runs_dir.resolve()
         self.reviews_dir = reviews_dir.resolve()
+        self.unit_metadata = unit_metadata or {}
+        self.source_hashes = source_hashes
         self.lock = threading.RLock()
 
     def _run_dir(self, run_id: str) -> Path:
@@ -49,6 +53,10 @@ class AnnotationReviewService:
     def list_items(self, run_id: str) -> dict:
         directory = self._run_dir(run_id)
         manifest = json.loads((directory / 'manifest.json').read_text())
+        frozen_hashes = {
+            str(source['law_number']): source['sha256']
+            for source in manifest.get('spec', {}).get('sources', [])
+        }
         records = load_sample(directory)
         items = []
         for index, record in enumerate(records):
@@ -71,12 +79,23 @@ class AnnotationReviewService:
             review_verdict = review.get('verdict') if review.get('verdict') in VERDICTS else (
                 'annotations_reviewed' if annotations_reviewed else None
             )
+            law_number = str(record['law_number'])
+            same_source = (self.source_hashes is None or
+                           self.source_hashes.get(law_number) == frozen_hashes.get(law_number))
+            strata = dict(self.unit_metadata.get(str(record['unit_id']), {})) if same_source else {}
+            strata.setdefault('law_number', str(record['law_number']))
+            strata.setdefault('document_uri', str(record['document_uri']))
+            strata.setdefault('length_bin', str(record.get('length_bin', 'Sin dato')))
+            for field in ('chamber', 'party', 'gender', 'actor_type'):
+                strata.setdefault(field, 'Sin dato')
             items.append({'sample_index': index, 'law_number': record['law_number'],
                           'session': record['document_uri'].rsplit('/', 1)[-1],
                           'unit_id': record['unit_id'], 'status': result.get('status', 'pending'),
                           'decision': normalized.get('decision'),
                           'n_annotations': len(model_annotations),
                           'needs_human_review': normalized.get('needs_human_review', False),
+                          'strata': strata,
+                          'strata_source_matches_run': same_source,
                           'review_verdict': review_verdict,
                           'review_complete': review_complete})
         return {'manifest': manifest, 'items': items}

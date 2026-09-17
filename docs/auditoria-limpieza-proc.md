@@ -51,7 +51,7 @@ Esta auditoría distingue archivos obsoletos, diagnósticos reproducibles y cach
 - `data/proc_data/speech_df.parquet`: es el corpus analítico consumido por la validación manual.
 - `data/proc_data/speech_df_full.parquet`: conserva votaciones, preámbulos y texto excluido para trazabilidad y auditoría.
 - `output/validation/`: contiene las rondas humanas y no es un caché regenerable.
-- `data/codebook/`: conserva las versiones del instrumento y sus derivados sincronizados.
+- `features/codebook/`: conserva las versiones del instrumento y sus derivados sincronizados.
 
 ## Refactor posterior recomendado
 

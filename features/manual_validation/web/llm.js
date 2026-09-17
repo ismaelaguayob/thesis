@@ -4,6 +4,12 @@ const reviewState = { runId: null, items: [], filtered: [], index: null, data: n
 const verdictLabels = { accepted: 'Aceptar', needs_changes: 'Requiere cambios', discard: 'Descartar' };
 const issueLabels = { span: 'Span', concept: 'Código', stance: 'Orientación', omission: 'Omisión', justification: 'Justificación', context: 'Contexto', segmentation: 'Segmentación', other: 'Otro' };
 const itemReviewLabels = { annotations_reviewed: 'Códigos revisados' };
+const strataFilters = {
+  'chamber-filter': 'chamber',
+  'party-filter': 'party',
+  'gender-filter': 'gender',
+  'actor-type-filter': 'actor_type',
+};
 function node(tag, text, className) {
   const element = document.createElement(tag);
   if (text != null) element.textContent = text;
@@ -189,7 +195,9 @@ async function loadItem(index) {
 }
 async function applyFilters() {
   const law = $('law-filter').value, filter = $('item-filter').value;
-  reviewState.filtered = reviewState.items.filter(item => (law === 'all' || item.law_number === law) && (
+  reviewState.filtered = reviewState.items.filter(item => (law === 'all' || item.law_number === law) &&
+    Object.entries(strataFilters).every(([id, field]) =>
+      $(id).value === 'all' || item.strata?.[field] === $(id).value) && (
     filter === 'all' || (filter === 'unreviewed' && !item.review_complete) ||
     (filter === 'flagged' && item.needs_human_review) || (filter === 'no_statements' && item.decision === 'no_statements') ||
     (filter === 'errors' && !['pending', 'completed'].includes(item.status))));
@@ -206,11 +214,21 @@ async function loadRun() {
   if (!reviewState.runId) return;
   const data = await api(`/api/llm/runs/${reviewState.runId}/items`);
   reviewState.items = data.items;
-  $('run-summary').textContent = `${data.manifest.run_id} · ${data.manifest.spec.sampling.selected_interventions} intervenciones · ${data.items.length} bloques · ${data.items.filter(i => i.review_complete).length} revisados`;
+  const mismatched = data.items.filter(item => !item.strata_source_matches_run).length;
+  $('run-summary').textContent = `${data.manifest.run_id} · ${data.manifest.spec.sampling.selected_interventions} intervenciones · ${data.items.length} bloques · ${data.items.filter(i => i.review_complete).length} revisados${mismatched ? ` · ${mismatched} sin filtros de estrato por cambio del corpus` : ''}`;
   const previousLaw = $('law-filter').value;
   $('law-filter').replaceChildren(new Option('Todas las leyes', 'all'));
   [...new Set(data.items.map(i => i.law_number))].sort().forEach(law => $('law-filter').add(new Option(`Ley ${law}`, law)));
   $('law-filter').value = previousLaw; if (!$('law-filter').value) $('law-filter').value = 'all';
+  Object.entries(strataFilters).forEach(([id, field]) => {
+    const select = $(id), previous = select.value;
+    select.replaceChildren(new Option('Todos', 'all'));
+    [...new Set(data.items.map(item => item.strata?.[field] || 'Sin dato'))]
+      .sort((left, right) => left.localeCompare(right, 'es'))
+      .forEach(value => select.add(new Option(value, value)));
+    select.value = previous;
+    if (!select.value) select.value = 'all';
+  });
   await applyFilters();
 }
 async function refresh() {
@@ -264,7 +282,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   $('review-form').addEventListener('input', () => { reviewState.dirty = true; });
   $('review-form').addEventListener('change', () => { reviewState.dirty = true; });
   $('run-select').addEventListener('change', guarded(loadRun));
-  ['law-filter', 'item-filter'].forEach(id => $(id).addEventListener('change', guarded(applyFilters)));
+  ['law-filter', 'item-filter', ...Object.keys(strataFilters)]
+    .forEach(id => $(id).addEventListener('change', guarded(applyFilters)));
   $('item-select').addEventListener('change', guarded(() => loadItem(Number($('item-select').value))));
   $('refresh').addEventListener('click', guarded(refresh));
   for (const [id, direction] of [['previous', -1], ['next', 1]]) $(id).addEventListener('click', guarded(() => {

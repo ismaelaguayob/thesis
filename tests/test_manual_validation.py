@@ -207,6 +207,7 @@ class ManualValidationTestCase(unittest.TestCase):
                     "constitutional_stage": (
                         "Primer trámite" if document_uri == "doc-a" else "Segundo trámite"
                     ),
+                    "regulatory_stage": "Discusión General",
                     "title": "Sesión A" if document_uri == "doc-a" else "Sesión B",
                     "bill_number": "15480-13",
                     "content": content,
@@ -225,6 +226,7 @@ class ManualValidationTestCase(unittest.TestCase):
                     "speaker_id": "persona-secreta",
                     "current_party": "Partido secreto",
                     "gender": "F",
+                    "role": "Diputada" if document_uri == "doc-a" else "Senador",
                 }
             )
         pd.DataFrame(rows).to_parquet(self.source_path, index=False)
@@ -240,6 +242,7 @@ class ManualValidationTestCase(unittest.TestCase):
                     "id": "solidaridad",
                     "label": "Solidaridad",
                     "definition": "Distribución colectiva de riesgos o recursos.",
+                    "orientation_anchor": "Los riesgos deben distribuirse colectivamente.",
                     "include": ["Redistribución previsional."],
                     "exclude": ["Uso retórico aislado."],
                 },
@@ -247,6 +250,7 @@ class ManualValidationTestCase(unittest.TestCase):
                     "id": "propiedad_individual_fondos",
                     "label": "Propiedad individual de los fondos",
                     "definition": "Los fondos pertenecen al cotizante.",
+                    "orientation_anchor": "Los fondos deben pertenecer al cotizante.",
                     "include": ["Propiedad del ahorro."],
                     "exclude": ["Capitalización sin propiedad."],
                 },
@@ -363,6 +367,35 @@ class ManualValidationTestCase(unittest.TestCase):
         assert_no_forbidden_keys(public)
         assert_no_forbidden_keys(persisted)
 
+    def test_intervention_sampling_expands_all_blocks_and_records_probabilities(self) -> None:
+        summary = self.service.create_session({
+            "sampling_unit": "utterance",
+            "sample_size": 6,
+            "seed": 33,
+            "strategy": "stratified",
+            "strata": ["law_number", "chamber", "party", "gender", "actor_type"],
+        })
+        session = self._session_payload(summary["session_id"])
+        self.assertEqual(summary["sampling_unit"], "utterance")
+        self.assertEqual(summary["selected_primary_units"], 6)
+        self.assertEqual(summary["sample_size"], 7)
+        self.assertEqual(session["sampling"]["selected_primary_units"], 6)
+        self.assertEqual(session["sampling"]["selected_blocks"], 7)
+        self.assertEqual(session["source"]["available_units"], 6)
+        selected = {item["unit_id"] for item in session["items"]}
+        self.assertIn("doc-a-3::p0001", selected)
+        self.assertIn("doc-a-3::p0002", selected)
+        self.assertTrue(all(item["inclusion_probability"] == 1 for item in session["items"]))
+        self.assertTrue(all(item["selection_weight"] == 1 for item in session["items"]))
+        self.assertTrue(all(
+            set(row["values"]) == {
+                "law_number", "chamber", "party", "gender", "actor_type"
+            }
+            for row in session["sampling"]["strata_table"]
+        ))
+        self.assertTrue(all("party" not in item and "gender" not in item
+                            for item in session["items"]))
+
     def test_multiple_annotations_and_review_are_persisted(self) -> None:
         summary = self._session()
         session_id = summary["session_id"]
@@ -469,6 +502,48 @@ class ManualValidationTestCase(unittest.TestCase):
                 },
             )
 
+    def test_unicode_offsets_use_code_points(self) -> None:
+        target = "🧭 La solidaridad importa."
+        normalized = self.service._normalize_annotation({
+            "annotation_id": "unicode",
+            "start_char": 2,
+            "end_char": 4,
+            "evidence_text": "La",
+            "concept_status": "in_codebook",
+            "concept_id": "solidaridad",
+            "proposed_concept": "",
+            "stance": "support",
+        }, target, self.service.concept_ids, {})
+        self.assertEqual("La", normalized["span"]["text"])
+        self.assertEqual((2, 4), (
+            normalized["span"]["start_char"], normalized["span"]["end_char"]
+        ))
+
+    def test_review_requires_proposal_and_semantic_duplicates_are_rejected(self) -> None:
+        summary = self._session(1)
+        session_id = summary["session_id"]
+        text = self.service.open_item(session_id, 0)["item"]["target_text"]
+        evidence = text[: min(8, len(text))]
+        base = {
+            "start_char": 0,
+            "end_char": len(evidence),
+            "evidence_text": evidence,
+            "concept_status": "review",
+            "concept_id": None,
+            "proposed_concept": "",
+            "stance": "support",
+        }
+        with self.assertRaisesRegex(ValidationError, "justificación propuesta"):
+            self.service.save_item(session_id, 0, {
+                "decision": "statements", "annotations": [base],
+            })
+        first = {**base, "annotation_id": "a", "proposed_concept": "Nueva regla"}
+        second = {**base, "annotation_id": "b", "proposed_concept": " nueva   regla "}
+        with self.assertRaisesRegex(ValidationError, "duplicados"):
+            self.service.save_item(session_id, 0, {
+                "decision": "statements", "annotations": [first, second],
+            })
+
     def test_http_api_contract_and_bad_index(self) -> None:
         server = create_server(self.service, STATIC_DIR, "127.0.0.1", 0)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -524,6 +599,9 @@ class ManualValidationTestCase(unittest.TestCase):
         self.assertIn(".coded-highlight", styles)
         self.assertIn("#fde68a", styles)
         self.assertIn("máximo estricto", javascript)
+        self.assertIn("Array.from(prefix.toString()).length", javascript)
+        self.assertIn('id="sampling-unit"', html)
+        self.assertIn('id="strata-options"', html)
 
     def _multi_law_service(self) -> ValidationService:
         original = pd.read_parquet(self.source_path)
@@ -591,7 +669,9 @@ class ManualValidationTestCase(unittest.TestCase):
     def test_invalid_law_or_oversized_filtered_sample_creates_no_session(self) -> None:
         service = self._multi_law_service()
         for payload in ({"law_number": "99999", "sample_size": 1},
-                        {"law_number": "21538", "sample_size": 8}):
+                        {"law_number": "21538", "sample_size": 8},
+                        {"law_number": "21419", "sample_size": 1.5},
+                        {"law_number": "21419", "sample_size": True}):
             with self.subTest(payload=payload), self.assertRaises(ValidationError):
                 service.create_session(payload)
         self.assertEqual(list(self.output_dir.glob("validation_*.json")), [])

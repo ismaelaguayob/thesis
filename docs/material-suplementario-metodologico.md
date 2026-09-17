@@ -43,7 +43,7 @@ La postura toma los valores `support` y `oppose` respecto de la proposición afi
 
 ### 2.1 Contrato de salida
 
-El contrato ejecutable se define en `output_schema()` y `validate_output()` de `features/llm_annotations/pipeline.py`. El prompt se conserva en `prompts/annotations_pilot.md` y se copia en cada ejecución. Sus campos principales son:
+El contrato ejecutable se define en `output_schema()` y `validate_output()` de `features/llm_annotations/pipeline.py`. El prompt activo se conserva en `prompts/annotations_pilot_v1_confidence.md` y se copia en cada ejecución. Sus campos principales son:
 
 | Nivel | Campos | Función |
 | --- | --- | --- |

@@ -53,14 +53,12 @@ import pandas as pd
 from bcn_scraper import (
     add_speech_content,
     build_corpus_person_registry,
-    build_parliamentarian_table,
     build_speech_analysis_dataframe,
     build_speech_quality_report,
     collect_akn_person_identities,
     collect_bcn_speaker_references,
     collect_unlabeled_speaker_candidates,
     debug_akoma_ntoso_errors,
-    debug_parliamentarian_data_errors,
     extract_speech_from_history_xml,
     historia_dataframe_from_ley_o_boletin,
     normalize_speech_content,
@@ -73,14 +71,13 @@ from features.coding_chunks import (
 )
 ```
 
-Seleccionamos la ley y sus carpetas. Los dos indicadores de descarga quedan en
-`False` para reutilizar los archivos locales; actívalos únicamente cuando quieras
-actualizar la historia o las biografías de parlamentarios.
+Seleccionamos la ley y sus carpetas. `REFRESH_HISTORY = False` reutiliza la historia
+local. Las biografías se leen de los archivos existentes; su actualización se
+ejecuta por separado con el extractor de BCN.
 
 ```{python}
 LAW_NUMBER = "21735"
 REFRESH_HISTORY = False
-REFRESH_PARLIAMENTARIANS = False
 
 BILL_NUMBERS = {
     "21735": "15480-13",
@@ -402,32 +399,11 @@ fuentes o los registros manuales. El detalle se conserva en
 
 ## Datos de parlamentarios
 
-La actualización de biografías consulta BCN y puede demorar varias decenas de
-minutos. Se ejecuta solo con `REFRESH_PARLIAMENTARIANS = True`. Conservamos la última
-militancia disponible; este atributo no representa necesariamente el partido de la
-persona en la fecha de cada debate.
-
-```{python}
-if REFRESH_PARLIAMENTARIANS:
-    parliamentarians = build_parliamentarian_table(
-        data_normalized_full,
-        include_all_militancies=False,
-        fetch_militancy_dates=False,
-        timeout=30,
-        max_attempts=1,
-    )
-    parliamentarians = debug_parliamentarian_data_errors(
-        parliamentarians,
-        include_all_militancies=False,
-        fetch_militancy_dates=False,
-        timeout=60,
-        max_attempts=5,
-        backoff_seconds=3,
-    )
-    parliamentarians.to_parquet(
-        PROC_DATA_DIR / "parliamentarians.parquet", index=False
-    )
-```
+Este procesamiento reutiliza `parliamentarians.parquet` sin descargar ni sobrescribir
+biografías. La extracción de afiliaciones por discusión se ejecuta por separado y
+guarda `parliamentarian_affiliations.parquet`. Su incorporación al corpus queda
+pendiente. Los campos `current_party` conservados como metadatos no deben
+interpretarse como la afiliación en la fecha del debate.
 
 Leemos las biografías locales y añadimos la identidad de cualquier hablante BCN que
 no esté registrado. Estas filas se marcan como `identity_only` y conservan sus
@@ -784,3 +760,8 @@ Los bloques de menos de 50 palabras corresponden a intervenciones completas.
 La tabla distingue las intervenciones fuente de los bloques resultantes;
 `coding_chunks_long.parquet` conserva las unidades y su procedencia para las
 siguientes etapas de codificación.
+
+`annotations.qmd` lee la versión vigente de `ley_*/coding_chunks_long.parquet`.
+Después de modificar este procesamiento, ejecuta los bloques para cada ley que
+quieras actualizar antes de preparar sus inputs de anotación. La actualización
+del corpus no requiere que coincida con la muestra de un piloto anterior.

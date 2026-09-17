@@ -8,7 +8,7 @@ El *outline* de mi tesis se encuentra en [este link](https://ismaelaguayob.githu
 
 - `data/raw_data/`: fuentes originales descargadas o recopiladas.
 - `data/proc_data/`: datos transformados que alimentan los análisis y aplicaciones.
-- `data/codebook/`: versiones editables XLSX del libro de códigos y sus JSON derivados.
+- `features/codebook/`: versiones editables XLSX del libro de códigos y sus JSON derivados.
 - `features/manual_validation/`: backend, conversor del libro, comando y frontend de la validación manual.
 - `features/discourse_network/`: generación de productos ilustrativos de redes discursivas.
 - `output/figures/`, `output/tables/` y `output/validation/`: resultados producidos por el proyecto.
@@ -19,9 +19,11 @@ El *outline* de mi tesis se encuentra en [este link](https://ismaelaguayob.githu
 
 `annotations.qmd` sortea el 10% de las intervenciones elegibles por ley y sesión,
 reutiliza el contexto y los controles de la app manual y anota todos sus bloques
-con `gpt-5.6-luna`, esfuerzo `max`. El prompt se edita en
-[`prompts/annotations_pilot.md`](prompts/annotations_pilot.md). El XLSX vigente es
-`data/codebook/codebook_v0.3.xlsx` (versión interna `0.4.0-pilot`).
+con `gpt-5.6-luna`. Las ejecuciones nuevas usan esfuerzo `low`; el piloto histórico
+conservado usó `max`. El prompt activo se edita en
+[`prompts/annotations_pilot_v1_confidence.md`](prompts/annotations_pilot_v1_confidence.md).
+El XLSX vigente es `features/codebook/codebook_v0.3.xlsx` (versión interna
+`0.4.0-pilot`).
 
 ```bash
 uv sync --locked

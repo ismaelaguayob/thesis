@@ -70,7 +70,12 @@ def main() -> int:
         codebook_path=args.codebook_json,
         output_dir=args.output_dir,
     )
-    service.llm_review = AnnotationReviewService(args.annotations_dir, args.reviews_dir)
+    service.llm_review = AnnotationReviewService(
+        args.annotations_dir,
+        args.reviews_dir,
+        service.sampling_metadata_by_unit,
+        {source["law_number"]: source["sha256"] for source in service.sources},
+    )
     static_dir = Path(__file__).resolve().parent / "web"
     server = create_server(service, static_dir, args.host, args.port)
     print(f"Corpus: {service.source_path}")

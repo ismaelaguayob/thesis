@@ -74,6 +74,11 @@ Pasaron 23 pruebas de anotaciones y auditoría. La suite completa ejecutó 46:
 (`codebook_v0.1.xlsx`, `codebook_v0.2.xlsx`, `codebook_v0.3.xlsx`). Esas rutas
 pertenecen a pruebas del libro y no se alteraron en esta corrección.
 
+**Actualización del 17 de septiembre de 2026.** Las pruebas del libro ahora usan
+`features/codebook/`, su ubicación vigente. La suite completa actual contiene 52
+pruebas y todas pasan. El conteo anterior se conserva para documentar el estado
+de esta comprobación en la fecha en que se realizó.
+
 ```bash
 UV_CACHE_DIR=/tmp/uv-cache uv run --no-sync python -m unittest tests.test_llm_annotations tests.test_llm_audit -q
 ```

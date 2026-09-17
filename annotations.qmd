@@ -30,7 +30,7 @@ from html import escape
 from features.coding_chunks import length_bin
 from features.manual_validation.codebook_workbook import write_codebook_json
 from features.manual_validation.service import ValidationService, sample_records
-from features.llm_annotations.pipeline import allocate_quotas, run_annotations, load_sample
+from features.llm_annotations.pipeline import allocate_quotas, run_annotations, load_sample, prepare_run
 from features.llm_annotations.audit import read_response_ledger
 from features.manual_validation.service import atomic_write_json, sha256_file
 from datetime import datetime, timezone
@@ -39,7 +39,9 @@ FRACTION = 0.10
 SEED = 20260908
 MODEL = "gpt-5.6-luna"
 REASONING_EFFORT = "max"
-PROMPT_PATH = Path(os.environ.get("ANNOTATIONS_PROMPT", "prompts/annotations_pilot.md"))
+PROMPT_PATH = Path(os.environ.get(
+    "ANNOTATIONS_PROMPT", "prompts/annotations_pilot_v1_confidence.md"
+))
 CODEBOOK_WORKBOOK = Path("features/codebook/codebook_v0.3.xlsx")
 CODEBOOK_JSON = CODEBOOK_WORKBOOK.with_suffix(".json")
 RUN_ROOT = Path("output/annotations")
@@ -62,6 +64,9 @@ def show_table(frame):
 # Read persisted artifacts for the opening summary; no generation occurs here.
 run_dir = RUN_ROOT / SAVED_RUN_ID
 run_manifest = json.loads((run_dir / "manifest.json").read_text())
+pilot_blocks = pd.DataFrame(load_sample(run_dir))
+pilot_sampling = run_manifest["spec"]["sampling"]
+pilot_codebook = json.loads((run_dir / "codebook.json").read_text())
 results = pd.read_parquet(run_dir / "results.parquet")
 annotations = pd.read_parquet(run_dir / "annotations.parquet")
 run_directories = {
@@ -85,7 +90,7 @@ Se obtuvieron **`{python} valid_blocks` bloques con salida válida de `{python} 
 con `{python} len(annotations)` anotaciones. El problema principal fueron
 `{python} incomplete_blocks` respuestas incompletas por el límite de salida;
 otras `{python} invalid_blocks` fallaron los controles locales. Solo
-`{python} complete_utterances` de las 110 intervenciones sorteadas tienen todos sus
+`{python} complete_utterances` de las `{python} pilot_sampling["selected_interventions"]` intervenciones sorteadas tienen todos sus
 bloques válidos. El consumo confirmado fue de
 **`{python} f'{token_totals["total_tokens"]:,}'` tokens**, incluida la prueba inicial.
 
@@ -153,7 +158,7 @@ explícitas. Se usa el libro **`{python} service.codebook['version']`**, con
 al corpus elegible de la app y conserva su umbral mínimo de
 `{python} service.min_words` palabras.
 
-## Muestra estratificada
+## Muestra del corpus vigente
 
 Calculamos las cuotas enteras por ley y sesión. La tabla muestra los nueve estratos
 completos y permite revisar el redondeo. La semilla fija el sorteo y los empates.
@@ -211,21 +216,22 @@ contexto; no cuentan como objetivos adicionales.
 
 ## Prompt, libro y trazabilidad
 
-El [prompt editable](prompts/annotations_pilot.md) define evidencia literal,
+El [prompt activo](prompts/annotations_pilot_v1_confidence.md) define evidencia literal,
 orientación respecto del ancla de cada concepto y tratamiento de justificaciones
 ausentes del libro. Se adjunta el libro completo: definiciones, inclusión,
 exclusión y anclas. Solo se envían el objetivo, su contexto y los metadatos públicos
 que usa la app. Los campos de hablante, partido y género no se incluyen.
 
-La configuración usa `gpt-5.6-luna` y `reasoning.effort=max`, admitidos por la
+El piloto histórico usó `gpt-5.6-luna` y `reasoning.effort=max`, admitidos por la
 [documentación de Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna).
 La respuesta utiliza un [esquema JSON estricto](https://developers.openai.com/api/docs/guides/structured-outputs).
 La API no recibe una semilla: se reproduce la selección, los inputs y la
 configuración, pero nuevas generaciones pueden diferir.
 
-Guardamos un snapshot del prompt, libro, esquema, muestra y request exacto por
-bloque. El identificador de ejecución depende de su contenido y del programa.
-Cambiar el prompt produce otra ejecución sin sobrescribir la anterior.
+Preparamos los inputs a partir de los Parquet actuales de `proc.qmd`, el prompt
+activo y el libro vigente. `prepare_run` guarda la muestra y los requests en una
+carpeta identificada por su contenido, sin llamar a la API. Esta preparación no
+exige coincidencia con la muestra ni con el libro del piloto histórico.
 
 ```{python}
 #| label: congelar-ejecucion
@@ -234,15 +240,18 @@ sampling = {"fraction": FRACTION, "seed": SEED, "unit": "utterance",
             "within_stratum": "manual_app_round_robin_intervention_length",
             "eligible_interventions": len(utterances), "selected_interventions": len(selected_units),
             "quotas": strata.to_dict("records")}
-run_dir = RUN_ROOT / SAVED_RUN_ID
-run_manifest = json.loads((run_dir / "manifest.json").read_text())
-assert [r["unit_id"] for r in selected] == [r["unit_id"] for r in load_sample(run_dir)]
-assert run_manifest["codebook_version"] == service.codebook["version"]
-assert sha256_file(CODEBOOK_JSON) == run_manifest["spec"]["codebook_sha256"]
-selected_units.to_parquet(run_dir / "selected_utterances.parquet", index=False)
-strata.to_parquet(run_dir / "strata.parquet", index=False)
-strata.to_csv(TABLE_ROOT / f"{run_dir.name}_strata.csv", index=False)
+input_run_dir = prepare_run(
+    service, selected, sampling, PROMPT_PATH, Path("output/annotations_inputs")
+)
+selected_units.to_parquet(input_run_dir / "selected_utterances.parquet", index=False)
+strata.to_parquet(input_run_dir / "strata.parquet", index=False)
+strata.to_csv(TABLE_ROOT / f"{input_run_dir.name}_strata.csv", index=False)
 ```
+
+Los inputs vigentes quedan en `{python} str(input_run_dir)`. Las secciones siguientes
+auditan las respuestas del piloto `{python} SAVED_RUN_ID` con su muestra, libro y
+denominadores originales. Sus resultados no se asignan a los inputs nuevos. El uso
+de afiliaciones por fecha queda pendiente.
 
 ## Ejecución y controles de salida
 
@@ -339,9 +348,9 @@ annotations.to_csv(annotations_csv, index=False)
 execution_summary.to_csv(TABLE_ROOT / f"{run_dir.name}_execution.csv", index=False)
 ```
 
-## Confianza en la versión nueva del prompt
+## Confianza en el prompt activo
 
-La [versión en desarrollo](prompts/annotations_pilot_v1_confidence.md) conserva
+El [prompt activo](prompts/annotations_pilot_v1_confidence.md) conserva
 los campos de justificación y añade `confidence` por anotación y
 `decision_confidence` por bloque, ambos con niveles `high`, `medium` y `low`.
 El esquema y el exportador de `features/llm_annotations/pipeline.py` guardan esos
@@ -359,17 +368,18 @@ documenta la comprobación separada sobre cinco bloques que habían agotado el l
 
 El piloto histórico se ejecutó con el prompt anterior y carece de estos valores:
 las nuevas columnas quedan nulas al reexportarlo. Una explicación vacía no se
-convierte en confianza alta. Este reporte continúa fijado al piloto histórico;
-para evaluar la versión nueva se debe preparar otra ejecución con su prompt y
-esquema, conservando la muestra para la comparación. Cambiar `ANNOTATIONS_PROMPT`
-por sí solo no crea ni ejecuta otro piloto en este reporte.
+convierte en confianza alta. La auditoría de respuestas conserva el piloto histórico;
+para evaluar la versión nueva se debe ejecutar por separado una preparación
+con su prompt y esquema. Una comparación controlada requiere conservar la muestra.
+Cambiar `ANNOTATIONS_PROMPT` actualiza la preparación de inputs del corpus vigente;
+no ejecuta llamadas ni cambia las respuestas históricas auditadas aquí.
 
 Para priorizar la evaluación manual, se pueden combinar confianza baja o media,
 `needs_human_review`, conceptos `review`, incidencias de calidad y fallos de
 validación. Conviene reservar además una muestra de confianza alta y bloques sin
 declaraciones para detectar errores que el modelo no advierte. La relación entre
 confianza y aciertos debe evaluarse contra codificación humana; los niveles
-ordinales no son equivalentes al umbral numérico `<0.8` aún mencionado en la tesis.
+ordinales no son equivalentes a un umbral numérico de probabilidad.
 
 ## Cómo revisar y repetir
 
@@ -451,7 +461,7 @@ valid_blocks = int(results.status.eq("completed").sum())
 incomplete_blocks = int(results.status.eq("incomplete").sum())
 invalid_blocks = int(results.status.eq("invalid_output").sum())
 incomplete_reasons = pilot_ledger.loc[pilot_ledger.status.eq("incomplete"), "incomplete_reason"].value_counts().to_dict()
-length_diagnostics = results.merge(blocks[["unit_id", "n_words"]], on="unit_id", validate="one_to_one").groupby("status").agg(
+length_diagnostics = results.merge(pilot_blocks[["unit_id", "n_words"]], on="unit_id", validate="one_to_one").groupby("status").agg(
     bloques=("unit_id", "size"), palabras_mediana=("n_words", "median"), palabras_promedio=("n_words", "mean")
 ).reset_index()
 show_table(coverage.rename(columns={"law_number": "Ley", "bloques": "Bloques", "validos": "Válidos", "incompletos": "Incompletos", "invalidos": "Inválidos", "declaraciones": "Anotaciones", "porcentaje_valido": "% válido"}).round(2))
@@ -467,8 +477,8 @@ Solo **`{python} complete_utterances` de `{python} len(utterance_coverage)`
 intervenciones** tienen todos sus bloques válidos. Otras
 `{python} len(utterance_coverage) - complete_utterances - none_utterances` tienen
 cobertura parcial y `{python} none_utterances` no tienen ningún bloque válido.
-La muestra inicial alcanza el 10%; la cobertura completa efectiva equivale al
-`{python} f'{100 * complete_utterances / len(utterances):.2f}'`% del universo elegible.
+La muestra del piloto histórico alcanza el 10%; la cobertura completa efectiva equivale al
+`{python} f'{100 * complete_utterances / pilot_sampling["eligible_interventions"]:.2f}'`% del universo elegible del piloto histórico.
 Por tanto, no corresponde afirmar que el 10% quedó completamente anotado.
 
 La ley 21.735 tiene la mayor fracción de fallos. Las tasas de completitud difieren
@@ -501,7 +511,7 @@ de anotaciones, no de personas ni de intervenciones.
 #| label: balance-codigos
 concept_counts = pd.crosstab(annotations.concept_id.fillna("__review__"), annotations.stance)
 concept_counts = concept_counts.reindex(
-    [concept["id"] for concept in service.codebook["concepts"]] + ["__review__"],
+    [concept["id"] for concept in pilot_codebook["concepts"]] + ["__review__"],
     columns=["support", "oppose"], fill_value=0
 ).rename_axis("codigo").reset_index()
 concept_counts["total"] = concept_counts.support + concept_counts.oppose
@@ -621,14 +631,15 @@ manifest = {
     "codebook_version": run_manifest["codebook_version"],
     "prompt_sha256": run_manifest["spec"]["prompt_sha256"],
     "sampling": {
-        "seed": SEED, "target_fraction": FRACTION,
-        "eligible_interventions": len(utterances), "selected_interventions": len(selected_units),
-        "sample_fraction": len(selected_units) / len(utterances),
-        "selected_blocks": len(selected), "session_strata": len(strata),
+        "seed": pilot_sampling["seed"], "target_fraction": pilot_sampling["fraction"],
+        "eligible_interventions": pilot_sampling["eligible_interventions"],
+        "selected_interventions": pilot_sampling["selected_interventions"],
+        "sample_fraction": pilot_sampling["selected_interventions"] / pilot_sampling["eligible_interventions"],
+        "selected_blocks": len(pilot_blocks), "session_strata": len(pilot_sampling["quotas"]),
         "complete_interventions": complete_utterances,
         "partial_interventions": len(utterance_coverage) - complete_utterances - none_utterances,
         "interventions_without_valid_blocks": none_utterances,
-        "complete_interventions_fraction_of_corpus": complete_utterances / len(utterances),
+        "complete_interventions_fraction_of_corpus": complete_utterances / pilot_sampling["eligible_interventions"],
     },
     "token_usage": {
         "scope": "Unique persisted responses from the primary pilot and initial canary",

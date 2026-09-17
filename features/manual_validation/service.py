@@ -10,6 +10,7 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
+import math
 import mimetypes
 import os
 import random
@@ -26,7 +27,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 
-SCHEMA_VERSION = "manual-validation-2.4.0"
+SCHEMA_VERSION = "manual-validation-2.5.0"
 CHUNK_SCHEMA_VERSION = "coding-chunks-2.0.0"
 CHUNK_SCHEMA_VERSIONS = {"coding-chunks-1.0.0", CHUNK_SCHEMA_VERSION}
 LAW_BY_BILL = {"15480-13": "21735", "14588-13": "21419", "15625-13": "21538"}
@@ -36,6 +37,19 @@ ALLOWED_STANCES = {"support", "oppose"}
 ALLOWED_CONCEPT_STATUSES = {"in_codebook", "review"}
 ALLOWED_DECISIONS = {"statements", "no_statements"}
 ALLOWED_STRATEGIES = {"stratified", "random"}
+ALLOWED_SAMPLING_UNITS = {"block", "utterance"}
+STRATIFICATION_FIELDS = {
+    "law_number": "Ley",
+    "chamber": "Cámara",
+    "party": "Partido o afiliación",
+    "gender": "Género",
+    "actor_type": "Tipo de actor",
+    "document_uri": "Discusión en Sala",
+    "length_bin": "Longitud",
+}
+DEFAULT_EVALUATION_STRATA = [
+    "law_number", "chamber", "party", "gender", "actor_type",
+]
 QUALITY_FLAGS = {
     "vote": "Voto",
     "procedural": "Procedimental",
@@ -54,6 +68,74 @@ def law_label(law_number: str) -> str:
     if law_number.isdigit():
         return f"Ley {int(law_number):,}".replace(",", ".")
     return f"Boletín {law_number}"
+
+
+def _sampling_value(value: Any, missing: str = "Sin dato") -> str:
+    result = _text(value).strip()
+    return result if result else missing
+
+
+def _actor_type(role: Any, speaker_bcn_id: Any = None, party: Any = None) -> str:
+    normalized = _sampling_value(role, "").casefold()
+    if "diputad" in normalized or "senador" in normalized:
+        return "Parlamentario"
+    if "ministr" in normalized or "subsecret" in normalized:
+        return "Ejecutivo"
+    if any(token in normalized for token in (
+        "president", "vicepresident", "secretari", "prosecretari",
+    )):
+        return "Autoridad de la cámara"
+    if not normalized and (
+        _sampling_value(speaker_bcn_id, "") or _sampling_value(party, "")
+    ):
+        # Algunos documentos omiten ``role`` para parlamentarios identificados
+        # por BCN; partido o ID BCN distinguen esos casos de actores desconocidos.
+        return "Parlamentario"
+    return "Otro o sin dato"
+
+
+def _document_chambers(dataframe: pd.DataFrame) -> dict[str, str]:
+    chambers: dict[str, str] = {}
+    unresolved: list[tuple[str, str]] = []
+    for document_uri, group in dataframe.groupby("document_uri", sort=False):
+        roles = group["role"].fillna("").astype(str).str.casefold()
+        senate = int(roles.str.contains("senador|senado", regex=True).sum())
+        chamber = int(roles.str.contains("diputad|cámara", regex=True).sum())
+        if senate == chamber:
+            stages = group["constitutional_stage"].dropna().astype(str).unique().tolist()
+            if len(stages) != 1:
+                raise ValidationError(
+                    f"No fue posible determinar la cámara de {document_uri}"
+                )
+            unresolved.append((str(document_uri), stages[0].casefold()))
+        else:
+            chambers[str(document_uri)] = "Senado" if senate > chamber else "Cámara"
+
+    first_chambers = {
+        chambers[str(document_uri)]
+        for document_uri, group in dataframe.groupby("document_uri", sort=False)
+        if "primer" in _text(group["constitutional_stage"].iloc[0]).casefold()
+        and str(document_uri) in chambers
+    }
+    first_chamber = next(iter(first_chambers)) if len(first_chambers) == 1 else None
+    for document_uri, stage in unresolved:
+        if first_chamber and ("primer" in stage or "tercer" in stage):
+            chambers[document_uri] = first_chamber
+        elif first_chamber and "segundo" in stage:
+            chambers[document_uri] = "Cámara" if first_chamber == "Senado" else "Senado"
+        else:
+            raise ValidationError(
+                f"No fue posible determinar la cámara de {document_uri}"
+            )
+    return chambers
+
+
+def _utterance_length_bin(n_words: int) -> str:
+    if n_words <= 75:
+        return "short_000_075"
+    if n_words <= 500:
+        return "medium_076_500"
+    return "long_501_plus"
 
 
 class ValidationError(ValueError):
@@ -87,6 +169,16 @@ def _limited_text(value: Any, field: str, limit: int) -> str:
     if len(result) > limit:
         raise ValidationError(f"{field} supera el máximo de {limit} caracteres")
     return result
+
+
+def _integer(value: Any, field: str) -> int:
+    if isinstance(value, bool):
+        raise ValidationError(f"{field} debe ser un número entero")
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and re.fullmatch(r"[+-]?\d+", value.strip()):
+        return int(value.strip())
+    raise ValidationError(f"{field} debe ser un número entero")
 
 
 def sha256_file(path: Path) -> str:
@@ -144,8 +236,15 @@ def load_codebook(path: Path) -> dict[str, Any]:
         definition = _limited_text(
             concept.get("definition"), f"concepts[{position}].definition", 4000
         )
-        if not concept_id or not label or not definition:
-            raise ValidationError(f"El concepto {position} requiere id, label y definition")
+        orientation_anchor = _limited_text(
+            concept.get("orientation_anchor"),
+            f"concepts[{position}].orientation_anchor",
+            4000,
+        )
+        if not concept_id or not label or not definition or not orientation_anchor:
+            raise ValidationError(
+                f"El concepto {position} requiere id, label, definition y orientation_anchor"
+            )
         if not re.fullmatch(r"[a-z0-9_]+", concept_id):
             raise ValidationError(f"ID de concepto inválido: {concept_id}")
         if concept_id in seen:
@@ -218,8 +317,12 @@ def load_corpus_records(
         "source_utterance_n_words",
         "date",
         "constitutional_stage",
+        "regulatory_stage",
         "title",
         "bill_number",
+        "role",
+        "gender",
+        "current_party",
         "content",
         "content_sha256",
         "n_words",
@@ -336,7 +439,9 @@ def load_corpus_records(
                 raise ValidationError(
                     f"{field} no coincide con el orden de chunks en {document_uri}"
                 )
-    for utterance_id, group in dataframe.groupby("utterance_id", sort=False):
+    for (document_uri, utterance_id), group in dataframe.groupby(
+        ["document_uri", "utterance_id"], sort=False
+    ):
         expected_count = len(group)
         expected_numbers = list(range(1, expected_count + 1))
         if group["utterance_chunk_number"].tolist() != expected_numbers:
@@ -365,6 +470,7 @@ def load_corpus_records(
     if not dataframe["source_start_char"].lt(dataframe["source_end_char"]).all():
         raise ValidationError("Los offsets de origen deben delimitar texto no vacío")
 
+    document_chambers = _document_chambers(dataframe)
     public_fields = [
         "chunk_id",
         "unit_id",
@@ -386,6 +492,7 @@ def load_corpus_records(
         "source_utterance_n_words",
         "date",
         "constitutional_stage",
+        "regulatory_stage",
         "title",
         "bill_number",
         "content",
@@ -413,6 +520,14 @@ def load_corpus_records(
                 f"source_segments_json debe ser una lista no vacía en {record['unit_id']}"
             )
         record["source_segments"] = source_segments
+        record["_sampling_metadata"] = {
+            "chamber": document_chambers[str(record["document_uri"])],
+            "party": _sampling_value(row["current_party"]),
+            "gender": _sampling_value(row["gender"]),
+            "actor_type": _actor_type(
+                row["role"], row.get("speaker_bcn_id"), row["current_party"]
+            ),
+        }
         record["previous_context"] = None
         record["next_context"] = None
         records.append(record)
@@ -484,6 +599,124 @@ def sample_records(
     return selected
 
 
+def normalize_strata(raw: Any, default: list[str]) -> list[str]:
+    if raw is None:
+        return list(default)
+    if not isinstance(raw, list):
+        raise ValidationError("strata debe ser una lista")
+    fields: list[str] = []
+    for value in raw:
+        field = _limited_text(value, "strata", 40)
+        if field not in STRATIFICATION_FIELDS:
+            raise ValidationError(f"Dimensión de estratificación inválida: {field}")
+        if field not in fields:
+            fields.append(field)
+    if not fields:
+        raise ValidationError("Selecciona al menos una dimensión de estratificación")
+    return fields
+
+
+def _stratum_values(record: dict[str, Any], fields: list[str]) -> dict[str, str]:
+    return {field: _sampling_value(record.get(field)) for field in fields}
+
+
+def _stratum_id(values: dict[str, str]) -> str:
+    encoded = json.dumps(values, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return "stratum_" + sha256_text(encoded)[:16]
+
+
+def sample_with_design(
+    records: list[dict[str, Any]],
+    sample_size: int,
+    seed: int,
+    strategy: str,
+    strata: list[str],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Select primary sampling units and return their auditable design table."""
+    if strategy not in ALLOWED_STRATEGIES:
+        raise ValidationError(f"Estrategia de muestreo inválida: {strategy}")
+    if sample_size < 1:
+        raise ValidationError("El tamaño de muestra debe ser mayor que cero")
+    if sample_size > len(records):
+        raise ValidationError(
+            f"El tamaño solicitado ({sample_size}) supera las {len(records)} unidades disponibles"
+        )
+    if strategy == "stratified" and not strata:
+        raise ValidationError("El muestreo estratificado requiere al menos una dimensión")
+    rng = random.Random(seed)
+    if strategy == "random":
+        probability = sample_size / len(records)
+        selected = []
+        for record in rng.sample(records, sample_size):
+            selected.append(dict(
+                record,
+                sampling_stratum_id="srs",
+                inclusion_probability=probability,
+                selection_weight=1 / probability,
+            ))
+        return selected, [{
+            "stratum_id": "srs",
+            "values": {},
+            "population_units": len(records),
+            "sampled_units": sample_size,
+            "inclusion_probability": probability,
+        }]
+
+    groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    values_by_id: dict[str, dict[str, str]] = {}
+    for record in records:
+        values = _stratum_values(record, strata)
+        identifier = _stratum_id(values)
+        groups[identifier].append(record)
+        values_by_id[identifier] = values
+    counts = {identifier: len(group) for identifier, group in groups.items()}
+    total = len(records)
+    ideal = {identifier: count * sample_size / total for identifier, count in counts.items()}
+    quotas = {identifier: min(counts[identifier], math.floor(value))
+              for identifier, value in ideal.items()}
+    remaining = sample_size - sum(quotas.values())
+    order = sorted(
+        groups,
+        key=lambda identifier: (
+            -(ideal[identifier] - quotas[identifier]),
+            json.dumps(values_by_id[identifier], sort_keys=True, ensure_ascii=False),
+        ),
+    )
+    for identifier in order:
+        if remaining == 0:
+            break
+        if quotas[identifier] < counts[identifier]:
+            quotas[identifier] += 1
+            remaining -= 1
+    if remaining:
+        raise ValidationError("No fue posible asignar todas las unidades de la muestra")
+
+    selected: list[dict[str, Any]] = []
+    design: list[dict[str, Any]] = []
+    for identifier in sorted(groups):
+        population = counts[identifier]
+        sampled = quotas[identifier]
+        probability = sampled / population
+        design.append({
+            "stratum_id": identifier,
+            "values": values_by_id[identifier],
+            "population_units": population,
+            "sampled_units": sampled,
+            "inclusion_probability": probability,
+        })
+        if sampled == 0:
+            continue
+        for record in rng.sample(groups[identifier], sampled):
+            selected.append(dict(
+                record,
+                sampling_stratum_id=identifier,
+                inclusion_probability=probability,
+                selection_weight=1 / probability,
+            ))
+    rng.shuffle(selected)
+    return selected, design
+
+
 class ValidationService:
     """State and persistence layer for the local annotation application."""
 
@@ -506,23 +739,43 @@ class ValidationService:
         )
         if not paths:
             raise ValidationError("No se encontraron corpus en ley_*/coding_chunks_long.parquet")
-        self.records = []
-        self.sources = []
+        self.records: list[dict[str, Any]] = []
+        self.sources: list[dict[str, Any]] = []
+        self.sampling_metadata_by_unit: dict[str, dict[str, str]] = {}
         for path in paths:
             records = load_corpus_records(path)
             bill_number = str(records[0]["bill_number"])
             law_number = LAW_BY_BILL.get(bill_number, bill_number)
             for record in records:
                 record["law_number"] = law_number
+                private_metadata = record.pop("_sampling_metadata")
+                self.sampling_metadata_by_unit[str(record["unit_id"])] = {
+                    "law_number": law_number,
+                    "chamber": private_metadata["chamber"],
+                    "party": private_metadata["party"],
+                    "gender": private_metadata["gender"],
+                    "actor_type": private_metadata["actor_type"],
+                    "document_uri": str(record["document_uri"]),
+                    "length_bin": str(record["length_bin"]),
+                }
             self.records.extend(records)
-            self.sources.append({
-                "law_number": law_number,
-                "label": law_label(law_number),
-                "bill_number": bill_number,
-                "path": str(path),
-                "sha256": sha256_file(path),
-                "available_units": len(records),
-            })
+            self.sources.append(
+                {
+                    "law_number": law_number,
+                    "label": law_label(law_number),
+                    "bill_number": bill_number,
+                    "path": str(path),
+                    "sha256": sha256_file(path),
+                    "available_units": len(records),
+                    "available_blocks": len(records),
+                    "available_interventions": len(
+                        {
+                            (record["document_uri"], record["utterance_id"])
+                            for record in records
+                        }
+                    ),
+                }
+            )
         if len({record["unit_id"] for record in self.records}) != len(self.records):
             raise ValidationError("Hay unit_id duplicados entre los corpus de las leyes")
         if len({source["law_number"] for source in self.sources}) != len(self.sources):
@@ -538,6 +791,10 @@ class ValidationService:
                       "target_block_words", "max_block_words"):
             if any(record[field] != first_record[field] for record in self.records):
                 raise ValidationError(f"Los corpus de las leyes difieren en {field}")
+        self.records_by_id = {
+            str(record["unit_id"]): record for record in self.records
+        }
+        self.utterances = self._build_utterance_units()
         self.source_sha256 = self._source_fingerprint(self.sources)
         self.codebook_sha256 = sha256_file(self.codebook_path)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -551,6 +808,51 @@ class ValidationService:
         if len(sources) == 1:
             return sources[0]["sha256"]
         return sha256_text(json.dumps(sources, sort_keys=True, ensure_ascii=False))
+
+    def _build_utterance_units(self) -> list[dict[str, Any]]:
+        grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
+        for record in self.records:
+            grouped[
+                (
+                    str(record["law_number"]),
+                    str(record["document_uri"]),
+                    str(record["utterance_id"]),
+                )
+            ].append(record)
+        units: list[dict[str, Any]] = []
+        for (law_number, document_uri, utterance_id), blocks in grouped.items():
+            blocks.sort(key=lambda record: int(record["document_chunk_order"]))
+            metadata_rows = [
+                self.sampling_metadata_by_unit[str(block["unit_id"])] for block in blocks
+            ]
+            stable_fields = ("chamber", "party", "gender", "actor_type", "document_uri")
+            for field in stable_fields:
+                if len({metadata[field] for metadata in metadata_rows}) != 1:
+                    raise ValidationError(
+                        f"{field} cambia dentro de la intervención {utterance_id}"
+                    )
+            n_words = int(blocks[0]["source_utterance_n_words"])
+            units.append(
+                {
+                    "unit_id": f"{law_number}||{document_uri}||{utterance_id}",
+                    "utterance_id": utterance_id,
+                    "law_number": law_number,
+                    "chamber": metadata_rows[0]["chamber"],
+                    "party": metadata_rows[0]["party"],
+                    "gender": metadata_rows[0]["gender"],
+                    "actor_type": metadata_rows[0]["actor_type"],
+                    "document_uri": document_uri,
+                    "length_bin": _utterance_length_bin(n_words),
+                    "n_words": n_words,
+                    "unit_ids": [str(block["unit_id"]) for block in blocks],
+                }
+            )
+        units.sort(key=lambda unit: (unit["law_number"], unit["document_uri"], unit["unit_id"]))
+        return units
+
+    def sampling_metadata(self, unit_id: str) -> dict[str, str]:
+        """Return category metadata for diagnostic filtering, without identity fields."""
+        return dict(self.sampling_metadata_by_unit.get(unit_id, {}))
 
     def config(self) -> dict[str, Any]:
         by_document: dict[str, int] = defaultdict(int)
@@ -573,9 +875,7 @@ class ValidationService:
                 "max_block_words": self.max_block_words,
                 "available_units": len(self.records),
                 "available_paragraph_blocks": len(self.records),
-                "source_interventions": len(
-                    {record["utterance_id"] for record in self.records}
-                ),
+                "source_interventions": len(self.utterances),
                 "by_document": dict(sorted(by_document.items())),
                 "by_length_bin": dict(sorted(by_length.items())),
             },
@@ -584,11 +884,23 @@ class ValidationService:
                 {"id": flag_id, "label": label}
                 for flag_id, label in QUALITY_FLAGS.items()
             ],
+            "stratification": {
+                "fields": [
+                    {"id": field, "label": label}
+                    for field, label in STRATIFICATION_FIELDS.items()
+                ],
+                "sampling_units": [
+                    {"id": "utterance", "label": "Intervenciones completas"},
+                    {"id": "block", "label": "Bloques de párrafos"},
+                ],
+            },
             "sessions": self.list_sessions(),
             "defaults": {
                 "sample_size": 40,
                 "seed": 20260824,
                 "strategy": "stratified",
+                "sampling_unit": "utterance",
+                "strata": DEFAULT_EVALUATION_STRATA,
                 "minimum_words": self.min_words,
                 "short_paragraph_words": self.short_paragraph_words,
                 "target_block_words": self.target_block_words,
@@ -640,6 +952,10 @@ class ValidationService:
             "codebook_version": session.get("codebook", {}).get("version"),
             "sampling_strategy": session.get("sampling", {}).get("strategy"),
             "sampling_seed": session.get("sampling", {}).get("seed"),
+            "sampling_unit": session.get("sampling", {}).get("sampling_unit", "block"),
+            "selected_primary_units": session.get("sampling", {}).get(
+                "selected_primary_units", len(items)
+            ),
             "law_number": law_number,
             "law_label": law_label(law_number),
         }
@@ -656,12 +972,14 @@ class ValidationService:
         return summaries
 
     def create_session(self, payload: dict[str, Any]) -> dict[str, Any]:
-        try:
-            sample_size = int(payload.get("sample_size", 40))
-            seed = int(payload.get("seed", 20260824))
-        except (TypeError, ValueError) as exc:
-            raise ValidationError("sample_size y seed deben ser números enteros") from exc
+        sample_size = _integer(payload.get("sample_size", 40), "sample_size")
+        seed = _integer(payload.get("seed", 20260824), "seed")
         strategy = _limited_text(payload.get("strategy", "stratified"), "strategy", 30)
+        sampling_unit = _limited_text(
+            payload.get("sampling_unit", "block"), "sampling_unit", 30
+        )
+        if sampling_unit not in ALLOWED_SAMPLING_UNITS:
+            raise ValidationError("sampling_unit debe ser block o utterance")
         coder_id = _limited_text(payload.get("coder_id", ""), "coder_id", 120)
         law_number = _limited_text(payload.get("law_number", "all"), "law_number", 30)
         if law_number != "all" and law_number not in {
@@ -670,9 +988,40 @@ class ValidationService:
             raise ValidationError("Selecciona una ley disponible o todas las leyes")
         sources = [source for source in self.sources
                    if law_number == "all" or source["law_number"] == law_number]
-        eligible = [record for record in self.records
-                    if law_number == "all" or record["law_number"] == law_number]
-        selected = sample_records(eligible, sample_size, seed, strategy)
+        eligible_blocks = [
+            record for record in self.records
+            if law_number == "all" or record["law_number"] == law_number
+        ]
+        if sampling_unit == "utterance":
+            eligible_primary = [
+                unit for unit in self.utterances
+                if law_number == "all" or unit["law_number"] == law_number
+            ]
+            default_strata = DEFAULT_EVALUATION_STRATA
+        else:
+            eligible_primary = []
+            for record in eligible_blocks:
+                metadata = self.sampling_metadata_by_unit[str(record["unit_id"])]
+                eligible_primary.append({**record, **metadata})
+            default_strata = ["document_uri", "length_bin"]
+        strata = normalize_strata(payload.get("strata"), default_strata) if (
+            strategy == "stratified"
+        ) else []
+        selected_primary, design = sample_with_design(
+            eligible_primary, sample_size, seed, strategy, strata
+        )
+        selected: list[dict[str, Any]] = []
+        for primary in selected_primary:
+            unit_ids = primary.get("unit_ids", [primary["unit_id"]])
+            for unit_id in unit_ids:
+                selected.append(
+                    {
+                        **self.records_by_id[str(unit_id)],
+                        "sampling_stratum_id": primary["sampling_stratum_id"],
+                        "inclusion_probability": primary["inclusion_probability"],
+                        "selection_weight": primary["selection_weight"],
+                    }
+                )
         timestamps = timestamp_pair(self.timezone_name)
         session_id = f"validation_{_session_timestamp()}_{uuid.uuid4().hex[:8]}"
         items: list[dict[str, Any]] = []
@@ -699,10 +1048,13 @@ class ValidationService:
                     "source_utterance_n_words": record["source_utterance_n_words"],
                     "date": record["date"],
                     "constitutional_stage": record["constitutional_stage"],
+                    "regulatory_stage": record["regulatory_stage"],
                     "title": record["title"],
                     "length_bin": record["length_bin"],
                     "n_words": record["n_words"],
-                    "sampling_stratum": record["sampling_stratum"],
+                    "sampling_stratum_id": record["sampling_stratum_id"],
+                    "inclusion_probability": record["inclusion_probability"],
+                    "selection_weight": record["selection_weight"],
                     "target_text": record["content"],
                     "target_text_sha256": record["content_sha256"],
                     "previous_context": record["previous_context"],
@@ -745,7 +1097,12 @@ class ValidationService:
                 "short_paragraph_words": self.short_paragraph_words,
                 "target_block_words": self.target_block_words,
                 "max_block_words": self.max_block_words,
-                "available_units": len(eligible),
+                "available_units": len(eligible_primary),
+                "available_blocks": len(eligible_blocks),
+                "available_interventions": len({
+                    (record["law_number"], record["document_uri"], record["utterance_id"])
+                    for record in eligible_blocks
+                }),
             },
             "codebook": {
                 **self.codebook,
@@ -758,12 +1115,25 @@ class ValidationService:
                 "seed": seed,
                 "requested_size": sample_size,
                 "actual_size": len(items),
+                "sampling_unit": sampling_unit,
+                "selected_primary_units": len(selected_primary),
+                "selected_blocks": len(items),
                 "unit_of_analysis": "paragraph_block",
                 "minimum_words": self.min_words,
                 "short_paragraph_words": self.short_paragraph_words,
                 "target_block_words": self.target_block_words,
                 "max_block_words": self.max_block_words,
-                "strata": ["document_uri", "length_bin"] if strategy == "stratified" else [],
+                "strata": strata,
+                "strata_table": [
+                    {
+                        "stratum_id": row["stratum_id"],
+                        "values": row["values"],
+                        "population_units": row["population_units"],
+                        "sampled_units": row["sampled_units"],
+                        "inclusion_probability": row["inclusion_probability"],
+                    }
+                    for row in design
+                ],
             },
             "items": items,
         }
@@ -848,11 +1218,8 @@ class ValidationService:
             annotation_id = uuid.uuid4().hex
         if not re.fullmatch(r"[A-Za-z0-9_-]+", annotation_id):
             raise ValidationError("annotation_id contiene caracteres inválidos")
-        try:
-            start_char = int(raw.get("start_char"))
-            end_char = int(raw.get("end_char"))
-        except (TypeError, ValueError) as exc:
-            raise ValidationError("Los offsets del span deben ser números enteros") from exc
+        start_char = _integer(raw.get("start_char"), "start_char")
+        end_char = _integer(raw.get("end_char"), "end_char")
         if start_char < 0 or end_char <= start_char or end_char > len(target_text):
             raise ValidationError("El span está fuera de los límites del bloque")
         evidence_text = _text(raw.get("evidence_text"))
@@ -877,9 +1244,16 @@ class ValidationService:
         if concept_status == "in_codebook":
             if concept_id not in concept_ids:
                 raise ValidationError(f"Concepto ausente del libro de códigos: {concept_id}")
-            proposed_concept = ""
+            if proposed_concept:
+                raise ValidationError(
+                    "Un concepto del libro no puede incluir proposed_concept"
+                )
         else:
+            if concept_id is not None:
+                raise ValidationError("review requiere concept_id null")
             concept_id = None
+            if not proposed_concept:
+                raise ValidationError("review requiere una justificación propuesta")
 
         timestamps = timestamp_pair(timezone_name)
         old = existing.get(annotation_id, {})
@@ -935,8 +1309,9 @@ class ValidationService:
             flag = _limited_text(raw_flag, "quality_flags", 60)
             if flag not in QUALITY_FLAGS:
                 raise ValidationError(f"Flag de calidad inválida: {flag}")
-            if flag not in quality_flags:
-                quality_flags.append(flag)
+            if flag in quality_flags:
+                raise ValidationError(f"Flag de calidad duplicada: {flag}")
+            quality_flags.append(flag)
         general_comment = _limited_text(
             payload.get("general_comment", ""), "general_comment", 4000
         )
@@ -955,6 +1330,17 @@ class ValidationService:
         ids = [annotation["annotation_id"] for annotation in normalized]
         if len(ids) != len(set(ids)):
             raise ValidationError("annotation_id duplicado dentro de la intervención")
+        semantic_ids = [
+            (
+                annotation["span"]["start_char"],
+                annotation["span"]["end_char"],
+                annotation["concept_id"],
+                " ".join((annotation["proposed_concept"] or "").casefold().split()),
+            )
+            for annotation in normalized
+        ]
+        if len(semantic_ids) != len(set(semantic_ids)):
+            raise ValidationError("La misma evidencia y concepto están duplicados")
 
         timestamps = timestamp_pair(self.timezone_name)
         item["decision"] = decision
