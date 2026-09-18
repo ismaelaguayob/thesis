@@ -44,7 +44,7 @@ El procesamiento que consume la aplicación queda dividido en dos capas explíci
 
 1. `proc.qmd` construye el corpus analítico y escribe `data/proc_data/ley_<número>/coding_chunks_long.parquet`.
 2. `features/manual_validation/run.py` genera el JSON del libro desde el XLSX y crea el servicio local.
-3. `features/manual_validation/service.py` lee los bloques definitivos, adjunta su contexto dentro de cada documento, filtra la ley seleccionada y realiza el muestreo.
+3. `features/manual_validation/service.py` lee los bloques definitivos, usa `party_at_date` para la dimensión partidaria, adjunta su contexto dentro de cada documento, filtra la ley seleccionada y realiza el muestreo.
 4. En la codificación manual, el navegador recibe únicamente los bloques muestreados y el snapshot del libro. Los nombres, partidos, identificadores y género de los hablantes permanecen fuera del payload. La revisión LLM puede mostrar categorías de estrato para filtrar diagnósticos, pero nunca el nombre del hablante.
 
 La app utiliza los IDs, offsets y reglas de segmentación ya materializados en los Parquet. No descarga datos ni vuelve a segmentar las intervenciones.
@@ -59,8 +59,9 @@ La app utiliza los IDs, offsets y reglas de segmentación ya materializados en l
 6. Usar `Revisar: justificación ausente del libro` cuando la declaración exprese una justificación normativa que todavía no esté contemplada. La justificación propuesta es obligatoria; la nota es opcional.
 7. Agregar la declaración. Un bloque puede tener varios spans, y un mismo span puede relacionarse con más de un concepto. Los spans ya agregados o guardados aparecen destacados en amarillo sobre el texto objetivo.
 8. Si no hay ninguna posición previsional codificable, marcar `Sin declaraciones codificables`. Esta opción no debe utilizarse cuando existe una declaración cuyo concepto falta: para ese caso corresponde `Revisar`.
-9. Abrir `Comentario general y calidad` cuando el bloque completo requiera una observación. Las flags disponibles son `Voto`, `Procedimental`, `Texto demasiado breve`, `Texto truncado`, `Contexto insuficiente`, `Problema de segmentación` y `Otro problema`.
-10. Guardar y avanzar. Las sesiones incompletas pueden retomarse desde la pantalla inicial.
+9. Marcar `No es posible resolver el bloque` cuando la evidencia o el contexto no permiten decidir. Debe seleccionarse además una flag explicativa; se guarda `resolution_status=unresolved`, `decision=null` y el bloque queda fuera de los denominadores.
+10. Abrir `Comentario general y calidad` cuando el bloque completo requiera una observación. Las flags disponibles son `Voto`, `Procedimental`, `Texto demasiado breve`, `Texto truncado`, `Contexto insuficiente`, `Problema de segmentación` y `Otro problema`. Los bloques marcados como voto o procedimiento se conservan, pero quedan fuera de los porcentajes y métricas de anotación.
+11. Guardar y avanzar. Las sesiones incompletas pueden retomarse desde la pantalla inicial.
 
 Las estrategias de legitimación quedan deliberadamente fuera de este instrumento y deberán validarse con otra muestra.
 
@@ -71,13 +72,19 @@ La estrategia recomendada es `stratified`. La interfaz permite escoger como unid
 - **intervención completa** (`utterance`), que expande cada selección a todos sus bloques; o
 - **bloque de párrafos** (`block`), útil para calibraciones acotadas.
 
-Las dimensiones seleccionables son ley, cámara, partido o afiliación disponible, género, tipo de actor, documento y longitud. El diseño recomendado para evaluación cruza ley, cámara, partido, género y tipo de actor. La asignación es proporcional mediante mayores restos y el sorteo dentro de cada estrato es aleatorio. El JSON conserva, para cada estrato, población, muestra y probabilidad de inclusión, y para cada bloque seleccionado el identificador de estrato, la probabilidad y su peso inverso. Las categorías personales se usan en el servidor para el sorteo y no se incorporan a la pantalla de codificación.
+Las dimensiones seleccionables son ley, cámara, afiliación histórica, género, tipo de actor, documento y longitud. `party_at_date` se obtiene por persona y fecha de discusión; los parlamentarios con resultados `not_found` o `ambiguous` forman la categoría `Sin dato` hasta su resolución, mientras las funciones para las que no corresponde afiliación forman `No aplica`. La interfaz permite explorar cruces, pero la combinación definitiva de unidad y dimensiones permanece abierta porque un cruce muy fino puede producir estratos con cuota cero. El JSON conserva, para cada estrato, población, muestra y probabilidad de inclusión, y para cada bloque seleccionado el identificador de estrato, la probabilidad y su peso inverso. Las categorías personales se usan en el servidor para el sorteo y no se incorporan a la pantalla de codificación.
+
+El valor predeterminado es `ley × cámara`, seis celdas con cobertura en una muestra
+de 40 unidades. Partido, género y tipo de actor permanecen disponibles para el
+muestreo y pueden anexarse por `unit_id` después de congelar la referencia ciega;
+por tanto, es posible describir la distribución de los errores por esas variables
+sin exponerlas durante la codificación.
 
 La semilla hace que el sorteo sea reproducible para un corpus idéntico. `random` implementa muestreo aleatorio simple y registra una probabilidad común. Los valores ausentes forman la categoría explícita `Sin dato`. La cámara se determina a nivel de documento a partir de las funciones parlamentarias; cuando esas funciones faltan en un tercer trámite, se hereda la cámara del primer trámite del mismo proyecto.
 
-La aplicación consume los bloques ya finalizados por `proc.qmd`; no vuelve a filtrar ni segmentar durante el muestreo. Las votaciones presentes en ese corpus se clasifican manualmente con las flags `Voto` o `Procedimental` cuando carecen de discurso sustantivo.
+La aplicación consume los bloques ya finalizados por `proc.qmd`; no vuelve a filtrar ni segmentar durante el muestreo. Las votaciones presentes en ese corpus se clasifican manualmente con las flags `Voto` o `Procedimental` y se registran con `evaluation_included=false`.
 
-El procesamiento usa 100 palabras como objetivo y 150 como límite inicial. Al absorber restos breves de ambos lados, un bloque puede superar ese límite hasta el margen permitido por el esquema `coding-chunks-2.0.0`; el corpus actual llega a 194 palabras. Las intervenciones completas desde cinco palabras pueden conservarse. Los bloques adyacentes sirven como contexto y nunca cruzan de un documento o sesión a otro.
+El procesamiento usa 100 palabras como objetivo y 150 como límite inicial. Al absorber restos breves de ambos lados, un bloque puede superar ese límite hasta el margen permitido por el esquema `coding-chunks-2.1.0`; el corpus actual llega a 194 palabras. Las intervenciones completas desde cinco palabras pueden conservarse. La versión 2.1 añade afiliación histórica sin modificar estas reglas textuales. Los bloques adyacentes sirven como contexto y nunca cruzan de un documento o sesión a otro.
 
 ## Libro de códigos
 
@@ -142,13 +149,13 @@ No se debe editar el libro incorporado dentro de una sesión ya iniciada. Al cre
 
 Cada archivo se denomina `validation_<timestamp UTC>_<sufijo>.json`. Incluye:
 
-- versión del esquema (`manual-validation-2.5.0`);
+- versión del esquema (`manual-validation-2.6.0`);
 - timestamps UTC y `America/Santiago` de creación, apertura, actualización y finalización;
 - checksum y ruta del corpus;
 - snapshot completo y checksum del libro de códigos;
 - unidad primaria, estrategia, semilla, dimensiones, tamaño, tabla de estratos y probabilidades de muestreo;
 - bloque objetivo, rango de párrafos, offsets y segmentos dentro de la intervención original, incluidos los subsegmentos de párrafos extensos, junto con ambos contextos adyacentes y sus checksums;
-- estado, decisión y número de revisión de cada intervención;
+- estado de resolución, decisión, inclusión en la evaluación, motivos de exclusión y número de revisión de cada bloque;
 - comentario general y flags de calidad de cada unidad;
 - cero o más anotaciones con offsets exactos, texto, checksum, concepto, orientación, nota y timestamps.
 

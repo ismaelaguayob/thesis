@@ -39,14 +39,16 @@ lang: es
 
 ## Configuración
 
-Este documento se ejecuta bloque a bloque para una ley a la vez. Cambia `LAW_NUMBER`
-por `21735`, `21419` o `21538` y ejecuta los bloques en orden. Las tres leyes siguen
-el mismo procesamiento y solicitan AKN solo para las discusiones en Sala.
+Este documento procesa una ley por ejecución. `LAW_NUMBER` toma `21735` por defecto
+y admite `21419` o `21538` mediante la variable de entorno del mismo nombre.
+Las tres leyes siguen el mismo procesamiento y solicitan AKN solo para las
+discusiones en Sala cuando se activa `REFRESH_HISTORY`.
 
 Cargamos las herramientas del paquete local `bcn_scraper`, instalado como dependencia
 editable en `pyproject.toml`, y las funciones de segmentación de párrafos.
 
 ```{python}
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -76,7 +78,7 @@ local. Las biografías se leen de los archivos existentes; su actualización se
 ejecuta por separado con el extractor de BCN.
 
 ```{python}
-LAW_NUMBER = "21735"
+LAW_NUMBER = os.environ.get("LAW_NUMBER", "21735")
 REFRESH_HISTORY = False
 
 BILL_NUMBERS = {
@@ -84,6 +86,10 @@ BILL_NUMBERS = {
     "21419": "14588-13",
     "21538": "15625-13",
 }
+if LAW_NUMBER not in BILL_NUMBERS:
+    raise ValueError(
+        f"LAW_NUMBER debe ser uno de {sorted(BILL_NUMBERS)}; se recibió {LAW_NUMBER!r}"
+    )
 BILL_NUMBER = BILL_NUMBERS[LAW_NUMBER]
 PROC_DATA_DIR = Path("data/proc_data") / f"ley_{LAW_NUMBER}"
 TABLE_OUTPUT_DIR = Path("output/tables") / f"ley_{LAW_NUMBER}"
@@ -401,9 +407,10 @@ fuentes o los registros manuales. El detalle se conserva en
 
 Este procesamiento reutiliza `parliamentarians.parquet` sin descargar ni sobrescribir
 biografías. La extracción de afiliaciones por discusión se ejecuta por separado y
-guarda `parliamentarian_affiliations.parquet`. Su incorporación al corpus queda
-pendiente. Los campos `current_party` conservados como metadatos no deben
-interpretarse como la afiliación en la fecha del debate.
+guarda `parliamentarian_affiliations.parquet`. La tabla se enlaza por documento y
+persona para conservar el partido observado en la fecha de cada debate. Los campos
+`current_party` permanecen como metadatos de procedencia y no se usan como
+afiliación histórica.
 
 Leemos las biografías locales y añadimos la identidad de cualquier hablante BCN que
 no esté registrado. Estas filas se marcan como `identity_only` y conservan sus
@@ -430,6 +437,40 @@ identity_only["data_status"] = "identity_only"
 parliamentarians_for_merge = pd.concat(
     [parliamentarians, identity_only], ignore_index=True
 )
+
+affiliations_path = PROC_DATA_DIR / "parliamentarian_affiliations.parquet"
+if not affiliations_path.exists():
+    raise FileNotFoundError(
+        f"Falta {affiliations_path}; ejecuta parliamentarians_cli con --date discussions"
+    )
+parliamentarian_affiliations = pd.read_parquet(affiliations_path)
+affiliation_key = ["document_uri", "person_href"]
+required_affiliation_columns = {
+    *affiliation_key,
+    "date",
+    "reference_date",
+    "party_at_date",
+    "party_at_date_href",
+    "militancy_at_date_href",
+    "militancy_at_date_start_date",
+    "militancy_at_date_end_date",
+    "militancy_at_date_status",
+    "militancy_at_date_candidates",
+    "affiliation_data_status",
+    "affiliation_error",
+}
+missing_affiliation_columns = sorted(
+    required_affiliation_columns.difference(parliamentarian_affiliations.columns)
+)
+if missing_affiliation_columns:
+    raise ValueError(
+        "Faltan columnas en parliamentarian_affiliations.parquet: "
+        + ", ".join(missing_affiliation_columns)
+    )
+if parliamentarian_affiliations.duplicated(affiliation_key).any():
+    raise ValueError(
+        "parliamentarian_affiliations.parquet repite document_uri × person_href"
+    )
 ```
 
 ## Tablas de discurso
@@ -454,7 +495,121 @@ speech_df_full = speech_df_full.loc[
 speech_df_full["utterance_order"] = (
     speech_df_full.groupby("document_uri", sort=False).cumcount() + 1
 )
+
+affiliation_columns = [
+    *affiliation_key,
+    "reference_date",
+    "party_at_date",
+    "party_at_date_href",
+    "militancy_at_date_href",
+    "militancy_at_date_start_date",
+    "militancy_at_date_end_date",
+    "militancy_at_date_status",
+    "militancy_at_date_candidates",
+    "affiliation_data_status",
+    "affiliation_error",
+]
+speech_df_full = speech_df_full.merge(
+    parliamentarian_affiliations[affiliation_columns],
+    on=affiliation_key,
+    how="left",
+    validate="many_to_one",
+)
+speech_df_full["affiliation_data_status"] = speech_df_full[
+    "affiliation_data_status"
+].fillna("not_in_affiliation_table")
+speech_df_full["militancy_at_date_status"] = speech_df_full[
+    "militancy_at_date_status"
+].fillna("not_available")
+speech_df_full["party_at_date_source"] = None
+speech_df_full.loc[
+    speech_df_full["militancy_at_date_status"].eq("matched"),
+    "party_at_date_source",
+] = "bcn_militancy_history"
+role_normalized = speech_df_full["role"].fillna("").astype(str).str.casefold()
+affiliation_not_applicable = (
+    role_normalized.str.contains("ministr|subsecret", regex=True)
+    | role_normalized.str.contains("secretari|prosecretari", regex=True)
+)
+speech_df_full["party_at_date_status"] = "unknown"
+speech_df_full.loc[
+    affiliation_not_applicable,
+    "party_at_date_status",
+] = "not_applicable"
+speech_df_full.loc[
+    speech_df_full["militancy_at_date_status"].eq("matched"),
+    "party_at_date_status",
+] = "matched"
+speech_df_full.loc[
+    speech_df_full["party_at_date_status"].eq("not_applicable"),
+    "party_at_date_source",
+] = "role_not_applicable"
+
+dated_affiliations = speech_df_full["reference_date"].notna()
+if not speech_df_full.loc[dated_affiliations, "reference_date"].astype(str).eq(
+    speech_df_full.loc[dated_affiliations, "date"].astype(str)
+).all():
+    raise ValueError("La fecha de referencia de una afiliación no coincide con el debate")
+matched_affiliations = speech_df_full["militancy_at_date_status"].eq("matched")
+if speech_df_full.loc[matched_affiliations, "party_at_date"].isna().any():
+    raise ValueError("Una afiliación matched carece de party_at_date")
+if speech_df_full.loc[
+    ~matched_affiliations, "party_at_date"
+].notna().any():
+    raise ValueError("Una afiliación no resuelta contiene party_at_date")
 ```
+
+La afiliación histórica queda separada de la militancia vigente. Exportamos los
+casos sin emparejamiento para resolverlos manualmente y mostramos un resumen de
+estados. Las correcciones manuales futuras deben conservar su fuente y reemplazar
+el estado correspondiente antes de reconstruir los bloques.
+
+```{python}
+affiliation_gaps = (
+    speech_df_full.loc[
+        speech_df_full["person_href"].notna()
+        & speech_df_full["party_at_date_status"].eq("unknown"),
+        [
+            "document_uri",
+            "date",
+            "person_href",
+            "speaker",
+            "role",
+            "current_party",
+            "party_at_date",
+            "party_at_date_status",
+            "militancy_at_date_status",
+            "affiliation_data_status",
+            "affiliation_error",
+        ],
+    ]
+    .drop_duplicates(["document_uri", "person_href"])
+    .sort_values(["document_uri", "person_href"], kind="stable")
+)
+affiliation_gaps.to_parquet(
+    PROC_DATA_DIR / "parliamentarian_affiliation_gaps.parquet", index=False
+)
+affiliation_gaps.to_csv(
+    TABLE_OUTPUT_DIR / "parliamentarian_affiliation_gaps.csv", index=False
+)
+affiliation_summary = (
+    speech_df_full.loc[
+        speech_df_full["person_href"].notna(),
+        ["document_uri", "person_href", "party_at_date_status"],
+    ]
+    .drop_duplicates(["document_uri", "person_href"])
+    .groupby("party_at_date_status", dropna=False)
+    .size()
+    .rename("personas_discusion")
+    .reset_index()
+)
+affiliation_summary
+```
+
+El resumen distingue afiliaciones encontradas, actores para quienes la afiliación
+partidaria no aplica y personas cuya militancia sigue sin identificar en la fecha.
+Los casos pendientes permanecen como datos faltantes y nunca heredan
+automáticamente `current_party`.
 
 La tabla analítica conserva las participaciones y los eventos de transcripción.
 Excluimos los preámbulos, el texto sin resolver y las secciones `Votacion`; la tabla
@@ -533,7 +688,7 @@ MINIMUM_WORDS = 5
 SHORT_PARAGRAPH_WORDS = 50
 TARGET_BLOCK_WORDS = 100
 MAX_BLOCK_WORDS = 150
-CODING_CHUNKS_SCHEMA_VERSION = "coding-chunks-2.0.0"
+CODING_CHUNKS_SCHEMA_VERSION = "coding-chunks-2.1.0"
 ```
 
 Seleccionamos las participaciones incluidas en el análisis y conservamos los
@@ -583,6 +738,17 @@ CODING_METADATA_COLUMNS = [
     "birth_date",
     "current_party",
     "current_party_href",
+    "party_at_date",
+    "party_at_date_href",
+    "party_at_date_status",
+    "party_at_date_source",
+    "militancy_at_date_href",
+    "militancy_at_date_start_date",
+    "militancy_at_date_end_date",
+    "militancy_at_date_status",
+    "militancy_at_date_candidates",
+    "affiliation_data_status",
+    "affiliation_error",
     "speaker_data_status",
 ]
 
@@ -669,10 +835,12 @@ las sesiones de validación existentes mantienen sus propios textos y anotacione
 ```{python}
 coding_chunks_long = pd.DataFrame(chunk_rows)
 coding_chunks_long["utterance_chunk_number"] = (
-    coding_chunks_long.groupby("utterance_id", sort=False).cumcount() + 1
+    coding_chunks_long.groupby(
+        ["document_uri", "utterance_id"], sort=False
+    ).cumcount() + 1
 )
 coding_chunks_long["utterance_chunk_count"] = coding_chunks_long.groupby(
-    "utterance_id", sort=False
+    ["document_uri", "utterance_id"], sort=False
 )["chunk_id"].transform("size")
 coding_chunks_long["document_chunk_order"] = (
     coding_chunks_long.groupby("document_uri", sort=False).cumcount() + 1

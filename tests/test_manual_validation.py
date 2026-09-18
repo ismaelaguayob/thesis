@@ -225,6 +225,10 @@ class ManualValidationTestCase(unittest.TestCase):
                     "speaker": "Nombre que no debe exponerse",
                     "speaker_id": "persona-secreta",
                     "current_party": "Partido secreto",
+                    "party_at_date": "Partido histórico secreto",
+                    "party_at_date_status": "matched",
+                    "militancy_at_date_status": "matched",
+                    "affiliation_data_status": "ok",
                     "gender": "F",
                     "role": "Diputada" if document_uri == "doc-a" else "Senador",
                 }
@@ -353,7 +357,9 @@ class ManualValidationTestCase(unittest.TestCase):
         summary = self._session()
         public = self.service.open_item(summary["session_id"], 0)
         persisted = self._session_payload(summary["session_id"])
-        forbidden = {"speaker", "speaker_id", "current_party", "party", "gender"}
+        forbidden = {
+            "speaker", "speaker_id", "current_party", "party_at_date", "party", "gender"
+        }
 
         def assert_no_forbidden_keys(value: object) -> None:
             if isinstance(value, dict):
@@ -395,6 +401,23 @@ class ManualValidationTestCase(unittest.TestCase):
         ))
         self.assertTrue(all("party" not in item and "gender" not in item
                             for item in session["items"]))
+
+    def test_default_strata_use_law_and_chamber_for_both_sampling_units(self) -> None:
+        self.assertEqual(
+            self.service.config()["defaults"]["strata"], ["law_number", "chamber"]
+        )
+        for sampling_unit in ("block", "utterance"):
+            summary = self.service.create_session({
+                "sampling_unit": sampling_unit,
+                "sample_size": 3,
+                "seed": 17,
+                "strategy": "stratified",
+            })
+            session = self._session_payload(summary["session_id"])
+            self.assertTrue(all(
+                set(row["values"]) == {"law_number", "chamber"}
+                for row in session["sampling"]["strata_table"]
+            ))
 
     def test_multiple_annotations_and_review_are_persisted(self) -> None:
         summary = self._session()
@@ -482,6 +505,11 @@ class ManualValidationTestCase(unittest.TestCase):
         )
         self.assertEqual(saved["item"]["decision"], "no_statements")
         self.assertEqual(saved["item"]["quality_flags"], ["vote", "procedural"])
+        self.assertEqual(saved["item"]["resolution_status"], "resolved")
+        self.assertFalse(saved["item"]["evaluation_included"])
+        self.assertEqual(
+            saved["item"]["evaluation_exclusion_reasons"], ["vote", "procedural"]
+        )
         text = self.service.open_item(session_id, 1)["item"]["target_text"]
         with self.assertRaisesRegex(ValidationError, "no coincide exactamente"):
             self.service.save_item(
@@ -501,6 +529,58 @@ class ManualValidationTestCase(unittest.TestCase):
                     ],
                 },
             )
+
+    def test_unresolved_is_missing_and_requires_an_explanatory_flag(self) -> None:
+        summary = self._session()
+        session_id = summary["session_id"]
+        with self.assertRaisesRegex(ValidationError, "requiere una flag"):
+            self.service.save_item(session_id, 0, {
+                "resolution_status": "unresolved",
+                "decision": None,
+                "annotations": [],
+            })
+        saved = self.service.save_item(session_id, 0, {
+            "resolution_status": "unresolved",
+            "decision": None,
+            "annotations": [],
+            "quality_flags": ["insufficient_context"],
+            "general_comment": "No es posible restituir el referente.",
+        })
+        self.assertIsNone(saved["item"]["decision"])
+        self.assertEqual(saved["item"]["resolution_status"], "unresolved")
+        self.assertFalse(saved["item"]["evaluation_included"])
+        self.assertEqual(
+            saved["item"]["evaluation_exclusion_reasons"], ["unresolved"]
+        )
+        self.assertEqual(saved["session"]["unresolved"], 1)
+        self.assertEqual(saved["session"]["evaluation_excluded"], 1)
+
+    def test_same_span_with_different_concepts_uses_normal_annotation_rules(self) -> None:
+        summary = self._session(1)
+        session_id = summary["session_id"]
+        text = self.service.open_item(session_id, 0)["item"]["target_text"]
+        evidence = text[: min(18, len(text))]
+        annotations = []
+        for annotation_id, concept_id in (
+            ("solidarity", "solidaridad"),
+            ("property", "propiedad_individual_fondos"),
+        ):
+            annotations.append({
+                "annotation_id": annotation_id,
+                "start_char": 0,
+                "end_char": len(evidence),
+                "evidence_text": evidence,
+                "concept_status": "in_codebook",
+                "concept_id": concept_id,
+                "proposed_concept": "",
+                "stance": "support",
+                "note": "",
+            })
+        saved = self.service.save_item(session_id, 0, {
+            "decision": "statements",
+            "annotations": annotations,
+        })
+        self.assertEqual(len(saved["item"]["annotations"]), 2)
 
     def test_unicode_offsets_use_code_points(self) -> None:
         target = "🧭 La solidaridad importa."

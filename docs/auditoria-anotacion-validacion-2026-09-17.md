@@ -39,7 +39,7 @@ construir la base adjudicada descrita en la metodología.
 ## Estado de las correcciones técnicas
 
 Después de esta auditoría se aplicaron las correcciones técnicas en el código
-vigente. La aplicación manual usa el esquema `manual-validation-2.5.0` y permite
+vigente. La aplicación manual usa el esquema `manual-validation-2.6.0` y permite
 seleccionar intervenciones completas o bloques. La estrategia estratificada ofrece
 ley, cámara, partido o afiliación disponible, género, tipo de actor, documento y
 longitud; registra población, muestra, probabilidad de inclusión y peso, y expande
@@ -56,14 +56,29 @@ código Unicode tanto en el navegador como en Python. Las rutas del libro, la
 versión del esquema y la descripción del límite flexible fueron actualizadas en
 la documentación y las pruebas.
 
-Los hallazgos 2 y 3 siguen pendientes porque requieren decisiones sustantivas:
-el esquema de adjudicación de omisiones y correcciones, y el tratamiento de casos
-irresolubles frente a `no_statements`. También queda por acordar la tabla histórica
-de afiliaciones que sustituirá el campo disponible `current_party`, y si la
-multicodificación de un mismo span debe exigir una justificación estructurada.
-Estos puntos deben resolverse antes de calcular sensibilidad, F1 o una base
-adjudicada definitiva. Las descripciones siguientes conservan el diagnóstico
-anterior a las correcciones para documentar por qué se realizaron.
+Las decisiones sustantivas posteriores resolvieron los hallazgos 2 y 3. La
+referencia humana ciega produce la comparación principal por bloque; una cola
+separada permite que el mismo investigador resuelva después las discrepancias sin
+sobrescribirla. La pestaña diagnóstica LLM registra omisiones aunque el modelo haya
+emitido otros códigos. La codificación manual distingue `resolved` de `unresolved`,
+y excluye estos últimos, los votos y el contenido procedimental de los
+denominadores.
+
+`proc.qmd` enlaza ahora `parliamentarian_affiliations.parquet`, conserva
+`party_at_date` y distingue afiliación encontrada, desconocida y no aplicable. La
+multicodificación usa las mismas reglas que cualquier anotación, sin campos
+especiales. La comparación principal registra coincidencia de concepto y postura,
+coincidencia solo conceptual o divergencia, sin usar el solapamiento de spans.
+Permanece abierta la composición definitiva del diseño muestral. En el corpus
+vigente hay 136 combinaciones observadas de ley, cámara, afiliación histórica y
+género. Con 40 unidades, 102 combinaciones quedarían sin muestra al sortear
+bloques y 107 al sortear intervenciones. Añadir el tipo de actor eleva el cruce a
+155 combinaciones. La aplicación usa por defecto ley por cámara, que produce seis
+celdas con cobertura, y mantiene las demás dimensiones seleccionables. Partido,
+género y tipo de actor pueden anexarse después a la referencia ciega para estudiar
+la distribución de los errores sin mostrarlos durante la codificación. Las
+descripciones siguientes conservan el diagnóstico anterior a las correcciones
+para documentar por qué se realizaron.
 
 ## Hallazgos que bloquean la evaluación definitiva
 
@@ -182,15 +197,14 @@ interfaz también presenta el nombre como opcional (`docs/interfaz-validacion-ma
 líneas 52-62 y 170-173). Esta opcionalidad contradice la exigencia de una
 propuesta conceptual del suplemento.
 
-El guardado manual comprueba IDs de anotación únicos, pero no rechaza dos IDs con
-el mismo span y concepto (líneas 944-957). También permite varios conceptos sobre
-el mismo span sin exigir un fundamento diferenciable; la nota es opcional. Las
-sesiones actuales no contienen duplicados semánticos, de modo que este es un
-riesgo del contrato y no una corrupción observada.
+El guardado manual comprueba IDs de anotación únicos, pero no rechazaba dos IDs con
+el mismo span y concepto (líneas 944-957). Las sesiones revisadas no contenían
+duplicados semánticos, de modo que este era un riesgo del contrato y no una
+corrupción observada.
 
 **Corrección.** Exigir una propuesta con nombre y proposición de orientación para
-`review`, rechazar la identidad semántica duplicada y solicitar una nota
-justificativa cuando el mismo span reciba varios conceptos.
+`review` y rechazar la identidad semántica duplicada. Varios conceptos pueden
+compartir un span y cada asignación sigue las reglas ordinarias de codificación.
 
 ### 6. Faltan reglas ejecutables para asegurar la orientación y la revisión humana
 

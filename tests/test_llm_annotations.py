@@ -282,6 +282,27 @@ class LLMPilotTests(unittest.TestCase):
         self.assertTrue(listed['review_complete'])
         self.assertEqual('annotations_reviewed', listed['review_verdict'])
 
+    def test_diagnostic_review_records_omission_when_model_found_other_codes(self):
+        directory = self.make_run()
+        with patch('features.llm_annotations.pipeline.OpenAI', return_value=self.fake_client()):
+            run_annotations(directory, execute=True)
+        reviewer = AnnotationReviewService(self.root/'runs', self.root/'reviews')
+        item = reviewer.open_item(directory.name, 0)
+        payload = {
+            'result_sha256': item['result_sha256'],
+            'verdict': None,
+            'revision': 0,
+            'issues': ['omission'],
+            'note': 'Falta una declaración de necesidad material.',
+            'annotations': [{
+                'annotation_id': 'llm_000', 'verdict': 'accepted', 'note': ''
+            }],
+        }
+        review = reviewer.save_review(directory.name, 0, payload)['review']
+        self.assertEqual(['omission'], review['issues'])
+        self.assertEqual(payload['note'], review['note'])
+        self.assertIsNone(review['verdict'])
+
     def test_new_run_defaults_and_budget_validation(self):
         self.make_run()
         service = SimpleNamespace(codebook=self.book, codebook_sha256='fixture', sources=[])

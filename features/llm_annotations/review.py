@@ -147,8 +147,6 @@ class AnnotationReviewService:
                 raise ValidationError('Una respuesta inválida o fallida no puede aceptarse')
             if verdict is not None and verdict != 'accepted' and not note.strip():
                 raise ValidationError('Describe qué debe cambiar o por qué se descarta el bloque')
-            if has_annotations and verdict is None and issues:
-                raise ValidationError('Los problemas generales solo aplican a bloques sin códigos')
             if not isinstance(annotations, list) or len(annotations) != len(valid_ids):
                 raise ValidationError('Revisa cada código antes de guardar')
             seen = set()
@@ -166,6 +164,8 @@ class AnnotationReviewService:
                     raise ValidationError('Describe qué debe cambiar o por qué se descarta el código')
             if verdict == 'accepted' and (issues or any(a['verdict'] != 'accepted' for a in annotations)):
                 raise ValidationError('Aceptar el bloque requiere aceptar sus anotaciones y no marcar problemas')
+            if issues and not note.strip():
+                raise ValidationError('Describe el problema general observado en el bloque')
             now = dt.datetime.now(dt.timezone.utc).isoformat()
             review = {'schema_version': 'llm-diagnostic-review-1.0.0', 'run_id': run_id,
                       'sample_index': index, 'unit_id': item['item']['unit_id'],

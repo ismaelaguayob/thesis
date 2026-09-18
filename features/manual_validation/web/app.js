@@ -91,7 +91,7 @@ function renderCorpusSummary() {
     law ? `${law.label} · boletín ${law.bill_number}` : `Todas las leyes (${state.config.laws.length})`,
     `${available} ${unit === "utterance" ? "intervenciones" : "bloques"} disponibles`,
     unit === "utterance" ? "se codificarán todos los bloques seleccionados" : "un bloque por unidad seleccionada",
-    `${corpus.chunk_schema_version === "coding-chunks-2.0.0" ? "límite flexible" : "máximo estricto"} ${corpus.max_block_words} palabras`,
+    `${["coding-chunks-2.0.0", "coding-chunks-2.1.0"].includes(corpus.chunk_schema_version) ? "límite flexible" : "máximo estricto"} ${corpus.max_block_words} palabras`,
     `${codebook.concepts.length} conceptos`,
     `libro ${codebook.version}`,
   ].join(" · ");
@@ -376,7 +376,7 @@ function renderAnnotations() {
       state.dirty = true;
       renderAnnotations();
       renderTargetText();
-      updateNoStatementsState();
+      updateDecisionState();
     });
     meta.append(concept, stance, remove);
     entry.append(quote, meta);
@@ -426,6 +426,7 @@ function renderItem() {
     });
   state.annotations = (state.item.annotations || []).map(annotationFromServer);
   renderTargetText();
+  elements.unresolved.checked = state.item.resolution_status === "unresolved";
   elements.noStatements.checked = state.item.decision === "no_statements";
   elements.generalComment.value = state.item.general_comment || "";
   const selectedFlags = new Set(state.item.quality_flags || []);
@@ -448,15 +449,20 @@ function renderItem() {
   });
   renderConceptDefinition();
   renderAnnotations();
-  updateNoStatementsState();
+  updateDecisionState();
   renderProgress();
   elements.targetText.scrollTop = 0;
 }
 
-function updateNoStatementsState() {
+function updateDecisionState() {
   const hasAnnotations = state.annotations.length > 0;
-  elements.noStatements.disabled = hasAnnotations;
+  const unresolved = elements.unresolved.checked;
+  elements.noStatements.disabled = hasAnnotations || unresolved;
   if (hasAnnotations) elements.noStatements.checked = false;
+  if (unresolved) elements.noStatements.checked = false;
+  elements.unresolved.disabled = hasAnnotations;
+  if (hasAnnotations) elements.unresolved.checked = false;
+  elements.addAnnotation.disabled = unresolved;
 }
 
 function getSelectionOffsets(container) {
@@ -493,6 +499,10 @@ function createAnnotationId() {
 }
 
 function addAnnotation() {
+  if (elements.unresolved.checked) {
+    showToast("Desmarca el estado irresoluble antes de agregar una declaración.", "error");
+    return;
+  }
   if (!state.selection) {
     showToast("Selecciona primero un span en el bloque objetivo.", "error");
     return;
@@ -549,7 +559,7 @@ function addAnnotation() {
   renderConceptDefinition();
   renderAnnotations();
   renderTargetText();
-  updateNoStatementsState();
+  updateDecisionState();
   window.getSelection()?.removeAllRanges();
 }
 
@@ -560,8 +570,9 @@ function currentDecision() {
 }
 
 async function saveCurrent(advance) {
+  const resolutionStatus = elements.unresolved.checked ? "unresolved" : "resolved";
   const decision = currentDecision();
-  if (!decision) {
+  if (resolutionStatus === "resolved" && !decision) {
     showToast("Agrega una declaración o marca Sin declaraciones codificables.", "error");
     return;
   }
@@ -577,6 +588,7 @@ async function saveCurrent(advance) {
       {
         method: "PUT",
         body: JSON.stringify({
+          resolution_status: resolutionStatus,
           decision,
           annotations: state.annotations,
           general_comment: elements.generalComment.value.trim(),
@@ -694,6 +706,22 @@ function bindEvents() {
       showToast("Elimina las declaraciones antes de marcar esta opción.", "error");
       return;
     }
+    if (elements.noStatements.checked) elements.unresolved.checked = false;
+    updateDecisionState();
+    state.dirty = true;
+  });
+  elements.unresolved.addEventListener("change", () => {
+    if (elements.unresolved.checked && state.annotations.length) {
+      elements.unresolved.checked = false;
+      showToast("Elimina las declaraciones antes de marcar el bloque irresoluble.", "error");
+      return;
+    }
+    if (elements.unresolved.checked) {
+      elements.noStatements.checked = false;
+      elements.generalCommentPanel.classList.remove("hidden");
+      elements.toggleGeneralComment.setAttribute("aria-expanded", "true");
+    }
+    updateDecisionState();
     state.dirty = true;
   });
   elements.toggleGeneralComment.addEventListener("click", () => {
@@ -758,6 +786,7 @@ async function initialize() {
     "annotations-list",
     "annotation-count",
     "no-statements",
+    "unresolved",
     "toggle-general-comment",
     "general-comment-panel",
     "quality-flags",

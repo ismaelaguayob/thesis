@@ -39,13 +39,17 @@ function updateAnnotationReviewSummary() {
 }
 function setReviewMode(annotations) {
   const hasAnnotations = annotations.length > 0;
-  $('general-review').classList.toggle('hidden', hasAnnotations);
+  $('general-review').classList.remove('hidden');
+  $('block-verdict-field').classList.toggle('hidden', hasAnnotations);
   $('annotation-review-summary').classList.toggle('hidden', !hasAnnotations);
   $('verdict').required = !hasAnnotations;
   $('review-title').textContent = hasAnnotations ? 'Validar códigos' : 'Evaluación general';
   $('review-instruction').textContent = hasAnnotations
-    ? 'Cada código se valida por separado. Puedes aceptar los correctos y explicar cualquier corrección o descarte en su propia tarjeta.'
+    ? 'Valida cada código y registra también omisiones u otros problemas del bloque completo.'
     : 'El modelo no devolvió códigos. Evalúa la decisión completa del bloque y documenta cualquier problema.';
+  $('general-review-note').textContent = hasAnnotations
+    ? 'Registra aquí omisiones y problemas que no pertenecen a un código emitido.'
+    : 'El modelo no devolvió códigos. Evalúa la decisión completa del bloque.';
   $('save').textContent = hasAnnotations ? 'Guardar validación de códigos' : 'Guardar evaluación general';
   updateAnnotationReviewSummary();
 }
@@ -178,8 +182,8 @@ function renderItem() {
   });
   $('verdict').value = annotations.length ? '' : (review?.verdict || '');
   $('reviewer').value = review?.reviewer || sessionStorage.getItem('llm-reviewer') || '';
-  $('review-note').value = annotations.length ? '' : (review?.note || '');
-  $('issues').querySelectorAll('input').forEach(input => { input.checked = !annotations.length && (review?.issues || []).includes(input.value); });
+  $('review-note').value = review?.note || '';
+  $('issues').querySelectorAll('input').forEach(input => { input.checked = (review?.issues || []).includes(input.value); });
   $('save-status').textContent = review ? `Revisión guardada · versión ${review.revision}` : 'Sin revisión guardada';
   $('save').disabled = !result;
   reviewState.dirty = false;
@@ -253,6 +257,10 @@ async function saveReview(event) {
   if (hasAnnotations && annotations.some(a => a.verdict !== 'accepted' && !a.note)) {
     notify('Explica qué debe cambiar o por qué se descarta cada código no aceptado.', true); return;
   }
+  const issues = [...$('issues').querySelectorAll('input:checked')].map(i => i.value);
+  if (issues.length && !$('review-note').value.trim()) {
+    notify('Describe el problema general observado en el bloque.', true); return;
+  }
   if (!hasAnnotations && $('verdict').value !== 'accepted' && !$('review-note').value.trim()) {
     notify('Describe qué debe cambiar o por qué se descarta el bloque.', true); return;
   }
@@ -260,8 +268,7 @@ async function saveReview(event) {
   try {
     const body = { result_sha256: reviewState.data.result_sha256, revision: reviewState.data.review?.revision || 0,
       reviewer: $('reviewer').value.trim(), verdict: hasAnnotations ? null : $('verdict').value,
-      note: hasAnnotations ? '' : $('review-note').value.trim(),
-      issues: hasAnnotations ? [] : [...$('issues').querySelectorAll('input:checked')].map(i => i.value), annotations };
+      note: $('review-note').value.trim(), issues, annotations };
     const data = await api(`/api/llm/runs/${reviewState.runId}/items/${reviewState.index}/review`, { method: 'PUT', body: JSON.stringify(body) });
     reviewState.data.review = data.review; reviewState.dirty = false;
     sessionStorage.setItem('llm-reviewer', body.reviewer);

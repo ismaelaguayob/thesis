@@ -21,8 +21,10 @@ REGLAS DE CODIFICACIÓN
   puntuación y tildes; no uses puntos suspensivos para acortar una cita.
 - evidence_occurrence es la aparición de esa cita dentro del objetivo (1 para
   la primera). El programa calculará los offsets a partir de la cita exacta.
-- Usa solo los identificadores del libro. Permite varios códigos en un mismo span
-  cuando cada código tenga fundamento propio; evita duplicar el mismo span/código.
+- Usa solo los identificadores del libro. Si el mismo span satisface más de un
+  concepto, emite una anotación ordinaria para cada concepto y aplica a cada una
+  las mismas reglas de criterio, orientación y justificación. Evita duplicar el
+  mismo span/código.
 - support y oppose se refieren a orientation_anchor del concepto, no al voto sobre
   la ley, al gobierno ni al tono emocional. Conserva las negaciones.
 - Aplica definiciones y criterios include/exclude. Distingue capitalización

@@ -39,6 +39,7 @@ FRACTION = 0.10
 SEED = 20260908
 MODEL = "gpt-5.6-luna"
 REASONING_EFFORT = "max"
+MAX_OUTPUT_TOKENS = 32768
 PROMPT_PATH = Path(os.environ.get(
     "ANNOTATIONS_PROMPT", "prompts/annotations_pilot_v1_confidence.md"
 ))
@@ -231,7 +232,9 @@ configuración, pero nuevas generaciones pueden diferir.
 Preparamos los inputs a partir de los Parquet actuales de `proc.qmd`, el prompt
 activo y el libro vigente. `prepare_run` guarda la muestra y los requests en una
 carpeta identificada por su contenido, sin llamar a la API. Esta preparación no
-exige coincidencia con la muestra ni con el libro del piloto histórico.
+exige coincidencia con la muestra ni con el libro del piloto histórico. Los
+requests nuevos reciben explícitamente `gpt-5.6-luna`, razonamiento `max` y un
+límite de 32.768 tokens de salida, tal como declara la configuración de arriba.
 
 ```{python}
 #| label: congelar-ejecucion
@@ -241,7 +244,8 @@ sampling = {"fraction": FRACTION, "seed": SEED, "unit": "utterance",
             "eligible_interventions": len(utterances), "selected_interventions": len(selected_units),
             "quotas": strata.to_dict("records")}
 input_run_dir = prepare_run(
-    service, selected, sampling, PROMPT_PATH, Path("output/annotations_inputs")
+    service, selected, sampling, PROMPT_PATH, Path("output/annotations_inputs"),
+    model=MODEL, effort=REASONING_EFFORT, max_output_tokens=MAX_OUTPUT_TOKENS,
 )
 selected_units.to_parquet(input_run_dir / "selected_utterances.parquet", index=False)
 strata.to_parquet(input_run_dir / "strata.parquet", index=False)
@@ -250,8 +254,10 @@ strata.to_csv(TABLE_ROOT / f"{input_run_dir.name}_strata.csv", index=False)
 
 Los inputs vigentes quedan en `{python} str(input_run_dir)`. Las secciones siguientes
 auditan las respuestas del piloto `{python} SAVED_RUN_ID` con su muestra, libro y
-denominadores originales. Sus resultados no se asignan a los inputs nuevos. El uso
-de afiliaciones por fecha queda pendiente.
+denominadores originales. Sus resultados no se asignan a los inputs nuevos. La
+estratificación disponible en la aplicación usa `party_at_date`, enlazado por
+documento y persona durante `proc.qmd`; las afiliaciones todavía no resueltas se
+mantienen como datos faltantes.
 
 ## Ejecución y controles de salida
 
@@ -384,10 +390,26 @@ ordinales no son equivalentes a un umbral numérico de probabilidad.
 ## Cómo revisar y repetir
 
 Inicia `uv run python -m features.manual_validation` y selecciona **Revisión de
-anotaciones LLM** en la app. Esta modalidad muestra el modelo devuelto por la API,
+anotaciones LLM** en la app. Esta modalidad diagnóstica muestra el modelo devuelto por la API,
 el esfuerzo solicitado, el input y output completos, los spans destacados con su
 código y sus justificaciones. Los juicios humanos se guardan por separado; sirven
 para depurar prompts y códigos, y no deben mezclarse con la validación manual ciega.
+
+La evaluación definitiva se construirá desde la referencia ciega. La utilidad
+`features.llm_annotations.evaluation` exporta sus decisiones, excluye casos
+irresolubles, votaciones y pasajes procedimentales, y compara cada bloque sin usar
+los spans. El resultado distingue coincidencia de concepto y postura, coincidencia
+solo conceptual, divergencia conceptual, concepto nuevo pendiente de revisión y
+salida automática no disponible.
+Una vez congelada la referencia, `attach_sampling_metadata` puede añadir por
+`unit_id` ley, cámara, afiliación histórica, género y tipo de actor para resumir
+las discrepancias dentro de cada grupo, sin revelar esos atributos en la interfaz
+de codificación.
+Después de fijar esas métricas, la misma utilidad crea una cola separada para que
+el investigador resuelva discrepancias o las marque como irresolubles. Este paso no
+sobrescribe la referencia ciega. La pestaña visible del LLM conserva una finalidad
+diagnóstica: permite registrar omisiones incluso cuando el modelo emitió otros
+códigos y usar esas observaciones para corregir el prompt o el libro.
 
 Las recomendaciones siguientes permiten preparar una variante manual del prompt.
 No se ejecuta ninguna variante en este reporte. La ejecución original conserva su
@@ -570,7 +592,7 @@ Los números de bloque coinciden con la app; `sample_index` en los JSON empieza 
 | [58](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=57) | La cita cambia «Honestamente no me parece…» por «No me parece…», con mayúscula que no aparece en el fragmento. | Copiar subcadenas literales sin corregir mayúsculas; conservar el control local. |
 | [143](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=142) | Se devuelve dos veces el mismo span y la misma propuesta de concepto. | Exigir unicidad por cita, aparición y concepto antes de emitir el JSON. |
 | [148](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=147) | «Hay que ser didácticos» se propone como nuevo principio previsional. Puede ser una instrucción comunicativa ajena al alcance del instrumento. | Delimitar `review`: debe aportar un fundamento normativo previsional, no cualquier deber de comunicación o trámite. |
-| [241](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=240) | La salida distingue rechazo de responsabilidad por no cotizar y apoyo al reconocimiento del trabajo de crianza. | Usarlo como contraste de multicodificación fundamentada, sujeto a resolver si la definición vigente de reciprocidad cubre trabajo no remunerado. |
+| [241](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=240) | La salida distingue rechazo de responsabilidad por no cotizar y apoyo al reconocimiento del trabajo de crianza. | Revisar cada anotación con las reglas ordinarias del concepto y resolver si la definición vigente de reciprocidad cubre trabajo no remunerado. |
 | [390](http://127.0.0.1:8765/llm.html?run=pilot_f3a69c2f81c587271ef5&item=389) | Se cita `include:4` de `ineficiencia_estado`, que solo tiene tres criterios de inclusión. | Entregar IDs estables y restringir las referencias permitidas por concepto en el esquema; conservar el rechazo local de referencias inexistentes. |
 
 Las anomalías técnicas están identificadas exactamente y no se repararon de forma
