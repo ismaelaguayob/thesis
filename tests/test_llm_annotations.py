@@ -17,6 +17,7 @@ from features.llm_annotations.pipeline import (
 )
 from features.llm_annotations.review import AnnotationReviewService
 from features.manual_validation.service import ValidationError, sha256_text
+from features.political_alignment import PartyAlignment
 
 
 class LLMPilotTests(unittest.TestCase):
@@ -30,6 +31,7 @@ class LLMPilotTests(unittest.TestCase):
             {'id': 'solidaridad', 'label': 'Solidaridad', 'definition': 'Compartir riesgos.',
              'include': ['Distribución solidaria.'], 'exclude': [], 'orientation_anchor': 'Compartir riesgos.'}]}
         self.schema = output_schema(self.book)
+        self.party_alignment = PartyAlignment(left=("Partido A",), right=("Partido B",))
         self.record = dict(unit_id='u1::p1', utterance_id='u1', content='🧭 Sí. La solidaridad es necesaria. Sí.',
                            law_number='21419', document_uri='doc1', date='2026-01-01',
                            constitutional_stage='primer', title='Sesión', paragraph_start=1,
@@ -50,7 +52,8 @@ class LLMPilotTests(unittest.TestCase):
     def make_run(self):
         prompt = self.root / 'prompt.md'; prompt.write_text('Codifica con evidencia exacta.')
         service = SimpleNamespace(codebook=self.book, codebook_sha256=sha256_text(canonical(self.book)),
-                                  sources=[{'law_number': '21419', 'sha256': 'fixture'}])
+                                  sources=[{'law_number': '21419', 'sha256': 'fixture'}],
+                                  party_alignment=self.party_alignment)
         return prepare_run(service, [self.record], {'selected_interventions': 1}, prompt,
                            self.root / 'runs', 'gpt-5.6-luna', 'max')
 
@@ -220,7 +223,8 @@ class LLMPilotTests(unittest.TestCase):
         first = self.make_run()
         prompt = self.root / 'prompt.md'; prompt.write_text('Otra versión.')
         service = SimpleNamespace(codebook=self.book, codebook_sha256=sha256_text(canonical(self.book)),
-                                  sources=[{'law_number': '21419', 'sha256': 'fixture'}])
+                                  sources=[{'law_number': '21419', 'sha256': 'fixture'}],
+                                  party_alignment=self.party_alignment)
         second = prepare_run(service, [self.record], {'selected_interventions': 1}, prompt,
                              self.root / 'runs', 'gpt-5.6-luna', 'max')
         self.assertNotEqual(first, second)
@@ -244,7 +248,7 @@ class LLMPilotTests(unittest.TestCase):
             run_annotations(directory, execute=True)
         reviewer = AnnotationReviewService(
             self.root/'runs', self.root/'reviews',
-            {'u1::p1': {'chamber': 'Senado', 'party': 'Independiente',
+            {'u1::p1': {'chamber': 'Senado', 'alignment': 'centro',
                         'gender': 'F', 'actor_type': 'Parlamentario'}},
             {'21419': 'fixture'},
         )
@@ -263,7 +267,8 @@ class LLMPilotTests(unittest.TestCase):
         listed = reviewer.list_items(directory.name)['items'][0]
         self.assertEqual('accepted', listed['review_verdict'])
         self.assertEqual('Senado', listed['strata']['chamber'])
-        self.assertEqual('Independiente', listed['strata']['party'])
+        self.assertEqual('centro', listed['strata']['alignment'])
+        self.assertNotIn('party', listed['strata'])
         self.assertTrue(listed['strata_source_matches_run'])
 
     def test_reviews_can_judge_each_annotation_without_global_verdict(self):
@@ -305,8 +310,15 @@ class LLMPilotTests(unittest.TestCase):
 
     def test_new_run_defaults_and_budget_validation(self):
         self.make_run()
-        service = SimpleNamespace(codebook=self.book, codebook_sha256='fixture', sources=[])
+        service = SimpleNamespace(
+            codebook=self.book, codebook_sha256='fixture', sources=[],
+            party_alignment=self.party_alignment,
+        )
         directory = prepare_run(service, [self.record], {}, self.root / 'prompt.md', self.root / 'defaults')
+        manifest = json.loads((directory / 'manifest.json').read_text())
+        self.assertEqual(
+            manifest['spec']['party_alignment'], service.party_alignment.snapshot()
+        )
         request = json.loads((directory / 'requests/00000.json').read_text())['body']
         self.assertEqual('low', request['reasoning']['effort'])
         self.assertEqual(32768, request['max_output_tokens'])

@@ -18,6 +18,7 @@ from features.manual_validation.service import (
     create_server,
     sample_records,
 )
+from features.political_alignment import PartyAlignment
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -31,12 +32,17 @@ class ManualValidationTestCase(unittest.TestCase):
         self.source_path = self.root / "coding_chunks_long.parquet"
         self.codebook_path = self.root / "codebook.json"
         self.output_dir = self.root / "validation"
+        self.party_alignment = PartyAlignment(
+            left=("Partido Socialista de Chile",),
+            right=("Partido Renovación Nacional",),
+        )
         self._write_corpus()
         self._write_codebook()
         self.service = ValidationService(
             source_path=self.source_path,
             codebook_path=self.codebook_path,
             output_dir=self.output_dir,
+            party_alignment=self.party_alignment,
         )
 
     def tearDown(self) -> None:
@@ -312,6 +318,7 @@ class ManualValidationTestCase(unittest.TestCase):
                 source_path=tampered_path,
                 codebook_path=self.codebook_path,
                 output_dir=self.root / "tampered-output",
+                party_alignment=self.party_alignment,
             )
 
     def test_flexible_corpus_accepts_longer_blocks_and_keeps_legacy_limit(self) -> None:
@@ -329,11 +336,17 @@ class ManualValidationTestCase(unittest.TestCase):
         dataframe.loc[index, "source_segments_json"] = json.dumps(segments)
         dataframe.to_parquet(self.source_path, index=False)
         with self.assertRaisesRegex(ValidationError, "sobre el máximo"):
-            ValidationService(self.source_path, self.codebook_path, self.output_dir)
+            ValidationService(
+                self.source_path, self.codebook_path, self.output_dir,
+                party_alignment=self.party_alignment,
+            )
 
         dataframe["chunk_schema_version"] = "coding-chunks-2.0.0"
         dataframe.to_parquet(self.source_path, index=False)
-        service = ValidationService(self.source_path, self.codebook_path, self.output_dir)
+        service = ValidationService(
+            self.source_path, self.codebook_path, self.output_dir,
+            party_alignment=self.party_alignment,
+        )
         self.assertEqual(service.chunk_schema_version, "coding-chunks-2.0.0")
         self.assertTrue(any(record["n_words"] == 170 for record in service.records))
 
@@ -343,7 +356,10 @@ class ManualValidationTestCase(unittest.TestCase):
         dataframe.loc[dataframe["unit_id"].eq("doc-a-3::p0001"), "n_words"] = 25
         dataframe.to_parquet(self.source_path, index=False)
         with self.assertRaisesRegex(ValidationError, "fragmentos breves sin unir"):
-            ValidationService(self.source_path, self.codebook_path, self.output_dir)
+            ValidationService(
+                self.source_path, self.codebook_path, self.output_dir,
+                party_alignment=self.party_alignment,
+            )
 
     def test_stratified_sampling_is_deterministic_and_unique(self) -> None:
         first = sample_records(self.service.records, 4, 77, "stratified")
@@ -358,7 +374,7 @@ class ManualValidationTestCase(unittest.TestCase):
         public = self.service.open_item(summary["session_id"], 0)
         persisted = self._session_payload(summary["session_id"])
         forbidden = {
-            "speaker", "speaker_id", "current_party", "party_at_date", "party", "gender"
+            "speaker", "speaker_id", "current_party", "party_at_date", "party"
         }
 
         def assert_no_forbidden_keys(value: object) -> None:
@@ -379,7 +395,7 @@ class ManualValidationTestCase(unittest.TestCase):
             "sample_size": 6,
             "seed": 33,
             "strategy": "stratified",
-            "strata": ["law_number", "chamber", "party", "gender", "actor_type"],
+            "strata": ["law_number", "chamber", "alignment", "gender", "actor_type"],
         })
         session = self._session_payload(summary["session_id"])
         self.assertEqual(summary["sampling_unit"], "utterance")
@@ -395,16 +411,17 @@ class ManualValidationTestCase(unittest.TestCase):
         self.assertTrue(all(item["selection_weight"] == 1 for item in session["items"]))
         self.assertTrue(all(
             set(row["values"]) == {
-                "law_number", "chamber", "party", "gender", "actor_type"
+                "law_number", "chamber", "alignment", "gender", "actor_type"
             }
             for row in session["sampling"]["strata_table"]
         ))
         self.assertTrue(all("party" not in item and "gender" not in item
                             for item in session["items"]))
 
-    def test_default_strata_use_law_and_chamber_for_both_sampling_units(self) -> None:
+    def test_default_strata_add_alignment_for_both_sampling_units(self) -> None:
         self.assertEqual(
-            self.service.config()["defaults"]["strata"], ["law_number", "chamber"]
+            self.service.config()["defaults"]["strata"],
+            ["law_number", "chamber", "alignment", "gender"],
         )
         for sampling_unit in ("block", "utterance"):
             summary = self.service.create_session({
@@ -415,9 +432,29 @@ class ManualValidationTestCase(unittest.TestCase):
             })
             session = self._session_payload(summary["session_id"])
             self.assertTrue(all(
-                set(row["values"]) == {"law_number", "chamber"}
+                set(row["values"]) == {
+                    "law_number", "chamber", "alignment", "gender"
+                }
                 for row in session["sampling"]["strata_table"]
             ))
+
+    def test_executive_role_is_not_assigned_a_partisan_alignment(self) -> None:
+        dataframe = pd.read_parquet(self.source_path)
+        target = dataframe["unit_id"].eq("doc-a-1::p0001-p0002")
+        dataframe.loc[target, "role"] = "Ministro"
+        dataframe.loc[target, "party_at_date"] = "Partido Renovación Nacional"
+        dataframe.loc[target, "party_at_date_status"] = "matched"
+        dataframe.to_parquet(self.source_path, index=False)
+
+        service = ValidationService(
+            self.source_path,
+            self.codebook_path,
+            self.output_dir,
+            party_alignment=self.party_alignment,
+        )
+        metadata = service.sampling_metadata("doc-a-1::p0001-p0002")
+        self.assertEqual(metadata["actor_type"], "Ejecutivo")
+        self.assertEqual(metadata["alignment"], "No aplica")
 
     def test_multiple_annotations_and_review_are_persisted(self) -> None:
         summary = self._session()
@@ -641,6 +678,13 @@ class ManualValidationTestCase(unittest.TestCase):
             self.assertEqual(config["corpus"]["target_block_words"], 100)
             self.assertEqual(config["corpus"]["max_block_words"], 150)
             self.assertIn({"id": "vote", "label": "Voto"}, config["quality_flags"])
+            self.assertIn(
+                {"id": "alignment", "label": "Alineación política (izquierda, derecha o centro)"},
+                config["stratification"]["fields"],
+            )
+            self.assertNotIn(
+                "party", {field["id"] for field in config["stratification"]["fields"]}
+            )
 
             request = urllib.request.Request(
                 f"{base_url}/api/sessions",
@@ -696,7 +740,10 @@ class ManualValidationTestCase(unittest.TestCase):
             folder = self.root / f"ley_{law}"
             folder.mkdir()
             corpus.to_parquet(folder / "coding_chunks_long.parquet", index=False)
-        return ValidationService(self.root, self.codebook_path, self.output_dir)
+        return ValidationService(
+            self.root, self.codebook_path, self.output_dir,
+            party_alignment=self.party_alignment,
+        )
 
     def test_directory_loads_each_law_once_and_ignores_legacy_copy(self) -> None:
         service = self._multi_law_service()

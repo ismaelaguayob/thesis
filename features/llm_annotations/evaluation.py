@@ -25,7 +25,7 @@ COMPARISON_STATUSES = {
 }
 ADJUDICATION_STATUSES = {"pending", "resolved", "unresolved"}
 ANALYSIS_METADATA_FIELDS = (
-    "chamber", "party", "gender", "actor_type", "length_bin",
+    "chamber", "alignment", "gender", "actor_type", "length_bin",
 )
 
 

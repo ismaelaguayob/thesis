@@ -48,6 +48,7 @@ Cargamos las herramientas del paquete local `bcn_scraper`, instalado como depend
 editable en `pyproject.toml`, y las funciones de segmentación de párrafos.
 
 ```{python}
+import json
 import os
 from pathlib import Path
 
@@ -71,6 +72,7 @@ from features.coding_chunks import (
     paragraph_fragments,
     segment_token,
 )
+from features.political_alignment import load_party_alignment
 ```
 
 Seleccionamos la ley y sus carpetas. `REFRESH_HISTORY = False` reutiliza la historia
@@ -93,9 +95,14 @@ if LAW_NUMBER not in BILL_NUMBERS:
 BILL_NUMBER = BILL_NUMBERS[LAW_NUMBER]
 PROC_DATA_DIR = Path("data/proc_data") / f"ley_{LAW_NUMBER}"
 TABLE_OUTPUT_DIR = Path("output/tables") / f"ley_{LAW_NUMBER}"
+PARTY_ALIGNMENT = load_party_alignment(Path(".env"))
 
 PROC_DATA_DIR.mkdir(parents=True, exist_ok=True)
 TABLE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+(PROC_DATA_DIR / "party_alignment.json").write_text(
+    json.dumps(PARTY_ALIGNMENT.snapshot(), ensure_ascii=False, indent=2) + "\n",
+    encoding="utf-8",
+)
 ```
 
 ## Historia de la ley
@@ -537,7 +544,8 @@ speech_df_full.loc[
     "party_at_date_status",
 ] = "not_applicable"
 speech_df_full.loc[
-    speech_df_full["militancy_at_date_status"].eq("matched"),
+    speech_df_full["militancy_at_date_status"].eq("matched")
+    & ~affiliation_not_applicable,
     "party_at_date_status",
 ] = "matched"
 speech_df_full.loc[
@@ -641,6 +649,24 @@ speech_df_full.loc[
     "analysis_exclusion_reason",
 ] = "unresolved_text"
 speech_df = speech_df_full.loc[analysis_mask].copy().reset_index(drop=True)
+
+# La alineación se deriva solo desde la afiliación histórica validada. Los
+# partidos matched no enumerados son centro; la ausencia y la no aplicabilidad
+# permanecen explícitas para no imputarlas al centro.
+def political_alignment_at_date(row):
+    if row["party_at_date_status"] == "matched":
+        return PARTY_ALIGNMENT.classify(row["party_at_date"])
+    if row["party_at_date_status"] == "not_applicable":
+        return "No aplica"
+    return "Sin dato"
+
+
+speech_df_full["political_alignment"] = speech_df_full.apply(
+    political_alignment_at_date, axis=1
+)
+speech_df["political_alignment"] = speech_df.apply(
+    political_alignment_at_date, axis=1
+)
 
 speech_df.to_parquet(PROC_DATA_DIR / "speech_df.parquet", index=False)
 speech_df_full.to_parquet(PROC_DATA_DIR / "speech_df_full.parquet", index=False)
@@ -749,6 +775,7 @@ CODING_METADATA_COLUMNS = [
     "militancy_at_date_candidates",
     "affiliation_data_status",
     "affiliation_error",
+    "political_alignment",
     "speaker_data_status",
 ]
 

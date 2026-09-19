@@ -6,7 +6,7 @@ const issueLabels = { span: 'Span', concept: 'Código', stance: 'Orientación', 
 const itemReviewLabels = { annotations_reviewed: 'Códigos revisados' };
 const strataFilters = {
   'chamber-filter': 'chamber',
-  'party-filter': 'party',
+  'alignment-filter': 'alignment',
   'gender-filter': 'gender',
   'actor-type-filter': 'actor_type',
 };

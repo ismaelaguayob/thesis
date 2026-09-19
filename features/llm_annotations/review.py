@@ -82,12 +82,18 @@ class AnnotationReviewService:
             law_number = str(record['law_number'])
             same_source = (self.source_hashes is None or
                            self.source_hashes.get(law_number) == frozen_hashes.get(law_number))
-            strata = dict(self.unit_metadata.get(str(record['unit_id']), {})) if same_source else {}
-            strata.setdefault('law_number', str(record['law_number']))
-            strata.setdefault('document_uri', str(record['document_uri']))
-            strata.setdefault('length_bin', str(record.get('length_bin', 'Sin dato')))
-            for field in ('chamber', 'party', 'gender', 'actor_type'):
-                strata.setdefault(field, 'Sin dato')
+            source_strata = (
+                self.unit_metadata.get(str(record['unit_id']), {}) if same_source else {}
+            )
+            strata = {
+                'law_number': str(record['law_number']),
+                'document_uri': str(record['document_uri']),
+                'length_bin': str(record.get('length_bin', 'Sin dato')),
+                **{
+                    field: str(source_strata.get(field, 'Sin dato'))
+                    for field in ('chamber', 'alignment', 'gender', 'actor_type')
+                },
+            }
             items.append({'sample_index': index, 'law_number': record['law_number'],
                           'session': record['document_uri'].rsplit('/', 1)[-1],
                           'unit_id': record['unit_id'], 'status': result.get('status', 'pending'),

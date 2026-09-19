@@ -242,6 +242,7 @@ sampling = {"fraction": FRACTION, "seed": SEED, "unit": "utterance",
             "strata": ["law_number", "document_uri"],
             "within_stratum": "manual_app_round_robin_intervention_length",
             "eligible_interventions": len(utterances), "selected_interventions": len(selected_units),
+            "party_alignment": service.party_alignment.snapshot(),
             "quotas": strata.to_dict("records")}
 input_run_dir = prepare_run(
     service, selected, sampling, PROMPT_PATH, Path("output/annotations_inputs"),
@@ -255,9 +256,9 @@ strata.to_csv(TABLE_ROOT / f"{input_run_dir.name}_strata.csv", index=False)
 Los inputs vigentes quedan en `{python} str(input_run_dir)`. Las secciones siguientes
 auditan las respuestas del piloto `{python} SAVED_RUN_ID` con su muestra, libro y
 denominadores originales. Sus resultados no se asignan a los inputs nuevos. La
-estratificación disponible en la aplicación usa `party_at_date`, enlazado por
-documento y persona durante `proc.qmd`; las afiliaciones todavía no resueltas se
-mantienen como datos faltantes.
+estratificación disponible en la aplicación deriva `political_alignment` desde
+`party_at_date`, enlazado por documento y persona durante `proc.qmd`; las
+afiliaciones todavía no resueltas se mantienen como datos faltantes.
 
 ## Ejecución y controles de salida
 

@@ -34,7 +34,7 @@ La ruta del corpus, el XLSX editable, el JSON derivado y el output se pueden ree
 2. Guarda las decisiones y pulsa **Cambiar sesión** para volver al inicio. Elige **Ley 21.538** y crea otra muestra. Ambas sesiones quedan guardadas por separado.
 3. Para una muestra conjunta, selecciona **Todas las leyes**. La estrategia estratificada distribuye la muestra proporcionalmente entre el cruce de las dimensiones seleccionadas; la aleatoria simple sortea sobre todas las unidades primarias disponibles.
 
-Las sesiones nuevas registran la ley seleccionada, el boletín de cada bloque y las rutas y checksums de los Parquet utilizados. La lista para reanudar y la pantalla de codificación muestran la ley. Las sesiones anteriores de la ley 21.735 siguen disponibles con su libro de códigos original.
+Las sesiones nuevas registran la ley seleccionada, el boletín de cada bloque, las rutas y checksums de los Parquet utilizados, y el snapshot con hash de `PARTY_ALIGNMENT`. La lista para reanudar y la pantalla de codificación muestran la ley. Las sesiones anteriores de la ley 21.735 siguen disponibles con su libro de códigos original.
 
 El enlace [comenzar con la ley 21.419](http://127.0.0.1:8765/?law=21419) deja esa opción seleccionada, sin crear una sesión. Para la ley 21.538 se puede usar `?law=21538`.
 
@@ -44,8 +44,8 @@ El procesamiento que consume la aplicación queda dividido en dos capas explíci
 
 1. `proc.qmd` construye el corpus analítico y escribe `data/proc_data/ley_<número>/coding_chunks_long.parquet`.
 2. `features/manual_validation/run.py` genera el JSON del libro desde el XLSX y crea el servicio local.
-3. `features/manual_validation/service.py` lee los bloques definitivos, usa `party_at_date` para la dimensión partidaria, adjunta su contexto dentro de cada documento, filtra la ley seleccionada y realiza el muestreo.
-4. En la codificación manual, el navegador recibe únicamente los bloques muestreados y el snapshot del libro. Los nombres, partidos, identificadores y género de los hablantes permanecen fuera del payload. La revisión LLM puede mostrar categorías de estrato para filtrar diagnósticos, pero nunca el nombre del hablante.
+3. `features/manual_validation/service.py` lee los bloques definitivos, deriva la alineación desde `party_at_date`, adjunta el contexto, filtra la ley seleccionada y realiza el muestreo.
+4. En la codificación manual, el navegador recibe únicamente los bloques muestreados y el snapshot del libro. Los nombres, partidos, identificadores y género permanecen fuera del payload. La revisión LLM puede mostrar la alineación y las demás categorías de estrato para filtrar diagnósticos, pero no recibe el partido ni el nombre del hablante.
 
 La app utiliza los IDs, offsets y reglas de segmentación ya materializados en los Parquet. No descarga datos ni vuelve a segmentar las intervenciones.
 
@@ -72,13 +72,9 @@ La estrategia recomendada es `stratified`. La interfaz permite escoger como unid
 - **intervención completa** (`utterance`), que expande cada selección a todos sus bloques; o
 - **bloque de párrafos** (`block`), útil para calibraciones acotadas.
 
-Las dimensiones seleccionables son ley, cámara, afiliación histórica, género, tipo de actor, documento y longitud. `party_at_date` se obtiene por persona y fecha de discusión; los parlamentarios con resultados `not_found` o `ambiguous` forman la categoría `Sin dato` hasta su resolución, mientras las funciones para las que no corresponde afiliación forman `No aplica`. La interfaz permite explorar cruces, pero la combinación definitiva de unidad y dimensiones permanece abierta porque un cruce muy fino puede producir estratos con cuota cero. El JSON conserva, para cada estrato, población, muestra y probabilidad de inclusión, y para cada bloque seleccionado el identificador de estrato, la probabilidad y su peso inverso. Las categorías personales se usan en el servidor para el sorteo y no se incorporan a la pantalla de codificación.
+Las dimensiones seleccionables son ley, cámara, alineación política, género, tipo de actor, documento y longitud. La alineación se deriva de `party_at_date`, obtenido por persona y fecha de discusión. `PARTY_ALIGNMENT`, leída desde `.env`, enumera los partidos de izquierda y derecha; los partidos encontrados que no aparecen allí forman la categoría residual de centro. Los resultados históricos `not_found` o `ambiguous` forman `Sin dato`, mientras las funciones para las que no corresponde afiliación forman `No aplica`; ninguno se imputa al centro.
 
-El valor predeterminado es `ley × cámara`, seis celdas con cobertura en una muestra
-de 40 unidades. Partido, género y tipo de actor permanecen disponibles para el
-muestreo y pueden anexarse por `unit_id` después de congelar la referencia ciega;
-por tanto, es posible describir la distribución de los errores por esas variables
-sin exponerlas durante la codificación.
+El valor predeterminado es `ley × cámara × alineación × género`. El tipo de actor permanece disponible y puede anexarse por `unit_id` después de congelar la referencia ciega. La asignación es proporcional mediante mayores restos y el JSON conserva población, muestra, probabilidad de inclusión y peso inverso por estrato. Antes del sorteo definitivo debe comprobarse que el tamaño elegido no produzca estratos con cuota cero.
 
 La semilla hace que el sorteo sea reproducible para un corpus idéntico. `random` implementa muestreo aleatorio simple y registra una probabilidad común. Los valores ausentes forman la categoría explícita `Sin dato`. La cámara se determina a nivel de documento a partir de las funciones parlamentarias; cuando esas funciones faltan en un tercer trámite, se hereda la cámara del primer trámite del mismo proyecto.
 

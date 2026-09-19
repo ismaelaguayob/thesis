@@ -26,6 +26,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from features.political_alignment import PartyAlignment, load_party_alignment
 
 SCHEMA_VERSION = "manual-validation-2.6.0"
 CHUNK_SCHEMA_VERSION = "coding-chunks-2.1.0"
@@ -46,15 +47,15 @@ ALLOWED_SAMPLING_UNITS = {"block", "utterance"}
 STRATIFICATION_FIELDS = {
     "law_number": "Ley",
     "chamber": "Cámara",
-    "party": "Partido o afiliación",
+    "alignment": "Alineación política (izquierda, derecha o centro)",
     "gender": "Género",
     "actor_type": "Tipo de actor",
     "document_uri": "Discusión en Sala",
     "length_bin": "Longitud",
 }
-# Baseline with full coverage at the default sample size. Party, gender and actor
-# type remain selectable and can be joined back after blind coding for diagnostics.
-DEFAULT_EVALUATION_STRATA = ["law_number", "chamber"]
+# Preserve the remote baseline coverage by law and chamber while replacing party
+# with the coarser political-alignment dimension requested for stratification.
+DEFAULT_EVALUATION_STRATA = ["law_number", "chamber", "alignment", "gender"]
 QUALITY_FLAGS = {
     "vote": "Voto",
     "procedural": "Procedimental",
@@ -761,11 +762,18 @@ class ValidationService:
         codebook_path: Path,
         output_dir: Path,
         timezone_name: str = DEFAULT_TIMEZONE,
+        party_alignment: PartyAlignment | None = None,
     ) -> None:
         self.source_path = source_path.resolve()
         self.codebook_path = codebook_path.resolve()
         self.output_dir = output_dir.resolve()
         self.timezone_name = timezone_name
+        try:
+            self.party_alignment = party_alignment or load_party_alignment(
+                Path(__file__).resolve().parents[2] / ".env"
+            )
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
         self.codebook = load_codebook(self.codebook_path)
         paths = (
             sorted(self.source_path.glob("ley_*/coding_chunks_long.parquet"))
@@ -784,12 +792,21 @@ class ValidationService:
             for record in records:
                 record["law_number"] = law_number
                 private_metadata = record.pop("_sampling_metadata")
+                party = private_metadata["party"]
+                actor_type = private_metadata["actor_type"]
+                if actor_type in {"Ejecutivo", "Autoridad de la cámara"}:
+                    alignment = "No aplica"
+                elif party in {"Sin dato", "No aplica"}:
+                    alignment = party
+                else:
+                    alignment = self.party_alignment.classify(party)
                 self.sampling_metadata_by_unit[str(record["unit_id"])] = {
                     "law_number": law_number,
                     "chamber": private_metadata["chamber"],
-                    "party": private_metadata["party"],
+                    "party": party,
+                    "alignment": alignment,
                     "gender": private_metadata["gender"],
-                    "actor_type": private_metadata["actor_type"],
+                    "actor_type": actor_type,
                     "document_uri": str(record["document_uri"]),
                     "length_bin": str(record["length_bin"]),
                 }
@@ -860,7 +877,9 @@ class ValidationService:
             metadata_rows = [
                 self.sampling_metadata_by_unit[str(block["unit_id"])] for block in blocks
             ]
-            stable_fields = ("chamber", "party", "gender", "actor_type", "document_uri")
+            stable_fields = (
+                "chamber", "party", "alignment", "gender", "actor_type", "document_uri"
+            )
             for field in stable_fields:
                 if len({metadata[field] for metadata in metadata_rows}) != 1:
                     raise ValidationError(
@@ -874,6 +893,7 @@ class ValidationService:
                     "law_number": law_number,
                     "chamber": metadata_rows[0]["chamber"],
                     "party": metadata_rows[0]["party"],
+                    "alignment": metadata_rows[0]["alignment"],
                     "gender": metadata_rows[0]["gender"],
                     "actor_type": metadata_rows[0]["actor_type"],
                     "document_uri": document_uri,
@@ -1180,6 +1200,7 @@ class ValidationService:
                 "target_block_words": self.target_block_words,
                 "max_block_words": self.max_block_words,
                 "strata": strata,
+                "party_alignment": self.party_alignment.snapshot(),
                 "strata_table": [
                     {
                         "stratum_id": row["stratum_id"],

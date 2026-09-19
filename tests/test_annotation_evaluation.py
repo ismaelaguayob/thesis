@@ -21,14 +21,14 @@ class BlockEvaluationTestCase(unittest.TestCase):
             {"unit_id": "b", "resolution_status": "resolved", "evaluation_included": True},
         ])
         metadata = {
-            "a": {"chamber": "Senado", "party": "P1", "gender": "Mujer",
+            "a": {"chamber": "Senado", "alignment": "izquierda", "gender": "Mujer",
                   "actor_type": "Parlamentario", "length_bin": "short"},
-            "b": {"chamber": "Cámara", "party": "P2", "gender": "Hombre",
+            "b": {"chamber": "Cámara", "alignment": "derecha", "gender": "Hombre",
                   "actor_type": "Parlamentario", "length_bin": "long"},
         }
         enriched = attach_sampling_metadata(blocks, metadata)
-        self.assertEqual(enriched["party"].tolist(), ["P1", "P2"])
-        self.assertNotIn("party", blocks.columns)
+        self.assertEqual(enriched["alignment"].tolist(), ["izquierda", "derecha"])
+        self.assertNotIn("alignment", blocks.columns)
         with self.assertRaisesRegex(ValueError, "Faltan metadatos"):
             attach_sampling_metadata(blocks, {"a": metadata["a"]})
 
@@ -68,17 +68,17 @@ class BlockEvaluationTestCase(unittest.TestCase):
     def test_block_comparison_prioritizes_concept_and_stance_without_spans(self) -> None:
         blocks = pd.DataFrame([
             {"unit_id": "exact", "resolution_status": "resolved", "evaluation_included": True,
-             "selection_weight": 1, "party": "P1"},
+             "selection_weight": 1, "alignment": "izquierda"},
             {"unit_id": "stance", "resolution_status": "resolved", "evaluation_included": True,
-             "selection_weight": 2, "party": "P1"},
+             "selection_weight": 2, "alignment": "izquierda"},
             {"unit_id": "different", "resolution_status": "resolved", "evaluation_included": True,
-             "selection_weight": 3, "party": "P2"},
+             "selection_weight": 3, "alignment": "derecha"},
             {"unit_id": "vote", "resolution_status": "resolved", "evaluation_included": False,
-             "selection_weight": 100, "party": "P2"},
+             "selection_weight": 100, "alignment": "derecha"},
             {"unit_id": "failed", "resolution_status": "resolved", "evaluation_included": True,
-             "selection_weight": 4, "party": "P2"},
+             "selection_weight": 4, "alignment": "derecha"},
             {"unit_id": "review", "resolution_status": "resolved", "evaluation_included": True,
-             "selection_weight": 5, "party": "P3"},
+             "selection_weight": 5, "alignment": "centro"},
         ])
         human = pd.DataFrame([
             {"unit_id": "exact", "concept_status": "in_codebook", "concept_id": "a", "stance": "support"},
@@ -112,11 +112,13 @@ class BlockEvaluationTestCase(unittest.TestCase):
         summary = summarize_block_comparison(comparison.reset_index())
         self.assertEqual(summary["blocks"].sum(), 5)
         self.assertAlmostEqual(summary["weighted_share"].sum(), 1.0)
-        by_party = summarize_block_comparison(comparison.reset_index(), ["party"])
-        self.assertEqual(set(by_party["party"]), {"P1", "P2", "P3"})
+        by_alignment = summarize_block_comparison(comparison.reset_index(), ["alignment"])
+        self.assertEqual(
+            set(by_alignment["alignment"]), {"izquierda", "derecha", "centro"}
+        )
         self.assertTrue(all(
             abs(value - 1) < 1e-12
-            for value in by_party.groupby("party")["weighted_share"].sum()
+            for value in by_alignment.groupby("alignment")["weighted_share"].sum()
         ))
 
         queue = create_adjudication_queue(comparison.reset_index())

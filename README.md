@@ -42,4 +42,9 @@ en <http://127.0.0.1:8765> o entra directamente en
 `output/annotation_reviews/`. La [guía del piloto](docs/piloto-anotaciones-llm.md)
 explica ejecución, variantes y límites de interpretación.
 
+La variable `PARTY_ALIGNMENT` de `.env` contiene un objeto JSON con las listas
+`left` y `right`. El procesamiento y la validación manual usan esa misma
+definición; cualquier afiliación no enumerada se clasifica como `centro`. Copia
+el formato de `.env.example` al configurar un entorno nuevo.
+
 El [manifiesto del análisis del piloto](data/proc_data/llm_pilots/pilot_f3a69c2f81c587271ef5/manifest.json) resume tokens confirmados y métricas. La política `data/proc_data/llm_pilots/api_policy.json` bloquea nuevas llamadas.

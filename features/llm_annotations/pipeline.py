@@ -130,6 +130,7 @@ def prepare_run(service: ValidationService, selected: list[dict], sampling: dict
         "sdk_max_retries": SDK_MAX_RETRIES, "request_timeout_seconds": REQUEST_TIMEOUT_SECONDS,
         "sources": sources, "prompt_sha256": sha256_text(prompt),
         "codebook_sha256": service.codebook_sha256, "output_schema": schema,
+        "party_alignment": service.party_alignment.snapshot(),
         "requests_sha256": sha256_text(canonical(requests)),
         "runner_sha256": sha256_file(Path(__file__)),
         "validation_contract_sha256": sha256_file(Path(__file__).parents[1] / 'manual_validation/service.py'),
