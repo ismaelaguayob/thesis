@@ -1,9 +1,10 @@
 """Shared political-alignment configuration for analysis and validation.
 
-``PARTY_ALIGNMENT`` is a JSON object with two arrays, ``left`` and ``right``.
-Parties absent from both arrays are classified as ``center``. Party names are
-matched case-insensitively and without diacritics so that known BCN spelling
-variants do not require duplicate configuration entries.
+``PARTY_ALIGNMENT`` is a JSON object with four explicit arrays: ``left``,
+``center``, ``right`` and ``nonpartisan``. Parties absent from every list are
+returned as ``unclassified``; they are never silently treated as centrist.
+Party names are matched case-insensitively and without diacritics so that known
+BCN spelling variants do not require duplicate configuration entries.
 """
 
 from __future__ import annotations
@@ -21,7 +22,14 @@ from dotenv import load_dotenv
 
 
 PARTY_ALIGNMENT_ENV = "PARTY_ALIGNMENT"
-ALIGNMENTS = ("izquierda", "derecha", "centro")
+ALIGNMENTS = ("izquierda", "centro", "derecha", "nonpartisan", "unclassified")
+ALIGNMENT_FIELDS = ("left", "center", "right", "nonpartisan")
+ALIGNMENT_LABELS = {
+    "left": "izquierda",
+    "center": "centro",
+    "right": "derecha",
+    "nonpartisan": "nonpartisan",
+}
 
 
 def normalize_party_name(value: Any) -> str:
@@ -58,40 +66,46 @@ class PartyAlignment:
     """Immutable party grouping shared by every analytical procedure."""
 
     left: tuple[str, ...]
+    center: tuple[str, ...]
     right: tuple[str, ...]
+    nonpartisan: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        left_keys = {normalize_party_name(party) for party in self.left}
-        right_keys = {normalize_party_name(party) for party in self.right}
-        overlap = left_keys.intersection(right_keys)
-        if overlap:
+        keys_by_field = {
+            field: {normalize_party_name(party) for party in getattr(self, field)}
+            for field in ALIGNMENT_FIELDS
+        }
+        assigned: dict[str, str] = {}
+        conflicts: list[str] = []
+        for field, keys in keys_by_field.items():
+            for key in keys:
+                previous = assigned.setdefault(key, field)
+                if previous != field:
+                    conflicts.append(key)
+        if conflicts:
             raise ValueError(
-                f"{PARTY_ALIGNMENT_ENV} asigna partidos a izquierda y derecha a la vez: "
-                + ", ".join(sorted(overlap))
+                f"{PARTY_ALIGNMENT_ENV} asigna partidos a más de una categoría: "
+                + ", ".join(sorted(set(conflicts)))
             )
 
-    @property
-    def left_keys(self) -> frozenset[str]:
-        return frozenset(normalize_party_name(party) for party in self.left)
-
-    @property
-    def right_keys(self) -> frozenset[str]:
-        return frozenset(normalize_party_name(party) for party in self.right)
+    def keys(self, field: str) -> frozenset[str]:
+        return frozenset(normalize_party_name(party) for party in getattr(self, field))
 
     def classify(self, party: Any) -> str:
         key = normalize_party_name(party)
-        if key in self.left_keys:
-            return "izquierda"
-        if key in self.right_keys:
-            return "derecha"
-        return "centro"
+        for field in ALIGNMENT_FIELDS:
+            if key in self.keys(field):
+                return ALIGNMENT_LABELS[field]
+        return "unclassified"
 
     def snapshot(self) -> dict[str, Any]:
         definition = {
             "environment_variable": PARTY_ALIGNMENT_ENV,
             "left": list(self.left),
+            "center": list(self.center),
             "right": list(self.right),
-            "center_rule": "partido no enumerado en left ni right",
+            "nonpartisan": list(self.nonpartisan),
+            "unclassified_rule": "partido no enumerado en left, center, right ni nonpartisan",
         }
         encoded = json.dumps(
             definition, ensure_ascii=False, sort_keys=True, separators=(",", ":")
@@ -110,14 +124,16 @@ def parse_party_alignment(raw: str) -> PartyAlignment:
         raise ValueError(f"{PARTY_ALIGNMENT_ENV} debe contener JSON válido") from exc
     if not isinstance(payload, dict):
         raise ValueError(f"{PARTY_ALIGNMENT_ENV} debe ser un objeto JSON")
-    unexpected = sorted(set(payload).difference({"left", "right"}))
+    unexpected = sorted(set(payload).difference(ALIGNMENT_FIELDS))
     if unexpected:
         raise ValueError(
             f"{PARTY_ALIGNMENT_ENV} contiene claves no admitidas: {', '.join(unexpected)}"
         )
     return PartyAlignment(
         left=_party_list(payload.get("left"), "left"),
+        center=_party_list(payload.get("center"), "center"),
         right=_party_list(payload.get("right"), "right"),
+        nonpartisan=_party_list(payload.get("nonpartisan"), "nonpartisan"),
     )
 
 

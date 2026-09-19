@@ -8,29 +8,31 @@ salida del modelo visible. Estas revisiones no constituyen validación humana ci
 
 - Fuente: los tres `data/proc_data/ley_*/coding_chunks_long.parquet` de la app.
 - Universo elegible: 1.096 intervenciones, nueve sesiones, 3.609 bloques.
-- Muestra: 110 intervenciones (10,04%), 418 bloques, semilla `20260908`.
-- Cuotas proporcionales por `law_number × document_uri`, ajustadas a enteros por
-  restos hasta `ceil(0.10 * N)`, con un mínimo de una intervención por sesión.
-- Dentro de cada cuota: `sample_records` de la app con rondas por longitud,
-  aplicada al total de palabras de la intervención: ≤75, 76–500 y >500.
+- Muestra histórica: 110 intervenciones (10,04%), 418 bloques, semilla `20260908`.
+- El próximo piloto se prepara con el mismo diseño de la validación: cuotas
+  proporcionales por `law_number × chamber × alignment × gender`, ajustadas a
+  enteros por restos hasta `ceil(0.10 * N)`, con intervención como unidad primaria.
 - Expansión: todos los bloques de cada intervención sorteada. Los contextos se
   mantienen desde el corpus completo, incluso si la intervención vecina no fue
   sorteada. Nunca cruzan de sesión.
 
-La app manual sorteaba **bloques** por sesión y longitud. Este piloto adapta la
-unidad del sorteo a **intervenciones**, como exige el 10%, y agrega cuotas
-proporcionales por ley y sesión. El sorteo interior por longitud es equilibrado y
-no proporcional. Los conteos de códigos son descriptivos de este piloto y no se
-interpretan como prevalencias poblacionales ni como estimaciones de desempeño.
+El piloto histórico no usa el mismo diseño que la validación y se conserva solo
+para diagnóstico del prompt. El próximo piloto usa intervención como unidad
+primaria, se expande a todos sus bloques y conserva el estrato, la probabilidad y
+el peso calculados por el mismo selector de la aplicación. Los conteos de códigos
+son descriptivos y no se interpretan como prevalencias poblacionales ni como
+estimaciones de desempeño.
 
 ## Configuración y ejecución
 
 **Estado actual:** `annotations.qmd` sigue fijado al piloto histórico
 `pilot_f3a69c2f81c587271ef5`, con `EXECUTE_API=False`. El 14 de septiembre de 2026
 se autorizó una comprobación separada de hasta cinco llamadas con Luna `low`.
-La política global permanece desactivada; las excepciones de `authorized_runs`
-se restringen al directorio, identificador, modelo, esfuerzo y tamaño de muestra
-expresamente autorizados. Renderizar el reporte histórico no genera llamadas.
+La política global permanece desactivada. Para autorizar una ejecución futura se
+debe cambiarla explícitamente y añadir en `authorized_runs` una entrada cuyo ID,
+directorio absoluto, modelo, esfuerzo y `max_calls` coincidan con el manifiesto;
+si cualquiera difiere, el cliente no se crea. Renderizar el reporte histórico no
+genera llamadas.
 
 Instala las dependencias con `uv sync --locked` y dispone de Quarto CLI en el PATH.
 La clave `OPENAI_API_KEY` debe estar en `.env` o en el entorno del proceso.

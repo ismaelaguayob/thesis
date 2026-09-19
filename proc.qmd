@@ -72,6 +72,12 @@ from features.coding_chunks import (
     paragraph_fragments,
     segment_token,
 )
+from features.affiliation_overrides import (
+    apply_affiliation_overrides,
+    load_affiliation_overrides,
+)
+from features.atomic_io import atomic_write_bytes, atomic_write_csv, atomic_write_parquet
+from features.manual_validation.service import atomic_write_json
 from features.political_alignment import load_party_alignment
 ```
 
@@ -96,13 +102,11 @@ BILL_NUMBER = BILL_NUMBERS[LAW_NUMBER]
 PROC_DATA_DIR = Path("data/proc_data") / f"ley_{LAW_NUMBER}"
 TABLE_OUTPUT_DIR = Path("output/tables") / f"ley_{LAW_NUMBER}"
 PARTY_ALIGNMENT = load_party_alignment(Path(".env"))
+AFFILIATION_OVERRIDES_PATH = Path("data/curation/party_at_date_overrides.csv")
 
 PROC_DATA_DIR.mkdir(parents=True, exist_ok=True)
 TABLE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-(PROC_DATA_DIR / "party_alignment.json").write_text(
-    json.dumps(PARTY_ALIGNMENT.snapshot(), ensure_ascii=False, indent=2) + "\n",
-    encoding="utf-8",
-)
+atomic_write_json(PROC_DATA_DIR / "party_alignment.json", PARTY_ALIGNMENT.snapshot())
 ```
 
 ## Historia de la ley
@@ -126,7 +130,7 @@ if REFRESH_HISTORY:
         max_attempts=3,
         backoff_seconds=2.0,
     )
-    history.to_parquet(PROC_DATA_DIR / "datos_bcn_akn.parquet", index=False)
+    atomic_write_parquet(history, PROC_DATA_DIR / "datos_bcn_akn.parquet")
 ```
 
 Leemos la extracción persistida y el manifiesto que identifica los documentos del
@@ -147,8 +151,8 @@ data_corpus = corpus_manifest.merge(data, on="document_uri", how="left")
 data_analysis = data_corpus.loc[data_corpus["include_in_speech_pipeline"]].copy()
 data_message = data_corpus.loc[data_corpus["corpus_role"].eq("initial_message")].copy()
 
-data_analysis.to_parquet(PROC_DATA_DIR / "corpus_sala.parquet", index=False)
-data_message.to_parquet(PROC_DATA_DIR / "corpus_mensaje_inicial.parquet", index=False)
+atomic_write_parquet(data_analysis, PROC_DATA_DIR / "corpus_sala.parquet")
+atomic_write_parquet(data_message, PROC_DATA_DIR / "corpus_mensaje_inicial.parquet")
 ```
 
 ## Extracción de intervenciones
@@ -162,12 +166,8 @@ data_speech = add_speech_content(data_analysis)
 speaker_identity_audit = collect_akn_person_identities(data_speech)
 corpus_person_registry = build_corpus_person_registry(data_speech)
 
-speaker_identity_audit.to_parquet(
-    PROC_DATA_DIR / "speaker_identity_audit.parquet", index=False
-)
-speaker_identity_audit.to_csv(
-    TABLE_OUTPUT_DIR / "speaker_identity_audit.csv", index=False
-)
+atomic_write_parquet(speaker_identity_audit, PROC_DATA_DIR / "speaker_identity_audit.parquet")
+atomic_write_csv(speaker_identity_audit, TABLE_OUTPUT_DIR / "speaker_identity_audit.csv")
 ```
 
 El manifiesto señala los debates cuyo AKN no es utilizable, como el trámite 3.1 de
@@ -395,13 +395,9 @@ candidate_progress = (
     .reset_index()
 )
 
-candidates_full.to_parquet(PROC_DATA_DIR / "speaker_candidates.parquet", index=False)
-candidates_pending.to_parquet(
-    PROC_DATA_DIR / "speaker_candidates_pending.parquet", index=False
-)
-candidate_progress.to_csv(
-    TABLE_OUTPUT_DIR / "speaker_candidate_progress.csv", index=False
-)
+atomic_write_parquet(candidates_full, PROC_DATA_DIR / "speaker_candidates.parquet")
+atomic_write_parquet(candidates_pending, PROC_DATA_DIR / "speaker_candidates_pending.parquet")
+atomic_write_csv(candidate_progress, TABLE_OUTPUT_DIR / "speaker_candidate_progress.csv")
 candidate_progress
 ```
 
@@ -429,12 +425,8 @@ speaker_refs = collect_bcn_speaker_references(data_normalized_full)
 missing_speaker_refs = speaker_refs.loc[
     ~speaker_refs["person_href"].isin(parliamentarians["person_href"])
 ].copy()
-missing_speaker_refs.to_parquet(
-    PROC_DATA_DIR / "parliamentarian_identity_gaps.parquet", index=False
-)
-missing_speaker_refs.to_csv(
-    TABLE_OUTPUT_DIR / "parliamentarian_identity_gaps.csv", index=False
-)
+atomic_write_parquet(missing_speaker_refs, PROC_DATA_DIR / "parliamentarian_identity_gaps.parquet")
+atomic_write_csv(missing_speaker_refs, TABLE_OUTPUT_DIR / "parliamentarian_identity_gaps.csv")
 
 identity_only = missing_speaker_refs[["person_href", "person_id"]].copy()
 identity_only["name"] = missing_speaker_refs["speaker_names_seen"].map(
@@ -553,18 +545,26 @@ speech_df_full.loc[
     "party_at_date_source",
 ] = "role_not_applicable"
 
+# BCN never supplies a current affiliation as a replacement for historical
+# evidence. The editable table contains only source-backed adjudications for
+# automatic ``unknown`` cases and leaves the scraper Parquet unchanged.
+affiliation_overrides = load_affiliation_overrides(AFFILIATION_OVERRIDES_PATH)
+speech_df_full, applied_affiliation_overrides = apply_affiliation_overrides(
+    speech_df_full, affiliation_overrides
+)
+
 dated_affiliations = speech_df_full["reference_date"].notna()
 if not speech_df_full.loc[dated_affiliations, "reference_date"].astype(str).eq(
     speech_df_full.loc[dated_affiliations, "date"].astype(str)
 ).all():
     raise ValueError("La fecha de referencia de una afiliación no coincide con el debate")
-matched_affiliations = speech_df_full["militancy_at_date_status"].eq("matched")
-if speech_df_full.loc[matched_affiliations, "party_at_date"].isna().any():
-    raise ValueError("Una afiliación matched carece de party_at_date")
+resolved_affiliations = speech_df_full["party_at_date_status"].eq("matched")
+if speech_df_full.loc[resolved_affiliations, "party_at_date"].isna().any():
+    raise ValueError("Una afiliación resuelta carece de party_at_date")
 if speech_df_full.loc[
-    ~matched_affiliations, "party_at_date"
+    speech_df_full["party_at_date_status"].eq("unknown"), "party_at_date"
 ].notna().any():
-    raise ValueError("Una afiliación no resuelta contiene party_at_date")
+    raise ValueError("Una afiliación unknown contiene party_at_date")
 ```
 
 La afiliación histórica queda separada de la militancia vigente. Exportamos los
@@ -594,12 +594,10 @@ affiliation_gaps = (
     .drop_duplicates(["document_uri", "person_href"])
     .sort_values(["document_uri", "person_href"], kind="stable")
 )
-affiliation_gaps.to_parquet(
-    PROC_DATA_DIR / "parliamentarian_affiliation_gaps.parquet", index=False
-)
-affiliation_gaps.to_csv(
-    TABLE_OUTPUT_DIR / "parliamentarian_affiliation_gaps.csv", index=False
-)
+atomic_write_parquet(affiliation_gaps, PROC_DATA_DIR / "parliamentarian_affiliation_gaps.parquet")
+atomic_write_csv(affiliation_gaps, TABLE_OUTPUT_DIR / "parliamentarian_affiliation_gaps.csv")
+atomic_write_csv(affiliation_overrides, TABLE_OUTPUT_DIR / "party_at_date_overrides_status.csv")
+atomic_write_csv(applied_affiliation_overrides, TABLE_OUTPUT_DIR / "party_at_date_overrides_applied.csv")
 affiliation_summary = (
     speech_df_full.loc[
         speech_df_full["person_href"].notna(),
@@ -651,8 +649,9 @@ speech_df_full.loc[
 speech_df = speech_df_full.loc[analysis_mask].copy().reset_index(drop=True)
 
 # La alineación se deriva solo desde la afiliación histórica validada. Los
-# partidos matched no enumerados son centro; la ausencia y la no aplicabilidad
-# permanecen explícitas para no imputarlas al centro.
+# Solo partidos enumerados en la configuración reciben una categoría política.
+# La ausencia, la no aplicabilidad y los nombres no clasificados permanecen
+# explícitos para impedir imputarlos silenciosamente a centro.
 def political_alignment_at_date(row):
     if row["party_at_date_status"] == "matched":
         return PARTY_ALIGNMENT.classify(row["party_at_date"])
@@ -668,8 +667,8 @@ speech_df["political_alignment"] = speech_df.apply(
     political_alignment_at_date, axis=1
 )
 
-speech_df.to_parquet(PROC_DATA_DIR / "speech_df.parquet", index=False)
-speech_df_full.to_parquet(PROC_DATA_DIR / "speech_df_full.parquet", index=False)
+atomic_write_parquet(speech_df, PROC_DATA_DIR / "speech_df.parquet")
+atomic_write_parquet(speech_df_full, PROC_DATA_DIR / "speech_df_full.parquet")
 ```
 
 El reporte de calidad reúne la cobertura de los documentos, las identidades y las
@@ -680,12 +679,8 @@ detalle para revisarlo sin interrumpir la ejecución.
 speech_quality_report = build_speech_quality_report(
     corpus_manifest, data, speech_df, speech_df_full
 )
-speech_quality_report.to_parquet(
-    PROC_DATA_DIR / "speech_quality_report.parquet", index=False
-)
-speech_quality_report.to_csv(
-    TABLE_OUTPUT_DIR / "speech_quality_report.csv", index=False
-)
+atomic_write_parquet(speech_quality_report, PROC_DATA_DIR / "speech_quality_report.parquet")
+atomic_write_csv(speech_quality_report, TABLE_OUTPUT_DIR / "speech_quality_report.csv")
 speech_quality_report[[
     "expected_title", "speech_source", "quality_status", "speech_rows",
     "unresolved_identity_rows", "issues", "warnings",
@@ -768,6 +763,11 @@ CODING_METADATA_COLUMNS = [
     "party_at_date_href",
     "party_at_date_status",
     "party_at_date_source",
+    "affiliation_resolution_method",
+    "affiliation_evidence_url",
+    "affiliation_evidence_note",
+    "affiliation_reviewed_by",
+    "affiliation_reviewed_at",
     "militancy_at_date_href",
     "militancy_at_date_start_date",
     "militancy_at_date_end_date",
@@ -923,8 +923,8 @@ if chunks_path.exists():
     if previous_version != CODING_CHUNKS_SCHEMA_VERSION:
         archive_path = chunks_path.with_name(f"coding_chunks_long.{previous_version}.parquet")
         if not archive_path.exists():
-            archive_path.write_bytes(chunks_path.read_bytes())
-coding_chunks_long.to_parquet(chunks_path, index=False)
+            atomic_write_bytes(chunks_path.read_bytes(), archive_path)
+atomic_write_parquet(coding_chunks_long, chunks_path)
 ```
 
 Resumimos el tamaño del corpus de bloques y sus longitudes para revisar el resultado

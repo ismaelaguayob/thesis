@@ -42,9 +42,17 @@ en <http://127.0.0.1:8765> o entra directamente en
 `output/annotation_reviews/`. La [guía del piloto](docs/piloto-anotaciones-llm.md)
 explica ejecución, variantes y límites de interpretación.
 
-La variable `PARTY_ALIGNMENT` de `.env` contiene un objeto JSON con las listas
-`left` y `right`. El procesamiento y la validación manual usan esa misma
-definición; cualquier afiliación no enumerada se clasifica como `centro`. Copia
-el formato de `.env.example` al configurar un entorno nuevo.
+La variable `PARTY_ALIGNMENT` de `.env` contiene cuatro listas explícitas:
+`left`, `center`, `right` y `nonpartisan`. El procesamiento y la validación
+manual usan la misma definición; un partido no enumerado queda como
+`unclassified`, nunca se imputa a `centro`. Copia el formato de `.env.example`
+al configurar un entorno nuevo.
+
+Las afiliaciones históricas sin resultado automático se revisan en
+[`data/curation/party_at_date_overrides.csv`](data/curation/party_at_date_overrides.csv).
+Una fila `confirmed` o `nonpartisan` exige partido, URL y nota de evidencia,
+persona revisora y fecha; las filas `pending` no alteran el corpus. El
+procesamiento conserva la extracción de BCN y aplica estas decisiones solo a la
+tabla derivada de discursos.
 
 El [manifiesto del análisis del piloto](data/proc_data/llm_pilots/pilot_f3a69c2f81c587271ef5/manifest.json) resume tokens confirmados y métricas. La política `data/proc_data/llm_pilots/api_policy.json` bloquea nuevas llamadas.

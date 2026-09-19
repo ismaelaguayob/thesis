@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 import jsonschema
 import pandas as pd
 
+import features.llm_annotations.pipeline as pipeline
 from features.llm_annotations.pipeline import (
     allocate_quotas, canonical, model_input, output_schema, prepare_run,
     run_annotations, validate_output,
@@ -31,7 +32,10 @@ class LLMPilotTests(unittest.TestCase):
             {'id': 'solidaridad', 'label': 'Solidaridad', 'definition': 'Compartir riesgos.',
              'include': ['Distribución solidaria.'], 'exclude': [], 'orientation_anchor': 'Compartir riesgos.'}]}
         self.schema = output_schema(self.book)
-        self.party_alignment = PartyAlignment(left=("Partido A",), right=("Partido B",))
+        self.party_alignment = PartyAlignment(
+            left=("Partido A",), center=("Partido C",),
+            right=("Partido B",), nonpartisan=("Independiente",),
+        )
         self.record = dict(unit_id='u1::p1', utterance_id='u1', content='🧭 Sí. La solidaridad es necesaria. Sí.',
                            law_number='21419', document_uri='doc1', date='2026-01-01',
                            constitutional_stage='primer', title='Sesión', paragraph_start=1,
@@ -54,8 +58,23 @@ class LLMPilotTests(unittest.TestCase):
         service = SimpleNamespace(codebook=self.book, codebook_sha256=sha256_text(canonical(self.book)),
                                   sources=[{'law_number': '21419', 'sha256': 'fixture'}],
                                   party_alignment=self.party_alignment)
-        return prepare_run(service, [self.record], {'selected_interventions': 1}, prompt,
-                           self.root / 'runs', 'gpt-5.6-luna', 'max')
+        directory = prepare_run(service, [self.record], {'selected_interventions': 1}, prompt,
+                                self.root / 'runs', 'gpt-5.6-luna', 'max')
+        self._authorize(directory)
+        return directory
+
+    @staticmethod
+    def _grant(directory):
+        return {
+            'model': 'gpt-5.6-luna', 'reasoning_effort': 'max',
+            'run_dir': str(directory.resolve()), 'max_calls': 1,
+        }
+
+    def _authorize(self, directory):
+        pipeline.API_POLICY_PATH.write_text(json.dumps({
+            'allow_api_calls': True,
+            'authorized_runs': {directory.name: self._grant(directory)},
+        }))
 
     def fake_client(self, raw=None, status='completed'):
         response = MagicMock()
@@ -207,6 +226,19 @@ class LLMPilotTests(unittest.TestCase):
                 run_annotations(directory, execute=True)
             constructor.assert_not_called()
             self.assertEqual('pending', run_annotations(directory).iloc[0].status)
+
+    def test_missing_or_invalid_policy_blocks_before_client_creation(self):
+        directory = self.make_run()
+        pipeline.API_POLICY_PATH.unlink()
+        with patch('features.llm_annotations.pipeline.OpenAI') as constructor:
+            with self.assertRaisesRegex(ValidationError, 'política obligatoria'):
+                run_annotations(directory, execute=True)
+            constructor.assert_not_called()
+        pipeline.API_POLICY_PATH.write_text('{inválido')
+        with patch('features.llm_annotations.pipeline.OpenAI') as constructor:
+            with self.assertRaisesRegex(ValidationError, 'JSON válido'):
+                run_annotations(directory, execute=True)
+            constructor.assert_not_called()
 
     def test_invalid_and_incomplete_are_not_no_statements(self):
         for status, raw, expected in [('incomplete', self.raw, 'incomplete'),
@@ -367,10 +399,9 @@ class LLMPilotTests(unittest.TestCase):
 
     def test_scoped_authorization_checks_run_and_model(self):
         directory = self.make_run()
-        grant = {'model': 'gpt-5.6-luna', 'reasoning_effort': 'max',
-                 'run_dir': str(directory.resolve()), 'max_calls': 1}
-        policy = {'allow_api_calls': False, 'authorized_runs': {directory.name: grant}}
-        policy_path = self.root / 'api_policy.json'
+        grant = self._grant(directory)
+        policy = {'allow_api_calls': True, 'authorized_runs': {directory.name: grant}}
+        policy_path = pipeline.API_POLICY_PATH
         for key, value in [('model', 'other'), ('reasoning_effort', 'low'),
                            ('max_calls', 0), ('run_dir', '/tmp/other')]:
             invalid = copy.deepcopy(policy)

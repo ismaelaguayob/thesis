@@ -34,7 +34,9 @@ class ManualValidationTestCase(unittest.TestCase):
         self.output_dir = self.root / "validation"
         self.party_alignment = PartyAlignment(
             left=("Partido Socialista de Chile",),
+            center=("Partido Demócrata Cristiano",),
             right=("Partido Renovación Nacional",),
+            nonpartisan=("Independiente",),
         )
         self._write_corpus()
         self._write_codebook()
@@ -679,7 +681,7 @@ class ManualValidationTestCase(unittest.TestCase):
             self.assertEqual(config["corpus"]["max_block_words"], 150)
             self.assertIn({"id": "vote", "label": "Voto"}, config["quality_flags"])
             self.assertIn(
-                {"id": "alignment", "label": "Alineación política (izquierda, derecha o centro)"},
+                {"id": "alignment", "label": "Alineación o condición política"},
                 config["stratification"]["fields"],
             )
             self.assertNotIn(
