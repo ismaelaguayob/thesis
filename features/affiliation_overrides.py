@@ -105,6 +105,9 @@ def apply_affiliation_overrides(
     ):
         result[column] = None
     active = overrides.loc[overrides["resolution"].isin(APPLIED_RESOLUTIONS)].copy()
+    # The editable queue covers every law. A single-law render must apply only
+    # its own rows, while still validating an exact person/date match in scope.
+    active = active.loc[active["document_uri"].isin(result["document_uri"].unique())].copy()
     if active.empty:
         result["affiliation_resolution_method"] = "automatic"
         return result, active

@@ -94,6 +94,18 @@ class AffiliationOverridesTestCase(unittest.TestCase):
         with self.assertRaisesRegex(AffiliationOverrideError, "solo puede resolver afiliaciones unknown"):
             apply_affiliation_overrides(self.speeches, load_affiliation_overrides(self.path))
 
+    def test_rows_for_another_law_do_not_block_a_single_law_render(self) -> None:
+        self._write([self._row(
+            document_uri="another-document", resolution="confirmed", party_at_date="Partido A",
+            evidence_url="https://example.test/evidence", evidence_note="Fuente.",
+            reviewed_by="ismael", reviewed_at="2026-09-19",
+        )])
+        result, applied = apply_affiliation_overrides(
+            self.speeches, load_affiliation_overrides(self.path)
+        )
+        self.assertTrue(applied.empty)
+        self.assertEqual("unknown", result.loc[0, "party_at_date_status"])
+
 
 if __name__ == "__main__":
     unittest.main()
