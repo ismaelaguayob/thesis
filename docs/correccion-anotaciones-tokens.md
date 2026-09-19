@@ -17,11 +17,11 @@ al menos 25.000 tokens. La [referencia Python de Responses](https://developers.o
 y los tipos instalados del SDK respaldan el uso de `reasoning.effort`,
 `max_output_tokens`, `status`, `incomplete_details` y `usage`.
 La [ficha de Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna)
-confirma soporte para `low` y un máximo de 128.000 tokens de salida.
+confirma soporte para `max` y un máximo de 128.000 tokens de salida.
 
 ## Cambios aplicados
 
-- Nuevas ejecuciones: Luna `low` y `max_output_tokens=32768` por defecto.
+- Nuevas ejecuciones: Luna `max` y `max_output_tokens=32768` por defecto.
 - Cliente con `max_retries=0`, timeout de 600 segundos y sin consulta previa
   al endpoint de modelos. Cada bloque admite un solo intento HTTP.
 - Intentos reservados como `started` antes del envío y bloqueo por proceso para

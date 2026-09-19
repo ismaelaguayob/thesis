@@ -19,7 +19,7 @@ El *outline* de mi tesis se encuentra en [este link](https://ismaelaguayob.githu
 
 `annotations.qmd` sortea el 10% de las intervenciones elegibles por ley y sesión,
 reutiliza el contexto y los controles de la app manual y anota todos sus bloques
-con `gpt-5.6-luna`. Las ejecuciones nuevas usan esfuerzo `low`; el piloto histórico
+con `gpt-5.6-luna`. Las ejecuciones nuevas usan esfuerzo `max`; el piloto histórico
 conservado usó `max`. El prompt activo se edita en
 [`prompts/annotations_pilot_v1_confidence.md`](prompts/annotations_pilot_v1_confidence.md).
 El XLSX vigente es `features/codebook/codebook_v0.3.xlsx` (versión interna
@@ -29,6 +29,8 @@ El XLSX vigente es `features/codebook/codebook_v0.3.xlsx` (versión interna
 uv sync --locked
 # Renderizar usando solamente resultados guardados:
 uv run quarto render annotations.qmd
+# Preparar inputs de un piloto nuevo, sin llamadas a la API:
+ANNOTATIONS_PREPARE_INPUTS=1 uv run quarto render annotations.qmd
 # La generación está desactivada por instrucción del usuario;
 # este reporte analiza la ejecución guardada sin nuevas llamadas.
 # Revisar modelo, input, output, códigos destacados y justificaciones:

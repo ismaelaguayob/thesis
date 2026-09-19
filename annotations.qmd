@@ -44,8 +44,9 @@ from datetime import datetime, timezone
 FRACTION = 0.10
 SEED = 20260908
 CANDIDATE_MODEL = "gpt-5.6-luna"
-CANDIDATE_REASONING_EFFORT = "low"
+CANDIDATE_REASONING_EFFORT = "max"
 CANDIDATE_MAX_OUTPUT_TOKENS = 32768
+PREPARE_CANDIDATE_INPUTS = os.environ.get("ANNOTATIONS_PREPARE_INPUTS") == "1"
 PROMPT_PATH = Path(os.environ.get(
     "ANNOTATIONS_PROMPT", "prompts/annotations_pilot_v1_confidence.md"
 ))
@@ -236,12 +237,14 @@ La respuesta utiliza un [esquema JSON estricto](https://developers.openai.com/ap
 La API no recibe una semilla: se reproduce la selección, los inputs y la
 configuración, pero nuevas generaciones pueden diferir.
 
-Preparamos los inputs a partir de los Parquet actuales de `proc.qmd`, el prompt
-activo y el libro vigente. `prepare_run` guarda la muestra y los requests en una
-carpeta identificada por su contenido, sin llamar a la API. Esta preparación no
-exige coincidencia con la muestra ni con el libro del piloto histórico. Los
-requests nuevos reciben explícitamente `gpt-5.6-luna`, razonamiento `low` y un
-límite de 32.768 tokens de salida, tal como declara la configuración de arriba.
+Cuando se solicita explícitamente, preparamos inputs a partir de los Parquet
+actuales de `proc.qmd`, el prompt activo y el libro vigente. `prepare_run` guarda
+la muestra y los requests en una carpeta identificada por su contenido, sin llamar
+a la API. Para no acumular inputs no utilizados, el render no los prepara por
+defecto: se debe usar `ANNOTATIONS_PREPARE_INPUTS=1`. Esta preparación no exige
+coincidencia con la muestra ni con el libro del piloto histórico. Los requests
+nuevos reciben explícitamente `gpt-5.6-luna`, razonamiento `max` y un límite de
+32.768 tokens de salida, tal como declara la configuración de arriba.
 
 ```{python}
 #| label: congelar-ejecucion
@@ -257,27 +260,38 @@ sampling = {
     "party_alignment": service.party_alignment.snapshot(),
     "strata_table": sampling_design,
 }
-candidate_input_run_dir = prepare_run(
-    service, selected, sampling, PROMPT_PATH, INPUT_RUN_ROOT,
-    model=CANDIDATE_MODEL,
-    effort=CANDIDATE_REASONING_EFFORT,
-    max_output_tokens=CANDIDATE_MAX_OUTPUT_TOKENS,
-)
-atomic_write_parquet(selected_units, candidate_input_run_dir / "selected_utterances.parquet")
-strata_artifact = strata.copy()
-strata_artifact["values"] = strata_artifact["values"].map(
-    lambda value: json.dumps(value, ensure_ascii=False, sort_keys=True)
-)
-atomic_write_parquet(strata_artifact, candidate_input_run_dir / "strata.parquet")
-atomic_write_csv(strata_display, TABLE_ROOT / f"{candidate_input_run_dir.name}_strata.csv")
+candidate_input_run_dir = None
+if PREPARE_CANDIDATE_INPUTS:
+    candidate_input_run_dir = prepare_run(
+        service, selected, sampling, PROMPT_PATH, INPUT_RUN_ROOT,
+        model=CANDIDATE_MODEL,
+        effort=CANDIDATE_REASONING_EFFORT,
+        max_output_tokens=CANDIDATE_MAX_OUTPUT_TOKENS,
+    )
+    atomic_write_parquet(
+        selected_units, candidate_input_run_dir / "selected_utterances.parquet"
+    )
+    strata_artifact = strata.copy()
+    strata_artifact["values"] = strata_artifact["values"].map(
+        lambda value: json.dumps(value, ensure_ascii=False, sort_keys=True)
+    )
+    atomic_write_parquet(strata_artifact, candidate_input_run_dir / "strata.parquet")
+    atomic_write_csv(strata_display, TABLE_ROOT / f"{candidate_input_run_dir.name}_strata.csv")
 ```
 
-Los inputs vigentes quedan en `{python} str(candidate_input_run_dir)`. Las secciones siguientes
-auditan las respuestas del piloto `{python} SAVED_RUN_ID` con su muestra, libro y
-denominadores originales. Sus resultados no se asignan a los inputs nuevos. La
-estratificación disponible en la aplicación deriva `political_alignment` desde
-`party_at_date`, enlazado por documento y persona durante `proc.qmd`; las
-afiliaciones todavía no resueltas se mantienen como datos faltantes.
+```{python}
+if candidate_input_run_dir is None:
+    print("No se prepararon inputs nuevos; use ANNOTATIONS_PREPARE_INPUTS=1 para hacerlo.")
+else:
+    print(f"Los inputs nuevos quedaron en {candidate_input_run_dir}.")
+```
+
+Las secciones siguientes auditan las respuestas del piloto `{python} SAVED_RUN_ID`
+con su muestra, libro y denominadores originales. Sus resultados no se asignan a
+inputs nuevos. La estratificación disponible en la aplicación deriva
+`political_alignment` desde `party_at_date`, enlazado por documento y persona
+durante `proc.qmd`; las afiliaciones todavía no resueltas se mantienen como datos
+faltantes.
 
 ## Ejecución y controles de salida
 
@@ -388,7 +402,7 @@ valores en `annotations.parquet` y `results.parquet`, respectivamente. Los CSV
 exportados arriba conservan las mismas columnas. La confianza del bloque incluye
 las decisiones `no_statements`, necesarias para revisar posibles omisiones.
 
-Para nuevas ejecuciones, `prepare_run` usa ahora Luna con esfuerzo `low` y un
+Para nuevas ejecuciones, `prepare_run` usa ahora Luna con esfuerzo `max` y un
 máximo de 32.768 tokens, compartido entre razonamiento y texto visible. Los
 resultados exportan `response_status`, `incomplete_reason`, `api_error_code`,
 `max_output_tokens` y `reasoning_effort` para identificar los fallos de generación.

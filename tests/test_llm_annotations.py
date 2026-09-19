@@ -352,7 +352,7 @@ class LLMPilotTests(unittest.TestCase):
             manifest['spec']['party_alignment'], service.party_alignment.snapshot()
         )
         request = json.loads((directory / 'requests/00000.json').read_text())['body']
-        self.assertEqual('low', request['reasoning']['effort'])
+        self.assertEqual('max', request['reasoning']['effort'])
         self.assertEqual(32768, request['max_output_tokens'])
         for budget in (0, -1, True, 128001):
             with self.assertRaises(ValueError):

@@ -47,7 +47,7 @@ Las variables `ANNOTATIONS_EXECUTE` y `ANNOTATIONS_PROMPT` no convierten este
 reporte histórico en un ejecutor de nuevas variantes. Para preparar una nueva
 muestra se usa `features.llm_annotations.pipeline.prepare_run`, con el servicio,
 registros seleccionados, metadatos de muestreo, ruta del prompt y directorio de
-salida. Sus valores predeterminados son `gpt-5.6-luna`, `effort="low"` y
+salida. Sus valores predeterminados son `gpt-5.6-luna`, `effort="max"` y
 `max_output_tokens=32768`. Preparar una ejecución es una operación local.
 `run_annotations(run_dir, execute=True, limit=N)` solo genera si la política
 permite esa ejecución; `limit=0` no envía nada y los límites negativos se rechazan.
@@ -59,7 +59,7 @@ tokens: 109 respuestas se interrumpieron por agotamiento del límite. La
 explica este comportamiento y recomienda reservar al menos 25.000 tokens al
 comenzar a experimentar. El nuevo techo de 32.768 deja un margen adicional;
 el modelo puede terminar antes. La [ficha de Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna)
-admite esfuerzo `low` y hasta 128.000 tokens de salida. Estos ajustes reducen el
+admite esfuerzo `max` y hasta 128.000 tokens de salida. Estos ajustes reducen el
 riesgo observado; ningún límite finito garantiza todas las respuestas futuras.
 
 El SDK instalado es `openai==3.9.0`. El cliente usa `max_retries=0` y un timeout

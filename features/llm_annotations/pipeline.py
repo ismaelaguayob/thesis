@@ -24,7 +24,7 @@ from features.manual_validation.service import (
 
 PIPELINE_VERSION = "llm-pilot-1.2.0"
 DEFAULT_MODEL = "gpt-5.6-luna"
-DEFAULT_REASONING_EFFORT = "low"
+DEFAULT_REASONING_EFFORT = "max"
 # Includes reasoning AND visible output; see OpenAI's reasoning guide.
 DEFAULT_MAX_OUTPUT_TOKENS = 32768
 SDK_MAX_RETRIES = 0
