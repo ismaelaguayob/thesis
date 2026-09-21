@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import concurrent.futures
+import copy
 import datetime as dt
 import fcntl
 import importlib.metadata
 import json
 import math
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -22,12 +24,14 @@ from features.manual_validation.service import (
     sha256_file, sha256_text,
 )
 
-PIPELINE_VERSION = "llm-pilot-1.2.1"
+PIPELINE_VERSION = "llm-pilot-1.4.1"
 DEFAULT_MODEL = "gpt-5.6-luna"
 DEFAULT_REASONING_EFFORT = "max"
 # Includes reasoning AND visible output; see OpenAI's reasoning guide.
 DEFAULT_MAX_OUTPUT_TOKENS = 32768
-SDK_MAX_RETRIES = 0
+DEFAULT_SDK_MAX_RETRIES = 4
+MAX_SDK_RETRIES = 4
+DEFAULT_INCOMPLETE_RETRY_MAX_OUTPUT_TOKENS = 65536
 REQUEST_TIMEOUT_SECONDS = 600
 RUN_ID_RE = re.compile(r"^pilot_[0-9a-f]{20}$")
 API_POLICY_PATH = Path(__file__).resolve().parents[2] / 'data/proc_data/llm_pilots/api_policy.json'
@@ -35,6 +39,31 @@ API_POLICY_PATH = Path(__file__).resolve().parents[2] / 'data/proc_data/llm_pilo
 
 def canonical(value: Any) -> str:
     return json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+
+
+def execution_config_from_env() -> tuple[str, int, int]:
+    """Load selectable execution settings while keeping a bounded retry policy."""
+    load_dotenv('.env', override=False)
+    model = os.environ.get('ANNOTATIONS_MODEL', DEFAULT_MODEL).strip()
+    if not model:
+        raise ValueError("ANNOTATIONS_MODEL no puede estar vacío")
+    raw_retries = os.environ.get(
+        'ANNOTATIONS_MAX_RETRIES', str(DEFAULT_SDK_MAX_RETRIES)
+    ).strip()
+    if not raw_retries.isdigit():
+        raise ValueError("ANNOTATIONS_MAX_RETRIES debe ser un entero entre 0 y 4")
+    max_retries = int(raw_retries)
+    if not 0 <= max_retries <= MAX_SDK_RETRIES:
+        raise ValueError("ANNOTATIONS_MAX_RETRIES debe ser un entero entre 0 y 4")
+    raw_fallback_tokens = os.environ.get(
+        'ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS',
+        str(DEFAULT_INCOMPLETE_RETRY_MAX_OUTPUT_TOKENS),
+    ).strip()
+    if not raw_fallback_tokens.isdigit() or int(raw_fallback_tokens) < 1:
+        raise ValueError(
+            "ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS debe ser un entero positivo"
+        )
+    return model, max_retries, int(raw_fallback_tokens)
 
 
 def allocate_quotas(counts: pd.Series, fraction: float) -> pd.Series:
@@ -115,11 +144,26 @@ def model_input(record: dict) -> dict:
 def prepare_run(service: ValidationService, selected: list[dict], sampling: dict,
                 prompt_path: Path, root: Path, model: str = DEFAULT_MODEL,
                 effort: str = DEFAULT_REASONING_EFFORT,
-                max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS) -> Path:
+                max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS,
+                sdk_max_retries: int = DEFAULT_SDK_MAX_RETRIES,
+                incomplete_retry_max_output_tokens: int = (
+                    DEFAULT_INCOMPLETE_RETRY_MAX_OUTPUT_TOKENS
+                )) -> Path:
     """Content address freezes sample, corpus, book, prompt, schema and API settings."""
     if type(max_output_tokens) is not int or max_output_tokens < 1:
         raise ValueError("max_output_tokens debe ser un entero positivo")
     if model == DEFAULT_MODEL and max_output_tokens > 128000:
+        raise ValueError("Luna admite como máximo 128000 tokens de salida")
+    if type(sdk_max_retries) is not int or not 0 <= sdk_max_retries <= MAX_SDK_RETRIES:
+        raise ValueError("sdk_max_retries debe ser un entero entre 0 y 4")
+    if (
+        type(incomplete_retry_max_output_tokens) is not int
+        or incomplete_retry_max_output_tokens < max_output_tokens
+    ):
+        raise ValueError(
+            "incomplete_retry_max_output_tokens debe ser un entero no menor al límite base"
+        )
+    if model == DEFAULT_MODEL and incomplete_retry_max_output_tokens > 128000:
         raise ValueError("Luna admite como máximo 128000 tokens de salida")
     if not selected:
         raise ValueError("La muestra debe contener al menos un bloque")
@@ -130,7 +174,9 @@ def prepare_run(service: ValidationService, selected: list[dict], sampling: dict
     spec = {
         "pipeline_version": PIPELINE_VERSION, "model": model, "reasoning_effort": effort,
         "max_output_tokens": max_output_tokens, "sampling": sampling,
-        "sdk_max_retries": SDK_MAX_RETRIES, "request_timeout_seconds": REQUEST_TIMEOUT_SECONDS,
+        "sdk_max_retries": sdk_max_retries,
+        "incomplete_retry_max_output_tokens": incomplete_retry_max_output_tokens,
+        "request_timeout_seconds": REQUEST_TIMEOUT_SECONDS,
         "sources": sources, "prompt_sha256": sha256_text(prompt),
         "codebook_sha256": service.codebook_sha256, "output_schema": schema,
         "party_alignment": service.party_alignment.snapshot(),
@@ -291,7 +337,7 @@ def load_sample(run_dir: Path) -> list[dict]:
 
 def run_annotations(run_dir: Path, execute: bool = False, workers: int = 6,
                     limit: int | None = None) -> pd.DataFrame:
-    """One HTTP attempt per block; never automatically resend an existing attempt."""
+    """Execute pending blocks with the retry policy frozen in the manifest."""
     if limit is not None and (type(limit) is not int or limit < 0):
         raise ValueError("limit debe ser un entero no negativo")
     if not execute:
@@ -303,6 +349,46 @@ def run_annotations(run_dir: Path, execute: bool = False, workers: int = 6,
         except BlockingIOError as exc:
             raise ValidationError("Esta ejecución ya tiene un proceso activo") from exc
         return _run_annotations(run_dir, True, workers, limit)
+
+
+def _load_retry_seed(run_dir: Path, index: int) -> dict[str, Any] | None:
+    """Load only the small failure ledger used to continue an attempt budget."""
+    path = run_dir / 'retry_seeds' / f'{index:05d}.json'
+    if not path.exists():
+        return None
+    try:
+        seed = json.loads(path.read_text(encoding='utf-8'))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValidationError(f"El retry seed {index} no contiene JSON válido") from exc
+    allowed_statuses = {'incomplete', 'invalid_output', 'error', 'transport_error'}
+    if (
+        not isinstance(seed, dict)
+        or seed.get('sample_index') != index
+        or seed.get('status') not in allowed_statuses
+        or type(seed.get('attempt_count')) is not int
+        or seed['attempt_count'] < 1
+        or type(seed.get('last_attempt_max_output_tokens')) is not int
+        or seed['last_attempt_max_output_tokens'] < 1
+    ):
+        raise ValidationError(f"El retry seed {index} no es válido")
+    return seed
+
+
+def _discard_failed_output(result: dict[str, Any]) -> dict[str, Any]:
+    """Keep failure accounting and diagnostics without retaining an invalid body."""
+    if result.get('status') == 'completed':
+        return result
+    response = result.get('response') or {}
+    metadata_keys = (
+        'id', 'object', 'created_at', 'status', 'model', 'incomplete_details',
+        'error', 'usage', 'service_tier',
+    )
+    result['response'] = {
+        key: response[key] for key in metadata_keys if key in response
+    } or None
+    result['output_text'] = ''
+    result['failed_output_discarded'] = True
+    return result
 
 
 def _authorize_api_execution(run_dir: Path, manifest: dict[str, Any]) -> None:
@@ -329,12 +415,20 @@ def _authorize_api_execution(run_dir: Path, manifest: dict[str, Any]) -> None:
     if not isinstance(spec, dict):
         raise ValidationError("El manifiesto de ejecución no tiene una especificación válida")
     max_calls = grant.get("max_calls")
+    total_attempts = spec.get('sdk_max_retries', 0) + 1
+    maximum_attempts = 0
+    for index in range(manifest.get('sample_size', 0)):
+        if (run_dir / 'results' / f'{index:05d}.json').exists():
+            continue
+        seed = _load_retry_seed(run_dir, index)
+        prior_attempts = seed['attempt_count'] if seed else 0
+        maximum_attempts += max(0, total_attempts - prior_attempts)
     if (
         grant.get("model") != spec.get("model")
         or grant.get("reasoning_effort") != spec.get("reasoning_effort")
         or grant.get("run_dir") != str(run_dir.resolve())
         or type(max_calls) is not int
-        or not 0 < manifest.get("sample_size", 0) <= max_calls
+        or max_calls < maximum_attempts
     ):
         raise ValidationError(
             "La autorización de API no coincide con la ejecución, modelo, esfuerzo o límite"
@@ -359,47 +453,111 @@ def _run_annotations(run_dir: Path, execute: bool, workers: int,
         pending = pending[:limit]
     if execute and pending:
         load_dotenv('.env', override=False)
-        client = OpenAI(timeout=REQUEST_TIMEOUT_SECONDS, max_retries=SDK_MAX_RETRIES)
+        max_retries = manifest['spec'].get('sdk_max_retries', 0)
+        fallback_token_cap = manifest['spec'].get(
+            'incomplete_retry_max_output_tokens',
+            manifest['spec']['max_output_tokens'],
+        )
+        # Retries are controlled here so the same bound covers transport/API
+        # failures, incomplete responses and locally invalid structured output.
+        client = OpenAI(timeout=REQUEST_TIMEOUT_SECONDS, max_retries=0)
         # No model preflight request: every network call belongs to an annotation.
 
         def annotate(index: int) -> dict:
             request_path = run_dir / 'requests' / f'{index:05d}.json'
             request = json.loads(request_path.read_text())
+            attempt_body = copy.deepcopy(request['body'])
+            retry_seed = _load_retry_seed(run_dir, index)
+            prior_attempts = retry_seed['attempt_count'] if retry_seed else 0
+            if retry_seed and retry_seed.get('unit_id') != request['unit_id']:
+                raise ValidationError(f"El retry seed {index} no corresponde al request")
+            if prior_attempts > max_retries:
+                raise ValidationError(f"El bloque {index} ya agotó sus intentos")
+            if (
+                retry_seed
+                and retry_seed['status'] == 'incomplete'
+                and retry_seed.get('incomplete_reason') == 'max_output_tokens'
+            ):
+                attempt_body['max_output_tokens'] = min(
+                    retry_seed['last_attempt_max_output_tokens'] * 2,
+                    fallback_token_cap,
+                )
             result = {'sample_index': index, 'unit_id': request['unit_id'],
                       'request_sha256': sha256_file(request_path),
                       'started_at_utc': dt.datetime.now(dt.timezone.utc).isoformat(),
                       'status': 'started', 'validation_errors': [], 'normalized': None,
-                      'output_text': '', 'response': None}
+                      'output_text': '', 'response': None,
+                      'attempt_count': prior_attempts, 'max_retries': max_retries,
+                      'retry_seed': retry_seed}
             # Reserve the attempt before sending. An interrupted/uncertain request
             # remains visible and will not be silently billed again on resume.
             atomic_write_json(run_dir / 'results' / f'{index:05d}.json', result)
-            try:
-                response = client.responses.create(**request['body'])
-                result['response'] = response.model_dump(mode='json')
-                result['output_text'] = response.output_text
-                result['status'] = 'received'
+            for attempt in range(prior_attempts, max_retries + 1):
+                result['attempt_count'] = attempt + 1
+                result['attempt_max_output_tokens'] = attempt_body['max_output_tokens']
+                result['last_attempt_started_at_utc'] = dt.datetime.now(
+                    dt.timezone.utc
+                ).isoformat()
                 atomic_write_json(run_dir / 'results' / f'{index:05d}.json', result)
-                if response.status != 'completed':
-                    result['status'] = 'incomplete' if response.status == 'incomplete' else 'error'
-                    details = result['response'].get('incomplete_details') or {}
-                    error = result['response'].get('error') or {}
-                    reason = details.get('reason') or error.get('code') or 'unknown'
-                    result['validation_errors'] = [f'API status: {response.status}; reason: {reason}']
-                else:
-                    raw = json.loads(response.output_text)
-                    result['normalized'] = validate_output(raw, records[index], codebook, schema)
-                    result['status'] = 'completed'
-            except (json.JSONDecodeError, jsonschema.ValidationError, ValidationError) as exc:
-                result['status'] = 'invalid_output'
-                result['validation_errors'] = [str(exc)[:2000]]
-            except APIStatusError as exc:
-                result['status'] = 'error'
-                result['validation_errors'] = [
-                    f'API HTTP {exc.status_code}; code={exc.code}; detail={str(exc)[:1500]}'
-                ]
-            except (APIConnectionError, APITimeoutError) as exc:
-                result['status'] = 'transport_error'
-                result['validation_errors'] = [type(exc).__name__]
+                retryable = False
+                try:
+                    response = client.responses.create(**attempt_body)
+                    result['response'] = response.model_dump(mode='json')
+                    result['output_text'] = response.output_text
+                    if response.status != 'completed':
+                        result['status'] = (
+                            'incomplete' if response.status == 'incomplete' else 'error'
+                        )
+                        details = result['response'].get('incomplete_details') or {}
+                        error = result['response'].get('error') or {}
+                        reason = details.get('reason') or error.get('code') or 'unknown'
+                        result['validation_errors'] = [
+                            f'API status: {response.status}; reason: {reason}'
+                        ]
+                        retryable = True
+                        if reason == 'max_output_tokens':
+                            attempt_body['max_output_tokens'] = min(
+                                attempt_body['max_output_tokens'] * 2,
+                                fallback_token_cap,
+                            )
+                    else:
+                        raw = json.loads(response.output_text)
+                        result['normalized'] = validate_output(
+                            raw, records[index], codebook, schema
+                        )
+                        result['status'] = 'completed'
+                        result['validation_errors'] = []
+                except (json.JSONDecodeError, jsonschema.ValidationError, ValidationError) as exc:
+                    result['status'] = 'invalid_output'
+                    result['validation_errors'] = [str(exc)[:2000]]
+                    retryable = True
+                except APIStatusError as exc:
+                    result['status'] = 'error'
+                    result['validation_errors'] = [
+                        f'API HTTP {exc.status_code}; code={exc.code}; detail={str(exc)[:1500]}'
+                    ]
+                    retryable = (
+                        exc.status_code in {408, 409, 429} or exc.status_code >= 500
+                    )
+                except (APIConnectionError, APITimeoutError) as exc:
+                    result['status'] = 'transport_error'
+                    result['validation_errors'] = [type(exc).__name__]
+                    retryable = True
+                if result['status'] == 'completed' or not retryable or attempt >= max_retries:
+                    break
+                print(
+                    f"Bloque {index + 1}/{len(records)}: retry "
+                    f"{attempt + 1}/{max_retries} tras {result['status']}; "
+                    f"próximo max_output_tokens={attempt_body['max_output_tokens']}",
+                    flush=True,
+                )
+                # Do not persist intermediate erroneous responses. Keep only the
+                # reserved state and aggregate attempt count until a final result.
+                result.update(
+                    status='started', validation_errors=[], normalized=None,
+                    output_text='', response=None,
+                )
+            result = _discard_failed_output(result)
             result['finished_at_utc'] = dt.datetime.now(dt.timezone.utc).isoformat()
             atomic_write_json(run_dir / 'results' / f'{index:05d}.json', result)
             print(f"Bloque {index + 1}/{len(records)}: {result['status']}", flush=True)
@@ -411,6 +569,143 @@ def _run_annotations(run_dir: Path, execute: bool, workers: int,
         finally:
             client.close()
     return export_results(run_dir)
+
+
+def discard_stored_failed_outputs(run_dir: Path) -> int:
+    """Remove bodies of already persisted failures while preserving their audit data."""
+    manifest = json.loads((run_dir / 'manifest.json').read_text())
+    discarded = 0
+    for index in range(manifest['sample_size']):
+        path = run_dir / 'results' / f'{index:05d}.json'
+        if not path.exists():
+            continue
+        result = json.loads(path.read_text())
+        if result.get('status') == 'completed' or result.get('failed_output_discarded'):
+            continue
+        result = _discard_failed_output(result)
+        result['failed_output_discarded_at_utc'] = dt.datetime.now(
+            dt.timezone.utc
+        ).isoformat()
+        atomic_write_json(path, result)
+        discarded += 1
+    export_results(run_dir)
+    return discarded
+
+
+def reuse_completed_results(source_dir: Path, destination_dir: Path) -> int:
+    """Reuse only validated completed responses in a compatible successor run."""
+    source_manifest = json.loads((source_dir / 'manifest.json').read_text())
+    destination_manifest = json.loads((destination_dir / 'manifest.json').read_text())
+    source_spec = source_manifest['spec']
+    destination_spec = destination_manifest['spec']
+    comparable = (
+        'model', 'reasoning_effort', 'max_output_tokens', 'sampling', 'sources',
+        'prompt_sha256', 'codebook_sha256', 'output_schema', 'party_alignment',
+        'requests_sha256',
+    )
+    if (
+        source_manifest['sample_sha256'] != destination_manifest['sample_sha256']
+        or source_manifest['sample_size'] != destination_manifest['sample_size']
+        or any(source_spec.get(key) != destination_spec.get(key) for key in comparable)
+    ):
+        raise ValidationError("Las ejecuciones no son compatibles para reutilizar resultados")
+    records = load_sample(destination_dir)
+    codebook = json.loads((destination_dir / 'codebook.json').read_text())
+    schema = destination_spec['output_schema']
+    reused = 0
+    for index, record in enumerate(records):
+        source_result_path = source_dir / 'results' / f'{index:05d}.json'
+        destination_result_path = destination_dir / 'results' / f'{index:05d}.json'
+        if not source_result_path.exists() or destination_result_path.exists():
+            continue
+        source_result = json.loads(source_result_path.read_text())
+        if source_result.get('status') != 'completed':
+            continue
+        source_request = source_dir / 'requests' / f'{index:05d}.json'
+        destination_request = destination_dir / 'requests' / f'{index:05d}.json'
+        request_digest = sha256_file(destination_request)
+        if (
+            sha256_file(source_request) != request_digest
+            or source_result.get('request_sha256') != request_digest
+            or source_result.get('unit_id') != record['unit_id']
+        ):
+            raise ValidationError(f"El resultado {index} no corresponde al request de destino")
+        raw = json.loads(source_result['output_text'])
+        normalized = validate_output(raw, record, codebook, schema)
+        reused_result = {
+            **source_result,
+            'normalized': normalized,
+            'reused_from_run': source_dir.name,
+            'reused_at_utc': dt.datetime.now(dt.timezone.utc).isoformat(),
+        }
+        atomic_write_json(destination_result_path, reused_result)
+        reused += 1
+    export_results(destination_dir)
+    return reused
+
+
+def seed_failed_results(source_dir: Path, destination_dir: Path) -> int:
+    """Carry attempt counts, but no erroneous response bodies, to a successor run."""
+    source_manifest = json.loads((source_dir / 'manifest.json').read_text())
+    destination_manifest = json.loads((destination_dir / 'manifest.json').read_text())
+    source_spec = source_manifest['spec']
+    destination_spec = destination_manifest['spec']
+    comparable = (
+        'model', 'reasoning_effort', 'max_output_tokens', 'sampling', 'sources',
+        'prompt_sha256', 'codebook_sha256', 'output_schema', 'party_alignment',
+        'requests_sha256',
+    )
+    if (
+        source_manifest['sample_sha256'] != destination_manifest['sample_sha256']
+        or source_manifest['sample_size'] != destination_manifest['sample_size']
+        or any(source_spec.get(key) != destination_spec.get(key) for key in comparable)
+    ):
+        raise ValidationError("Las ejecuciones no son compatibles para continuar reintentos")
+    allowed_statuses = {'incomplete', 'invalid_output', 'error', 'transport_error'}
+    maximum_attempts = destination_spec.get('sdk_max_retries', 0) + 1
+    seeded = 0
+    for index in range(destination_manifest['sample_size']):
+        source_result_path = source_dir / 'results' / f'{index:05d}.json'
+        destination_result_path = destination_dir / 'results' / f'{index:05d}.json'
+        seed_path = destination_dir / 'retry_seeds' / f'{index:05d}.json'
+        if (
+            not source_result_path.exists()
+            or destination_result_path.exists()
+            or seed_path.exists()
+        ):
+            continue
+        result = json.loads(source_result_path.read_text())
+        attempts = result.get('attempt_count', 1)
+        if (
+            result.get('status') not in allowed_statuses
+            or type(attempts) is not int
+            or not 0 < attempts < maximum_attempts
+        ):
+            continue
+        source_request = source_dir / 'requests' / f'{index:05d}.json'
+        destination_request = destination_dir / 'requests' / f'{index:05d}.json'
+        request_digest = sha256_file(destination_request)
+        if (
+            sha256_file(source_request) != request_digest
+            or result.get('request_sha256') != request_digest
+        ):
+            raise ValidationError(f"El fallo {index} no corresponde al request de destino")
+        response = result.get('response') or {}
+        incomplete_reason = (response.get('incomplete_details') or {}).get('reason')
+        seed = {
+            'source_run': source_dir.name,
+            'sample_index': index,
+            'unit_id': result.get('unit_id'),
+            'status': result['status'],
+            'attempt_count': attempts,
+            'incomplete_reason': incomplete_reason,
+            'last_attempt_max_output_tokens': result.get(
+                'attempt_max_output_tokens', source_spec['max_output_tokens']
+            ),
+        }
+        atomic_write_json(seed_path, seed)
+        seeded += 1
+    return seeded
 
 
 def export_results(run_dir: Path) -> pd.DataFrame:
@@ -430,7 +725,11 @@ def export_results(run_dir: Path) -> pd.DataFrame:
                    response_status=response.get('status'),
                    incomplete_reason=(response.get('incomplete_details') or {}).get('reason'),
                    api_error_code=(response.get('error') or {}).get('code'),
-                   max_output_tokens=spec['max_output_tokens'],
+                   attempt_count=result.get('attempt_count', 0),
+                   base_max_output_tokens=spec['max_output_tokens'],
+                   max_output_tokens=result.get(
+                       'attempt_max_output_tokens', spec['max_output_tokens']
+                   ),
                    reasoning_effort=spec['reasoning_effort'],
                    needs_human_review=output.get('needs_human_review'),
                    decision_justification=output.get('decision_justification'),

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -13,8 +14,9 @@ import pandas as pd
 
 import features.llm_annotations.pipeline as pipeline
 from features.llm_annotations.pipeline import (
-    allocate_quotas, canonical, model_input, output_schema, prepare_run,
-    run_annotations, validate_output,
+    allocate_quotas, canonical, execution_config_from_env, model_input,
+    output_schema, prepare_run, reuse_completed_results, run_annotations,
+    seed_failed_results, validate_output,
 )
 from features.llm_annotations.review import AnnotationReviewService
 from features.manual_validation.service import ValidationError, sha256_text
@@ -53,13 +55,14 @@ class LLMPilotTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def make_run(self):
+    def make_run(self, sdk_max_retries=4):
         prompt = self.root / 'prompt.md'; prompt.write_text('Codifica con evidencia exacta.')
         service = SimpleNamespace(codebook=self.book, codebook_sha256=sha256_text(canonical(self.book)),
                                   sources=[{'law_number': '21419', 'sha256': 'fixture'}],
                                   party_alignment=self.party_alignment)
         directory = prepare_run(service, [self.record], {'selected_interventions': 1}, prompt,
-                                self.root / 'runs', 'gpt-5.6-luna', 'max')
+                                self.root / 'runs', 'gpt-5.6-luna', 'max',
+                                sdk_max_retries=sdk_max_retries)
         self._authorize(directory)
         return directory
 
@@ -67,7 +70,7 @@ class LLMPilotTests(unittest.TestCase):
     def _grant(directory):
         return {
             'model': 'gpt-5.6-luna', 'reasoning_effort': 'max',
-            'run_dir': str(directory.resolve()), 'max_calls': 1,
+            'run_dir': str(directory.resolve()), 'max_calls': 5,
         }
 
     def _authorize(self, directory):
@@ -246,11 +249,41 @@ class LLMPilotTests(unittest.TestCase):
                                      ('completed', {'bad': 'output'}, 'invalid_output')]:
             with self.subTest(status=status), tempfile.TemporaryDirectory() as name:
                 self.root = Path(name); directory = self.make_run()
-                with patch('features.llm_annotations.pipeline.OpenAI', return_value=self.fake_client(raw, status)):
+                client = self.fake_client(raw, status)
+                client.responses.create.return_value.model_dump.return_value['output'] = [
+                    {'type': 'message', 'content': 'respuesta errónea'}
+                ]
+                with patch('features.llm_annotations.pipeline.OpenAI', return_value=client):
                     frame = run_annotations(directory, execute=True)
+                saved = json.loads((directory / 'results/00000.json').read_text())
                 self.assertEqual(expected, frame.iloc[0].status)
                 self.assertIsNone(frame.iloc[0].decision)
                 self.assertEqual(0, frame.iloc[0].n_annotations)
+                self.assertEqual(5, client.responses.create.call_count)
+                self.assertEqual('', saved['output_text'])
+                self.assertTrue(saved['failed_output_discarded'])
+                self.assertNotIn('output', saved['response'])
+
+    def test_incomplete_and_invalid_outputs_retry_without_persisting_intermediates(self):
+        for first_status, first_raw in [('incomplete', self.raw),
+                                        ('completed', {'bad': 'output'})]:
+            with self.subTest(first_status=first_status), tempfile.TemporaryDirectory() as name:
+                self.root = Path(name)
+                directory = self.make_run()
+                first = self.fake_client(first_raw, first_status).responses.create.return_value
+                if first_status == 'incomplete':
+                    first.output_text = ''
+                completed = self.fake_client().responses.create.return_value
+                client = MagicMock()
+                client.responses.create.side_effect = [first, completed]
+                with patch('features.llm_annotations.pipeline.OpenAI', return_value=client):
+                    frame = run_annotations(directory, execute=True)
+                saved = json.loads((directory / 'results/00000.json').read_text())
+                self.assertEqual('completed', frame.iloc[0].status)
+                self.assertEqual(2, saved['attempt_count'])
+                self.assertEqual(self.raw, json.loads(saved['output_text']))
+                self.assertEqual([], saved['validation_errors'])
+                self.assertNotIn('bad', saved['output_text'])
 
     def test_prompt_versions_keep_previous_run(self):
         first = self.make_run()
@@ -355,6 +388,8 @@ class LLMPilotTests(unittest.TestCase):
         request = json.loads((directory / 'requests/00000.json').read_text())['body']
         self.assertEqual('max', request['reasoning']['effort'])
         self.assertEqual(32768, request['max_output_tokens'])
+        self.assertEqual(4, manifest['spec']['sdk_max_retries'])
+        self.assertEqual(65536, manifest['spec']['incomplete_retry_max_output_tokens'])
         for budget in (0, -1, True, 128001):
             with self.assertRaises(ValueError):
                 prepare_run(service, [self.record], {}, self.root / 'prompt.md', self.root,
@@ -362,8 +397,33 @@ class LLMPilotTests(unittest.TestCase):
         for limit in (-1, True, 1.5):
             with self.assertRaises(ValueError):
                 run_annotations(directory, execute=True, limit=limit)
+        for retries in (-1, 5, True):
+            with self.assertRaises(ValueError):
+                prepare_run(service, [self.record], {}, self.root / 'prompt.md', self.root,
+                            sdk_max_retries=retries)
 
-    def test_token_exhaustion_is_persisted_without_retry(self):
+    def test_model_and_retries_are_selectable_from_environment(self):
+        with patch.dict(os.environ, {
+            'ANNOTATIONS_MODEL': 'gpt-test-model',
+            'ANNOTATIONS_MAX_RETRIES': '2',
+            'ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS': '49152',
+        }):
+            self.assertEqual(('gpt-test-model', 2, 49152), execution_config_from_env())
+        for value in ('-1', '5', 'abc', ''):
+            with self.subTest(value=value), patch.dict(
+                os.environ, {'ANNOTATIONS_MAX_RETRIES': value}, clear=False
+            ), self.assertRaises(ValueError):
+                execution_config_from_env()
+
+        for value in ('0', '-1', 'abc', ''):
+            with self.subTest(fallback=value), patch.dict(
+                os.environ,
+                {'ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS': value},
+                clear=False,
+            ), self.assertRaises(ValueError):
+                execution_config_from_env()
+
+    def test_token_exhaustion_uses_larger_fallback_and_is_persisted(self):
         directory = self.make_run()
         client = self.fake_client(status='incomplete')
         client.responses.create.return_value.output_text = ''
@@ -375,12 +435,82 @@ class LLMPilotTests(unittest.TestCase):
             run_annotations(directory, execute=True)
         self.assertEqual(0, constructor.call_args.kwargs['max_retries'])
         client.models.retrieve.assert_not_called()
-        self.assertEqual(1, client.responses.create.call_count)
+        self.assertEqual(5, client.responses.create.call_count)
+        limits = [call.kwargs['max_output_tokens']
+                  for call in client.responses.create.call_args_list]
+        self.assertEqual([32768, 65536, 65536, 65536, 65536], limits)
         self.assertEqual('max_output_tokens', frame.iloc[0].incomplete_reason)
+        self.assertEqual(65536, frame.iloc[0].max_output_tokens)
         self.assertEqual(32768, frame.iloc[0].reasoning_tokens)
         self.assertIn('max_output_tokens', frame.iloc[0].validation_errors)
         self.assertIsNone(frame.iloc[0].decision)
         client.close.assert_called_once()
+
+    def test_completed_results_can_be_reused_in_compatible_retry_run(self):
+        source = self.make_run()
+        with patch('features.llm_annotations.pipeline.OpenAI',
+                   return_value=self.fake_client()):
+            run_annotations(source, execute=True)
+        prompt = self.root / 'prompt.md'
+        service = SimpleNamespace(
+            codebook=self.book,
+            codebook_sha256=sha256_text(canonical(self.book)),
+            sources=[{'law_number': '21419', 'sha256': 'fixture'}],
+            party_alignment=self.party_alignment,
+        )
+        destination = prepare_run(
+            service, [self.record], {'selected_interventions': 1}, prompt,
+            self.root / 'runs', 'gpt-5.6-luna', 'max', sdk_max_retries=2,
+        )
+        self.assertNotEqual(source, destination)
+        self.assertEqual(1, reuse_completed_results(source, destination))
+        self._authorize(destination)
+        with patch('features.llm_annotations.pipeline.OpenAI') as constructor:
+            frame = run_annotations(destination, execute=True)
+        constructor.assert_not_called()
+        saved = json.loads((destination / 'results/00000.json').read_text())
+        self.assertEqual('completed', frame.iloc[0].status)
+        self.assertEqual(source.name, saved['reused_from_run'])
+
+    def test_failed_attempts_continue_once_with_expanded_token_limit(self):
+        source = self.make_run(sdk_max_retries=3)
+        incomplete_client = self.fake_client(status='incomplete')
+        incomplete_client.responses.create.return_value.output_text = ''
+        incomplete_client.responses.create.return_value.model_dump.return_value.update(
+            incomplete_details={'reason': 'max_output_tokens'}
+        )
+        with patch('features.llm_annotations.pipeline.OpenAI',
+                   return_value=incomplete_client):
+            run_annotations(source, execute=True)
+
+        prompt = self.root / 'prompt.md'
+        service = SimpleNamespace(
+            codebook=self.book,
+            codebook_sha256=sha256_text(canonical(self.book)),
+            sources=[{'law_number': '21419', 'sha256': 'fixture'}],
+            party_alignment=self.party_alignment,
+        )
+        destination = prepare_run(
+            service, [self.record], {'selected_interventions': 1}, prompt,
+            self.root / 'runs', 'gpt-5.6-luna', 'max', sdk_max_retries=4,
+            incomplete_retry_max_output_tokens=65536,
+        )
+        self.assertEqual(0, reuse_completed_results(source, destination))
+        self.assertEqual(1, seed_failed_results(source, destination))
+        self._authorize(destination)
+        completed_client = self.fake_client()
+        with patch('features.llm_annotations.pipeline.OpenAI',
+                   return_value=completed_client):
+            frame = run_annotations(destination, execute=True)
+        saved = json.loads((destination / 'results/00000.json').read_text())
+        self.assertEqual('completed', frame.iloc[0].status)
+        self.assertEqual(1, completed_client.responses.create.call_count)
+        self.assertEqual(
+            65536,
+            completed_client.responses.create.call_args.kwargs['max_output_tokens'],
+        )
+        self.assertEqual(5, saved['attempt_count'])
+        self.assertEqual(source.name, saved['retry_seed']['source_run'])
 
     def test_interrupted_attempt_is_reserved_before_send(self):
         directory = self.make_run()

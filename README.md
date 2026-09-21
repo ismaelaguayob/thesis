@@ -18,9 +18,13 @@ El *outline* de mi tesis se encuentra en [este link](https://ismaelaguayob.githu
 ## Piloto de anotación LLM
 
 `annotations.qmd` sortea el 10% de los bloques elegibles por ley y sesión,
-reutiliza el contexto y los controles de la app manual y anota cada bloque objetivo
-con `gpt-5.6-luna`. Las ejecuciones nuevas usan esfuerzo `max`; el piloto histórico
-conservado usó `max`. El prompt activo se edita en
+reutiliza el contexto y los controles de la app manual y anota cada bloque objetivo.
+Las ejecuciones nuevas usan por defecto `gpt-5.6-luna`, esfuerzo `max` y hasta
+cinco intentos totales; `ANNOTATIONS_MODEL` y `ANNOTATIONS_MAX_RETRIES` permiten
+escoger el modelo y entre cero y cuatro reintentos desde `.env`. Si una respuesta
+agota el límite de salida, el siguiente intento duplica su holgura hasta
+`ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS` (65.536 por defecto). La configuración
+efectiva queda congelada en cada manifiesto. El prompt activo se edita en
 [`prompts/annotations_pilot_v1_confidence.md`](prompts/annotations_pilot_v1_confidence.md).
 El XLSX vigente es `features/codebook/codebook_v0.3.xlsx` (versión interna
 `0.4.0-pilot`).
@@ -31,16 +35,16 @@ uv sync --locked
 uv run quarto render annotations.qmd
 # Preparar inputs de un piloto nuevo, sin llamadas a la API:
 ANNOTATIONS_PREPARE_INPUTS=1 uv run quarto render annotations.qmd
-# La generación está desactivada por instrucción del usuario;
-# este reporte analiza la ejecución guardada sin nuevas llamadas.
+# El reporte no ejecuta la API; las llamadas exigen autorización por run_id.
 # Revisar modelo, input, output, códigos destacados y justificaciones:
-uv run python -m features.manual_validation
+uv run python -m features.manual_validation --annotations-dir data/proc_data/annotations_inputs
 ```
 
 Se necesita Quarto CLI en el PATH. Abre la opción **Revisión de anotaciones LLM**
 en <http://127.0.0.1:8765> o entra directamente en
-<http://127.0.0.1:8765/llm.html>. Los resultados originales están en
-`output/annotations/`; los juicios diagnósticos se guardan por separado en
+<http://127.0.0.1:8765/llm.html>. La ejecución canónica vigente está en
+`data/proc_data/annotations_inputs/`; el piloto histórico permanece en
+`output/annotations/` y los juicios diagnósticos se guardan por separado en
 `output/annotation_reviews/`. La [guía del piloto](docs/piloto-anotaciones-llm.md)
 explica ejecución, variantes y límites de interpretación.
 
@@ -57,4 +61,4 @@ persona revisora y fecha; las filas `pending` no alteran el corpus. El
 procesamiento conserva la extracción de BCN y aplica estas decisiones solo a la
 tabla derivada de discursos.
 
-El [manifiesto del análisis del piloto](data/proc_data/llm_pilots/pilot_f3a69c2f81c587271ef5/manifest.json) resume tokens confirmados y métricas. La política `data/proc_data/llm_pilots/api_policy.json` bloquea nuevas llamadas.
+El [manifiesto del análisis del piloto](data/proc_data/llm_pilots/pilot_f3a69c2f81c587271ef5/manifest.json) resume tokens confirmados y métricas. La política `data/proc_data/llm_pilots/api_policy.json` limita las llamadas a ejecuciones autorizadas explícitamente.

@@ -22,8 +22,9 @@ confirma soporte para `max` y un máximo de 128.000 tokens de salida.
 ## Cambios aplicados
 
 - Nuevas ejecuciones: Luna `max` y `max_output_tokens=32768` por defecto.
-- Cliente con `max_retries=0`, timeout de 600 segundos y sin consulta previa
-  al endpoint de modelos. Cada bloque admite un solo intento HTTP.
+- En esta comprobación histórica, el cliente usó `max_retries=0`, timeout de 600
+  segundos y un solo intento HTTP por bloque, sin consulta previa al endpoint de
+  modelos.
 - Intentos reservados como `started` antes del envío y bloqueo por proceso para
   evitar duplicar un lote. Reanudar conserva los intentos incompletos o inciertos.
 - Causas de interrupción y errores de API exportadas en columnas separadas.
@@ -78,6 +79,14 @@ pertenecen a pruebas del libro y no se alteraron en esta corrección.
 `features/codebook/`, su ubicación vigente. La suite completa actual contiene 52
 pruebas y todas pasan. El conteo anterior se conserva para documentar el estado
 de esta comprobación en la fecha en que se realizó.
+
+**Actualización del 21 de septiembre de 2026.** El ejecutor actual admite cuatro
+reintentos (cinco intentos totales) para fallos transitorios, outputs incompletos
+o inválidos. Cuando un `incomplete` informa `max_output_tokens`, el próximo intento
+duplica el límite base de 32.768 hasta un techo configurable —65.536 por defecto—,
+evitando repetir con la misma holgura. Las respuestas fallidas intermedias se
+descartan; si se agota el máximo, tampoco se conserva el cuerpo erróneo final.
+Una ejecución sucesora conserva únicamente su contador y causa.
 
 ```bash
 UV_CACHE_DIR=/tmp/uv-cache uv run --no-sync python -m unittest tests.test_llm_annotations tests.test_llm_audit -q

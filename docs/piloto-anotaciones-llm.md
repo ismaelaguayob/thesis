@@ -24,11 +24,10 @@ prevalencias poblacionales ni como estimaciones de desempeño.
 
 ## Configuración y ejecución
 
-**Estado actual:** `annotations.qmd` sigue fijado al piloto histórico
-`pilot_f3a69c2f81c587271ef5`, con `EXECUTE_API=False`. El 14 de septiembre de 2026
-se autorizó una comprobación separada de hasta cinco llamadas con Luna `low`.
-La política global permanece desactivada. Para autorizar una ejecución futura se
-debe cambiarla explícitamente y añadir en `authorized_runs` una entrada cuyo ID,
+`annotations.qmd` sigue fijado al piloto histórico
+`pilot_f3a69c2f81c587271ef5`, con `EXECUTE_API=False`; el reporte nunca ejecuta la
+API. La política autoriza solo lotes explícitos. Para autorizar uno se debe añadir
+en `authorized_runs` una entrada cuyo ID,
 directorio absoluto, modelo, esfuerzo y `max_calls` coincidan con el manifiesto;
 si cualquiera difiere, el cliente no se crea. Renderizar el reporte histórico no
 genera llamadas.
@@ -46,8 +45,12 @@ Las variables `ANNOTATIONS_EXECUTE` y `ANNOTATIONS_PROMPT` no convierten este
 reporte histórico en un ejecutor de nuevas variantes. Para preparar una nueva
 muestra se usa `features.llm_annotations.pipeline.prepare_run`, con el servicio,
 registros seleccionados, metadatos de muestreo, ruta del prompt y directorio de
-salida. Sus valores predeterminados son `gpt-5.6-luna`, `effort="max"` y
-`max_output_tokens=32768`. Preparar una ejecución es una operación local.
+salida. Sus valores predeterminados son `gpt-5.6-luna`, `effort="max"`,
+`max_output_tokens=32768` y cuatro reintentos (cinco intentos totales).
+`ANNOTATIONS_MODEL`, `ANNOTATIONS_MAX_RETRIES` y
+`ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS` seleccionan desde `.env` el modelo,
+entre cero y cuatro reintentos y el techo alternativo. Los valores efectivos
+quedan congelados en el manifiesto. Preparar una ejecución es una operación local.
 `run_annotations(run_dir, execute=True, limit=N)` solo genera si la política
 permite esa ejecución; `limit=0` no envía nada y los límites negativos se rechazan.
 
@@ -61,15 +64,18 @@ el modelo puede terminar antes. La [ficha de Luna](https://developers.openai.com
 admite esfuerzo `max` y hasta 128.000 tokens de salida. Estos ajustes reducen el
 riesgo observado; ningún límite finito garantiza todas las respuestas futuras.
 
-El SDK instalado es `openai==3.9.0`. El cliente usa `max_retries=0` y un timeout
-de 600 segundos. Cada bloque produce como máximo un intento HTTP, sin consulta
-previa al endpoint de modelos. Un bloqueo de proceso impide ejecutar el mismo
-lote simultáneamente. El estado `started` se guarda antes de enviar la solicitud:
-si el proceso se interrumpe, el intento permanece visible y no se reenvía al
-reanudar. Se conserva `incomplete_details.reason`, además del estado de API y
-su código de error, en los resultados y sus exportaciones. Las respuestas
-incompletas nunca se normalizan como anotaciones válidas. Repetir un fallo exige
-preparar una ejecución nueva y contar con autorización para ella.
+El SDK instalado es `openai==3.9.0`. El cliente usa un timeout de 600 segundos,
+sin consulta previa al endpoint de modelos. El ejecutor aplica el número congelado
+de reintentos como un único límite para fallos transitorios de conexión/API,
+respuestas `incomplete` y salidas `invalid_output`. Solo se conserva la primera
+salida válida; si se agota el límite, se descarta también el cuerpo del fallo final
+y quedan únicamente su estado, diagnóstico, consumo y `attempt_count`. Un bloqueo
+de proceso impide ejecutar el mismo lote simultáneamente. El estado `started` se
+guarda antes de cada envío;
+si el proceso se interrumpe, permanece visible y no se reenvía automáticamente.
+Cuando el motivo de `incomplete` es `max_output_tokens`, el próximo intento duplica
+el límite hasta `ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS` (65.536 por defecto).
+Una ejecución sucesora puede continuar el contador sin copiar la respuesta errónea.
 
 El documento desactiva el kernel persistente de Quarto para que cambios en las
 variables de entorno se apliquen en cada renderizado. Si el entorno restringe las
@@ -113,7 +119,8 @@ como una probabilidad calibrada.
 
 ## Artefactos y fallos
 
-Cada `output/annotations/pilot_<hash>/` contiene:
+Cada ejecución nueva en `data/proc_data/annotations_inputs/pilot_<hash>/`
+contiene:
 
 - `manifest.json`: configuración, hashes, versiones de paquetes, tamaño y fecha.
 - `sample.parquet`, `selected_blocks.parquet`, `strata.parquet`: muestra y cuotas
@@ -121,11 +128,12 @@ Cada `output/annotations/pilot_<hash>/` contiene:
 - `prompt.md`, `codebook.json`, `output_schema.json`: snapshots del instrumento.
 - `pipeline.py`, `validation_contract.py`: snapshots de la implementación.
 - `requests/00000.json`: request exacto sin autorización HTTP ni clave.
-- `results/00000.json`: respuesta íntegra, texto de salida, validación y uso de tokens.
+- `results/00000.json`: salida validada o, si falló, metadatos de diagnóstico y
+  uso sin conservar el cuerpo erróneo.
 - `results.parquet`, `annotations.parquet`, `status.json`: tablas y balance derivados.
 
-Las tablas legibles se exportan además a `output/tables/annotations/` en CSV.
-Las respuestas recibidas se guardan antes de normalizarlas. Solo `completed`
+Las tablas legibles se exportan además a `output/tables/annotations/` en CSV. El
+piloto histórico permanece en `output/annotations/`. Solo `completed`
 contiene una decisión estructuralmente validada. `invalid_output`, `incomplete`,
 `error`, `transport_error`, `started` y `received` requieren inspección; `pending` significa
 que no hay intento guardado. Ninguno equivale a `no_statements`.
@@ -139,7 +147,8 @@ el procedimiento verifica sus hashes.
 ## Revisión en la app
 
 ```bash
-uv run python -m features.manual_validation
+uv run python -m features.manual_validation \
+  --annotations-dir data/proc_data/annotations_inputs
 ```
 
 Entra en **Revisión de anotaciones LLM**. Puedes filtrar por ley, bloques sin

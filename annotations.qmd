@@ -37,13 +37,18 @@ from features.manual_validation.service import (
     sample_with_design,
     sha256_file,
 )
-from features.llm_annotations.pipeline import load_sample, prepare_run
+from features.llm_annotations.pipeline import (
+    execution_config_from_env,
+    load_sample,
+    prepare_run,
+)
 from features.llm_annotations.audit import read_response_ledger
 from datetime import datetime, timezone
 
 FRACTION = 0.10
 SEED = 20260908
-CANDIDATE_MODEL = "gpt-5.6-luna"
+(CANDIDATE_MODEL, CANDIDATE_SDK_MAX_RETRIES,
+ CANDIDATE_INCOMPLETE_MAX_OUTPUT_TOKENS) = execution_config_from_env()
 CANDIDATE_REASONING_EFFORT = "max"
 CANDIDATE_MAX_OUTPUT_TOKENS = 32768
 PREPARE_CANDIDATE_INPUTS = os.environ.get("ANNOTATIONS_PREPARE_INPUTS") == "1"
@@ -53,7 +58,7 @@ PROMPT_PATH = Path(os.environ.get(
 CODEBOOK_WORKBOOK = Path("features/codebook/codebook_v0.3.xlsx")
 CODEBOOK_JSON = CODEBOOK_WORKBOOK.with_suffix(".json")
 PILOT_RUN_ROOT = Path("output/annotations")
-INPUT_RUN_ROOT = Path("output/annotations_inputs")
+INPUT_RUN_ROOT = Path("data/proc_data/annotations_inputs")
 TABLE_ROOT = Path("output/tables/annotations")
 TABLE_ROOT.mkdir(parents=True, exist_ok=True)
 EXECUTE_API = False  # El usuario detuvo el gasto de API el 2026-09-08.
@@ -109,20 +114,19 @@ miden precisión contra una referencia humana.
 ## Propósito y alcance
 
 El piloto histórico permite depurar el libro de códigos y comparar versiones del
-prompt. Los inputs que este reporte prepara para el próximo piloto usan las
-intervenciones elegibles ya materializadas en los Parquet de `proc.qmd`, con las
-mismas exclusiones, segmentación y diseño muestral de la app de validación. El 10%
-se calcula sobre intervenciones únicas, no sobre bloques ni sobre todas las
-intervenciones brutas descargadas. Se anotan **todos los bloques** de cada
-intervención seleccionada; sus frecuencias siguen siendo diagnósticas y no
-estimaciones de prevalencia.
+prompt. Los inputs que este reporte prepara para el próximo piloto usan los
+bloques elegibles ya materializados en los Parquet de `proc.qmd`, con las mismas
+exclusiones, segmentación y diseño muestral de la app de validación. El 10% se
+calcula sobre bloques elegibles, no sobre intervenciones ni sobre todas las
+intervenciones brutas descargadas. Cada bloque sorteado es un objetivo; sus
+frecuencias siguen siendo diagnósticas y no estimaciones de prevalencia.
 
 ## Configuración y fuentes
 
 Cargamos el servicio compartido de la app, las funciones de muestreo, el conversor
 XLSX y las herramientas de ejecución. El entorno se fija con `pyproject.toml` y
-`uv.lock`. La ejecución de API está desactivada por instrucción del usuario. Este
-reporte reutiliza exclusivamente respuestas guardadas y realiza cálculos locales.
+`uv.lock`. Este reporte no ejecuta la API: reutiliza exclusivamente respuestas
+guardadas y realiza cálculos locales. Las ejecuciones se autorizan por separado.
 
 
 
@@ -230,7 +234,11 @@ El piloto histórico usó `gpt-5.6-luna` y `reasoning.effort=max`, admitidos por
 [documentación de Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna).
 La respuesta utiliza un [esquema JSON estricto](https://developers.openai.com/api/docs/guides/structured-outputs).
 La API no recibe una semilla: se reproduce la selección, los inputs y la
-configuración, pero nuevas generaciones pueden diferir.
+configuración, pero nuevas generaciones pueden diferir. El modelo, los reintentos
+y el techo alternativo para respuestas incompletas se leen desde
+`ANNOTATIONS_MODEL`, `ANNOTATIONS_MAX_RETRIES` y
+`ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS` en `.env`; los valores efectivos quedan
+congelados en el manifiesto.
 
 Cuando se solicita explícitamente, preparamos inputs a partir de los Parquet
 actuales de `proc.qmd`, el prompt activo y el libro vigente. `prepare_run` guarda
@@ -238,8 +246,10 @@ la muestra y los requests en una carpeta identificada por su contenido, sin llam
 a la API. Para no acumular inputs no utilizados, el render no los prepara por
 defecto: se debe usar `ANNOTATIONS_PREPARE_INPUTS=1`. Esta preparación no exige
 coincidencia con la muestra ni con el libro del piloto histórico. Los requests
-nuevos reciben explícitamente `gpt-5.6-luna`, razonamiento `max` y un límite de
-32.768 tokens de salida, tal como declara la configuración de arriba.
+nuevos reciben explícitamente `{python} CANDIDATE_MODEL`, razonamiento `max`,
+`{python} CANDIDATE_SDK_MAX_RETRIES` reintentos y un límite base de 32.768 tokens
+de salida. Un `incomplete` por agotamiento duplica el límite del intento siguiente
+hasta `{python} CANDIDATE_INCOMPLETE_MAX_OUTPUT_TOKENS` tokens.
 
 ```{python}
 #| label: congelar-ejecucion
@@ -263,6 +273,8 @@ if PREPARE_CANDIDATE_INPUTS:
         model=CANDIDATE_MODEL,
         effort=CANDIDATE_REASONING_EFFORT,
         max_output_tokens=CANDIDATE_MAX_OUTPUT_TOKENS,
+        sdk_max_retries=CANDIDATE_SDK_MAX_RETRIES,
+        incomplete_retry_max_output_tokens=CANDIDATE_INCOMPLETE_MAX_OUTPUT_TOKENS,
     )
     atomic_write_parquet(
         selected_blocks_frame, candidate_input_run_dir / "selected_blocks.parquet"
@@ -296,7 +308,8 @@ un máximo de 16.384 tokens de salida por bloque. La concurrencia se aumentó de
 a dieciséis solicitudes durante la ejecución. El SDK permitía hasta dos reintentos
 transitorios. **Esta versión está fijada a la ejecución guardada y no hace llamadas
 a la API**, incluso si `ANNOTATIONS_EXECUTE=1` permanece en el entorno. La política
-local `data/proc_data/llm_pilots/api_policy.json` también impide activar el ejecutor.
+local `data/proc_data/llm_pilots/api_policy.json` autoriza por separado solo
+ejecuciones que coinciden exactamente con su manifiesto.
 
 La cita literal y su número de aparición determinan offsets en caracteres Unicode
 calculados localmente. Validamos el span con el contrato de la app, la pertenencia
@@ -401,9 +414,13 @@ las decisiones `no_statements`, necesarias para revisar posibles omisiones.
 Para nuevas ejecuciones, `prepare_run` usa ahora Luna con esfuerzo `max` y un
 máximo de 32.768 tokens, compartido entre razonamiento y texto visible. Los
 resultados exportan `response_status`, `incomplete_reason`, `api_error_code`,
-`max_output_tokens` y `reasoning_effort` para identificar los fallos de generación.
-El ejecutor realiza un solo intento HTTP por bloque y conserva los intentos
-interrumpidos. El [registro de corrección](docs/correccion-anotaciones-tokens.md)
+`attempt_count`, `base_max_output_tokens`, `max_output_tokens` y
+`reasoning_effort` para identificar los fallos de generación. El ejecutor admite
+hasta cinco intentos totales por bloque. Si el estado es `incomplete` por
+`max_output_tokens`, duplica el límite del intento siguiente hasta el techo
+congelado. Ninguna respuesta fallida conserva su cuerpo: si se agotan los intentos,
+solo quedan el estado, la causa, el consumo y el contador para auditoría.
+El [registro de corrección](docs/correccion-anotaciones-tokens.md)
 documenta la comprobación separada sobre cinco bloques que habían agotado el límite.
 
 El piloto histórico se ejecutó con el prompt anterior y carece de estos valores:
@@ -450,8 +467,9 @@ No se ejecuta ninguna variante en este reporte. La ejecución original conserva 
 propio prompt y libro aunque después se editen los archivos fuente; el análisis
 actual permanece fijado a `SAVED_RUN_ID`.
 
-Los productos están en `output/annotations/` (una carpeta por ejecución), las
-tablas legibles en `output/tables/annotations/` y las revisiones diagnósticas en
+La ejecución canónica nueva está en `data/proc_data/annotations_inputs/`; el
+piloto histórico permanece en `output/annotations/`. Las tablas legibles están
+en `output/tables/annotations/` y las revisiones diagnósticas en
 `output/annotation_reviews/`. Para abrir la interfaz local:
 [revisión de anotaciones LLM](http://127.0.0.1:8765/llm.html).
 
