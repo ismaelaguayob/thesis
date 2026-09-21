@@ -24,7 +24,7 @@ from features.manual_validation.service import (
     sha256_file, sha256_text,
 )
 
-PIPELINE_VERSION = "llm-pilot-1.4.1"
+PIPELINE_VERSION = "llm-pilot-1.5.0"
 DEFAULT_MODEL = "gpt-5.6-luna"
 DEFAULT_REASONING_EFFORT = "max"
 # Includes reasoning AND visible output; see OpenAI's reasoning guide.
@@ -335,20 +335,28 @@ def load_sample(run_dir: Path) -> list[dict]:
     return frame.to_dict('records')
 
 
-def run_annotations(run_dir: Path, execute: bool = False, workers: int = 6,
+def output_run_dir(input_run_dir: Path, output_root: Path) -> Path:
+    """Resolve a run's result directory below an explicitly selected output root."""
+    return output_root / input_run_dir.name
+
+
+def run_annotations(input_run_dir: Path, *, output_root: Path,
+                    execute: bool = False, workers: int = 6,
                     limit: int | None = None) -> pd.DataFrame:
-    """Execute pending blocks with the retry policy frozen in the manifest."""
+    """Execute frozen inputs and persist responses under the separate output root."""
     if limit is not None and (type(limit) is not int or limit < 0):
         raise ValueError("limit debe ser un entero no negativo")
+    result_dir = output_run_dir(input_run_dir, output_root)
+    result_dir.mkdir(parents=True, exist_ok=True)
     if not execute:
-        return _run_annotations(run_dir, False, workers, limit)
+        return _run_annotations(input_run_dir, result_dir, False, workers, limit)
     # A process lock prevents concurrent invocations spending the same allowance.
-    with (run_dir / '.execution.lock').open('a') as lock:
+    with (result_dir / '.execution.lock').open('a') as lock:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as exc:
             raise ValidationError("Esta ejecución ya tiene un proceso activo") from exc
-        return _run_annotations(run_dir, True, workers, limit)
+        return _run_annotations(input_run_dir, result_dir, True, workers, limit)
 
 
 def _load_retry_seed(run_dir: Path, index: int) -> dict[str, Any] | None:
@@ -391,7 +399,8 @@ def _discard_failed_output(result: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def _authorize_api_execution(run_dir: Path, manifest: dict[str, Any]) -> None:
+def _authorize_api_execution(input_run_dir: Path, result_dir: Path,
+                             manifest: dict[str, Any]) -> None:
     """Require a valid, narrowly scoped authorization before creating an API client."""
     if not API_POLICY_PATH.is_file():
         raise ValidationError(
@@ -408,7 +417,7 @@ def _authorize_api_execution(run_dir: Path, manifest: dict[str, Any]) -> None:
     grants = policy.get("authorized_runs")
     if not isinstance(grants, dict):
         raise ValidationError("La política de API debe declarar authorized_runs")
-    grant = grants.get(run_dir.name)
+    grant = grants.get(input_run_dir.name)
     if not isinstance(grant, dict):
         raise ValidationError("La ejecución no tiene una autorización explícita de API")
     spec = manifest.get("spec")
@@ -418,15 +427,18 @@ def _authorize_api_execution(run_dir: Path, manifest: dict[str, Any]) -> None:
     total_attempts = spec.get('sdk_max_retries', 0) + 1
     maximum_attempts = 0
     for index in range(manifest.get('sample_size', 0)):
-        if (run_dir / 'results' / f'{index:05d}.json').exists():
+        if (result_dir / 'results' / f'{index:05d}.json').exists():
             continue
-        seed = _load_retry_seed(run_dir, index)
+        seed = _load_retry_seed(result_dir, index)
         prior_attempts = seed['attempt_count'] if seed else 0
         maximum_attempts += max(0, total_attempts - prior_attempts)
+    authorized_input = grant.get('input_run_dir', grant.get('run_dir'))
+    authorized_output = grant.get('output_run_dir', authorized_input)
     if (
         grant.get("model") != spec.get("model")
         or grant.get("reasoning_effort") != spec.get("reasoning_effort")
-        or grant.get("run_dir") != str(run_dir.resolve())
+        or authorized_input != str(input_run_dir.resolve())
+        or authorized_output != str(result_dir.resolve())
         or type(max_calls) is not int
         or max_calls < maximum_attempts
     ):
@@ -435,20 +447,23 @@ def _authorize_api_execution(run_dir: Path, manifest: dict[str, Any]) -> None:
         )
 
 
-def _run_annotations(run_dir: Path, execute: bool, workers: int,
+def _run_annotations(input_run_dir: Path, result_dir: Path, execute: bool, workers: int,
                      limit: int | None) -> pd.DataFrame:
-    manifest = json.loads((run_dir / 'manifest.json').read_text())
+    manifest = json.loads((input_run_dir / 'manifest.json').read_text())
     if execute:
-        _authorize_api_execution(run_dir, manifest)
-    if sha256_file(run_dir / 'sample.parquet') != manifest['sample_sha256']:
+        _authorize_api_execution(input_run_dir, result_dir, manifest)
+    if sha256_file(input_run_dir / 'sample.parquet') != manifest['sample_sha256']:
         raise ValidationError('La muestra congelada fue modificada')
     for name, digest in manifest['artifact_sha256'].items():
-        if sha256_file(run_dir / name) != digest:
+        if sha256_file(input_run_dir / name) != digest:
             raise ValidationError(f'El artefacto congelado fue modificado: {name}')
-    records = load_sample(run_dir)
-    codebook = json.loads((run_dir / 'codebook.json').read_text())
+    records = load_sample(input_run_dir)
+    codebook = json.loads((input_run_dir / 'codebook.json').read_text())
     schema = manifest['spec']['output_schema']
-    pending = [i for i in range(len(records)) if not (run_dir / 'results' / f'{i:05d}.json').exists()]
+    pending = [
+        i for i in range(len(records))
+        if not (result_dir / 'results' / f'{i:05d}.json').exists()
+    ]
     if limit is not None:
         pending = pending[:limit]
     if execute and pending:
@@ -464,10 +479,10 @@ def _run_annotations(run_dir: Path, execute: bool, workers: int,
         # No model preflight request: every network call belongs to an annotation.
 
         def annotate(index: int) -> dict:
-            request_path = run_dir / 'requests' / f'{index:05d}.json'
+            request_path = input_run_dir / 'requests' / f'{index:05d}.json'
             request = json.loads(request_path.read_text())
             attempt_body = copy.deepcopy(request['body'])
-            retry_seed = _load_retry_seed(run_dir, index)
+            retry_seed = _load_retry_seed(result_dir, index)
             prior_attempts = retry_seed['attempt_count'] if retry_seed else 0
             if retry_seed and retry_seed.get('unit_id') != request['unit_id']:
                 raise ValidationError(f"El retry seed {index} no corresponde al request")
@@ -491,14 +506,14 @@ def _run_annotations(run_dir: Path, execute: bool, workers: int,
                       'retry_seed': retry_seed}
             # Reserve the attempt before sending. An interrupted/uncertain request
             # remains visible and will not be silently billed again on resume.
-            atomic_write_json(run_dir / 'results' / f'{index:05d}.json', result)
+            atomic_write_json(result_dir / 'results' / f'{index:05d}.json', result)
             for attempt in range(prior_attempts, max_retries + 1):
                 result['attempt_count'] = attempt + 1
                 result['attempt_max_output_tokens'] = attempt_body['max_output_tokens']
                 result['last_attempt_started_at_utc'] = dt.datetime.now(
                     dt.timezone.utc
                 ).isoformat()
-                atomic_write_json(run_dir / 'results' / f'{index:05d}.json', result)
+                atomic_write_json(result_dir / 'results' / f'{index:05d}.json', result)
                 retryable = False
                 try:
                     response = client.responses.create(**attempt_body)
@@ -559,7 +574,7 @@ def _run_annotations(run_dir: Path, execute: bool, workers: int,
                 )
             result = _discard_failed_output(result)
             result['finished_at_utc'] = dt.datetime.now(dt.timezone.utc).isoformat()
-            atomic_write_json(run_dir / 'results' / f'{index:05d}.json', result)
+            atomic_write_json(result_dir / 'results' / f'{index:05d}.json', result)
             print(f"Bloque {index + 1}/{len(records)}: {result['status']}", flush=True)
             return result
 
@@ -568,15 +583,17 @@ def _run_annotations(run_dir: Path, execute: bool, workers: int,
                 list(pool.map(annotate, pending))
         finally:
             client.close()
-    return export_results(run_dir)
+    return export_results(input_run_dir, result_dir)
 
 
-def discard_stored_failed_outputs(run_dir: Path) -> int:
+def discard_stored_failed_outputs(input_run_dir: Path,
+                                  result_dir: Path | None = None) -> int:
     """Remove bodies of already persisted failures while preserving their audit data."""
-    manifest = json.loads((run_dir / 'manifest.json').read_text())
+    result_dir = result_dir or input_run_dir
+    manifest = json.loads((input_run_dir / 'manifest.json').read_text())
     discarded = 0
     for index in range(manifest['sample_size']):
-        path = run_dir / 'results' / f'{index:05d}.json'
+        path = result_dir / 'results' / f'{index:05d}.json'
         if not path.exists():
             continue
         result = json.loads(path.read_text())
@@ -588,12 +605,17 @@ def discard_stored_failed_outputs(run_dir: Path) -> int:
         ).isoformat()
         atomic_write_json(path, result)
         discarded += 1
-    export_results(run_dir)
+    export_results(input_run_dir, result_dir)
     return discarded
 
 
-def reuse_completed_results(source_dir: Path, destination_dir: Path) -> int:
+def reuse_completed_results(source_dir: Path, destination_dir: Path, *,
+                            source_result_dir: Path | None = None,
+                            destination_result_dir: Path | None = None) -> int:
     """Reuse only validated completed responses in a compatible successor run."""
+    source_result_dir = source_result_dir or source_dir
+    destination_result_dir = destination_result_dir or destination_dir
+    destination_result_dir.mkdir(parents=True, exist_ok=True)
     source_manifest = json.loads((source_dir / 'manifest.json').read_text())
     destination_manifest = json.loads((destination_dir / 'manifest.json').read_text())
     source_spec = source_manifest['spec']
@@ -614,8 +636,8 @@ def reuse_completed_results(source_dir: Path, destination_dir: Path) -> int:
     schema = destination_spec['output_schema']
     reused = 0
     for index, record in enumerate(records):
-        source_result_path = source_dir / 'results' / f'{index:05d}.json'
-        destination_result_path = destination_dir / 'results' / f'{index:05d}.json'
+        source_result_path = source_result_dir / 'results' / f'{index:05d}.json'
+        destination_result_path = destination_result_dir / 'results' / f'{index:05d}.json'
         if not source_result_path.exists() or destination_result_path.exists():
             continue
         source_result = json.loads(source_result_path.read_text())
@@ -640,12 +662,17 @@ def reuse_completed_results(source_dir: Path, destination_dir: Path) -> int:
         }
         atomic_write_json(destination_result_path, reused_result)
         reused += 1
-    export_results(destination_dir)
+    export_results(destination_dir, destination_result_dir)
     return reused
 
 
-def seed_failed_results(source_dir: Path, destination_dir: Path) -> int:
+def seed_failed_results(source_dir: Path, destination_dir: Path, *,
+                        source_result_dir: Path | None = None,
+                        destination_result_dir: Path | None = None) -> int:
     """Carry attempt counts, but no erroneous response bodies, to a successor run."""
+    source_result_dir = source_result_dir or source_dir
+    destination_result_dir = destination_result_dir or destination_dir
+    destination_result_dir.mkdir(parents=True, exist_ok=True)
     source_manifest = json.loads((source_dir / 'manifest.json').read_text())
     destination_manifest = json.loads((destination_dir / 'manifest.json').read_text())
     source_spec = source_manifest['spec']
@@ -665,9 +692,9 @@ def seed_failed_results(source_dir: Path, destination_dir: Path) -> int:
     maximum_attempts = destination_spec.get('sdk_max_retries', 0) + 1
     seeded = 0
     for index in range(destination_manifest['sample_size']):
-        source_result_path = source_dir / 'results' / f'{index:05d}.json'
-        destination_result_path = destination_dir / 'results' / f'{index:05d}.json'
-        seed_path = destination_dir / 'retry_seeds' / f'{index:05d}.json'
+        source_result_path = source_result_dir / 'results' / f'{index:05d}.json'
+        destination_result_path = destination_result_dir / 'results' / f'{index:05d}.json'
+        seed_path = destination_result_dir / 'retry_seeds' / f'{index:05d}.json'
         if (
             not source_result_path.exists()
             or destination_result_path.exists()
@@ -708,12 +735,16 @@ def seed_failed_results(source_dir: Path, destination_dir: Path) -> int:
     return seeded
 
 
-def export_results(run_dir: Path) -> pd.DataFrame:
-    records = load_sample(run_dir)
-    spec = json.loads((run_dir / 'manifest.json').read_text())['spec']
+def export_results(input_run_dir: Path,
+                   result_dir: Path | None = None) -> pd.DataFrame:
+    """Build result tables from frozen inputs and separately stored responses."""
+    result_dir = result_dir or input_run_dir
+    result_dir.mkdir(parents=True, exist_ok=True)
+    records = load_sample(input_run_dir)
+    spec = json.loads((input_run_dir / 'manifest.json').read_text())['spec']
     rows, spans = [], []
     for i, record in enumerate(records):
-        path = run_dir / 'results' / f'{i:05d}.json'
+        path = result_dir / 'results' / f'{i:05d}.json'
         result = json.loads(path.read_text()) if path.exists() else {'status': 'pending'}
         output = result.get('normalized') or {}
         response = result.get('response') or {}
@@ -751,12 +782,12 @@ def export_results(run_dir: Path) -> pd.DataFrame:
                           'confidence': annotation.get('confidence'),
                           'justification': canonical(annotation['justification'])})
     frame = pd.DataFrame(rows)
-    atomic_write_parquet(frame, run_dir / 'results.parquet')
+    atomic_write_parquet(frame, result_dir / 'results.parquet')
     span_frame = pd.DataFrame(spans, columns=['sample_index','unit_id','utterance_id','law_number',
         'document_uri','annotation_id','concept_status','concept_id','proposed_concept','stance',
         'start_char','end_char','evidence_text','justification','confidence'])
-    atomic_write_parquet(span_frame, run_dir / 'annotations.parquet')
-    atomic_write_json(run_dir / 'status.json', {'run_id': run_dir.name,
+    atomic_write_parquet(span_frame, result_dir / 'annotations.parquet')
+    atomic_write_json(result_dir / 'status.json', {'run_id': input_run_dir.name,
         'counts': {str(k): int(v) for k,v in frame['status'].value_counts().items()},
         'updated_at_utc': dt.datetime.now(dt.timezone.utc).isoformat()})
     return frame

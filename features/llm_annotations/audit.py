@@ -8,16 +8,22 @@ import pandas as pd
 from features.manual_validation.service import ValidationError, sha256_file
 
 
-def read_response_ledger(run_directories: dict[str, Path]) -> pd.DataFrame:
+def read_response_ledger(
+    run_directories: dict[str, Path | tuple[Path, Path]],
+) -> pd.DataFrame:
     """One row per persisted response, with enough provenance to audit token totals."""
     rows = []
-    for role, directory in run_directories.items():
-        manifest = json.loads((directory / 'manifest.json').read_text())
-        for path in sorted((directory / 'results').glob('*.json')):
+    for role, directories in run_directories.items():
+        if isinstance(directories, tuple):
+            input_directory, result_directory = directories
+        else:
+            input_directory = result_directory = directories
+        manifest = json.loads((input_directory / 'manifest.json').read_text())
+        for path in sorted((result_directory / 'results').glob('*.json')):
             result = json.loads(path.read_text())
             response = result.get('response') or {}
             usage = response.get('usage')
-            request = directory / 'requests' / f"{result['sample_index']:05d}.json"
+            request = input_directory / 'requests' / f"{result['sample_index']:05d}.json"
             request_digest = sha256_file(request)
             if result.get('request_sha256') != request_digest:
                 raise ValidationError(f'Request distinto del registrado en {path}')

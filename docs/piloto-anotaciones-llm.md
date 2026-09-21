@@ -27,10 +27,9 @@ prevalencias poblacionales ni como estimaciones de desempeño.
 `annotations.qmd` sigue fijado al piloto histórico
 `pilot_f3a69c2f81c587271ef5`, con `EXECUTE_API=False`; el reporte nunca ejecuta la
 API. La política autoriza solo lotes explícitos. Para autorizar uno se debe añadir
-en `authorized_runs` una entrada cuyo ID,
-directorio absoluto, modelo, esfuerzo y `max_calls` coincidan con el manifiesto;
-si cualquiera difiere, el cliente no se crea. Renderizar el reporte histórico no
-genera llamadas.
+en `authorized_runs` una entrada cuyo ID, `input_run_dir`, `output_run_dir`,
+modelo, esfuerzo y `max_calls` coincidan con la ejecución; si cualquiera difiere,
+el cliente no se crea. Renderizar el reporte histórico no genera llamadas.
 
 Instala las dependencias con `uv sync --locked` y dispone de Quarto CLI en el PATH.
 La clave `OPENAI_API_KEY` debe estar en `.env` o en el entorno del proceso.
@@ -51,8 +50,10 @@ salida. Sus valores predeterminados son `gpt-5.6-luna`, `effort="max"`,
 `ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS` seleccionan desde `.env` el modelo,
 entre cero y cuatro reintentos y el techo alternativo. Los valores efectivos
 quedan congelados en el manifiesto. Preparar una ejecución es una operación local.
-`run_annotations(run_dir, execute=True, limit=N)` solo genera si la política
-permite esa ejecución; `limit=0` no envía nada y los límites negativos se rechazan.
+`run_annotations(input_run_dir, output_root=Path("output/annotations"),
+execute=True, limit=N)` lee únicamente los inputs congelados y escribe únicamente
+en `output_root/<run_id>/`. Solo genera si la política permite esa ejecución;
+`limit=0` no envía nada y los límites negativos se rechazan.
 
 La API usa Responses, `store=false` y esquema JSON estricto. El límite de salida
 incluye razonamiento y texto visible. El piloto original utilizó `max` y 16.384
@@ -119,8 +120,8 @@ como una probabilidad calibrada.
 
 ## Artefactos y fallos
 
-Cada ejecución nueva en `data/proc_data/annotations_inputs/pilot_<hash>/`
-contiene:
+Cada ejecución nueva se divide entre inputs procesados y resultados. En
+`data/proc_data/annotations_inputs/pilot_<hash>/` quedan:
 
 - `manifest.json`: configuración, hashes, versiones de paquetes, tamaño y fecha.
 - `sample.parquet`, `selected_blocks.parquet`, `strata.parquet`: muestra y cuotas
@@ -128,12 +129,15 @@ contiene:
 - `prompt.md`, `codebook.json`, `output_schema.json`: snapshots del instrumento.
 - `pipeline.py`, `validation_contract.py`: snapshots de la implementación.
 - `requests/00000.json`: request exacto sin autorización HTTP ni clave.
+
+En `output/annotations/pilot_<hash>/` quedan:
+
 - `results/00000.json`: salida validada o, si falló, metadatos de diagnóstico y
   uso sin conservar el cuerpo erróneo.
 - `results.parquet`, `annotations.parquet`, `status.json`: tablas y balance derivados.
 
 Las tablas legibles se exportan además a `output/tables/annotations/` en CSV. El
-piloto histórico permanece en `output/annotations/`. Solo `completed`
+piloto histórico permanece autocontenido en `output/annotations/`. Solo `completed`
 contiene una decisión estructuralmente validada. `invalid_output`, `incomplete`,
 `error`, `transport_error`, `started` y `received` requieren inspección; `pending` significa
 que no hay intento guardado. Ninguno equivale a `no_statements`.
@@ -148,7 +152,8 @@ el procedimiento verifica sus hashes.
 
 ```bash
 uv run python -m features.manual_validation \
-  --annotations-dir data/proc_data/annotations_inputs
+  --annotations-input-dir data/proc_data/annotations_inputs \
+  --annotations-results-dir output/annotations
 ```
 
 Entra en **Revisión de anotaciones LLM**. Puedes filtrar por ley, bloques sin
@@ -167,8 +172,10 @@ anotaciones; una salida inválida no se puede aceptar como válida.
 Los juicios quedan en `output/annotation_reviews/<run_id>/<índice>.json`, con hash
 de la respuesta, identificador opcional del revisor y control de revisión para
 rechazar cambios obsoletos. No alteran los resultados del LLM ni las sesiones
-manuales anteriores. Los argumentos `--annotations-dir` y `--reviews-dir` permiten
-usar otras carpetas, por ejemplo para pruebas de interfaz.
+manuales anteriores. Los argumentos `--annotations-input-dir`,
+`--annotations-results-dir` y `--reviews-dir` permiten usar otras carpetas, por
+ejemplo para pruebas de interfaz. `--annotations-dir` se conserva solo como alias
+legado de `--annotations-input-dir`.
 
 ## Verificación
 

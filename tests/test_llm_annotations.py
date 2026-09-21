@@ -23,6 +23,15 @@ from features.manual_validation.service import ValidationError, sha256_text
 from features.political_alignment import PartyAlignment
 
 
+_run_annotations = run_annotations
+
+
+def run_annotations(input_run_dir, *args, **kwargs):
+    """Keep legacy self-contained fixtures explicit while production requires a root."""
+    kwargs.setdefault('output_root', input_run_dir.parent)
+    return _run_annotations(input_run_dir, *args, **kwargs)
+
+
 class LLMPilotTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -164,6 +173,43 @@ class LLMPilotTests(unittest.TestCase):
             self.assertEqual(before, (directory / 'results/00000.json').read_bytes())
         self.assertEqual('completed', results.iloc[0].status)
         self.assertEqual(1, len(pd.read_parquet(directory / 'annotations.parquet')))
+
+    def test_inputs_and_results_can_be_stored_in_separate_roots(self):
+        directory = self.make_run()
+        output_root = self.root / 'outputs'
+        result_directory = output_root / directory.name
+        pipeline.API_POLICY_PATH.write_text(json.dumps({
+            'allow_api_calls': True,
+            'authorized_runs': {
+                directory.name: {
+                    'model': 'gpt-5.6-luna',
+                    'reasoning_effort': 'max',
+                    'input_run_dir': str(directory.resolve()),
+                    'output_run_dir': str(result_directory.resolve()),
+                    'max_calls': 5,
+                }
+            },
+        }))
+        with patch('features.llm_annotations.pipeline.OpenAI',
+                   return_value=self.fake_client()):
+            frame = run_annotations(directory, output_root=output_root, execute=True)
+
+        self.assertEqual('completed', frame.iloc[0].status)
+        self.assertTrue((directory / 'requests/00000.json').is_file())
+        self.assertFalse((directory / 'results').exists())
+        self.assertTrue((result_directory / 'results/00000.json').is_file())
+        self.assertTrue((result_directory / 'results.parquet').is_file())
+        self.assertTrue((result_directory / 'annotations.parquet').is_file())
+        self.assertTrue((result_directory / 'status.json').is_file())
+
+        reviewer = AnnotationReviewService(
+            directory.parent,
+            self.root / 'reviews',
+            results_dir=output_root,
+        )
+        self.assertEqual(1, reviewer.list_runs()['runs'][0]['attempted'])
+        self.assertEqual('completed', reviewer.list_items(directory.name)['items'][0]['status'])
+        self.assertIsNotNone(reviewer.open_item(directory.name, 0)['result'])
 
     def test_confidence_validation_and_normalization(self):
         for level in ('medium', 'low'):

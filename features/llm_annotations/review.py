@@ -16,51 +16,64 @@ ISSUES = {'span', 'concept', 'stance', 'omission', 'justification', 'context', '
 class AnnotationReviewService:
     def __init__(self, runs_dir: Path, reviews_dir: Path,
                  unit_metadata: dict[str, dict[str, str]] | None = None,
-                 source_hashes: dict[str, str] | None = None):
-        self.runs_dir = runs_dir.resolve()
+                 source_hashes: dict[str, str] | None = None,
+                 results_dir: Path | None = None):
+        self.inputs_dir = runs_dir.resolve()
+        self.results_dir = (results_dir or runs_dir).resolve()
         self.reviews_dir = reviews_dir.resolve()
         self.unit_metadata = unit_metadata or {}
         self.source_hashes = source_hashes
         self.lock = threading.RLock()
 
-    def _run_dir(self, run_id: str) -> Path:
+    def _run_dirs(self, run_id: str) -> tuple[Path, Path]:
         if not RUN_ID_RE.fullmatch(run_id):
             raise ValidationError('Identificador de ejecución inválido')
-        directory = self.runs_dir / run_id
-        if not (directory / 'manifest.json').exists():
+        input_directory = self.inputs_dir / run_id
+        result_directory = self.results_dir / run_id
+        if not (input_directory / 'manifest.json').exists():
+            # Historical runs may still be self-contained below output/annotations.
+            input_directory = result_directory
+        if not (input_directory / 'manifest.json').exists():
             raise FileNotFoundError('No existe esa ejecución')
-        return directory
+        if not result_directory.exists():
+            result_directory = input_directory
+        return input_directory, result_directory
 
     def _review_path(self, run_id: str, index: int) -> Path:
         return self.reviews_dir / run_id / f'{index:05d}.json'
 
     def list_runs(self) -> dict:
         runs = []
-        for path in sorted(self.runs_dir.glob('pilot_*/manifest.json')):
+        manifests = {
+            path.parent.name: path
+            for root in (self.results_dir, self.inputs_dir)
+            for path in root.glob('pilot_*/manifest.json')
+        }
+        for path in sorted(manifests.values()):
             manifest = json.loads(path.read_text())
-            directory = path.parent
-            reviewed = len(list((self.reviews_dir / directory.name).glob('*.json')))
+            input_directory, result_directory = self._run_dirs(manifest['run_id'])
+            reviewed = len(list((self.reviews_dir / input_directory.name).glob('*.json')))
             runs.append({
                 'run_id': manifest['run_id'], 'created_at_utc': manifest['created_at_utc'],
                 'model': manifest['spec']['model'], 'reasoning_effort': manifest['spec']['reasoning_effort'],
                 'codebook_version': manifest['codebook_version'], 'sample_size': manifest['sample_size'],
-                'attempted': len(list((directory / 'results').glob('*.json'))),
+                'attempted': len(list((result_directory / 'results').glob('*.json'))),
                 'reviewed': reviewed, 'prompt_sha256': manifest['spec']['prompt_sha256'],
             })
         runs.sort(key=lambda r: r['created_at_utc'], reverse=True)
         return {'runs': runs}
 
     def list_items(self, run_id: str) -> dict:
-        directory = self._run_dir(run_id)
-        manifest = json.loads((directory / 'manifest.json').read_text())
+        input_directory, result_directory = self._run_dirs(run_id)
+        manifest = json.loads((input_directory / 'manifest.json').read_text())
         frozen_hashes = {
             str(source['law_number']): source['sha256']
             for source in manifest.get('spec', {}).get('sources', [])
         }
-        records = load_sample(directory)
+        records = load_sample(input_directory)
         items = []
         for index, record in enumerate(records):
-            result_path = directory / 'results' / f'{index:05d}.json'
+            result_path = result_directory / 'results' / f'{index:05d}.json'
             result = json.loads(result_path.read_text()) if result_path.exists() else {}
             review_path = self._review_path(run_id, index)
             review = json.loads(review_path.read_text()) if review_path.exists() else {}
@@ -107,19 +120,21 @@ class AnnotationReviewService:
         return {'manifest': manifest, 'items': items}
 
     def open_item(self, run_id: str, index: int) -> dict:
-        directory = self._run_dir(run_id)
-        records = load_sample(directory)
+        input_directory, result_directory = self._run_dirs(run_id)
+        records = load_sample(input_directory)
         if index < 0 or index >= len(records):
             raise ValidationError('Índice de bloque fuera de rango')
-        result_path = directory / 'results' / f'{index:05d}.json'
+        result_path = result_directory / 'results' / f'{index:05d}.json'
         result = json.loads(result_path.read_text()) if result_path.exists() else None
         review_path = self._review_path(run_id, index)
         return {
-            'manifest': json.loads((directory / 'manifest.json').read_text()),
+            'manifest': json.loads((input_directory / 'manifest.json').read_text()),
             'item': records[index],
-            'request': json.loads((directory / 'requests' / f'{index:05d}.json').read_text()),
+            'request': json.loads(
+                (input_directory / 'requests' / f'{index:05d}.json').read_text()
+            ),
             'result': result, 'result_sha256': sha256_file(result_path) if result else None,
-            'codebook': json.loads((directory / 'codebook.json').read_text()),
+            'codebook': json.loads((input_directory / 'codebook.json').read_text()),
             'review': json.loads(review_path.read_text()) if review_path.exists() else None,
         }
 

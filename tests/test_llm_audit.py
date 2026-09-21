@@ -52,6 +52,20 @@ class RecordedUsageTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             read_response_ledger({'pilot': directory})
 
+    def test_separate_input_and_result_directories_are_supported(self):
+        input_directory = self.record('pilot', 0, 'response-1', 100, 20)
+        result_directory = self.root / 'outputs' / 'pilot'
+        result_directory.mkdir(parents=True)
+        (input_directory / 'results').rename(result_directory / 'results')
+        ledger = read_response_ledger({
+            'pilot': (input_directory, result_directory),
+        })
+        self.assertEqual(1, len(ledger))
+        self.assertEqual(
+            str(result_directory / 'results/00000.json'),
+            ledger.iloc[0].response_path,
+        )
+
     def test_inconsistent_total_is_rejected(self):
         directory = self.record('pilot', 0, 'response-1', 100, 20)
         path = directory / 'results/00000.json'

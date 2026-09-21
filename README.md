@@ -37,15 +37,16 @@ uv run quarto render annotations.qmd
 ANNOTATIONS_PREPARE_INPUTS=1 uv run quarto render annotations.qmd
 # El reporte no ejecuta la API; las llamadas exigen autorización por run_id.
 # Revisar modelo, input, output, códigos destacados y justificaciones:
-uv run python -m features.manual_validation --annotations-dir data/proc_data/annotations_inputs
+uv run python -m features.manual_validation
 ```
 
 Se necesita Quarto CLI en el PATH. Abre la opción **Revisión de anotaciones LLM**
 en <http://127.0.0.1:8765> o entra directamente en
-<http://127.0.0.1:8765/llm.html>. La ejecución canónica vigente está en
-`data/proc_data/annotations_inputs/`; el piloto histórico permanece en
-`output/annotations/` y los juicios diagnósticos se guardan por separado en
-`output/annotation_reviews/`. La [guía del piloto](docs/piloto-anotaciones-llm.md)
+<http://127.0.0.1:8765/llm.html>. Los inputs de cada ejecución nueva quedan en
+`data/proc_data/annotations_inputs/` y sus resultados en `output/annotations/`.
+El piloto histórico autocontenido permanece también bajo `output/annotations/`;
+los juicios diagnósticos se guardan por separado en `output/annotation_reviews/`.
+La [guía del piloto](docs/piloto-anotaciones-llm.md)
 explica ejecución, variantes y límites de interpretación.
 
 La variable `PARTY_ALIGNMENT` de `.env` contiene cuatro listas explícitas:
