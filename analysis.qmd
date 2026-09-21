@@ -1,0 +1,1737 @@
+---
+title: "Análisis exploratorio del piloto de codificación"
+subtitle: "Procedimientos iniciales para H1a y H1b"
+lang: es
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: false
+    code-tools: true
+    embed-resources: true
+execute:
+  echo: true
+  warning: true
+  error: false
+  cache: false
+---
+
+## Propósito y alcance
+
+Este cuaderno inicia el análisis de la primera hipótesis de la tesis. H1a espera
+dos polos discursivos principales vinculados con la justicia de mercado y la
+justicia política. H1b espera una mayor intermediación de los actores de
+centroizquierda y de `necesidad_material`.
+
+El documento está preparado para leer directamente el piloto activo, que usa el
+libro `0.4.0-pilot` y el contrato `llm-pilot-1.2.1`. No llama a la API ni modifica
+las respuestas del modelo. Cada celda realiza una operación reconocible y puede
+ejecutarse por separado, respetando las dependencias creadas por las celdas
+anteriores. Los objetos derivados y las figuras se sobrescriben en
+`output/analysis/h1` cada vez que se ejecuta el cuaderno.
+
+::: {.callout-warning}
+Este piloto selecciona aproximadamente 10% de los **fragmentos**, no
+intervenciones completas. Una declaración observada sí aporta evidencia de
+presencia, pero la falta de una declaración en los fragmentos sorteados no
+demuestra ausencia en el resto de la intervención. Las redes siguientes son
+diagnósticas del piloto y no constituyen todavía el contraste definitivo de H1.
+El análisis confirmatorio deberá utilizar intervenciones completamente procesadas
+y anotaciones adjudicadas.
+:::
+
+El cuaderno aún no ha sido ejecutado porque la salida de la anotación está en
+proceso. Por esa razón, después de cada celda de resultados se deja una indicación
+de la lectura que deberá completarse una vez disponible el output, sin anticipar
+hallazgos.
+
+## Configuración
+
+### Paquetes y parámetros
+
+Cargamos únicamente los paquetes usados en el informe. Las semillas, el número de
+repeticiones y los parámetros de *signed spin-glass* quedan visibles para que la
+estimación sea reproducible.
+
+```{r}
+#| label: setup
+
+library(pacman)
+pacman::p_load(
+  arrow,
+  dplyr,
+  tidyr,
+  purrr,
+  stringr,
+  forcats,
+  ggplot2,
+  igraph,
+  ggraph,
+  jsonlite,
+  knitr,
+  readr,
+  scales,
+  tibble
+)
+
+options(dplyr.summarise.inform = FALSE)
+theme_set(theme_minimal(base_size = 12))
+
+ANNOTATION_DIR <- file.path(
+  "output",
+  "annotations_inputs",
+  "pilot_92b89349279f604a2071"
+)
+TARGET_LAW <- "21735"
+N_PARTITION_RUNS <- 200L
+BASE_SEED <- 20260921L
+SPINS <- 10L
+NUMERIC_TOLERANCE <- 1e-12
+
+ANALYSIS_DIR <- file.path("output", "analysis", "h1")
+TABLE_DIR <- file.path(ANALYSIS_DIR, "tables")
+FIGURE_DIR <- file.path(ANALYSIS_DIR, "figures")
+
+dir.create(TABLE_DIR, recursive = TRUE, showWarnings = FALSE)
+dir.create(FIGURE_DIR, recursive = TRUE, showWarnings = FALSE)
+
+knitr::opts_chunk$set(
+  fig.path = paste0(FIGURE_DIR, "/")
+)
+
+show_table <- function(data, digits = 3) {
+  knitr::kable(data, digits = digits, format = "html")
+}
+```
+
+### Archivos de la ejecución
+
+Verificamos que estén disponibles el manifiesto, la muestra congelada y las dos
+tablas generadas por `export_results()`. Esta celda no interpreta el contenido.
+
+```{r}
+#| label: archivos-requeridos
+required_paths <- c(
+  manifest = file.path(ANNOTATION_DIR, "manifest.json"),
+  codebook = file.path(ANNOTATION_DIR, "codebook.json"),
+  sample = file.path(ANNOTATION_DIR, "sample.parquet"),
+  results = file.path(ANNOTATION_DIR, "results.parquet"),
+  annotations = file.path(ANNOTATION_DIR, "annotations.parquet")
+)
+
+missing_paths <- required_paths[!file.exists(required_paths)]
+
+if (length(missing_paths) > 0) {
+  stop(
+    "Faltan artefactos de la ejecución: ",
+    paste(unname(missing_paths), collapse = ", ")
+  )
+}
+```
+
+## Lectura y auditoría del output
+
+### Tablas y libro de códigos
+
+`results.parquet` contiene una fila por fragmento y registra el estado de la
+respuesta. `annotations.parquet` contiene una fila por declaración codificada.
+`sample.parquet` conserva el diseño muestral y los metadatos no enviados al
+modelo. El JSON del libro proporciona el universo y las etiquetas de los catorce
+conceptos.
+
+```{r}
+#| label: cargar-output
+manifest <- jsonlite::read_json(required_paths[["manifest"]], simplifyVector = FALSE)
+codebook_raw <- jsonlite::fromJSON(required_paths[["codebook"]], simplifyVector = TRUE)
+
+sample_blocks <- arrow::read_parquet(required_paths[["sample"]]) |>
+  mutate(
+    law_number = as.character(law_number),
+    unit_id = as.character(unit_id),
+    utterance_id = as.character(utterance_id),
+    document_uri = as.character(document_uri)
+  )
+
+block_results <- arrow::read_parquet(required_paths[["results"]]) |>
+  mutate(
+    law_number = as.character(law_number),
+    unit_id = as.character(unit_id),
+    utterance_id = as.character(utterance_id),
+    document_uri = as.character(document_uri)
+  )
+
+model_annotations <- arrow::read_parquet(required_paths[["annotations"]]) |>
+  mutate(
+    law_number = as.character(law_number),
+    unit_id = as.character(unit_id),
+    utterance_id = as.character(utterance_id),
+    document_uri = as.character(document_uri),
+    concept_id = as.character(concept_id),
+    stance = as.character(stance),
+    confidence = as.character(confidence)
+  )
+
+concepts <- tibble::as_tibble(codebook_raw$concepts) |>
+  transmute(
+    concept_id = as.character(id),
+    concept_label = as.character(label),
+    concept_family = as.character(family),
+    orientation_anchor = as.character(orientation_anchor)
+  )
+
+concept_ids <- concepts$concept_id
+```
+
+### Estado de la ejecución
+
+Antes de analizar contenido, contamos todos los estados. `completed` significa
+que la respuesta superó el esquema y los controles locales; no significa que la
+codificación sea sustantivamente correcta. `pending`, `started` o `received`
+indican que el piloto todavía no está listo para el análisis.
+
+```{r}
+#| label: tbl-estados
+#| tbl-cap: "Estado de los fragmentos de la ejecución"
+status_summary <- block_results |>
+  count(status, name = "n_blocks") |>
+  mutate(share = n_blocks / sum(n_blocks)) |>
+  arrange(desc(n_blocks))
+
+show_table(status_summary)
+```
+
+**Lectura pendiente.** Completar cuando haya terminado la anotación. Se debe
+informar el número y porcentaje de salidas válidas, incompletas, inválidas y sin
+intento antes de interpretar cualquier red.
+
+La siguiente celda detiene el análisis si quedan intentos en curso. Los estados
+terminales distintos de `completed` se conservan en el diagnóstico, pero no se
+convierten en decisiones `no_statements`.
+
+```{r}
+#| label: verificar-finalizacion
+in_progress_statuses <- c("pending", "started", "received")
+in_progress_n <- sum(block_results$status %in% in_progress_statuses, na.rm = TRUE)
+
+if (in_progress_n > 0) {
+  stop(
+    sprintf(
+      "La ejecución %s aún tiene %s fragmentos pendientes o en curso.",
+      basename(ANNOTATION_DIR),
+      in_progress_n
+    )
+  )
+}
+
+if (nrow(model_annotations) == 0) {
+  stop("La ejecución finalizó sin anotaciones disponibles para construir redes.")
+}
+```
+
+### Bloques analíticamente utilizables
+
+Las banderas se guardan como JSON canónico. Excluimos bloques marcados como
+`vote` o `procedural`, tal como establece el suplemento metodológico. Entre los
+restantes, solo `completed` se considera una salida válida. No filtramos por
+confianza en el análisis principal del piloto; la confianza y la revisión humana
+se conservan para diagnósticos y sensibilidades posteriores.
+
+```{r}
+#| label: preparar-bloques-validos
+parse_json_array <- function(value) {
+  if (is.na(value) || !nzchar(value)) {
+    return(character())
+  }
+  parsed <- tryCatch(jsonlite::fromJSON(value), error = function(error) character())
+  as.character(parsed)
+}
+
+block_results <- block_results |>
+  mutate(
+    quality_flag_list = map(quality_flags, parse_json_array),
+    excluded_by_quality = map_lgl(
+      quality_flag_list,
+      ~ any(.x %in% c("vote", "procedural"))
+    )
+  )
+
+block_audit <- block_results |>
+  transmute(
+    status,
+    excluded_by_quality,
+    usable = status == "completed" & !excluded_by_quality
+  ) |>
+  count(status, excluded_by_quality, usable, name = "n_blocks") |>
+  arrange(desc(n_blocks))
+
+valid_blocks <- block_results |>
+  filter(status == "completed", !excluded_by_quality)
+
+show_table(block_audit)
+```
+
+**Lectura pendiente.** Describir cuántos fragmentos ingresan al análisis y qué
+proporción se pierde por ejecución o calidad textual. Una pérdida concentrada por
+grupo político o fase deberá tratarse como posible sesgo del piloto.
+
+### Anotaciones válidas del libro
+
+Retenemos únicamente conceptos existentes en el libro y unimos los diagnósticos
+del bloque. Las propuestas con `concept_status = "review"` quedan fuera de la red
+hasta su adjudicación y se cuentan por separado.
+
+```{r}
+#| label: preparar-anotaciones
+review_proposals <- model_annotations |>
+  filter(concept_status == "review")
+
+annotations_clean <- model_annotations |>
+  inner_join(
+    valid_blocks |>
+      select(
+        unit_id,
+        utterance_id,
+        law_number,
+        document_uri,
+        needs_human_review,
+        decision_confidence
+      ),
+    by = c("unit_id", "utterance_id", "law_number", "document_uri")
+  ) |>
+  filter(
+    concept_status == "in_codebook",
+    concept_id %in% concept_ids,
+    stance %in% c("support", "oppose")
+  )
+
+annotation_audit <- tibble(
+  category = c(
+    "Anotaciones válidas del libro",
+    "Propuestas conceptuales para revisión",
+    "Bloques válidos sin anotaciones"
+  ),
+  n = c(
+    nrow(annotations_clean),
+    nrow(review_proposals),
+    sum(valid_blocks$n_annotations == 0, na.rm = TRUE)
+  )
+)
+
+show_table(annotation_audit)
+```
+
+**Lectura pendiente.** Registrar la magnitud de los conceptos propuestos y de
+los bloques sin declaraciones. Ninguna de esas dos categorías debe confundirse
+con un error de ejecución.
+
+## Reconstrucción de actores y declaraciones
+
+### Metadatos del corpus
+
+La API no recibe identidad, partido ni género. Recuperamos esos atributos desde
+los `coding_chunks_long.parquet` mediante la clave completa de ley, documento,
+intervención y fragmento. Esta unión mantiene separada la clasificación del texto
+de la caracterización de sus emisores.
+
+```{r}
+#| label: cargar-metadatos-actores
+corpus_paths <- list.files(
+  file.path("data", "proc_data"),
+  pattern = "coding_chunks_long\\.parquet$",
+  recursive = TRUE,
+  full.names = TRUE
+)
+
+if (length(corpus_paths) == 0) {
+  stop("No se encontraron los coding_chunks_long.parquet del corpus.")
+}
+
+corpus_actor_metadata <- map_dfr(corpus_paths, function(path) {
+  path_law <- stringr::str_match(path, "ley_(\\d+)")[, 2]
+
+  arrow::read_parquet(path) |>
+    transmute(
+      law_number = as.character(path_law),
+      unit_id = as.character(unit_id),
+      utterance_id = as.character(utterance_id),
+      document_uri = as.character(document_uri),
+      speaker_id = as.character(speaker_id),
+      speaker = as.character(speaker),
+      role = as.character(role),
+      party_at_date = as.character(party_at_date),
+      political_alignment = as.character(political_alignment),
+      gender = as.character(gender),
+      date = as.character(date)
+    )
+}) |>
+  distinct(law_number, document_uri, utterance_id, unit_id, .keep_all = TRUE)
+
+if (anyDuplicated(
+  corpus_actor_metadata[c("law_number", "document_uri", "utterance_id", "unit_id")]
+)) {
+  stop("La clave de fragmento no es única en los metadatos del corpus.")
+}
+
+sample_metadata <- sample_blocks |>
+  select(
+    law_number,
+    document_uri,
+    utterance_id,
+    unit_id,
+    actor_type,
+    sampling_stratum_id,
+    inclusion_probability,
+    selection_weight
+  )
+
+unit_metadata <- corpus_actor_metadata |>
+  inner_join(
+    sample_metadata,
+    by = c("law_number", "document_uri", "utterance_id", "unit_id")
+  )
+```
+
+### Unidad analítica observada
+
+El suplemento define (D_{ucs}=1) cuando una intervención del actor (a)
+contiene al menos una declaración del concepto (c) con postura (s). Por ello,
+deduplicamos repeticiones del mismo concepto y postura dentro de cada
+intervención. En este piloto, el objeto representa **declaraciones detectadas en
+los fragmentos sorteados** y no una matriz completa de presencia-ausencia por
+intervención.
+
+```{r}
+#| label: construir-declaraciones-observadas
+annotations_with_actor <- annotations_clean |>
+  left_join(
+    unit_metadata,
+    by = c("law_number", "document_uri", "utterance_id", "unit_id")
+  )
+
+join_audit <- annotations_with_actor |>
+  summarise(
+    annotations = n(),
+    missing_speaker_id = sum(is.na(speaker_id) | !nzchar(speaker_id)),
+    missing_party = sum(is.na(party_at_date) | !nzchar(party_at_date)),
+    missing_alignment = sum(
+      is.na(political_alignment) | !nzchar(political_alignment)
+    )
+  )
+
+if (join_audit$missing_speaker_id > 0) {
+  warning("Hay anotaciones sin actor identificado; se excluyen de la red.")
+}
+
+observed_declarations <- annotations_with_actor |>
+  filter(
+    law_number == TARGET_LAW,
+    !is.na(speaker_id),
+    nzchar(speaker_id)
+  ) |>
+  distinct(
+    law_number,
+    document_uri,
+    utterance_id,
+    speaker_id,
+    concept_id,
+    stance,
+    .keep_all = TRUE
+  )
+
+if (nrow(observed_declarations) == 0) {
+  stop("No hay declaraciones utilizables para la ley objetivo.")
+}
+
+show_table(join_audit)
+```
+
+**Lectura pendiente.** Comprobar que la unión recupera todos los actores. Los
+faltantes no pueden imputarse a una alineación política.
+
+### Descripción de las declaraciones observadas
+
+Mostramos, para cada concepto, el número de intervenciones y actores en los que
+el piloto detectó apoyo o rechazo. Son conteos de evidencia positiva observada,
+no porcentajes de prevalencia sobre el corpus.
+
+```{r}
+#| label: tbl-conceptos-observados
+#| tbl-cap: "Declaraciones observadas en la muestra de fragmentos de la Ley 21.735"
+concept_observed_summary <- observed_declarations |>
+  group_by(concept_id, stance) |>
+  summarise(
+    interventions = n_distinct(utterance_id),
+    actors = n_distinct(speaker_id),
+    .groups = "drop"
+  ) |>
+  complete(
+    concept_id = concept_ids,
+    stance = c("support", "oppose"),
+    fill = list(interventions = 0L, actors = 0L)
+  ) |>
+  pivot_wider(
+    names_from = stance,
+    values_from = c(interventions, actors),
+    names_glue = "{.value}_{stance}"
+  ) |>
+  left_join(concepts, by = "concept_id") |>
+  select(
+    concept_label,
+    interventions_support,
+    interventions_oppose,
+    actors_support,
+    actors_oppose
+  ) |>
+  arrange(desc(interventions_support + interventions_oppose))
+
+show_table(concept_observed_summary)
+```
+
+**Lectura pendiente.** Identificar conceptos con evidencia suficiente para una
+proyección relacional y aquellos cuya escasez vuelva inestable cualquier vínculo.
+
+## H1a: polos discursivos y coaliciones
+
+### Matrices actor-concepto por postura
+
+Para cada actor y concepto contamos intervenciones observadas con apoyo
+
+\[
+X^+_{ac}=\sum_u D_{uc+}
+\]
+
+y con rechazo
+
+\[
+X^-_{ac}=\sum_u D_{uc-}.
+\]
+
+La función solo evita repetir la misma operación para las dos posturas; mantiene
+visibles los conteos que alimentan la red.
+
+```{r}
+#| label: matrices-actor-concepto
+actor_ids <- sort(unique(observed_declarations$speaker_id))
+
+make_actor_concept_matrix <- function(data, selected_stance, actors, concept_universe) {
+  cells <- data |>
+    filter(stance == selected_stance) |>
+    count(speaker_id, concept_id, name = "n_interventions")
+
+  wide <- tidyr::expand_grid(
+    speaker_id = actors,
+    concept_id = concept_universe
+  ) |>
+    left_join(cells, by = c("speaker_id", "concept_id")) |>
+    mutate(n_interventions = coalesce(n_interventions, 0L)) |>
+    pivot_wider(
+      names_from = concept_id,
+      values_from = n_interventions,
+      values_fill = 0L
+    ) |>
+    arrange(match(speaker_id, actors))
+
+  matrix <- as.matrix(wide |> select(all_of(concept_universe)))
+  rownames(matrix) <- wide$speaker_id
+  storage.mode(matrix) <- "double"
+  matrix
+}
+
+X_support <- make_actor_concept_matrix(
+  observed_declarations,
+  "support",
+  actor_ids,
+  concept_ids
+)
+
+X_oppose <- make_actor_concept_matrix(
+  observed_declarations,
+  "oppose",
+  actor_ids,
+  concept_ids
+)
+
+actor_norm <- sqrt(rowSums(X_support^2 + X_oppose^2))
+
+if (any(actor_norm == 0)) {
+  stop("Un actor sin perfil discursivo ingresó a las matrices de H1a.")
+}
+```
+
+### Congruencia, conflicto y red firmada
+
+Aplicamos las fórmulas definidas en el suplemento metodológico:
+
+\[
+G_{ab}=\frac{X^+_aX^{+\mathsf T}_b+X^-_aX^{-\mathsf T}_b}{n_an_b},
+\qquad
+C_{ab}=\frac{X^+_aX^{-\mathsf T}_b+X^-_aX^{+\mathsf T}_b}{n_an_b},
+\qquad
+S_{ab}=G_{ab}-C_{ab}.
+\]
+
+Conservamos las tres matrices. Un valor cero en (S) puede significar ausencia
+de coincidencias o equilibrio entre congruencia y conflicto; no borramos esa
+distinción de las tablas de auditoría.
+
+```{r}
+#| label: proyectar-red-actores
+normalizer <- outer(actor_norm, actor_norm)
+
+G_actor <- (
+  X_support %*% t(X_support) + X_oppose %*% t(X_oppose)
+) / normalizer
+
+C_actor <- (
+  X_support %*% t(X_oppose) + X_oppose %*% t(X_support)
+) / normalizer
+
+S_actor <- G_actor - C_actor
+
+diag(G_actor) <- 0
+diag(C_actor) <- 0
+diag(S_actor) <- 0
+
+G_actor[abs(G_actor) < NUMERIC_TOLERANCE] <- 0
+C_actor[abs(C_actor) < NUMERIC_TOLERANCE] <- 0
+S_actor[abs(S_actor) < NUMERIC_TOLERANCE] <- 0
+
+matrix_to_pair_table <- function(G, C, S) {
+  indices <- which(upper.tri(S), arr.ind = TRUE)
+
+  tibble(
+    from = rownames(S)[indices[, 1]],
+    to = colnames(S)[indices[, 2]],
+    congruence = G[indices],
+    conflict = C[indices],
+    signed_weight = S[indices]
+  )
+}
+
+actor_pair_network <- matrix_to_pair_table(G_actor, C_actor, S_actor)
+```
+
+### Metadatos de los nodos
+
+Un actor puede aparecer con más de un rol o afiliación dentro de la ventana. No
+elegimos silenciosamente una categoría: los valores múltiples se marcan para
+revisión.
+
+```{r}
+#| label: metadatos-nodos
+collapse_actor_value <- function(values) {
+  observed <- sort(unique(values[!is.na(values) & nzchar(values)]))
+
+  if (length(observed) == 0) {
+    return("Sin dato")
+  }
+  if (length(observed) == 1) {
+    return(observed)
+  }
+  "Múltiple"
+}
+
+actor_metadata <- observed_declarations |>
+  group_by(speaker_id) |>
+  summarise(
+    speaker = collapse_actor_value(speaker),
+    role = collapse_actor_value(role),
+    actor_type = collapse_actor_value(actor_type),
+    party_at_date = collapse_actor_value(party_at_date),
+    political_alignment = collapse_actor_value(political_alignment),
+    gender = collapse_actor_value(gender),
+    n_observed_interventions = n_distinct(utterance_id),
+    .groups = "drop"
+  )
+```
+
+### Componentes de la red firmada
+
+`cluster_spinglass(..., implementation = "neg")` admite pesos negativos, pero se
+aplica a una red conectada. Construimos la red con los saldos no nulos y
+analizamos el componente más grande. Los actores de otros componentes permanecen
+en el reporte y no reciben por extensión la etiqueta de una comunidad del
+componente principal.
+
+```{r}
+#| label: tbl-componentes-red
+#| tbl-cap: "Componentes de la red firmada de actores"
+signed_edges <- actor_pair_network |>
+  filter(abs(signed_weight) > NUMERIC_TOLERANCE)
+
+actor_vertices <- actor_metadata |>
+  rename(name = speaker_id)
+
+signed_actor_graph <- igraph::graph_from_data_frame(
+  signed_edges |>
+    transmute(from, to, weight = signed_weight),
+  directed = FALSE,
+  vertices = actor_vertices
+)
+
+component_result <- igraph::components(signed_actor_graph)
+igraph::V(signed_actor_graph)$component <- component_result$membership
+
+component_summary <- tibble(
+  component = seq_along(component_result$csize),
+  n_actors = as.integer(component_result$csize)
+) |>
+  mutate(share_actors = n_actors / sum(n_actors)) |>
+  arrange(desc(n_actors))
+
+main_component <- component_summary$component[[1]]
+main_actor_ids <- igraph::V(signed_actor_graph)$name[
+  igraph::V(signed_actor_graph)$component == main_component
+]
+main_signed_graph <- igraph::induced_subgraph(signed_actor_graph, main_actor_ids)
+
+if (igraph::vcount(main_signed_graph) < 3 || igraph::ecount(main_signed_graph) == 0) {
+  stop("El componente principal es insuficiente para signed spin-glass.")
+}
+
+show_table(component_summary)
+```
+
+**Lectura pendiente.** Informar qué proporción de actores cubre el componente
+principal. Si deja fuera una fracción sustantiva, H1a debe analizar componentes
+por separado y no presentar la partición principal como representación de todo el
+debate.
+
+### Estabilidad de *signed spin-glass*
+
+Repetimos el algoritmo con semillas distintas. `spins` fija un máximo de grupos,
+no obliga a encontrar ese número. Usamos la implementación `neg`,
+`gamma = 1`, `gamma.minus = 1`, temperatura inicial 1, temperatura final 0,01 y
+enfriamiento 0,99. Las etiquetas de comunidad se canonizan por el primer ID de
+actor de cada grupo para poder comparar soluciones equivalentes.
+
+```{r}
+#| label: estimar-particiones
+canonicalize_membership <- function(membership_vector) {
+  membership_vector <- membership_vector[igraph::V(main_signed_graph)$name]
+  groups <- split(names(membership_vector), membership_vector)
+  ordered_groups <- order(map_chr(groups, ~ sort(.x)[[1]]))
+  old_labels <- names(groups)[ordered_groups]
+  new_labels <- setNames(seq_along(old_labels), old_labels)
+  canonical <- unname(new_labels[as.character(membership_vector)])
+  names(canonical) <- names(membership_vector)
+  canonical
+}
+
+run_spinglass_once <- function(run_number) {
+  seed <- BASE_SEED + run_number - 1L
+
+  tryCatch({
+    set.seed(seed)
+    solution <- igraph::cluster_spinglass(
+      main_signed_graph,
+      weights = igraph::E(main_signed_graph)$weight,
+      spins = min(SPINS, igraph::vcount(main_signed_graph)),
+      parupdate = FALSE,
+      start.temp = 1,
+      stop.temp = 0.01,
+      cool.fact = 0.99,
+      update.rule = "config",
+      gamma = 1,
+      implementation = "neg",
+      gamma.minus = 1
+    )
+
+    membership_vector <- canonicalize_membership(igraph::membership(solution))
+    modularity_value <- tryCatch(
+      as.numeric(igraph::modularity(solution)),
+      error = function(error) NA_real_
+    )
+
+    tibble(
+      run = run_number,
+      seed = seed,
+      ok = TRUE,
+      error = NA_character_,
+      n_communities = n_distinct(membership_vector),
+      modularity = modularity_value,
+      signature = paste(membership_vector, collapse = "-"),
+      membership = list(membership_vector)
+    )
+  }, error = function(error) {
+    tibble(
+      run = run_number,
+      seed = seed,
+      ok = FALSE,
+      error = conditionMessage(error),
+      n_communities = NA_integer_,
+      modularity = NA_real_,
+      signature = NA_character_,
+      membership = list(NULL)
+    )
+  })
+}
+
+partition_runs <- map_dfr(
+  seq_len(N_PARTITION_RUNS),
+  run_spinglass_once
+)
+
+valid_partition_runs <- partition_runs |>
+  filter(ok)
+
+if (nrow(valid_partition_runs) == 0) {
+  stop("Todas las repeticiones de signed spin-glass fallaron.")
+}
+```
+
+### Frecuencia de las soluciones
+
+Resumimos cuántas comunidades produce cada repetición y qué particiones exactas
+se repiten. La solución representativa es la firma modal; los empates se ordenan
+por modularidad media disponible y luego de forma determinista por la firma.
+
+```{r}
+#| label: tbl-estabilidad-particiones
+#| tbl-cap: "Soluciones más frecuentes de signed spin-glass"
+partition_summary <- valid_partition_runs |>
+  group_by(signature, n_communities) |>
+  summarise(
+    n_runs = n(),
+    share_runs = n() / nrow(valid_partition_runs),
+    mean_modularity = if (all(is.na(modularity))) NA_real_ else mean(modularity, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  arrange(desc(n_runs), desc(mean_modularity), signature) |>
+  mutate(solution_id = row_number())
+
+representative_signature <- partition_summary$signature[[1]]
+representative_row <- valid_partition_runs |>
+  filter(signature == representative_signature) |>
+  slice(1)
+representative_membership <- representative_row$membership[[1]]
+
+partition_summary |>
+  select(
+    solution_id,
+    n_communities,
+    n_runs,
+    share_runs,
+    mean_modularity
+  ) |>
+  slice_head(n = 10) |>
+  show_table()
+```
+
+**Lectura pendiente.** Evaluar si domina una solución de dos comunidades o si el
+número y la composición de los grupos cambian entre semillas. Una partición modal
+infrecuente no respalda una afirmación robusta sobre dos polos.
+
+También calculamos, para cada par de actores, la proporción de repeticiones en que
+queda en la misma comunidad. Esta medida es invariante a la numeración de los
+grupos.
+
+```{r}
+#| label: tbl-coasignacion
+#| tbl-cap: "Resumen de la estabilidad de coasignación entre pares de actores"
+main_vertex_order <- igraph::V(main_signed_graph)$name
+coassignment_sum <- matrix(
+  0,
+  nrow = length(main_vertex_order),
+  ncol = length(main_vertex_order),
+  dimnames = list(main_vertex_order, main_vertex_order)
+)
+
+for (membership_vector in valid_partition_runs$membership) {
+  ordered_membership <- membership_vector[main_vertex_order]
+  coassignment_sum <- coassignment_sum + outer(
+    ordered_membership,
+    ordered_membership,
+    FUN = "=="
+  )
+}
+
+coassignment <- coassignment_sum / nrow(valid_partition_runs)
+coassignment_indices <- which(upper.tri(coassignment), arr.ind = TRUE)
+coassignment_pairs <- tibble(
+  actor_a = rownames(coassignment)[coassignment_indices[, 1]],
+  actor_b = colnames(coassignment)[coassignment_indices[, 2]],
+  coassignment_rate = coassignment[coassignment_indices]
+)
+
+coassignment_summary <- coassignment_pairs |>
+  summarise(
+    pairs = n(),
+    mean = mean(coassignment_rate),
+    p10 = quantile(coassignment_rate, 0.10),
+    median = median(coassignment_rate),
+    p90 = quantile(coassignment_rate, 0.90),
+    fully_stable = mean(coassignment_rate %in% c(0, 1))
+  )
+
+show_table(coassignment_summary)
+```
+
+**Lectura pendiente.** Describir la estabilidad de los pares, no solo la
+frecuencia de la partición completa. Revisar especialmente los actores con tasas
+intermedias, pues pueden ocupar fronteras entre comunidades o reflejar escasez de
+declaraciones.
+
+### Visualización de la solución representativa
+
+El color de los nodos representa comunidades estimadas, no etiquetas teóricas.
+Los vínculos azules indican saldo de congruencia positivo y los rojos saldo de
+conflicto. Solo se rotulan los veinte actores de mayor fuerza absoluta para evitar
+una figura ilegible.
+
+```{r}
+#| label: fig-red-firmada
+#| fig-cap: "Red firmada de actores y partición modal en el componente principal"
+#| fig-alt: "Red de actores con vínculos azules de congruencia neta, vínculos rojos de conflicto neto y nodos coloreados por comunidad estimada."
+igraph::V(main_signed_graph)$community <- as.integer(
+  representative_membership[igraph::V(main_signed_graph)$name]
+)
+igraph::E(main_signed_graph)$sign <- if_else(
+  igraph::E(main_signed_graph)$weight > 0,
+  "Congruencia neta",
+  "Conflicto neto"
+)
+igraph::E(main_signed_graph)$magnitude <- abs(
+  igraph::E(main_signed_graph)$weight
+)
+
+node_strength <- igraph::strength(
+  main_signed_graph,
+  weights = abs(igraph::E(main_signed_graph)$weight)
+)
+names(node_strength) <- igraph::V(main_signed_graph)$name
+labelled_actors <- names(sort(node_strength, decreasing = TRUE))[seq_len(
+  min(20, length(node_strength))
+)]
+
+igraph::V(main_signed_graph)$node_strength <- node_strength[
+  igraph::V(main_signed_graph)$name
+]
+igraph::V(main_signed_graph)$plot_label <- if_else(
+  igraph::V(main_signed_graph)$name %in% labelled_actors,
+  stringr::str_to_title(igraph::V(main_signed_graph)$speaker),
+  ""
+)
+
+set.seed(BASE_SEED)
+
+ggraph(main_signed_graph, layout = "fr", weights = igraph::E(main_signed_graph)$magnitude) +
+  geom_edge_link(
+    aes(edge_colour = sign, edge_width = magnitude),
+    alpha = 0.35,
+    show.legend = TRUE
+  ) +
+  geom_node_point(
+    aes(fill = factor(community), size = node_strength),
+    shape = 21,
+    colour = "white",
+    stroke = 0.4
+  ) +
+  geom_node_text(aes(label = plot_label), repel = TRUE, size = 3) +
+  scale_edge_colour_manual(
+    values = c("Congruencia neta" = "#2C7FB8", "Conflicto neto" = "#D7301F")
+  ) +
+  scale_edge_width(range = c(0.2, 1.6), guide = "none") +
+  scale_size_continuous(range = c(3, 9), guide = "none") +
+  labs(fill = "Comunidad", edge_colour = "Tipo de vínculo") +
+  theme_void(base_size = 12) +
+  theme(legend.position = "bottom")
+```
+
+**Lectura pendiente.** Examinar separación visual, actores periféricos y vínculos
+negativos dentro de las comunidades. El *layout* ayuda a leer la red, pero no es
+una prueba independiente de la partición.
+
+### Composición política de las comunidades
+
+La composición por alineación sirve para describir las comunidades después de
+estimarlas. No se usa partido ni alineación para construir la red.
+
+```{r}
+#| label: tbl-composicion-comunidades
+#| tbl-cap: "Composición política de las comunidades de la solución representativa"
+representative_actor_membership <- tibble(
+  speaker_id = names(representative_membership),
+  community = as.integer(representative_membership)
+) |>
+  left_join(actor_metadata, by = "speaker_id")
+
+community_alignment <- representative_actor_membership |>
+  count(community, political_alignment, name = "n_actors") |>
+  group_by(community) |>
+  mutate(share_community = n_actors / sum(n_actors)) |>
+  ungroup() |>
+  arrange(community, desc(n_actors))
+
+show_table(community_alignment)
+```
+
+**Lectura pendiente.** Describir la heterogeneidad política de cada comunidad.
+Una correspondencia partidaria perfecta no es necesaria para una coalición
+discursiva; una mezcla amplia tampoco demuestra intermediación sin examinar los
+perfiles conceptuales.
+
+### Perfiles conceptuales de las comunidades
+
+Calculamos la proporción de actores de cada comunidad que presenta al menos una
+declaración observada para cada concepto y postura. Esta cobertura evita que los
+parlamentarios más prolíficos dominen el perfil, aunque sigue limitada a los
+fragmentos sorteados.
+
+```{r}
+#| label: perfiles-comunidades
+community_sizes <- representative_actor_membership |>
+  count(community, name = "community_n_actors")
+
+community_profiles <- observed_declarations |>
+  semi_join(representative_actor_membership, by = "speaker_id") |>
+  distinct(speaker_id, concept_id, stance) |>
+  inner_join(
+    representative_actor_membership |>
+      select(speaker_id, community),
+    by = "speaker_id"
+  ) |>
+  count(community, concept_id, stance, name = "actors_with_feature") |>
+  complete(
+    community = sort(unique(representative_membership)),
+    concept_id = concept_ids,
+    stance = c("support", "oppose"),
+    fill = list(actors_with_feature = 0L)
+  ) |>
+  left_join(community_sizes, by = "community") |>
+  mutate(actor_coverage = actors_with_feature / community_n_actors) |>
+  left_join(concepts, by = "concept_id")
+
+profile_discriminators <- community_profiles |>
+  group_by(concept_id, concept_label, stance) |>
+  mutate(coverage_spread = max(actor_coverage) - min(actor_coverage)) |>
+  ungroup() |>
+  arrange(desc(coverage_spread), concept_label, stance) |>
+  distinct(concept_id, stance, .keep_all = TRUE) |>
+  slice_head(n = 20)
+```
+
+Mostramos los perfiles completos como mapa de calor. El apoyo y el rechazo son
+filas distintas porque la centralidad de un concepto como objeto de controversia
+no equivale a su aceptación.
+
+```{r}
+#| label: fig-perfiles-comunidades
+#| fig-cap: "Cobertura observada de conceptos y posturas dentro de cada comunidad"
+#| fig-alt: "Mapa de calor de comunidades por concepto y postura; tonos más oscuros indican una mayor proporción de actores con la declaración observada."
+concept_order <- c(
+  "propiedad_individual_fondos",
+  "capitalizacion_individual",
+  "reciprocidad_contributiva",
+  "conciencia_costos",
+  "ineficiencia_estado",
+  "prevision_como_mercado",
+  "igualdad_universalismo",
+  "solidaridad_intergeneracional",
+  setdiff(
+    concept_ids,
+    c(
+      "propiedad_individual_fondos",
+      "capitalizacion_individual",
+      "reciprocidad_contributiva",
+      "conciencia_costos",
+      "ineficiencia_estado",
+      "prevision_como_mercado",
+      "igualdad_universalismo",
+      "solidaridad_intergeneracional"
+    )
+  )
+)
+
+community_profiles |>
+  mutate(
+    community = factor(community),
+    concept_label = factor(
+      concept_label,
+      levels = concepts$concept_label[match(concept_order, concepts$concept_id)]
+    ),
+    stance_label = recode(
+      stance,
+      support = "Apoyo",
+      oppose = "Rechazo"
+    )
+  ) |>
+  ggplot(aes(x = community, y = concept_label, fill = actor_coverage)) +
+  geom_tile(colour = "white", linewidth = 0.25) +
+  facet_grid(rows = vars(stance_label), scales = "free_y", space = "free_y") +
+  scale_fill_viridis_c(labels = label_percent(accuracy = 1), limits = c(0, 1)) +
+  labs(x = "Comunidad", y = NULL, fill = "Actores") +
+  theme(
+    panel.grid = element_blank(),
+    strip.text.y = element_text(angle = 0),
+    legend.position = "bottom"
+  )
+```
+
+**Lectura pendiente.** Asignar las etiquetas sustantivas de preservación y
+transformación solo después de revisar qué conceptos y posturas distinguen a cada
+comunidad. No etiquetar un grupo por su composición partidaria.
+
+Como ayuda descriptiva —no como una escala ni como reemplazo de los conceptos
+individuales— promediamos la cobertura de apoyo y rechazo de los seis conceptos
+esperados para el repertorio de preservación y de los dos esperados para el de
+transformación.
+
+```{r}
+#| label: tbl-resumen-repertorios
+#| tbl-cap: "Resumen descriptivo de repertorios esperados por comunidad"
+preservation_ids <- c(
+  "propiedad_individual_fondos",
+  "capitalizacion_individual",
+  "reciprocidad_contributiva",
+  "conciencia_costos",
+  "ineficiencia_estado",
+  "prevision_como_mercado"
+)
+
+transformation_ids <- c(
+  "igualdad_universalismo",
+  "solidaridad_intergeneracional"
+)
+
+repertoire_summary <- community_profiles |>
+  filter(concept_id %in% c(preservation_ids, transformation_ids)) |>
+  mutate(
+    repertoire = if_else(
+      concept_id %in% preservation_ids,
+      "Preservación",
+      "Transformación"
+    )
+  ) |>
+  group_by(community, repertoire, stance) |>
+  summarise(mean_actor_coverage = mean(actor_coverage), .groups = "drop") |>
+  pivot_wider(
+    names_from = c(repertoire, stance),
+    values_from = mean_actor_coverage,
+    names_sep = "_"
+  ) |>
+  arrange(community)
+
+show_table(repertoire_summary)
+```
+
+**Lectura pendiente.** Usar este resumen para orientar la lectura de conceptos
+individuales, no para afirmar que existe una escala unidimensional de justicia de
+mercado o política.
+
+### Cola de lectura cualitativa para H1a
+
+Seleccionamos una evidencia por cada una de las veinte combinaciones
+concepto-postura con mayor diferencia de cobertura entre comunidades. Se prioriza
+confianza alta y luego el orden estable de la muestra. La cola localiza pasajes
+para interpretar las coaliciones; no reemplaza una selección cualitativa que
+incluya casos discrepantes.
+
+```{r}
+#| label: tbl-cola-lectura-h1a
+#| tbl-cap: "Pasajes iniciales para interpretar los perfiles comunitarios"
+h1a_reading_queue <- annotations_with_actor |>
+  filter(
+    law_number == TARGET_LAW,
+    concept_status == "in_codebook",
+    concept_id %in% concept_ids,
+    stance %in% c("support", "oppose")
+  ) |>
+  inner_join(
+    representative_actor_membership |>
+      select(speaker_id, community),
+    by = "speaker_id"
+  ) |>
+  semi_join(
+    profile_discriminators |>
+      select(concept_id, stance),
+    by = c("concept_id", "stance")
+  ) |>
+  left_join(
+    concepts |>
+      select(concept_id, concept_label),
+    by = "concept_id"
+  ) |>
+  mutate(confidence_order = match(confidence, c("high", "medium", "low"))) |>
+  arrange(community, concept_id, stance, confidence_order, sample_index) |>
+  group_by(community, concept_id, stance) |>
+  slice_head(n = 1) |>
+  ungroup() |>
+  transmute(
+    community,
+    actor = stringr::str_to_title(speaker),
+    party = party_at_date,
+    concept = concept_label,
+    stance,
+    confidence,
+    unit_id,
+    evidence = stringr::str_trunc(evidence_text, 220)
+  ) |>
+  slice_head(n = 20)
+
+show_table(h1a_reading_queue)
+```
+
+**Lectura pendiente.** Leer los fragmentos completos y su contexto antes de
+atribuir una línea argumental. Incorporar después ejemplos negativos o
+contradictorios, no solo casos que encajen con H1a.
+
+## H1b: intermediación de actores y conceptos
+
+### Clasificación específica de centroizquierda
+
+Leemos únicamente `CENTER_LEFT_PARTIES` desde el entorno, `.env` o
+`.env.example`. La variable es específica de H1b y puede cruzar las categorías
+generales `left` y `center`. No se imprime ninguna otra variable de entorno.
+
+```{r}
+#| label: cargar-centroizquierda
+read_json_env_vector <- function(variable, files = c(".env", ".env.example")) {
+  value <- Sys.getenv(variable, unset = "")
+
+  if (!nzchar(value)) {
+    for (path in files[file.exists(files)]) {
+      lines <- readLines(path, warn = FALSE)
+      match_index <- which(stringr::str_detect(
+        lines,
+        paste0("^\\s*", variable, "\\s*=")
+      ))
+
+      if (length(match_index) > 0) {
+        value <- sub(
+          paste0("^\\s*", variable, "\\s*=\\s*"),
+          "",
+          lines[[match_index[[1]]]]
+        )
+        value <- stringr::str_trim(value)
+        value <- sub("^['\"]", "", value)
+        value <- sub("['\"]$", "", value)
+        break
+      }
+    }
+  }
+
+  if (!nzchar(value)) {
+    stop("No se encontró ", variable, " en el entorno, .env ni .env.example.")
+  }
+
+  parsed <- jsonlite::fromJSON(value)
+  if (!is.character(parsed) || length(parsed) == 0) {
+    stop(variable, " debe ser un arreglo JSON no vacío de nombres de partidos.")
+  }
+  unique(parsed)
+}
+
+center_left_parties <- read_json_env_vector("CENTER_LEFT_PARTIES")
+```
+
+### Intermediación de actores
+
+H1b define la intermediación de actores sobre (G), la red positiva de
+coincidencias de postura, no sobre la red firmada (S). Transformamos cada peso
+positivo en distancia (1/G_{ab}). Los pares sin vínculo quedan desconectados y
+los nodos aislados reciben intermediación cero. La normalización divide por
+\((n-1)(n-2)/2\), como corresponde a una red no dirigida.
+
+```{r}
+#| label: intermediacion-actores
+congruence_edges <- actor_pair_network |>
+  filter(congruence > NUMERIC_TOLERANCE) |>
+  transmute(
+    from,
+    to,
+    weight = congruence,
+    distance = 1 / congruence
+  )
+
+actor_congruence_graph <- igraph::graph_from_data_frame(
+  congruence_edges,
+  directed = FALSE,
+  vertices = actor_vertices
+)
+
+raw_actor_betweenness <- igraph::betweenness(
+  actor_congruence_graph,
+  directed = FALSE,
+  weights = igraph::E(actor_congruence_graph)$distance,
+  normalized = FALSE
+)
+
+n_actor_nodes <- igraph::vcount(actor_congruence_graph)
+actor_normalization <- if (n_actor_nodes > 2) {
+  (n_actor_nodes - 1) * (n_actor_nodes - 2) / 2
+} else {
+  1
+}
+
+actor_party_membership <- observed_declarations |>
+  distinct(speaker_id, party_at_date) |>
+  group_by(speaker_id) |>
+  summarise(
+    center_left = any(party_at_date %in% center_left_parties),
+    .groups = "drop"
+  )
+
+actor_betweenness <- tibble(
+  speaker_id = names(raw_actor_betweenness),
+  betweenness_raw = as.numeric(raw_actor_betweenness),
+  betweenness_normalized = as.numeric(raw_actor_betweenness) / actor_normalization,
+  congruence_degree = igraph::degree(actor_congruence_graph),
+  congruence_strength = igraph::strength(
+    actor_congruence_graph,
+    weights = igraph::E(actor_congruence_graph)$weight
+  )
+) |>
+  left_join(actor_metadata, by = "speaker_id") |>
+  left_join(actor_party_membership, by = "speaker_id") |>
+  mutate(
+    center_left = coalesce(center_left, FALSE),
+    h1b_group = if_else(center_left, "Centroizquierda", "Otros")
+  )
+```
+
+Comparamos descriptivamente la distribución entre parlamentarios. El Ejecutivo,
+autoridades de las cámaras y otras funciones permanecen en la red porque pueden
+formar rutas, pero no ingresan a esta comparación de grupos.
+
+```{r}
+#| label: tbl-intermediacion-centroizquierda
+#| tbl-cap: "Intermediación de parlamentarios según categoría de H1b"
+parliamentary_betweenness <- actor_betweenness |>
+  filter(actor_type == "Parlamentario")
+
+center_left_summary <- parliamentary_betweenness |>
+  group_by(h1b_group) |>
+  summarise(
+    actors = n(),
+    mean = mean(betweenness_normalized),
+    median = median(betweenness_normalized),
+    p75 = quantile(betweenness_normalized, 0.75),
+    maximum = max(betweenness_normalized),
+    .groups = "drop"
+  )
+
+show_table(center_left_summary)
+```
+
+**Lectura pendiente.** Comparar magnitud, dispersión y tamaño de ambos grupos. No
+interpretar una media mayor como prueba concluyente si depende de uno o dos
+actores o si la red de congruencia es casi completa.
+
+```{r}
+#| label: fig-intermediacion-centroizquierda
+#| fig-cap: "Distribución de la intermediación entre parlamentarios"
+#| fig-alt: "Diagrama de caja y puntos individuales de intermediación normalizada para parlamentarios de centroizquierda y otros parlamentarios."
+ggplot(
+  parliamentary_betweenness,
+  aes(x = h1b_group, y = betweenness_normalized, colour = h1b_group)
+) +
+  geom_boxplot(width = 0.45, outlier.shape = NA, alpha = 0.15) +
+  geom_jitter(width = 0.10, height = 0, alpha = 0.75, size = 2) +
+  scale_y_continuous(labels = label_number(accuracy = 0.001)) +
+  scale_colour_manual(
+    values = c("Centroizquierda" = "#7B3294", "Otros" = "#4D4D4D"),
+    guide = "none"
+  ) +
+  labs(x = NULL, y = "Intermediación normalizada")
+```
+
+**Lectura pendiente.** Identificar valores extremos y revisar sus perfiles
+conceptuales y pasajes. La visualización describe el piloto; no aporta por sí sola
+un contraste estadístico válido.
+
+### Sensibilidad de la categoría de centroizquierda
+
+La especificación principal incluye PDC, PPD, PS, PR/PRSD y PL. Como control,
+recalculamos el contraste descriptivo al excluir por separado al Partido Liberal
+y a la Democracia Cristiana de la categoría. La red y las centralidades no
+cambian; solo cambia qué actores integran cada grupo de comparación.
+
+```{r}
+#| label: tbl-sensibilidad-centroizquierda
+#| tbl-cap: "Sensibilidad descriptiva a casos fronterizos de la categoría centroizquierda"
+classification_sets <- list(
+  principal = center_left_parties,
+  sin_partido_liberal = setdiff(center_left_parties, "Partido Liberal de Chile"),
+  sin_democracia_cristiana = setdiff(
+    center_left_parties,
+    "Partido Demócrata Cristiano"
+  )
+)
+
+actor_parties_long <- observed_declarations |>
+  distinct(speaker_id, party_at_date)
+
+classification_sensitivity <- imap_dfr(classification_sets, function(parties, scenario) {
+  scenario_membership <- actor_parties_long |>
+    group_by(speaker_id) |>
+    summarise(in_group = any(party_at_date %in% parties), .groups = "drop")
+
+  comparison <- parliamentary_betweenness |>
+    select(-center_left) |>
+    left_join(scenario_membership, by = "speaker_id") |>
+    mutate(in_group = coalesce(in_group, FALSE))
+
+  tibble(
+    scenario = scenario,
+    center_left_n = sum(comparison$in_group),
+    others_n = sum(!comparison$in_group),
+    center_left_mean = mean(
+      comparison$betweenness_normalized[comparison$in_group]
+    ),
+    others_mean = mean(
+      comparison$betweenness_normalized[!comparison$in_group]
+    ),
+    mean_difference = center_left_mean - others_mean,
+    center_left_median = median(
+      comparison$betweenness_normalized[comparison$in_group]
+    ),
+    others_median = median(
+      comparison$betweenness_normalized[!comparison$in_group]
+    )
+  )
+})
+
+show_table(classification_sensitivity)
+```
+
+**Lectura pendiente.** Determinar si la dirección y magnitud del patrón dependen
+de PL o PDC. Una inversión sustantiva debe reportarse como sensibilidad de la
+operacionalización, no ocultarse mediante una sola clasificación.
+
+### Red de congruencia conceptual
+
+Para H1b conectamos conceptos usados por un mismo actor con igual orientación:
+
+\[
+W^G_{cd}=\frac{\sum_a(X^+_{ac}X^+_{ad}+X^-_{ac}X^-_{ad})}
+{\sqrt{\sum_a[(X^+_{ac})^2+(X^-_{ac})^2]}
+ \sqrt{\sum_a[(X^+_{ad})^2+(X^-_{ad})^2]}}.
+\]
+
+Los conceptos sin observaciones conservan fila y columna de ceros. Para los
+vínculos positivos usamos distancia (1/W^G_{cd}) y calculamos intermediación con
+la misma normalización no dirigida.
+
+```{r}
+#| label: intermediacion-conceptos
+concept_norm <- sqrt(colSums(X_support^2 + X_oppose^2))
+concept_numerator <- crossprod(X_support) + crossprod(X_oppose)
+concept_normalizer <- outer(concept_norm, concept_norm)
+
+W_concept <- matrix(
+  0,
+  nrow = length(concept_ids),
+  ncol = length(concept_ids),
+  dimnames = list(concept_ids, concept_ids)
+)
+
+nonzero_cells <- concept_normalizer > 0
+W_concept[nonzero_cells] <- (
+  concept_numerator[nonzero_cells] / concept_normalizer[nonzero_cells]
+)
+diag(W_concept) <- 0
+W_concept[abs(W_concept) < NUMERIC_TOLERANCE] <- 0
+
+concept_indices <- which(upper.tri(W_concept), arr.ind = TRUE)
+concept_edges <- tibble(
+  from = rownames(W_concept)[concept_indices[, 1]],
+  to = colnames(W_concept)[concept_indices[, 2]],
+  weight = W_concept[concept_indices]
+) |>
+  filter(weight > NUMERIC_TOLERANCE) |>
+  mutate(distance = 1 / weight)
+
+concept_graph <- igraph::graph_from_data_frame(
+  concept_edges,
+  directed = FALSE,
+  vertices = concepts |>
+    transmute(name = concept_id, concept_label, concept_family)
+)
+
+raw_concept_betweenness <- igraph::betweenness(
+  concept_graph,
+  directed = FALSE,
+  weights = igraph::E(concept_graph)$distance,
+  normalized = FALSE
+)
+
+n_concept_nodes <- igraph::vcount(concept_graph)
+concept_normalization <- if (n_concept_nodes > 2) {
+  (n_concept_nodes - 1) * (n_concept_nodes - 2) / 2
+} else {
+  1
+}
+
+concept_centrality <- concepts |>
+  mutate(
+    betweenness_raw = raw_concept_betweenness[concept_id],
+    betweenness_normalized = betweenness_raw / concept_normalization,
+    congruence_strength = igraph::strength(
+      concept_graph,
+      vids = concept_id,
+      weights = igraph::E(concept_graph)$weight
+    )
+  ) |>
+  arrange(desc(betweenness_normalized), desc(congruence_strength))
+```
+
+```{r}
+#| label: tbl-intermediacion-conceptos
+#| tbl-cap: "Intermediación y fuerza en la red de congruencia conceptual"
+concept_centrality |>
+  select(
+    concept_label,
+    concept_family,
+    betweenness_normalized,
+    congruence_strength
+  ) |>
+  show_table()
+```
+
+**Lectura pendiente.** Ubicar `necesidad_material` frente a los demás conceptos y
+reportar tanto intermediación como fuerza. En una proyección muy densa, una
+intermediación baja puede deberse a la abundancia de rutas directas.
+
+### Vínculos de necesidad material
+
+Inspeccionamos todos los vínculos de `necesidad_material` y marcamos su relación
+con los repertorios teóricos. La proximidad indica perfiles actorales semejantes;
+no demuestra todavía que los conceptos estén unidos dentro del mismo argumento.
+
+```{r}
+#| label: tbl-vinculos-necesidad
+#| tbl-cap: "Vínculos de necesidad material en la red de congruencia conceptual"
+need_links <- concept_edges |>
+  filter(from == "necesidad_material" | to == "necesidad_material") |>
+  mutate(
+    other_concept = if_else(
+      from == "necesidad_material",
+      to,
+      from
+    ),
+    repertoire = case_when(
+      other_concept %in% preservation_ids ~ "Preservación",
+      other_concept %in% transformation_ids ~ "Transformación",
+      TRUE ~ "Otro"
+    )
+  ) |>
+  left_join(
+    concepts |>
+      select(other_concept = concept_id, other_label = concept_label),
+    by = "other_concept"
+  ) |>
+  select(other_label, repertoire, weight) |>
+  arrange(desc(weight))
+
+show_table(need_links)
+```
+
+**Lectura pendiente.** Comprobar si necesidad material mantiene vínculos efectivos
+con conceptos de ambos repertorios y si esos vínculos son comparativamente fuertes.
+La posición relacional debe validarse leyendo las justificaciones concretas.
+
+### Cola de lectura cualitativa para H1b
+
+Buscamos intervenciones observadas donde `necesidad_material` coexista con al
+menos un concepto de preservación o transformación. Priorizamos los casos que
+contienen conceptos de ambos repertorios. Esta búsqueda es más exigente que la
+red conceptual, que conecta perfiles a nivel de actor.
+
+```{r}
+#| label: tbl-cola-lectura-h1b
+#| tbl-cap: "Intervenciones para interpretar el posible papel de puente de necesidad material"
+intervention_repertoires <- observed_declarations |>
+  group_by(law_number, document_uri, utterance_id, speaker_id) |>
+  summarise(
+    has_need = any(concept_id == "necesidad_material"),
+    has_preservation = any(concept_id %in% preservation_ids),
+    has_transformation = any(concept_id %in% transformation_ids),
+    .groups = "drop"
+  ) |>
+  filter(has_need, has_preservation | has_transformation) |>
+  mutate(
+    bridge_type = case_when(
+      has_preservation & has_transformation ~ "Ambos repertorios",
+      has_preservation ~ "Necesidad + preservación",
+      TRUE ~ "Necesidad + transformación"
+    ),
+    bridge_order = match(
+      bridge_type,
+      c(
+        "Ambos repertorios",
+        "Necesidad + preservación",
+        "Necesidad + transformación"
+      )
+    )
+  )
+
+h1b_reading_queue <- annotations_with_actor |>
+  semi_join(
+    intervention_repertoires,
+    by = c("law_number", "document_uri", "utterance_id", "speaker_id")
+  ) |>
+  inner_join(
+    intervention_repertoires |>
+      select(
+        law_number,
+        document_uri,
+        utterance_id,
+        speaker_id,
+        bridge_type,
+        bridge_order
+      ),
+    by = c("law_number", "document_uri", "utterance_id", "speaker_id")
+  ) |>
+  filter(
+    concept_id == "necesidad_material" |
+      concept_id %in% preservation_ids |
+      concept_id %in% transformation_ids
+  ) |>
+  left_join(
+    concepts |>
+      select(concept_id, concept_label),
+    by = "concept_id"
+  ) |>
+  mutate(confidence_order = match(confidence, c("high", "medium", "low"))) |>
+  arrange(bridge_order, confidence_order, sample_index) |>
+  transmute(
+    bridge_type,
+    actor = stringr::str_to_title(speaker),
+    party = party_at_date,
+    utterance_id,
+    concept = concept_label,
+    stance,
+    confidence,
+    evidence = stringr::str_trunc(evidence_text, 220)
+  ) |>
+  slice_head(n = 20)
+
+show_table(h1b_reading_queue)
+```
+
+**Lectura pendiente.** Revisar si necesidad funciona como premisa compartida para
+respuestas distributivas diferentes o si la coexistencia se debe a pasajes
+independientes dentro de una intervención. Incluir casos que debiliten la
+interpretación de puente.
+
+## Exportación reproducible
+
+Guardamos las tablas procesadas en Parquet como formato canónico y algunas tablas
+de lectura en CSV. Esta celda no altera los inputs ni los outputs originales del
+LLM.
+
+```{r}
+#| label: exportar-resultados
+#| output: false
+actor_profiles_long <- bind_rows(
+  as.data.frame(as.table(X_support)) |>
+    as_tibble() |>
+    transmute(
+      speaker_id = as.character(Var1),
+      concept_id = as.character(Var2),
+      stance = "support",
+      n_observed_interventions = as.numeric(Freq)
+    ),
+  as.data.frame(as.table(X_oppose)) |>
+    as_tibble() |>
+    transmute(
+      speaker_id = as.character(Var1),
+      concept_id = as.character(Var2),
+      stance = "oppose",
+      n_observed_interventions = as.numeric(Freq)
+    )
+)
+
+partition_memberships <- valid_partition_runs |>
+  transmute(
+    run,
+    seed,
+    memberships = map(membership, ~ tibble(
+      speaker_id = names(.x),
+      community = as.integer(.x)
+    ))
+  ) |>
+  unnest(memberships)
+
+arrow::write_parquet(
+  observed_declarations,
+  file.path(ANALYSIS_DIR, "observed_declarations.parquet")
+)
+arrow::write_parquet(
+  actor_profiles_long,
+  file.path(ANALYSIS_DIR, "actor_concept_profiles.parquet")
+)
+arrow::write_parquet(
+  actor_pair_network,
+  file.path(ANALYSIS_DIR, "actor_pair_network.parquet")
+)
+arrow::write_parquet(
+  partition_memberships,
+  file.path(ANALYSIS_DIR, "spinglass_memberships.parquet")
+)
+arrow::write_parquet(
+  representative_actor_membership,
+  file.path(ANALYSIS_DIR, "representative_membership.parquet")
+)
+arrow::write_parquet(
+  community_profiles,
+  file.path(ANALYSIS_DIR, "community_profiles.parquet")
+)
+arrow::write_parquet(
+  actor_betweenness,
+  file.path(ANALYSIS_DIR, "actor_betweenness.parquet")
+)
+arrow::write_parquet(
+  concept_edges,
+  file.path(ANALYSIS_DIR, "concept_congruence_network.parquet")
+)
+arrow::write_parquet(
+  concept_centrality,
+  file.path(ANALYSIS_DIR, "concept_centrality.parquet")
+)
+arrow::write_parquet(
+  coassignment_pairs,
+  file.path(ANALYSIS_DIR, "actor_coassignment_stability.parquet")
+)
+
+readr::write_csv(
+  partition_summary,
+  file.path(TABLE_DIR, "spinglass_partition_summary.csv")
+)
+readr::write_csv(
+  h1a_reading_queue,
+  file.path(TABLE_DIR, "h1a_reading_queue.csv")
+)
+readr::write_csv(
+  h1b_reading_queue,
+  file.path(TABLE_DIR, "h1b_reading_queue.csv")
+)
+readr::write_csv(
+  classification_sensitivity,
+  file.path(TABLE_DIR, "center_left_sensitivity.csv")
+)
+```
+
+## Criterios para una conclusión provisional
+
+Después de ejecutar e inspeccionar todas las salidas, la evaluación del piloto
+debe mantener separadas las siguientes preguntas:
+
+1. **Calidad del output:** ¿la cobertura de respuestas válidas y la distribución
+   de confianza permiten construir perfiles mínimamente informativos?
+2. **H1a, estructura:** ¿la solución de dos comunidades es frecuente y estable
+   entre semillas, cubre una parte suficiente de los actores y presenta más
+   congruencia dentro que conflicto?
+3. **H1a, contenido:** ¿los conceptos y posturas permiten reconocer un repertorio
+   de preservación y otro de transformación sin usar previamente el partido para
+   etiquetar los grupos?
+4. **H1b, actores:** ¿los parlamentarios clasificados como centroizquierda muestran
+   mayor intermediación con una magnitud que no depende únicamente de PL, PDC o un
+   actor extremo?
+5. **H1b, concepto:** ¿`necesidad_material` ocupa una posición de intermediación,
+   mantiene vínculos con ambos repertorios y los pasajes seleccionados muestran
+   conexiones argumentales sustantivas?
+6. **Límite del piloto:** ¿los patrones sobreviven cuando se disponga de
+   intervenciones completas y codificación adjudicada? Hasta entonces, ninguna
+   respuesta anterior confirma o refuta H1.
