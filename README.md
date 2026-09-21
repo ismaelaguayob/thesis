@@ -17,8 +17,8 @@ El *outline* de mi tesis se encuentra en [este link](https://ismaelaguayob.githu
 
 ## Piloto de anotación LLM
 
-`annotations.qmd` sortea el 10% de las intervenciones elegibles por ley y sesión,
-reutiliza el contexto y los controles de la app manual y anota todos sus bloques
+`annotations.qmd` sortea el 10% de los bloques elegibles por ley y sesión,
+reutiliza el contexto y los controles de la app manual y anota cada bloque objetivo
 con `gpt-5.6-luna`. Las ejecuciones nuevas usan esfuerzo `max`; el piloto histórico
 conservado usó `max`. El prompt activo se edita en
 [`prompts/annotations_pilot_v1_confidence.md`](prompts/annotations_pilot_v1_confidence.md).

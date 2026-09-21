@@ -67,7 +67,8 @@ Las estrategias de legitimación quedan deliberadamente fuera de este instrument
 
 ## Muestreo
 
-La estrategia recomendada es `stratified`. La interfaz permite escoger como unidad primaria:
+La estrategia recomendada es `stratified`. La unidad primaria predeterminada es
+**bloque de párrafos**. La interfaz también permite escoger:
 
 - **intervención completa** (`utterance`), que expande cada selección a todos sus bloques; o
 - **bloque de párrafos** (`block`), útil para calibraciones acotadas.

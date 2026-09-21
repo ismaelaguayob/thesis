@@ -159,15 +159,16 @@ al corpus elegible de la app y conserva su umbral mínimo de
 ## Muestra del corpus vigente
 
 Usamos exactamente el diseño estratificado de la validación manual: ley × cámara ×
-alineación × género, con intervención como unidad primaria. La tabla muestra los
-primeros estratos; el CSV asociado conserva cuotas y probabilidades de inclusión
+alineación × género, con bloque de párrafos como unidad primaria. La tabla muestra
+los primeros estratos; el CSV asociado conserva cuotas y probabilidades de inclusión
 para todos los estratos que registra la app.
 
 ```{python}
 #| label: cuotas
-target_primary_size = math.ceil(FRACTION * len(utterances))
-selected_utterances, sampling_design = sample_with_design(
-    service.utterances,
+eligible_blocks = service.block_sampling_units()
+target_primary_size = math.ceil(FRACTION * len(eligible_blocks))
+selected_blocks, sampling_design = sample_with_design(
+    eligible_blocks,
     target_primary_size,
     SEED,
     "stratified",
@@ -185,43 +186,37 @@ show_table(strata_display[
 }).head(20))
 ```
 
-La asignación selecciona `{python} len(selected_utterances)` intervenciones,
-equivalentes al `{python} f'{100 * len(selected_utterances) / len(utterances):.2f}'`%
-del universo. Las fracciones varían ligeramente por redondeo y algunos estratos muy
-pequeños pueden tener cuota cero, igual que en la validación manual.
+La asignación selecciona `{python} len(selected_blocks)` bloques, equivalentes al
+`{python} f'{100 * len(selected_blocks) / len(eligible_blocks):.2f}'`% del universo.
+Las fracciones varían ligeramente por redondeo y algunos estratos muy pequeños
+pueden tener cuota cero, igual que en la validación manual.
 
-Expandimos cada intervención seleccionada a sus bloques sin modificar texto,
-contexto, estrato, probabilidad ni peso. La app produce la misma selección cuando
-se elige la unidad primaria `utterance`, la misma semilla y los estratos por defecto.
+Cada bloque sorteado se envía como un objetivo. La app produce la misma selección
+cuando se elige la unidad primaria `block`, la misma semilla y los estratos por
+defecto. Los bloques adyacentes se conservan solo como contexto.
 
 ```{python}
 #| label: sorteo
-selected_units = pd.DataFrame(selected_utterances)
-selected_units["n_blocks"] = selected_units["unit_ids"].map(len)
-selected = []
-for primary in selected_utterances:
-    for unit_id in primary["unit_ids"]:
-        selected.append({
-            **service.records_by_id[unit_id],
-            "sampling_stratum_id": primary["sampling_stratum_id"],
-            "inclusion_probability": primary["inclusion_probability"],
-            "selection_weight": primary["selection_weight"],
-        })
-selected.sort(key=lambda r: (r["law_number"], r["document_uri"], r["utterance_order"], r["utterance_chunk_number"]))
-assert len(selected_utterances) == target_primary_size
-assert len(selected) == int(selected_units["n_blocks"].sum())
-selection_summary = selected_units.groupby("law_number", as_index=False).agg(
-    intervenciones=("utterance_id", "size"), bloques=("n_blocks", "sum"),
+selected = sorted(
+    selected_blocks,
+    key=lambda record: (
+        record["law_number"], record["document_uri"], record["utterance_order"],
+        record["utterance_chunk_number"],
+    ),
+)
+selected_blocks_frame = pd.DataFrame(selected)
+assert len(selected) == target_primary_size
+selection_summary = selected_blocks_frame.groupby("law_number", as_index=False).agg(
+    intervenciones=("utterance_id", "nunique"), bloques=("unit_id", "size"),
     sesiones=("document_uri", "nunique")
 )
 show_table(selection_summary.rename(columns={"law_number": "Ley", "intervenciones": "Intervenciones", "sesiones": "Sesiones", "bloques": "Bloques"}))
 ```
 
-Las `{python} len(selected_units)` intervenciones sorteadas producen
-`{python} len(selected)` solicitudes, una por bloque objetivo. La unidad de
-muestreo y la unidad enviada al modelo son distintas. Los bloques adyacentes
-pueden provenir de intervenciones fuera de la muestra y se usan solo como
-contexto; no cuentan como objetivos adicionales.
+Los `{python} len(selected)` bloques sorteados producen el mismo número de
+solicitudes, una por bloque objetivo. Los bloques adyacentes pueden provenir de
+intervenciones fuera de la muestra y se usan solo como contexto; no cuentan como
+objetivos adicionales.
 
 ## Prompt, libro y trazabilidad
 
@@ -251,11 +246,12 @@ nuevos reciben explícitamente `gpt-5.6-luna`, razonamiento `max` y un límite d
 sampling = {
     "fraction": FRACTION,
     "seed": SEED,
-    "unit": "utterance",
+    "unit": "block",
     "strategy": "stratified",
     "strata": DEFAULT_EVALUATION_STRATA,
     "eligible_interventions": len(utterances),
-    "selected_interventions": len(selected_units),
+    "eligible_blocks": len(eligible_blocks),
+    "selected_interventions": int(selected_blocks_frame["utterance_id"].nunique()),
     "selected_blocks": len(selected),
     "party_alignment": service.party_alignment.snapshot(),
     "strata_table": sampling_design,
@@ -269,7 +265,7 @@ if PREPARE_CANDIDATE_INPUTS:
         max_output_tokens=CANDIDATE_MAX_OUTPUT_TOKENS,
     )
     atomic_write_parquet(
-        selected_units, candidate_input_run_dir / "selected_utterances.parquet"
+        selected_blocks_frame, candidate_input_run_dir / "selected_blocks.parquet"
     )
     strata_artifact = strata.copy()
     strata_artifact["values"] = strata_artifact["values"].map(

@@ -11,17 +11,16 @@ salida del modelo visible. Estas revisiones no constituyen validación humana ci
 - Muestra histórica: 110 intervenciones (10,04%), 418 bloques, semilla `20260908`.
 - El próximo piloto se prepara con el mismo diseño de la validación: cuotas
   proporcionales por `law_number × chamber × alignment × gender`, ajustadas a
-  enteros por restos hasta `ceil(0.10 * N)`, con intervención como unidad primaria.
-- Expansión: todos los bloques de cada intervención sorteada. Los contextos se
-  mantienen desde el corpus completo, incluso si la intervención vecina no fue
-  sorteada. Nunca cruzan de sesión.
+  enteros por restos hasta `ceil(0.10 * N)`, con bloque como unidad primaria.
+- Cada bloque sorteado es un objetivo. Sus contextos se mantienen desde el corpus
+  completo, incluso si los bloques vecinos no fueron sorteados. Nunca cruzan de
+  sesión.
 
 El piloto histórico no usa el mismo diseño que la validación y se conserva solo
-para diagnóstico del prompt. El próximo piloto usa intervención como unidad
-primaria, se expande a todos sus bloques y conserva el estrato, la probabilidad y
-el peso calculados por el mismo selector de la aplicación. Los conteos de códigos
-son descriptivos y no se interpretan como prevalencias poblacionales ni como
-estimaciones de desempeño.
+para diagnóstico del prompt. El próximo piloto usa bloque como unidad primaria y
+conserva el estrato, la probabilidad y el peso calculados por el mismo selector de
+la aplicación. Los conteos de códigos son descriptivos y no se interpretan como
+prevalencias poblacionales ni como estimaciones de desempeño.
 
 ## Configuración y ejecución
 
@@ -117,7 +116,8 @@ como una probabilidad calibrada.
 Cada `output/annotations/pilot_<hash>/` contiene:
 
 - `manifest.json`: configuración, hashes, versiones de paquetes, tamaño y fecha.
-- `sample.parquet`, `selected_utterances.parquet`, `strata.parquet`: muestra y cuotas.
+- `sample.parquet`, `selected_blocks.parquet`, `strata.parquet`: muestra y cuotas
+  de los nuevos pilotos; los artefactos históricos conservan sus nombres originales.
 - `prompt.md`, `codebook.json`, `output_schema.json`: snapshots del instrumento.
 - `pipeline.py`, `validation_contract.py`: snapshots de la implementación.
 - `requests/00000.json`: request exacto sin autorización HTTP ni clave.

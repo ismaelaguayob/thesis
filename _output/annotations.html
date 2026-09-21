@@ -2419,28 +2419,29 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 </section>
 <section id="muestra-del-corpus-vigente" class="level2">
 <h2 class="anchored" data-anchor-id="muestra-del-corpus-vigente">Muestra del corpus vigente</h2>
-<p>Usamos exactamente el diseño estratificado de la validación manual: ley × cámara × alineación × género, con intervención como unidad primaria. La tabla muestra los primeros estratos; el CSV asociado conserva cuotas y probabilidades de inclusión para todos los estratos que registra la app.</p>
+<p>Usamos exactamente el diseño estratificado de la validación manual: ley × cámara × alineación × género, con bloque de párrafos como unidad primaria. La tabla muestra los primeros estratos; el CSV asociado conserva cuotas y probabilidades de inclusión para todos los estratos que registra la app.</p>
 <div id="cell-cuotas" class="cell" data-execution_count="3">
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>target_primary_size <span class="op">=</span> math.ceil(FRACTION <span class="op">*</span> <span class="bu">len</span>(utterances))</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>selected_utterances, sampling_design <span class="op">=</span> sample_with_design(</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    service.utterances,</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    target_primary_size,</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    SEED,</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;stratified&quot;</span>,</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    DEFAULT_EVALUATION_STRATA,</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>strata <span class="op">=</span> pd.DataFrame(sampling_design)</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>strata_values <span class="op">=</span> pd.json_normalize(strata[<span class="st">&quot;values&quot;</span>])</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>strata_display <span class="op">=</span> pd.concat([strata.drop(columns<span class="op">=</span><span class="st">&quot;values&quot;</span>), strata_values], axis<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>show_table(strata_display[</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    [<span class="op">*</span>DEFAULT_EVALUATION_STRATA, <span class="st">&quot;population_units&quot;</span>, <span class="st">&quot;sampled_units&quot;</span>, <span class="st">&quot;inclusion_probability&quot;</span>]</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>].rename(columns<span class="op">=</span>{</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;law_number&quot;</span>: <span class="st">&quot;Ley&quot;</span>, <span class="st">&quot;chamber&quot;</span>: <span class="st">&quot;Cámara&quot;</span>, <span class="st">&quot;alignment&quot;</span>: <span class="st">&quot;Alineación&quot;</span>,</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;gender&quot;</span>: <span class="st">&quot;Género&quot;</span>, <span class="st">&quot;population_units&quot;</span>: <span class="st">&quot;Universo&quot;</span>,</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;sampled_units&quot;</span>: <span class="st">&quot;Muestra&quot;</span>, <span class="st">&quot;inclusion_probability&quot;</span>: <span class="st">&quot;Probabilidad&quot;</span>,</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>}).head(<span class="dv">20</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>eligible_blocks <span class="op">=</span> service.block_sampling_units()</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>target_primary_size <span class="op">=</span> math.ceil(FRACTION <span class="op">*</span> <span class="bu">len</span>(eligible_blocks))</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>selected_blocks, sampling_design <span class="op">=</span> sample_with_design(</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    eligible_blocks,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    target_primary_size,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    SEED,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;stratified&quot;</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    DEFAULT_EVALUATION_STRATA,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>strata <span class="op">=</span> pd.DataFrame(sampling_design)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>strata_values <span class="op">=</span> pd.json_normalize(strata[<span class="st">&quot;values&quot;</span>])</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>strata_display <span class="op">=</span> pd.concat([strata.drop(columns<span class="op">=</span><span class="st">&quot;values&quot;</span>), strata_values], axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>show_table(strata_display[</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    [<span class="op">*</span>DEFAULT_EVALUATION_STRATA, <span class="st">&quot;population_units&quot;</span>, <span class="st">&quot;sampled_units&quot;</span>, <span class="st">&quot;inclusion_probability&quot;</span>]</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>].rename(columns<span class="op">=</span>{</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;law_number&quot;</span>: <span class="st">&quot;Ley&quot;</span>, <span class="st">&quot;chamber&quot;</span>: <span class="st">&quot;Cámara&quot;</span>, <span class="st">&quot;alignment&quot;</span>: <span class="st">&quot;Alineación&quot;</span>,</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;gender&quot;</span>: <span class="st">&quot;Género&quot;</span>, <span class="st">&quot;population_units&quot;</span>: <span class="st">&quot;Universo&quot;</span>,</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;sampled_units&quot;</span>: <span class="st">&quot;Muestra&quot;</span>, <span class="st">&quot;inclusion_probability&quot;</span>: <span class="st">&quot;Probabilidad&quot;</span>,</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>}).head(<span class="dv">20</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div id="cuotas" class="cell-output cell-output-display">
 <table class="dataframe audit-table caption-top table table-sm table-striped small">
@@ -2461,142 +2462,142 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <td>Cámara</td>
 <td>No aplica</td>
 <td>mujer</td>
-<td>6</td>
+<td>10</td>
 <td>1</td>
-<td>0.1667</td>
+<td>0.1000</td>
 </tr>
 <tr class="even">
 <td>21419</td>
 <td>Cámara</td>
 <td>izquierda</td>
 <td>mujer</td>
-<td>5</td>
-<td>0</td>
-<td>0.0000</td>
-</tr>
-<tr class="odd">
-<td>21419</td>
-<td>Cámara</td>
-<td>izquierda</td>
-<td>hombre</td>
-<td>21</td>
-<td>2</td>
-<td>0.0952</td>
-</tr>
-<tr class="even">
-<td>21735</td>
-<td>Cámara</td>
-<td>centro</td>
-<td>hombre</td>
-<td>14</td>
-<td>1</td>
-<td>0.0714</td>
-</tr>
-<tr class="odd">
-<td>21419</td>
-<td>Cámara</td>
-<td>No aplica</td>
-<td>mujer</td>
-<td>1</td>
-<td>0</td>
-<td>0.0000</td>
-</tr>
-<tr class="even">
-<td>21419</td>
-<td>Senado</td>
-<td>nonpartisan</td>
-<td>hombre</td>
-<td>6</td>
-<td>1</td>
-<td>0.1667</td>
-</tr>
-<tr class="odd">
-<td>21538</td>
-<td>Cámara</td>
-<td>No aplica</td>
-<td>hombre</td>
-<td>29</td>
-<td>3</td>
-<td>0.1034</td>
-</tr>
-<tr class="even">
-<td>21419</td>
-<td>Senado</td>
-<td>derecha</td>
-<td>mujer</td>
-<td>1</td>
-<td>0</td>
-<td>0.0000</td>
-</tr>
-<tr class="odd">
-<td>21419</td>
-<td>Senado</td>
-<td>centro</td>
-<td>mujer</td>
-<td>8</td>
-<td>1</td>
-<td>0.1250</td>
-</tr>
-<tr class="even">
-<td>21735</td>
-<td>Cámara</td>
-<td>No aplica</td>
-<td>Sin dato</td>
-<td>6</td>
-<td>1</td>
-<td>0.1667</td>
-</tr>
-<tr class="odd">
-<td>21419</td>
-<td>Cámara</td>
-<td>nonpartisan</td>
-<td>hombre</td>
-<td>7</td>
-<td>1</td>
-<td>0.1429</td>
-</tr>
-<tr class="even">
-<td>21735</td>
-<td>Cámara</td>
-<td>izquierda</td>
-<td>mujer</td>
-<td>49</td>
-<td>5</td>
-<td>0.1020</td>
-</tr>
-<tr class="odd">
-<td>21538</td>
-<td>Cámara</td>
-<td>derecha</td>
-<td>mujer</td>
-<td>4</td>
-<td>0</td>
-<td>0.0000</td>
-</tr>
-<tr class="even">
-<td>21419</td>
-<td>Senado</td>
-<td>derecha</td>
-<td>hombre</td>
-<td>22</td>
-<td>2</td>
-<td>0.0909</td>
-</tr>
-<tr class="odd">
-<td>21735</td>
-<td>Senado</td>
-<td>No aplica</td>
-<td>Sin dato</td>
 <td>28</td>
 <td>3</td>
 <td>0.1071</td>
 </tr>
+<tr class="odd">
+<td>21419</td>
+<td>Cámara</td>
+<td>izquierda</td>
+<td>hombre</td>
+<td>87</td>
+<td>9</td>
+<td>0.1034</td>
+</tr>
+<tr class="even">
+<td>21735</td>
+<td>Cámara</td>
+<td>centro</td>
+<td>hombre</td>
+<td>53</td>
+<td>5</td>
+<td>0.0943</td>
+</tr>
+<tr class="odd">
+<td>21419</td>
+<td>Cámara</td>
+<td>No aplica</td>
+<td>mujer</td>
+<td>11</td>
+<td>1</td>
+<td>0.0909</td>
+</tr>
+<tr class="even">
+<td>21419</td>
+<td>Senado</td>
+<td>nonpartisan</td>
+<td>hombre</td>
+<td>24</td>
+<td>2</td>
+<td>0.0833</td>
+</tr>
+<tr class="odd">
+<td>21538</td>
+<td>Cámara</td>
+<td>No aplica</td>
+<td>hombre</td>
+<td>37</td>
+<td>4</td>
+<td>0.1081</td>
+</tr>
+<tr class="even">
+<td>21419</td>
+<td>Senado</td>
+<td>derecha</td>
+<td>mujer</td>
+<td>7</td>
+<td>1</td>
+<td>0.1429</td>
+</tr>
+<tr class="odd">
+<td>21419</td>
+<td>Senado</td>
+<td>centro</td>
+<td>mujer</td>
+<td>59</td>
+<td>6</td>
+<td>0.1017</td>
+</tr>
+<tr class="even">
+<td>21735</td>
+<td>Cámara</td>
+<td>No aplica</td>
+<td>Sin dato</td>
+<td>81</td>
+<td>8</td>
+<td>0.0988</td>
+</tr>
+<tr class="odd">
+<td>21419</td>
+<td>Cámara</td>
+<td>nonpartisan</td>
+<td>hombre</td>
+<td>32</td>
+<td>3</td>
+<td>0.0938</td>
+</tr>
+<tr class="even">
+<td>21735</td>
+<td>Cámara</td>
+<td>izquierda</td>
+<td>mujer</td>
+<td>187</td>
+<td>19</td>
+<td>0.1016</td>
+</tr>
+<tr class="odd">
+<td>21538</td>
+<td>Cámara</td>
+<td>derecha</td>
+<td>mujer</td>
+<td>17</td>
+<td>2</td>
+<td>0.1176</td>
+</tr>
+<tr class="even">
+<td>21419</td>
+<td>Senado</td>
+<td>derecha</td>
+<td>hombre</td>
+<td>90</td>
+<td>9</td>
+<td>0.1000</td>
+</tr>
+<tr class="odd">
+<td>21735</td>
+<td>Senado</td>
+<td>No aplica</td>
+<td>Sin dato</td>
+<td>53</td>
+<td>5</td>
+<td>0.0943</td>
+</tr>
 <tr class="even">
 <td>21419</td>
 <td>Senado</td>
 <td>nonpartisan</td>
 <td>mujer</td>
-<td>1</td>
+<td>5</td>
 <td>0</td>
 <td>0.0000</td>
 </tr>
@@ -2605,65 +2606,60 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <td>Cámara</td>
 <td>centro</td>
 <td>hombre</td>
-<td>3</td>
-<td>0</td>
-<td>0.0000</td>
+<td>13</td>
+<td>1</td>
+<td>0.0769</td>
 </tr>
 <tr class="even">
 <td>21538</td>
 <td>Senado</td>
 <td>No aplica</td>
 <td>hombre</td>
-<td>6</td>
+<td>8</td>
 <td>1</td>
-<td>0.1667</td>
+<td>0.1250</td>
 </tr>
 <tr class="odd">
 <td>21538</td>
 <td>Cámara</td>
 <td>centro</td>
 <td>mujer</td>
-<td>2</td>
-<td>0</td>
-<td>0.0000</td>
+<td>10</td>
+<td>1</td>
+<td>0.1000</td>
 </tr>
 <tr class="even">
 <td>21735</td>
 <td>Senado</td>
 <td>nonpartisan</td>
 <td>hombre</td>
+<td>9</td>
 <td>1</td>
-<td>0</td>
-<td>0.0000</td>
+<td>0.1111</td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
-<p>La asignación selecciona 110 intervenciones, equivalentes al 10.04% del universo. Las fracciones varían ligeramente por redondeo y algunos estratos muy pequeños pueden tener cuota cero, igual que en la validación manual.</p>
-<p>Expandimos cada intervención seleccionada a sus bloques sin modificar texto, contexto, estrato, probabilidad ni peso. La app produce la misma selección cuando se elige la unidad primaria <code>utterance</code>, la misma semilla y los estratos por defecto.</p>
+<p>La asignación selecciona 361 bloques, equivalentes al 10.00% del universo. Las fracciones varían ligeramente por redondeo y algunos estratos muy pequeños pueden tener cuota cero, igual que en la validación manual.</p>
+<p>Cada bloque sorteado se envía como un objetivo. La app produce la misma selección cuando se elige la unidad primaria <code>block</code>, la misma semilla y los estratos por defecto. Los bloques adyacentes se conservan solo como contexto.</p>
 <div id="cell-sorteo" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>selected_units <span class="op">=</span> pd.DataFrame(selected_utterances)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>selected_units[<span class="st">&quot;n_blocks&quot;</span>] <span class="op">=</span> selected_units[<span class="st">&quot;unit_ids&quot;</span>].<span class="bu">map</span>(<span class="bu">len</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>selected <span class="op">=</span> []</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> primary <span class="kw">in</span> selected_utterances:</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> unit_id <span class="kw">in</span> primary[<span class="st">&quot;unit_ids&quot;</span>]:</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>        selected.append({</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>            <span class="op">**</span>service.records_by_id[unit_id],</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;sampling_stratum_id&quot;</span>: primary[<span class="st">&quot;sampling_stratum_id&quot;</span>],</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;inclusion_probability&quot;</span>: primary[<span class="st">&quot;inclusion_probability&quot;</span>],</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;selection_weight&quot;</span>: primary[<span class="st">&quot;selection_weight&quot;</span>],</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>        })</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>selected.sort(key<span class="op">=</span><span class="kw">lambda</span> r: (r[<span class="st">&quot;law_number&quot;</span>], r[<span class="st">&quot;document_uri&quot;</span>], r[<span class="st">&quot;utterance_order&quot;</span>], r[<span class="st">&quot;utterance_chunk_number&quot;</span>]))</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> <span class="bu">len</span>(selected_utterances) <span class="op">==</span> target_primary_size</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> <span class="bu">len</span>(selected) <span class="op">==</span> <span class="bu">int</span>(selected_units[<span class="st">&quot;n_blocks&quot;</span>].<span class="bu">sum</span>())</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>selection_summary <span class="op">=</span> selected_units.groupby(<span class="st">&quot;law_number&quot;</span>, as_index<span class="op">=</span><span class="va">False</span>).agg(</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    intervenciones<span class="op">=</span>(<span class="st">&quot;utterance_id&quot;</span>, <span class="st">&quot;size&quot;</span>), bloques<span class="op">=</span>(<span class="st">&quot;n_blocks&quot;</span>, <span class="st">&quot;sum&quot;</span>),</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    sesiones<span class="op">=</span>(<span class="st">&quot;document_uri&quot;</span>, <span class="st">&quot;nunique&quot;</span>)</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>show_table(selection_summary.rename(columns<span class="op">=</span>{<span class="st">&quot;law_number&quot;</span>: <span class="st">&quot;Ley&quot;</span>, <span class="st">&quot;intervenciones&quot;</span>: <span class="st">&quot;Intervenciones&quot;</span>, <span class="st">&quot;sesiones&quot;</span>: <span class="st">&quot;Sesiones&quot;</span>, <span class="st">&quot;bloques&quot;</span>: <span class="st">&quot;Bloques&quot;</span>}))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>selected <span class="op">=</span> <span class="bu">sorted</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    selected_blocks,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    key<span class="op">=</span><span class="kw">lambda</span> record: (</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>        record[<span class="st">&quot;law_number&quot;</span>], record[<span class="st">&quot;document_uri&quot;</span>], record[<span class="st">&quot;utterance_order&quot;</span>],</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        record[<span class="st">&quot;utterance_chunk_number&quot;</span>],</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>selected_blocks_frame <span class="op">=</span> pd.DataFrame(selected)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> <span class="bu">len</span>(selected) <span class="op">==</span> target_primary_size</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>selection_summary <span class="op">=</span> selected_blocks_frame.groupby(<span class="st">&quot;law_number&quot;</span>, as_index<span class="op">=</span><span class="va">False</span>).agg(</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    intervenciones<span class="op">=</span>(<span class="st">&quot;utterance_id&quot;</span>, <span class="st">&quot;nunique&quot;</span>), bloques<span class="op">=</span>(<span class="st">&quot;unit_id&quot;</span>, <span class="st">&quot;size&quot;</span>),</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    sesiones<span class="op">=</span>(<span class="st">&quot;document_uri&quot;</span>, <span class="st">&quot;nunique&quot;</span>)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>show_table(selection_summary.rename(columns<span class="op">=</span>{<span class="st">&quot;law_number&quot;</span>: <span class="st">&quot;Ley&quot;</span>, <span class="st">&quot;intervenciones&quot;</span>: <span class="st">&quot;Intervenciones&quot;</span>, <span class="st">&quot;sesiones&quot;</span>: <span class="st">&quot;Sesiones&quot;</span>, <span class="st">&quot;bloques&quot;</span>: <span class="st">&quot;Bloques&quot;</span>}))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div id="sorteo" class="cell-output cell-output-display">
 <table class="dataframe audit-table caption-top table table-sm table-striped small">
@@ -2678,27 +2674,27 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <tbody>
 <tr class="odd">
 <td>21419</td>
-<td>26</td>
-<td>90</td>
+<td>64</td>
+<td>84</td>
 <td>3</td>
 </tr>
 <tr class="even">
 <td>21538</td>
-<td>10</td>
-<td>31</td>
+<td>29</td>
+<td>34</td>
 <td>2</td>
 </tr>
 <tr class="odd">
 <td>21735</td>
-<td>74</td>
-<td>308</td>
+<td>195</td>
+<td>243</td>
 <td>4</td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
-<p>Las 110 intervenciones sorteadas producen 429 solicitudes, una por bloque objetivo. La unidad de muestreo y la unidad enviada al modelo son distintas. Los bloques adyacentes pueden provenir de intervenciones fuera de la muestra y se usan solo como contexto; no cuentan como objetivos adicionales.</p>
+<p>Los 361 bloques sorteados producen el mismo número de solicitudes, una por bloque objetivo. Los bloques adyacentes pueden provenir de intervenciones fuera de la muestra y se usan solo como contexto; no cuentan como objetivos adicionales.</p>
 </section>
 <section id="prompt-libro-y-trazabilidad" class="level2">
 <h2 class="anchored" data-anchor-id="prompt-libro-y-trazabilidad">Prompt, libro y trazabilidad</h2>
@@ -2711,35 +2707,36 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>sampling <span class="op">=</span> {</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;fraction&quot;</span>: FRACTION,</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;seed&quot;</span>: SEED,</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;unit&quot;</span>: <span class="st">&quot;utterance&quot;</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;unit&quot;</span>: <span class="st">&quot;block&quot;</span>,</span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;strategy&quot;</span>: <span class="st">&quot;stratified&quot;</span>,</span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;strata&quot;</span>: DEFAULT_EVALUATION_STRATA,</span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;eligible_interventions&quot;</span>: <span class="bu">len</span>(utterances),</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;selected_interventions&quot;</span>: <span class="bu">len</span>(selected_units),</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;selected_blocks&quot;</span>: <span class="bu">len</span>(selected),</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;party_alignment&quot;</span>: service.party_alignment.snapshot(),</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;strata_table&quot;</span>: sampling_design,</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>candidate_input_run_dir <span class="op">=</span> <span class="va">None</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> PREPARE_CANDIDATE_INPUTS:</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    candidate_input_run_dir <span class="op">=</span> prepare_run(</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        service, selected, sampling, PROMPT_PATH, INPUT_RUN_ROOT,</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>CANDIDATE_MODEL,</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>        effort<span class="op">=</span>CANDIDATE_REASONING_EFFORT,</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        max_output_tokens<span class="op">=</span>CANDIDATE_MAX_OUTPUT_TOKENS,</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    atomic_write_parquet(</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>        selected_units, candidate_input_run_dir <span class="op">/</span> <span class="st">&quot;selected_utterances.parquet&quot;</span></span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    strata_artifact <span class="op">=</span> strata.copy()</span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    strata_artifact[<span class="st">&quot;values&quot;</span>] <span class="op">=</span> strata_artifact[<span class="st">&quot;values&quot;</span>].<span class="bu">map</span>(</span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>        <span class="kw">lambda</span> value: json.dumps(value, ensure_ascii<span class="op">=</span><span class="va">False</span>, sort_keys<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    atomic_write_parquet(strata_artifact, candidate_input_run_dir <span class="op">/</span> <span class="st">&quot;strata.parquet&quot;</span>)</span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    atomic_write_csv(strata_display, TABLE_ROOT <span class="op">/</span> <span class="ss">f&quot;</span><span class="sc">{</span>candidate_input_run_dir<span class="sc">.</span>name<span class="sc">}</span><span class="ss">_strata.csv&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;eligible_blocks&quot;</span>: <span class="bu">len</span>(eligible_blocks),</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;selected_interventions&quot;</span>: <span class="bu">int</span>(selected_blocks_frame[<span class="st">&quot;utterance_id&quot;</span>].nunique()),</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;selected_blocks&quot;</span>: <span class="bu">len</span>(selected),</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;party_alignment&quot;</span>: service.party_alignment.snapshot(),</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;strata_table&quot;</span>: sampling_design,</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>candidate_input_run_dir <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> PREPARE_CANDIDATE_INPUTS:</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    candidate_input_run_dir <span class="op">=</span> prepare_run(</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        service, selected, sampling, PROMPT_PATH, INPUT_RUN_ROOT,</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>CANDIDATE_MODEL,</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        effort<span class="op">=</span>CANDIDATE_REASONING_EFFORT,</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>        max_output_tokens<span class="op">=</span>CANDIDATE_MAX_OUTPUT_TOKENS,</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    atomic_write_parquet(</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>        selected_blocks_frame, candidate_input_run_dir <span class="op">/</span> <span class="st">&quot;selected_blocks.parquet&quot;</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    strata_artifact <span class="op">=</span> strata.copy()</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    strata_artifact[<span class="st">&quot;values&quot;</span>] <span class="op">=</span> strata_artifact[<span class="st">&quot;values&quot;</span>].<span class="bu">map</span>(</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>        <span class="kw">lambda</span> value: json.dumps(value, ensure_ascii<span class="op">=</span><span class="va">False</span>, sort_keys<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    atomic_write_parquet(strata_artifact, candidate_input_run_dir <span class="op">/</span> <span class="st">&quot;strata.parquet&quot;</span>)</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>    atomic_write_csv(strata_display, TABLE_ROOT <span class="op">/</span> <span class="ss">f&quot;</span><span class="sc">{</span>candidate_input_run_dir<span class="sc">.</span>name<span class="sc">}</span><span class="ss">_strata.csv&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="534cab29" class="cell" data-execution_count="6">
+<div id="42ba3aee" class="cell" data-execution_count="6">
 <details class="code-fold">
 <summary>Código</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> candidate_input_run_dir <span class="kw">is</span> <span class="va">None</span>:</span>
@@ -2748,7 +2745,7 @@ var requirejs,require,define;(function(global,setTimeout){var req,s,head,baseEle
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;Los inputs nuevos quedaron en </span><span class="sc">{</span>candidate_input_run_dir<span class="sc">}</span><span class="ss">.&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>No se prepararon inputs nuevos; use ANNOTATIONS_PREPARE_INPUTS=1 para hacerlo.</code></pre>
+<pre><code>Los inputs nuevos quedaron en output/annotations_inputs/pilot_7a8e9f1a477d62058f82.</code></pre>
 </div>
 </div>
 <p>Las secciones siguientes auditan las respuestas del piloto pilot_f3a69c2f81c587271ef5 con su muestra, libro y denominadores originales. Sus resultados no se asignan a inputs nuevos. La estratificación disponible en la aplicación deriva <code>political_alignment</code> desde <code>party_at_date</code>, enlazado por documento y persona durante <code>proc.qmd</code>; las afiliaciones todavía no resueltas se mantienen como datos faltantes.</p>

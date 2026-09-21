@@ -421,6 +421,7 @@ class ManualValidationTestCase(unittest.TestCase):
                             for item in session["items"]))
 
     def test_default_strata_add_alignment_for_both_sampling_units(self) -> None:
+        self.assertEqual(self.service.config()["defaults"]["sampling_unit"], "block")
         self.assertEqual(
             self.service.config()["defaults"]["strata"],
             ["law_number", "chamber", "alignment", "gender"],
