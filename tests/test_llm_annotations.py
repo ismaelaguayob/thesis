@@ -123,6 +123,7 @@ class LLMPilotTests(unittest.TestCase):
         self.assertEqual('review', validate_output(raw, self.record, self.book, self.schema)['annotations'][0]['concept_status'])
 
     def test_cross_field_validation_matches_prompt_contract(self):
+        self.assertNotIn('uniqueItems', canonical(self.schema))
         cases = []
         raw = copy.deepcopy(self.raw); raw['quality_flags'] = ['truncated']; cases.append(raw)
         raw = copy.deepcopy(self.raw); raw['quality_flags'] = ['other']; raw['needs_human_review'] = True; cases.append(raw)
@@ -135,7 +136,7 @@ class LLMPilotTests(unittest.TestCase):
             with self.subTest(raw=raw), self.assertRaises(ValidationError):
                 validate_output(raw, self.record, self.book, self.schema)
         raw = copy.deepcopy(self.raw); raw['quality_flags'] = ['vote', 'vote']
-        with self.assertRaises(jsonschema.ValidationError):
+        with self.assertRaisesRegex(ValidationError, 'no se pueden repetir'):
             validate_output(raw, self.record, self.book, self.schema)
 
     def test_input_excludes_identity_fields_and_preserves_context(self):
