@@ -46,9 +46,9 @@ Memoria desarrollada en el marco del proyecto de Fondecyt Nº 1250518 y el Centr
 
 [4.3.1 Estrategia de codificación y validación	19](#4.3.1-estrategia-de-codificación-y-validación)
 
-[4.3.2 Análisis descriptivo y modelamiento de patrones discursivos	20](#4.3.2-análisis-descriptivo-y-modelamiento-de-patrones-discursivos)
+[4.3.2 Análisis descriptivo y modelamiento de patrones discursivos	21](#4.3.2-análisis-descriptivo-y-modelamiento-de-patrones-discursivos)
 
-[**Referencias	25**](#referencias)
+[**Referencias	24**](#referencias)
 
 ## **Abstract** {#abstract}
 
@@ -142,6 +142,8 @@ La comparación entre proyectos permite examinar cómo cambia la relevancia de e
 
 * *H4. Difusión:* Entre las discusiones iniciales y finales de la Cámara sobre la Ley N.º 21.735 aumentará el apoyo a los conceptos del repertorio de capitalización individual entre actores inicialmente reformistas.
 
+## 
+
 ## **4\. Metodología** {#4.-metodología}
 
 ### **4.1 Datos** {#4.1-datos}
@@ -163,13 +165,13 @@ La extracción y normalización se realizaron con una biblioteca de Python desar
 
 Las intervenciones se segmentaron mediante *chunking* en fragmentos de entre 5 y 194 palabras, acompañados por su contexto adyacente.[^3]
 
-Los eventos de transcripción, como aplausos y manifestaciones, se conservan como registro contextual y quedan fuera del conjunto de fragmentos enviado a codificación. Las intervenciones procedimentales y las nóminas de votación que permanecen dentro de las secciones de discusión se identifican durante la codificación y quedan fuera de los denominadores y porcentajes de anotación.
+Los eventos de transcripción, como aplausos y manifestaciones, se conservan como registro contextual y quedan fuera del conjunto de fragmentos enviado a codificación. Las intervenciones procedimentales y las nóminas de votación que permanecen dentro de las secciones de discusión se revisan durante la codificación para determinar si contienen declaraciones pertinentes.
 
 ### **4.2 Variables** {#4.2-variables}
 
-La investigación utiliza la metodología de análisis de redes discursivas (DNA), que combina codificación cualitativa y modelamiento de redes. Siguiendo a Leifeld (2017), la unidad principal de análisis es la declaración. En este estudio se identifican las afirmaciones que expresan justificaciones normativas sobre la organización, distribución, financiamiento o gobierno de la protección previsional. Una intervención puede contener varias declaraciones y un mismo pasaje puede recibir más de un código; cada asignación se evalúa con las reglas ordinarias del concepto y la postura. Las variables de cada declaración se operacionalizan de la siguiente manera:
+La investigación utiliza la metodología de análisis de redes discursivas (DNA), que combina codificación cualitativa y modelamiento de redes. Siguiendo a Leifeld (2017), la unidad principal de análisis es la declaración. En este estudio se identifican las afirmaciones que expresan justificaciones normativas sobre la organización, distribución, financiamiento o gobierno de la protección previsional. Una intervención puede contener varias declaraciones, y un mismo pasaje puede recibir más de un código cuando expresa razones diferenciables. Las variables de cada declaración se operacionalizan de la siguiente manera:
 
-1. Actores: las personas que emiten la declaración en Sala, incluidos parlamentarios, integrantes del Ejecutivo y autoridades de las cámaras. Se registran su género, su afiliación partidaria, su alineación política y su edad al momento de la discusión. La alineación adopta los valores izquierda, centro, derecha, `nonpartisan` y `unclassified`, a partir de listas reproducibles y explícitas de partidos. La configuración se carga desde la variable `PARTY_ALIGNMENT` del archivo `.env` y se comparte entre las hipótesis, los procedimientos analíticos y el muestreo manual; un partido no enumerado no se imputa al centro.
+1. Actores: las personas que emiten la declaración en Sala, incluidos parlamentarios, integrantes del Ejecutivo y autoridades de las cámaras. Se registran su género, su afiliación partidaria y su edad al momento de la discusión.  
 2. Conceptos: las justificaciones normativas que conformarán los nodos conceptuales de la red. El libro de códigos, disponible en el material complementario, se construyó a partir de los criterios CARIN y de las categorías justificativas del caso chileno, y se revisó mediante rondas de calibración manual y en muestras piloto con el LLM.  
 3. Acuerdo: variable dicotómica que indica la orientación de cada declaración. Es positivo (1) si el actor respalda el concepto y negativo (0) si lo rechaza o le atribuye una connotación negativa.  
 4. Tiempo: cada declaración se asociará con la ley, la fecha y la sesión en que fue emitida. Dentro de cada sesión, las intervenciones mantienen el orden en que fueron emitidas.
@@ -180,29 +182,31 @@ La investigación utiliza la metodología de análisis de redes discursivas (DNA
 
 *Resumen de la estrategia de análisis* 
 
-#### *4.3.1 Estrategia de codificación y validación* {#4.3.1-estrategia-de-codificación-y-validación}
+#### *4.3.1 Estrategia de codificación y validación*
 
-La codificación de las declaraciones utilizará un LLM (gpt-5.6-luna) para aplicar el libro de códigos a cada fragmento. El modelo identificará el concepto y la postura, citará el pasaje que sustenta la asignación y justificará su decisión. La revisión manual resolverá los casos de confianza media o baja, evidencia insuficiente o dependencia del contexto, manteniendo la interpretación sustantiva a cargo del investigador (Ashwin et al., 2025; Dunivin, 2025).
+Debido al volumen del corpus, un LLM (gpt-5.6-luna) asistirá en la aplicación del libro de códigos, manteniendo la interpretación sustantiva a cargo del investigador. En cada fragmento se identificarán primero las declaraciones que expresan posiciones sobre los conceptos normativos del libro. El modelo deberá aportar una cita literal y una justificación breve de la asignación del concepto y de su orientación, indicando el criterio aplicado. También registrará las ambigüedades y, cuando utilice contexto adyacente, los pasajes que sustentan su interpretación. Los casos con evidencia insuficiente, confianza media o baja reportada por el modelo, dependencia excesiva del contexto o falta de correspondencia con el libro de códigos serán marcados como ambiguos y remitidos a revisión manual (Ashwin et al., 2025; Dunivin, 2025).
 
-El procedimiento combina un libro de códigos definido por el investigador con evaluación de conceptos y posturas por separado. Esta decisión recoge las experiencias de Randerson et al. (2025) y Angst et al. (2025), que muestran la utilidad de automatizar tareas del DNA junto con la necesidad de controlar los errores de clasificación. La validación comprende tres etapas: calibración manual del libro, revisión diagnóstica de muestras piloto codificadas por el LLM y codificación humana ciega de una muestra estratificada del corpus definitivo (Bosley, 2025). El diseño predeterminado garantiza cobertura por ley y cámara y estratifica además por alineación política —izquierda, centro, derecha, `nonpartisan`, `unclassified`, `Sin dato` o `No aplica`—, calculada desde la afiliación histórica, y por género; el tipo de actor permanece disponible para el diagnóstico posterior. La comparación principal usa el bloque y distingue coincidencia de concepto y postura, coincidencia solo conceptual y divergencia. Se reportarán precisión, sensibilidad, F1 y kappa de Cohen para conceptos y posturas, junto con sus denominadores. Después de fijar estas métricas, el investigador resolverá las discrepancias en un artefacto separado, sin sobrescribir la referencia ciega (Crupi et al., 2025; Dunivin, 2025).
+Dos antecedentes orientan especialmente este procedimiento. Randerson et al. (2025) emplearon GPT-4 para apoyar la construcción inductiva de un libro de códigos para DNA: recuperaron más de dos tercios de los conceptos identificados por los investigadores, pero el modelo también produjo numerosas categorías irrelevantes que requirieron revisión humana. Angst et al. (2025) automatizaron la extracción de redes actor-creencia mediante tareas separadas de reconocimiento y vinculación de entidades, clasificación supervisada y detección de postura con un LLM y la evaluaron contra datos codificados manualmente. En este estudio, esas lecciones se traducen en el uso de un libro de códigos deductivo, la evaluación independiente de cada tarea y la revisión humana de los casos ambiguos.
 
-La base resultante conservará cada declaración y su vínculo con el actor, la intervención, la sesión y la ley, junto con la evidencia textual y las revisiones manuales. El [material suplementario metodológico](docs/material-suplementario-metodologico.md) detalla el formato de las anotaciones, las reglas de revisión y los diagnósticos de validación.
+El procedimiento de validación se organiza en tres etapas iterativas. En primer lugar, el libro de códigos fue evaluado en múltiples rondas de codificación manual por el investigador, utilizando muestras estratificadas por sesión y por longitud. En segundo lugar, se realizaron iteraciones piloto con el LLM, revisando manualmente las anotaciones realizadas por el modelo, en particular, las marcadas como ambiguas. Para finalizar, luego de la codificación definitiva se coidificará manualmente una muestra estratificada por ley, cámara, género y alineación política (Bosley, 2025), reportando precisión, F1, y kappa de Cohen para la codificación de conceptos y postura. Los casos ambiguos se adjudicarán manualmente, conservando su estado de revisión, y se examinará si se concentran por ley, tipo de actor, género o partido. Si una tarea o categoría no alcanza un desempeño suficiente, se revisará el instrumento y se repetirá la evaluación antes de escalar el procesamiento (Crupi et al., 2025; Dunivin, 2025). El contrato de salida, las reglas de adjudicación y los diagnósticos detallados se conservarán en el material suplementario.
 
-#### *4.3.2 Análisis descriptivo y modelamiento de patrones discursivos* {#4.3.2-análisis-descriptivo-y-modelamiento-de-patrones-discursivos}
+Al finalizar esta etapa, se dispondrá de una base analítica de declaraciones normativas procedentes de las nueve discusiones en Sala. Cada anotación conservará su ley, boletín, documento, actor, intervención y fragmento de origen, junto con el concepto, su orientación, la evidencia textual, la justificación del modelo, el grado de confianza y las revisiones manuales.
 
-El análisis seguirá la secuencia resumida en la Tabla 2. Las fórmulas de las redes, las reglas de conteo y las especificaciones estadísticas se describen en el [material suplementario metodológico](docs/material-suplementario-metodologico.md).
+#### *4.3.2 Análisis descriptivo y modelamiento de patrones discursivos*
 
-**Tabla 2.** *Hipótesis y estrategia de contrastación*
+El análisis seguirá la secuencia resumida en la Tabla 2\. Las fórmulas de las redes, las reglas de conteo y las especificaciones estadísticas se describen en el Material Suplementario 2\.
+
+**Tabla 2\.** *Hipótesis y estrategia de contrastación*
 
 | Hipótesis | Comparación | Medidas y evidencia |
 | :---- | :---- | :---- |
-| H1a. Coaliciones | Actores de la Ley N.º 21.735 | Detección de comunidades y conceptos distintivos de cada coalición. |
-| H1b. Intermediación | Centroizquierda frente a los demás actores; necesidad material frente a los demás conceptos | Centralidad de intermediación y argumentos que conectan ambos polos. |
+| H1a. Coaliciones | Agrupamientos de actores en la Ley N.º 21.735 | Detección de comunidades y conceptos distintivos de cada coalición. |
+| H1b. Intermediación | Actores de centroizquierda frente a los demás parlamentarios; necesidad material frente a los demás conceptos | Centralidad de intermediación y argumentos que conectan ambos polos. |
 | H2. Proyectos | Leyes N.º 21.419, 21.538 y 21.735 | Presencia, centralidad y alcance de los conceptos; modelos logísticos. |
 | H3. Persistencia | Fases de la Ley N.º 21.735 | Continuidad de la centralidad, del apoyo y de las relaciones entre conceptos. |
 | H4. Difusión | Actores inicialmente reformistas de la Cámara en 2024 y 2025 | Cambios en el apoyo a los conceptos y lectura de sus argumentos. |
 
-En primer lugar, se describirán las declaraciones según concepto, postura, actor, ley y fase legislativa. Las menciones repetidas de un concepto dentro de una intervención contarán una sola vez por postura. Se reportará el porcentaje de intervenciones que contienen cada concepto con determinada postura y la proporción de actores que la expresan. Las nuevas intervenciones del mismo actor se conservarán en el conteo.
+En primer lugar, se describirán las declaraciones según concepto, postura, actor, ley y fase legislativa. Las menciones repetidas de un concepto dentro de una intervención contarán una sola vez por postura. Se reportará el porcentaje de intervenciones que contienen cada concepto con determinada postura y la proporción de actores que la expresan.
 
 En segundo lugar, se identificarán las coaliciones para evaluar H1a. Primero, se proyectarán las redes de congruencia y conflicto entre actores: las coincidencias de postura producirán vínculos de congruencia y las posiciones opuestas producirán vínculos de conflicto (Leifeld, 2017). Ambas relaciones se normalizarán mediante similitud coseno para reducir el peso de las diferencias en la frecuencia de participación, como ocurre con los integrantes del Ejecutivo. Luego, se combinarán en una red con vínculos positivos y negativos y se aplicará detección de comunidades mediante *signed spin-glass*, repitiendo las estimaciones para examinar su estabilidad (Schaub, 2021). El procedimiento determinará el número de comunidades sin fijarlo en dos. Se contrastará H1a según los grupos identificados y los conceptos y posturas que los distinguen, interpretando sus repertorios en relación con la justicia de mercado y la justicia política.
 
@@ -210,11 +214,11 @@ En tercer lugar, se examinará la centralidad de los conceptos mediante dos rede
 
 En cuarto lugar, se evaluará H1b mediante la centralidad de intermediación, que identifica actores y conceptos situados en rutas que conectan otros nodos de la red (Freeman, 1977). Se comparará a los parlamentarios de centroizquierda con los demás grupos en la red de congruencia de actores, y a necesidad material con los otros conceptos en la red de congruencia conceptual. La lectura de intervenciones comprobará cómo estas posiciones conectan ambos polos y qué justificaciones comparten.
 
-En quinto lugar, se compararán los tres proyectos para evaluar H2. Se examinará la presencia y centralidad de los seis conceptos del repertorio de capitalización individual definidos en H3, así como el apoyo a necesidad e igualdad o universalismo entre grupos políticos. Se estimarán modelos logísticos por concepto, con ley, grupo político y su interacción como predictores, ajustando por cámara, tipo de actor y longitud de la intervención. Un intercepto aleatorio por actor recogerá la dependencia entre sus participaciones. Los resultados mostrarán probabilidades de presencia para los conceptos del repertorio de capitalización individual y de apoyo para necesidad e igualdad o universalismo. Las comparaciones se referirán a los tres procesos estudiados.
+En quinto lugar, se compararán los tres proyectos para evaluar H2. Se examinará la presencia y centralidad de los seis conceptos del repertorio de capitalización individual, así como el apoyo a necesidad e igualdad o universalismo entre grupos políticos. Se estimarán modelos logísticos por concepto, con ley, grupo político y su interacción como predictores, ajustando por cámara, tipo de actor y longitud de la intervención. Un intercepto aleatorio por actor recogerá la dependencia entre sus participaciones. Los resultados mostrarán probabilidades de presencia para los conceptos del repertorio de capitalización individual y de apoyo para necesidad e igualdad o universalismo. Las comparaciones se referirán a los tres procesos estudiados.
 
-En sexto lugar, se evaluará H3 comparando las tres fases de la reforma: Cámara en enero de 2024, Senado en enero de 2025 y Cámara en enero de 2025. Se examinará si los conceptos mantienen su centralidad, su apoyo entre actores y sus conexiones con otros componentes del repertorio. El rechazo sostenido a un concepto indicará su continuidad como objeto de disputa; el respaldo sostenido aportará evidencia sobre la persistencia de su aceptación. La comparación entre cámaras describirá configuraciones del debate, y el seguimiento de actores comunes de la Cámara mostrará continuidades individuales.
+En sexto lugar, se evaluará H3 comparando las tres fases de la reforma: Cámara en enero de 2024, Senado en enero de 2025 y Cámara en enero de 2025\. Se examinará si el repertorio de la justicia de mercado mantiene su centralidad, su apoyo entre actores y sus conexiones con otros componentes del repertorio. El rechazo sostenido a un concepto indicará su continuidad como objeto de disputa; el respaldo sostenido aportará evidencia de la persistencia de su aceptación. La comparación entre cámaras describirá configuraciones del debate y el seguimiento de actores comunes de la Cámara mostrará continuidades individuales.
 
-En séptimo lugar, se examinará H4 siguiendo a los actores inicialmente reformistas que participan en los debates de la Cámara de 2024 y 2025. Se comparará su apoyo a los conceptos del repertorio de capitalización individual, distinguiendo el respaldo presente desde el inicio, su aparición posterior y los cambios explícitos de rechazo a apoyo. La lectura de sus intervenciones establecerá si las diferencias expresan aceptación de nuevas premisas o cambios en las propuestas defendidas (Leifeld, 2013).
+En séptimo lugar, se examinará H4 siguiendo a los actores inicialmente reformistas que participan en los debates de la Cámara de 2024 y 2025\. Se comparará su apoyo a los conceptos del repertorio de capitalización individual, distinguiendo el respaldo presente desde el inicio, su aparición posterior y los cambios explícitos de rechazo a apoyo. La lectura de sus intervenciones establecerá si las diferencias expresan aceptación de nuevas premisas o cambios en las propuestas defendidas (Leifeld, 2013).
 
 Finalmente, se interpretará la estructuración del debate a partir de las redes y de los argumentos que sostienen sus patrones principales. Se examinarán los conceptos centrales, las conexiones entre coaliciones y los casos que contradigan las tendencias observadas. La evidencia de predominio requerirá mostrar que actores de otros repertorios reconocen esas premisas o ajustan sus propuestas a ellas. Así se distinguirá la centralidad de un concepto en la controversia de su aceptación como fundamento de las propuestas.
 
@@ -275,6 +279,8 @@ Esping-Andersen, G. (1990). *The Three Worlds of Welfare Capitalism*. Princeton 
 Ferre, J. C. (2023). Welfare regimes in twenty-first-century Latin America. *Journal of International and Comparative Social Policy*, *39*(2), 101–127. https://doi.org/10.1017/ics.2023.16 
 
 Fourcade, M., & Healy, K. (2007). Moral Views of Market Society. *Annual Review of Sociology*, *33*(Volume 33, 2007), 285–311. https://doi.org/10.1146/annurev.soc.33.040406.131642 
+
+Freeman, L. C. (1977). A Set of Measures of Centrality Based on Betweenness. *Sociometry*, *40*(1), 35–41. https://doi.org/10.2307/3033543 
 
 Funke, N., Huitema, D., & Petersen, A. (2023). Impending doom or unnecessary panic? The struggle for discursive hegemony in South Africa’s acid mine drainage policy problem. *Critical Policy Studies*, *17*(2), 276–296. https://doi.org/10.1080/19460171.2022.2092523 
 
@@ -355,6 +361,8 @@ Rozas-Bugueño, J., & Maillet, A. (2024). Challenging the policy space: The legi
 Sachweh, P. (2016). Social Justice and the Welfare State: Institutions, Outcomes, and Attitudes in Comparative Perspective. En C. Sabbagh & M. Schmitt (Eds.), *Handbook of Social Justice Theory and Research* (pp. 293–313). Springer. https://doi.org/10.1007/978-1-4939-3216-0\_16 
 
 Sachweh, P., Ullrich, C. G., & Christoph, B. (2006). Die Gesellschaftliche Akzeptanz der Sozialhilfe. *KZfSS Kölner Zeitschrift für Soziologie und Sozialpsychologie*, *58*(3), 489–509. https://doi.org/10.1007/s11575-006-0107-5 
+
+Schaub, S. (2021). Public contestation over agricultural pollution: A discourse network analysis on narrative strategies in the policy process. *Policy Sciences*, *54*(4), 783–821. https://doi.org/10.1007/s11077-021-09439-x 
 
 Schmidt, V. A. (2008). Discursive Institutionalism: The Explanatory Power of Ideas and Discourse. *Annual Review of Political Science*, *11*(Volume 11, 2008), 303–326. https://doi.org/10.1146/annurev.polisci.11.060606.135342 
 
