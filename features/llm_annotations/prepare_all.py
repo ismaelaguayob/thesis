@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 from features.llm_annotations.pipeline import execution_config_from_env, prepare_run
 from features.manual_validation.codebook_workbook import write_codebook_json
@@ -27,6 +30,14 @@ def main() -> None:
     if len(selected) != sum(source["available_blocks"] for source in service.sources):
         raise ValueError("El censo no cubre todos los bloques de las fuentes")
     model, effort, retries, fallback_tokens = execution_config_from_env()
+    load_dotenv(project / '.env', override=False)
+    provider = os.environ.get('ANNOTATIONS_PROVIDER', 'openai').strip().lower()
+    region = None
+    if provider == 'bedrock':
+        model = os.environ.get(
+            'ANNOTATIONS_BEDROCK_MODEL_ID', 'global.openai.gpt-6-luna'
+        ).strip()
+        region = os.environ.get('AWS_BEDROCK_REGION', 'us-west-2').strip()
     sampling = {
         "unit": "block",
         "strategy": "census",
@@ -50,9 +61,11 @@ def main() -> None:
         effort=effort,
         sdk_max_retries=retries,
         incomplete_retry_max_output_tokens=fallback_tokens,
+        provider=provider,
+        provider_region=region,
     )
     print(f"Input preparado: {run_dir}")
-    print(f"Bloques: {len(selected)}; modelo: {model}; razonamiento: {effort}")
+    print(f"Bloques: {len(selected)}; proveedor: {provider}; modelo: {model}; razonamiento: {effort}")
 
 
 if __name__ == "__main__":

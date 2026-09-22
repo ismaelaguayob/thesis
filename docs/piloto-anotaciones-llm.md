@@ -67,6 +67,30 @@ respuestas válidas y deja 796 bloques pendientes. Su autorización específica
 está en `data/proc_data/llm_pilots/api_policy.json`; requiere restablecer el
 límite de gasto e invocar `run_annotations` de forma explícita.
 
+El 2026-09-22 se decidió completar los 796 pendientes de la ley 21.735 mediante
+Amazon Bedrock porque la API de OpenAI seguía devolviendo
+`project_spend_limit_exceeded` y el usuario no podía cambiar ese límite. Dos
+llamadas de prueba a `global.openai.gpt-6-luna` en `bedrock-runtime` (Oregón)
+aceptaron el prompt y esquema JSON congelados y pasaron la validación local:
+una sin declaraciones y otra con cuatro anotaciones. Se incorporaron esas dos
+respuestas al lote Bedrock `pilot_46d9e036e93e09278292`, que contiene solo los
+796 bloques pendientes; por tanto quedan 794 llamadas iniciales. Las 2.813
+respuestas OpenAI no se vuelven a enviar. La política autoriza únicamente este
+lote Bedrock, hasta 3.970 intentos contando cuatro reintentos por bloque.
+Cada resultado nuevo consigna proveedor y modelo; los análisis posteriores deben
+preservar esta procedencia. El tercer trámite de la ley 21.735 está enteramente
+en el subconjunto Bedrock, por lo que la comparación entre trámites también
+podría reflejar diferencias de ejecución entre proveedores. No se hizo una
+comparación pareada de respuestas entre OpenAI y Bedrock antes de la entrega.
+
+Para nuevos lotes, `ANNOTATIONS_PROVIDER=openai` mantiene el proveedor
+predeterminado. `ANNOTATIONS_PROVIDER=bedrock` usa `AWS_BEDROCK_API_KEY`,
+`AWS_BEDROCK_REGION` y `ANNOTATIONS_BEDROCK_MODEL_ID`; el proveedor, región,
+modelo, prompt, libro y esquema quedan congelados en el manifiesto. El ejecutor
+crea el cliente con la URL y clave del proveedor explícitamente y mantiene
+reintentos, validación y bloqueo de proceso. Cambiar estas variables no modifica
+ni reenvía un lote ya congelado.
+
 La API usa Responses, `store=false` y esquema JSON estricto. El límite de salida
 incluye razonamiento y texto visible. El piloto original utilizó `max` y 16.384
 tokens: 109 respuestas se interrumpieron por agotamiento del límite. La

@@ -209,6 +209,50 @@ class LLMPilotTests(unittest.TestCase):
         self.assertEqual('completed', reviewer.list_items(directory.name)['items'][0]['status'])
         self.assertIsNotNone(reviewer.open_item(directory.name, 0)['result'])
 
+    def test_bedrock_uses_frozen_region_model_and_separate_key(self):
+        prompt = self.root / 'prompt.md'
+        prompt.write_text('Codifica con evidencia exacta.')
+        service = SimpleNamespace(
+            codebook=self.book,
+            codebook_sha256=sha256_text(canonical(self.book)),
+            sources=[{'law_number': '21419', 'sha256': 'fixture'}],
+            party_alignment=self.party_alignment,
+        )
+        directory = prepare_run(
+            service, [self.record], {'selected_interventions': 1}, prompt,
+            self.root / 'runs', model='global.openai.gpt-6-luna', effort='max',
+            provider='bedrock', provider_region='us-west-2',
+        )
+        self.assertEqual(
+            'global.openai.gpt-6-luna',
+            json.loads((directory / 'requests/00000.json').read_text())['body']['model'],
+        )
+        self._authorize(directory)
+        with patch('features.llm_annotations.pipeline.OpenAI') as constructor:
+            with self.assertRaisesRegex(ValidationError, 'autorización'):
+                run_annotations(directory, execute=True)
+            constructor.assert_not_called()
+        grant = {
+            'provider': 'bedrock', 'provider_region': 'us-west-2',
+            'model': 'global.openai.gpt-6-luna', 'reasoning_effort': 'max',
+            'run_dir': str(directory.resolve()), 'max_calls': 5,
+        }
+        pipeline.API_POLICY_PATH.write_text(json.dumps({
+            'allow_api_calls': True,
+            'authorized_runs': {directory.name: grant},
+        }))
+        client = self.fake_client()
+        with patch.dict(os.environ, {'AWS_BEDROCK_API_KEY': 'bedrock-test-key'}):
+            with patch('features.llm_annotations.pipeline.OpenAI', return_value=client) as constructor:
+                frame = run_annotations(directory, execute=True)
+        self.assertEqual('completed', frame.iloc[0].status)
+        self.assertEqual('bedrock', frame.iloc[0].provider)
+        self.assertEqual('bedrock-test-key', constructor.call_args.kwargs['api_key'])
+        self.assertEqual(
+            'https://bedrock-runtime.us-west-2.amazonaws.com/openai/v1',
+            constructor.call_args.kwargs['base_url'],
+        )
+
     def test_confidence_validation_and_normalization(self):
         for level in ('medium', 'low'):
             raw = copy.deepcopy(self.raw)

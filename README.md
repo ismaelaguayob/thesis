@@ -16,7 +16,10 @@ reutiliza el contexto y los controles de la app manual y anota cada bloque objet
 Las ejecuciones nuevas usan por defecto `gpt-6-luna`, esfuerzo `max` y hasta
 cinco intentos totales; `ANNOTATIONS_MODEL`, `REASONING_LEVEL` y
 `ANNOTATIONS_MAX_RETRIES` permiten escoger el modelo, el esfuerzo y entre cero y
-cuatro reintentos desde `.env`. Si una respuesta
+cuatro reintentos desde `.env`. `ANNOTATIONS_PROVIDER` selecciona `openai`
+(predeterminado) o `bedrock`; Bedrock usa su propia clave, región e identificador
+de modelo, como indica [la documentación del lote](docs/piloto-anotaciones-llm.md).
+Si una respuesta
 agota el límite de salida, el siguiente intento duplica su holgura hasta
 `ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS` (65.536 por defecto). La configuración
 efectiva queda congelada en cada manifiesto. El prompt activo se edita en

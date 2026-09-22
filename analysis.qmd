@@ -23,8 +23,12 @@ examina la intermediación de la centroizquierda y de `necesidad_material`.
 La última iteración es un censo de 3.609 bloques entre tres leyes. Este análisis
 usa los 2.439 bloques de la Ley 21.735. Las respuestas se guardan como JSON por
 bloque; el informe distingue su estado y analiza solo las respuestas completas
-disponibles al momento del render. Las tablas y figuras se guardan en una carpeta
-con el ID de la iteración para conservar su procedencia.
+disponibles al momento del render. El censo reúne respuestas de OpenAI y de
+Amazon Bedrock, ambas con GPT-6 Luna, el mismo prompt, el mismo libro de códigos
+y el mismo esquema. El proveedor se conserva por bloque. Los 722 bloques del
+tercer trámite se procesaron en Bedrock; cualquier contraste entre trámites
+debe considerar esta coincidencia entre trámite y proveedor. Las tablas y figuras
+se guardan en una carpeta con el ID del conjunto combinado.
 
 ## Configuración y datos
 
@@ -38,8 +42,9 @@ pacman::p_load(
   igraph, ggraph, jsonlite, knitr, scales, tibble
 )
 
-RUN_ID <- "pilot_d4e0291b4df3fc0f5343"
-INPUT_DIR <- file.path("data", "proc_data", "annotations_inputs", RUN_ID)
+INPUT_RUN_ID <- "pilot_d4e0291b4df3fc0f5343"
+RUN_ID <- "combined_gpt6luna_20260922"
+INPUT_DIR <- file.path("data", "proc_data", "annotations_inputs", INPUT_RUN_ID)
 RESULT_DIR <- file.path("output", "annotations", RUN_ID)
 OUTPUT_DIR <- file.path("output", "analysis", "h1", RUN_ID)
 FIGURE_DIR <- file.path(OUTPUT_DIR, "figures")
@@ -84,8 +89,8 @@ codebook_raw <- jsonlite::fromJSON(file.path(INPUT_DIR, "codebook.json"))
 sample_blocks <- arrow::read_parquet(file.path(INPUT_DIR, "sample.parquet")) |>
   mutate(across(c(law_number, unit_id, utterance_id, document_uri), as.character))
 
-if (!identical(manifest$run_id, RUN_ID)) {
-  stop("El RUN_ID no coincide con el manifiesto de entrada.")
+if (!identical(manifest$run_id, INPUT_RUN_ID)) {
+  stop("El INPUT_RUN_ID no coincide con el manifiesto de entrada.")
 }
 if (anyDuplicated(sample_blocks$unit_id)) {
   stop("sample.parquet contiene unit_id duplicados.")
@@ -142,6 +147,8 @@ read_result_file <- function(path) {
       sample_index = scalar_int(result$sample_index),
       unit_id = scalar_chr(result$unit_id),
       status = scalar_chr(result$status, default = "pending"),
+      provider = scalar_chr(result$provider),
+      source_run_id = scalar_chr(result$source_run_id),
       quality_flags = list(as.character(unlist(quality_flags, use.names = FALSE)))
     ),
     annotations = annotation_rows
@@ -159,6 +166,8 @@ result_index <- if (length(result_records) == 0L) {
     sample_index = integer(),
     unit_id = character(),
     status = character(),
+    provider = character(),
+    source_run_id = character(),
     quality_flags = list()
   )
 } else {
@@ -228,16 +237,21 @@ execution_scope <- tibble(
   target_completed_results = sum(
     results$law_number == TARGET_LAW & results$status == "completed"
   ),
-  target_not_completed = target_input_blocks - target_completed_results
+  target_not_completed = target_input_blocks - target_completed_results,
+  target_openai = sum(results$law_number == TARGET_LAW &
+                        results$status == "completed" & results$provider == "openai"),
+  target_bedrock = sum(results$law_number == TARGET_LAW &
+                         results$status == "completed" & results$provider == "bedrock")
 )
 
 execution_scope
 ```
 
-**Interpretación.** La entrada sí cubre todos los bloques elegibles de las tres
-leyes, pero la cobertura de anotación puede seguir incompleta. Solo se analizan
-respuestas «completed»; revisa el estado de la Ley 21.735 antes de interpretar
-ausencias de conceptos.
+**Interpretación.** La entrada cubre todos los bloques elegibles de las tres
+leyes. El cuadro informa cuántas respuestas completas hay para la Ley 21.735
+y cuántas provienen de cada proveedor. Solo se analizan respuestas «completed»;
+la coincidencia entre proveedor y trámite limita la atribución de diferencias
+entre etapas del debate.
 
 Revisamos los estados y retenemos únicamente salidas completas. Las banderas de
 votación y procedimiento se excluyen del análisis sustantivo.
