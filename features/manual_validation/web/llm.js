@@ -2,7 +2,9 @@
 const $ = (id) => document.getElementById(id);
 const reviewState = { runId: null, items: [], filtered: [], index: null, data: null, dirty: false };
 const verdictLabels = { accepted: 'Aceptar', needs_changes: 'Requiere cambios', discard: 'Descartar' };
-const issueLabels = { span: 'Span', concept: 'Código', stance: 'Orientación', omission: 'Omisión', justification: 'Justificación', context: 'Contexto', segmentation: 'Segmentación', other: 'Otro' };
+const issueLabels = { span: 'Span', concept: 'Código', stance: 'Orientación', omission: 'Código omitido', justification: 'Justificación', context: 'Contexto', segmentation: 'Segmentación', out_of_scope: 'Fuera de alcance', codebook_coverage: 'Cobertura del libro', other: 'Otro' };
+const annotationIssueLabels = { span: 'Span incorrecto', concept: 'Código incorrecto', stance: 'Orientación incorrecta', justification: 'Justificación insuficiente', context: 'Contexto mal usado', out_of_scope: 'Fuera de alcance', codebook_coverage: 'Frontera del libro', other: 'Otro' };
+const reviewReasonLabels = { quality_flag: 'Incidencia de calidad', decision_confidence: 'Confianza del bloque', annotation_confidence: 'Confianza de un código', opposite_stances_same_concept: 'Orientaciones opuestas del mismo concepto', model_requested: 'Solicitud del modelo legado' };
 const itemReviewLabels = { annotations_reviewed: 'Códigos revisados' };
 const strataFilters = {
   'chamber-filter': 'chamber',
@@ -121,22 +123,36 @@ function renderAnnotations(annotations, saved) {
     section.append(node('span', `${i + 1}. ${info.code}`, `llm-code ${info.color}`));
     section.append(node('h3', `${info.label} · ${a.stance === 'support' ? 'Apoyo' : 'Rechazo'}`));
     section.append(node('blockquote', a.span.text));
-    const concept = reviewState.data.codebook.concepts.find(c => c.id === a.concept_id);
-    let rule = j.criterion_reference;
-    if (concept) rule += ': ' + (j.criterion_reference.startsWith('include:')
-      ? concept.include[Number(j.criterion_reference.split(':')[1]) - 1] : concept[j.criterion_reference]);
-    section.append(node('p', `Criterio: ${rule}`));
-    section.append(node('p', `Código: ${j.coding}`), node('p', `Orientación: ${j.stance}`));
-    (j.alternatives || []).forEach(alt => section.append(node('p', `Alternativa ${alt.concept_id}: ${alt.reason}`)));
-    (j.context_evidence || []).forEach(context => section.append(node('p', `Contexto ${context.source === 'previous_context' ? 'anterior' : 'siguiente'}: “${context.text}”`)));
-    if (j.uncertainty) section.append(node('p', `Ambigüedad: ${j.uncertainty}`));
+    if (typeof j === 'string') {
+      section.append(node('p', `Justificación: ${j}`));
+    } else {
+      const concept = reviewState.data.codebook.concepts.find(c => c.id === a.concept_id);
+      let rule = j.criterion_reference || '';
+      if (concept && j.criterion_reference) rule += ': ' + (j.criterion_reference.startsWith('include:')
+        ? concept.include[Number(j.criterion_reference.split(':')[1]) - 1] : concept[j.criterion_reference]);
+      section.append(node('p', `Criterio: ${rule}`));
+      section.append(node('p', `Código: ${j.coding || ''}`), node('p', `Orientación: ${j.stance || ''}`));
+      (j.alternatives || []).forEach(alt => section.append(node('p', `Alternativa ${alt.concept_id}: ${alt.reason}`)));
+      (j.context_evidence || []).forEach(context => section.append(node('p', `Contexto ${context.source === 'previous_context' ? 'anterior' : 'siguiente'}: “${context.text}”`)));
+      if (j.uncertainty) section.append(node('p', `Ambigüedad: ${j.uncertainty}`));
+    }
     const old = saved.find(entry => entry.annotation_id === a.annotation_id);
     const label = node('label', `Juicio sobre el código ${i + 1}`);
     label.append(verdictSelect(old?.verdict)); section.append(label);
-    const noteLabel = node('label', 'Comentario o código propuesto');
+    const noteLabel = node('label', 'Comentario o corrección sugerida');
     const note = node('textarea'); note.rows = 2; note.maxLength = 2000; note.value = old?.note || '';
     note.addEventListener('input', () => { reviewState.dirty = true; });
     noteLabel.append(note); section.append(noteLabel);
+    const issueFieldset = node('fieldset', null, 'annotation-issue-fields');
+    issueFieldset.append(node('legend', 'Tipo de problema'));
+    const issueOptions = node('div', null, 'quality-flags annotation-issues');
+    Object.entries(annotationIssueLabels).forEach(([key, text]) => {
+      const option = node('label', null, 'quality-flag-option');
+      const input = node('input'); input.type = 'checkbox'; input.value = key;
+      input.checked = (old?.issues || []).includes(key);
+      option.append(input, node('span', text)); issueOptions.append(option);
+    });
+    issueFieldset.append(issueOptions); section.append(issueFieldset);
     $('annotations').append(section);
   });
   updateAnnotationReviewSummary();
@@ -166,7 +182,8 @@ function renderItem() {
   $('decision').textContent = output ? (output.decision === 'statements' ? `${annotations.length} declaraciones` : 'Sin declaraciones codificables') : 'Sin decisión validada';
   $('decision-justification').textContent = output?.decision_justification || '';
   $('limitations').textContent = output?.limitations ? `Límites: ${output.limitations}` : '';
-  $('flags').textContent = [output?.needs_human_review ? 'El modelo solicita revisión humana.' : '', ...(output?.quality_flags || [])].filter(Boolean).join(' · ');
+  const reasons = (output?.review_reasons || []).map(reason => reviewReasonLabels[reason] || reason);
+  $('flags').textContent = [output?.needs_human_review ? 'Caso remitido a revisión humana.' : '', ...reasons, ...(output?.quality_flags || [])].filter(Boolean).join(' · ');
   $('execution-errors').textContent = (result?.validation_errors || []).join('\n');
   renderAnnotations(annotations, review?.annotations || []);
   setReviewMode(annotations);
@@ -194,6 +211,8 @@ function renderItem() {
   $('review-workspace').classList.remove('hidden');
 }
 async function loadItem(index) {
+  if ($('highlight-dialog').open) $('highlight-dialog').close();
+  reviewState.pendingHighlight = null;
   reviewState.data = await api(`/api/llm/runs/${reviewState.runId}/items/${index}`);
   reviewState.index = index; $('item-select').value = String(index); renderItem();
 }
@@ -249,6 +268,7 @@ async function saveReview(event) {
   if (!$('review-form').reportValidity()) return;
   const annotations = [...$('annotations').querySelectorAll('[data-annotation-id]')].map(element => ({
     annotation_id: element.dataset.annotationId, verdict: element.querySelector('select').value,
+    issues: [...element.querySelectorAll('.annotation-issues input:checked')].map(input => input.value),
     note: element.querySelector('textarea').value.trim(),
   }));
   if (annotations.some(a => !a.verdict)) { notify('Selecciona un juicio para cada anotación.', true); return; }
@@ -257,12 +277,21 @@ async function saveReview(event) {
   if (hasAnnotations && annotations.some(a => a.verdict !== 'accepted' && !a.note)) {
     notify('Explica qué debe cambiar o por qué se descarta cada código no aceptado.', true); return;
   }
+  if (annotations.some(a => a.verdict !== 'accepted' && !a.issues.length)) {
+    notify('Clasifica el tipo de problema de cada código no aceptado.', true); return;
+  }
+  if (annotations.some(a => a.verdict === 'accepted' && a.issues.length)) {
+    notify('Un código aceptado no puede tener tipos de problema marcados.', true); return;
+  }
   const issues = [...$('issues').querySelectorAll('input:checked')].map(i => i.value);
   if (issues.length && !$('review-note').value.trim()) {
     notify('Describe el problema general observado en el bloque.', true); return;
   }
   if (!hasAnnotations && $('verdict').value !== 'accepted' && !$('review-note').value.trim()) {
     notify('Describe qué debe cambiar o por qué se descarta el bloque.', true); return;
+  }
+  if (!hasAnnotations && $('verdict').value !== 'accepted' && !issues.length) {
+    notify('Clasifica el tipo de problema del bloque.', true); return;
   }
   $('save').disabled = true;
   try {
@@ -282,12 +311,52 @@ async function saveReview(event) {
   } catch (error) { notify(error.message, true); }
   finally { $('save').disabled = false; }
 }
+function selectedTargetSpan() {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount !== 1 || selection.isCollapsed) return null;
+  const range = selection.getRangeAt(0);
+  const target = $('target-text');
+  if (!target.contains(range.commonAncestorContainer)) return null;
+  const prefix = document.createRange();
+  prefix.selectNodeContents(target); prefix.setEnd(range.startContainer, range.startOffset);
+  const through = document.createRange();
+  through.selectNodeContents(target); through.setEnd(range.endContainer, range.endOffset);
+  const start = Array.from(prefix.toString()).length;
+  const end = Array.from(through.toString()).length;
+  const text = Array.from(reviewState.data.item.content).slice(start, end).join('');
+  return text.trim() ? { start_char: start, end_char: end, text } : null;
+}
+function openHighlightDialog() {
+  const selected = selectedTargetSpan();
+  if (!selected) { notify('Selecciona primero un pasaje dentro del bloque objetivo.', true); return; }
+  reviewState.pendingHighlight = selected;
+  $('highlight-preview').textContent = selected.text;
+  $('highlight-title').value = '';
+  $('highlight-note').value = '';
+  $('highlight-dialog').showModal();
+  $('highlight-title').focus();
+}
+async function saveHighlight(event) {
+  event.preventDefault();
+  if (!$('highlight-form').reportValidity() || !reviewState.pendingHighlight) return;
+  $('confirm-highlight').disabled = true;
+  try {
+    const body = { ...reviewState.pendingHighlight, title: $('highlight-title').value.trim(), note: $('highlight-note').value.trim() };
+    const result = await api(`/api/llm/runs/${reviewState.runId}/items/${reviewState.index}/highlights`, { method: 'POST', body: JSON.stringify(body) });
+    $('highlight-dialog').close(); reviewState.pendingHighlight = null;
+    notify(result.message);
+  } catch (error) { notify(error.message, true); }
+  finally { $('confirm-highlight').disabled = false; }
+}
 function guarded(action) { return async () => { try { if (discardChanges()) await action(); } catch (error) { notify(error.message, true); } }; }
 document.addEventListener('DOMContentLoaded', async () => {
   Object.entries(issueLabels).forEach(([key, text]) => { const label = node('label', null, 'quality-flag-option'); const input = node('input'); input.type = 'checkbox'; input.value = key; label.append(input, node('span', text)); $('issues').append(label); });
   $('review-form').addEventListener('submit', saveReview);
   $('review-form').addEventListener('input', () => { reviewState.dirty = true; });
   $('review-form').addEventListener('change', () => { reviewState.dirty = true; });
+  $('save-highlight').addEventListener('click', openHighlightDialog);
+  $('highlight-form').addEventListener('submit', saveHighlight);
+  $('cancel-highlight').addEventListener('click', () => { $('highlight-dialog').close(); reviewState.pendingHighlight = null; });
   $('run-select').addEventListener('change', guarded(loadRun));
   ['law-filter', 'item-filter', ...Object.keys(strataFilters)]
     .forEach(id => $(id).addEventListener('change', guarded(applyFilters)));

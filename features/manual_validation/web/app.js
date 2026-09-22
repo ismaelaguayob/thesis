@@ -9,6 +9,7 @@ const state = {
   codebook: null,
   annotations: [],
   selection: null,
+  pendingHighlight: null,
   dirty: false,
 };
 
@@ -195,10 +196,6 @@ function renderConceptOptions() {
     option.textContent = concept.label;
     elements.conceptSelect.append(option);
   });
-  const review = document.createElement("option");
-  review.value = "__review__";
-  review.textContent = "Revisar: justificación ausente del libro";
-  elements.conceptSelect.append(review);
   if ([...elements.conceptSelect.options].some((option) => option.value === current)) {
     elements.conceptSelect.value = current;
   }
@@ -489,6 +486,50 @@ function captureSelection() {
   elements.selectionPreview.classList.remove("empty");
 }
 
+function openHighlightDialog() {
+  const selected = getSelectionOffsets(elements.targetText) || state.selection;
+  if (!selected) {
+    showToast("Selecciona primero un pasaje dentro del bloque objetivo.", "error");
+    return;
+  }
+  state.pendingHighlight = {
+    start_char: selected.start_char,
+    end_char: selected.end_char,
+    text: selected.evidence_text,
+  };
+  elements.highlightPreview.textContent = selected.evidence_text;
+  elements.highlightTitle.value = "";
+  elements.highlightNote.value = "";
+  elements.highlightDialog.showModal();
+  elements.highlightTitle.focus();
+}
+
+async function saveHighlight(event) {
+  event.preventDefault();
+  if (!elements.highlightForm.reportValidity() || !state.pendingHighlight) return;
+  setBusy(elements.confirmHighlight, true, "Guardando…");
+  try {
+    const result = await fetchJSON(
+      `/api/sessions/${encodeURIComponent(state.sessionId)}/items/${state.index}/highlights`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          ...state.pendingHighlight,
+          title: elements.highlightTitle.value.trim(),
+          note: elements.highlightNote.value.trim(),
+        }),
+      },
+    );
+    elements.highlightDialog.close();
+    state.pendingHighlight = null;
+    showToast(result.message);
+  } catch (error) {
+    showToast(error.message, "error");
+  } finally {
+    setBusy(elements.confirmHighlight, false, "");
+  }
+}
+
 function selectedStance() {
   return document.querySelector('input[name="stance"]:checked')?.value || "";
 }
@@ -692,6 +733,12 @@ function bindEvents() {
   elements.addAnnotation.addEventListener("click", addAnnotation);
   elements.targetText.addEventListener("mouseup", captureSelection);
   elements.targetText.addEventListener("keyup", captureSelection);
+  elements.saveHighlight.addEventListener("click", openHighlightDialog);
+  elements.highlightForm.addEventListener("submit", saveHighlight);
+  elements.cancelHighlight.addEventListener("click", () => {
+    elements.highlightDialog.close();
+    state.pendingHighlight = null;
+  });
   elements.saveItem.addEventListener("click", () => saveCurrent(false));
   elements.saveNext.addEventListener("click", () => saveCurrent(true));
   elements.previousItem.addEventListener("click", async () => {
@@ -772,6 +819,14 @@ async function initialize() {
     "next-text",
     "target-text",
     "item-metadata",
+    "save-highlight",
+    "highlight-dialog",
+    "highlight-form",
+    "highlight-preview",
+    "highlight-title",
+    "highlight-note",
+    "cancel-highlight",
+    "confirm-highlight",
     "previous-item",
     "save-item",
     "save-next",

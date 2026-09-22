@@ -37,7 +37,7 @@ La clasificación en grupos políticos utiliza la afiliación correspondiente a 
 
 ## 2. Libro de códigos y anotaciones
 
-El libro reúne criterios CARIN, criterios contextuales y justificaciones distributivas e institucionales del caso chileno. `annotations.qmd` utiliza `features/codebook/codebook_v0.3.xlsx` y genera su representación JSON. Cada ejecución conserva una copia del instrumento y su hash; la versión interna del libro y su contenido identifican el instrumento aplicado.
+El libro reúne criterios CARIN, criterios contextuales y justificaciones distributivas e institucionales del caso chileno. `annotations.qmd` utiliza `features/codebook/codebook_v5.xlsx` y genera su representación JSON. Cada ejecución conserva una copia del instrumento y su hash; la versión interna del libro y su contenido identifican el instrumento aplicado.
 
 La postura toma los valores `support` y `oppose` respecto de la proposición afirmativa definida en `orientation_anchor`. Por ejemplo, respaldar la ineficiencia y riesgo estatal significa aceptar que esos riesgos justifican limitar la administración estatal. La postura se refiere a esa proposición y se distingue del voto sobre la ley o del tono emocional del hablante.
 
@@ -47,22 +47,22 @@ El contrato ejecutable se define en `output_schema()` y `validate_output()` de `
 
 | Nivel | Campos | Función |
 | --- | --- | --- |
-| Bloque | `decision`, `decision_justification`, `annotations` | Distinguir declaraciones codificables de ausencia de declaraciones y justificar la decisión. |
-| Bloque | `quality_flags`, `needs_human_review`, `limitations`, `decision_confidence` | Registrar problemas del texto, incertidumbre y remisión a revisión. |
+| Bloque | `decision`, `annotations` | Distinguir declaraciones codificables de ausencia de declaraciones. |
+| Bloque | `quality_flags`, `decision_confidence` | Registrar problemas del texto y confianza en la decisión. |
 | Anotación | `evidence_text`, `evidence_occurrence` | Identificar la cita literal y su aparición dentro del bloque. |
-| Anotación | `concept_status`, `concept_id`, `proposed_concept` | Identificar un concepto del libro o una propuesta que requiere revisión. |
+| Anotación | `concept_id` | Identificar exclusivamente un concepto del libro cerrado. |
 | Anotación | `stance`, `confidence` | Registrar orientación y confianza cualitativa. |
-| Justificación | `criterion_reference`, `coding`, `stance`, `alternatives`, `context_evidence`, `uncertainty` | Explicar la regla aplicada, la postura, las alternativas descartadas y el contexto utilizado. |
+| Anotación | `justification` | Explicar brevemente la asignación del concepto y su orientación. |
 
 `decision` admite `statements` y `no_statements`. La segunda opción exige una lista vacía de anotaciones. Una respuesta inválida o incompleta se conserva como incidencia de procesamiento; no equivale a ausencia de declaraciones.
 
-Los niveles de confianza son `high`, `medium` y `low`. La confianza media o baja exige una explicación y revisión humana. Estos niveles representan una valoración del modelo y no una probabilidad calibrada de acierto.
+Los niveles de confianza son `high`, `medium` y `low`. La confianza media o baja remite automáticamente el caso a revisión humana. Estos niveles representan una valoración del modelo y no una probabilidad calibrada de acierto.
 
 ### 2.2 Controles de consistencia y revisión
 
-El programa comprueba que cada cita existe literalmente en el bloque objetivo, calcula sus offsets y valida la referencia al criterio del libro. Rechaza duplicaciones del mismo pasaje y concepto. Cuando un pasaje recibe varios conceptos, cada anotación sigue las mismas reglas de criterio, orientación y justificación que cualquier otra anotación; el esquema no incorpora un tratamiento especial para la multicodificación.
+El programa comprueba que cada cita existe literalmente en el bloque objetivo, calcula sus offsets y valida que el concepto pertenezca al libro cerrado. Rechaza duplicaciones del mismo pasaje, concepto y orientación. Cuando un pasaje recibe varios conceptos, cada anotación sigue las mismas reglas de alcance, orientación y justificación que cualquier otra anotación. Si un concepto aparece con `support` y `oppose` dentro del mismo bloque, ambas codificaciones se conservan y el programa remite el caso a revisión humana sin solicitar esa decisión al modelo.
 
-`concept_status=review` se reserva para una justificación explícita que no corresponde al libro. Exige `concept_id=null`, una propuesta conceptual y revisión humana. La duda entre dos códigos existentes se documenta en la justificación. Las propuestas nuevas deben adjudicarse antes de incorporarse a una red con un universo común de conceptos.
+El contrato ya no admite conceptos propuestos. `needs_human_review`, `review_reasons` y los campos de compatibilidad `concept_status=in_codebook` y `proposed_concept=null` se agregan localmente a la representación normalizada; no forman parte de la respuesta solicitada al modelo.
 
 La referencia humana se codifica a ciegas y permanece inmutable durante la comparación principal. Después de calcularla, el mismo investigador revisa los bloques con discrepancias y registra una adjudicación separada como `resolved` o `unresolved`, con los pares concepto-postura finales y una razón. `resolution_status=unresolved` exige una incidencia que explique la insuficiencia y mantiene `decision=null`. Esos casos se distinguen de las decisiones negativas y se contabilizan como información faltante. Los bloques clasificados como votación o contenido procedimental también se excluyen de los denominadores de desempeño y de presencia. La base analítica utiliza la anotación adjudicada y mantiene las salidas automáticas y la referencia ciega para auditoría. La pestaña de revisión LLM pertenece al desarrollo del prompt y del libro y no sustituye esta comparación.
 
@@ -72,7 +72,7 @@ La validación distingue la identificación de declaraciones, la asignación de 
 
 Las rondas de calibración manual y los pilotos preceden a la evaluación de una muestra estratificada. El diseño predeterminado garantiza cobertura por ley y cámara e incorpora como dimensiones adicionales la alineación política —izquierda, centro, derecha, `nonpartisan`, `unclassified`, `Sin dato` o `No aplica`— y el género. Las afiliaciones históricas desconocidas y los casos no aplicables permanecen en categorías explícitas. El tipo de actor se conserva para estudiar la distribución de los errores y puede incorporarse mediante cuotas marginales o análisis posterior. Antes del sorteo se revisan los tamaños de celda del cruce para evitar cuotas cero. La selección conserva la trazabilidad de cada fragmento. El estrato y la probabilidad de selección acompañan cada caso cuando las fracciones de muestreo difieren.
 
-Se informarán precisión, sensibilidad y F1 por concepto y postura, matrices de confusión y kappa de Cohen. La comparación principal usa el bloque como unidad y contrasta los conjuntos de conceptos y posturas de la referencia humana ciega con la salida automática. Registra `concept_and_stance` cuando coinciden ambos componentes, `concept_only` cuando coinciden los conceptos y cambia alguna postura, y `divergent` cuando difieren los conjuntos conceptuales. Los conceptos propuestos fuera del libro se separan como `concept_review_required` y pasan a la cola de adjudicación; no cuentan como coincidencias vacías. Los fallos de ejecución se registran como `model_unavailable`. Esta comparación no utiliza el solapamiento de spans. Las decisiones de ausencia forman parte de la rejilla común solo cuando el bloque está resuelto e incluido en la evaluación.
+Se informarán precisión, sensibilidad y F1 por concepto y postura, matrices de confusión y kappa de Cohen. La comparación principal usa el bloque como unidad y contrasta los conjuntos de conceptos y posturas de la referencia humana ciega con la salida automática. Registra `concept_and_stance` cuando coinciden ambos componentes, `concept_only` cuando coinciden los conceptos y cambia alguna postura, y `divergent` cuando difieren los conjuntos conceptuales. El estado `concept_review_required` se conserva solo para leer rondas históricas con propuestas fuera del libro; no se genera en la codificación cerrada. Los fallos de ejecución se registran como `model_unavailable`. Esta comparación no utiliza el solapamiento de spans. Las decisiones de ausencia forman parte de la rejilla común solo cuando el bloque está resuelto e incluido en la evaluación.
 
 Las comparaciones entre tareas y categorías informarán sus denominadores y el número de casos. Tras congelar la referencia ciega, los metadatos de muestreo se anexan por `unit_id` para describir la concentración de errores por ley, cámara, alineación política, género y tipo de actor; las proporciones ponderadas se calculan dentro de cada grupo. Se describirán también las modificaciones introducidas mediante adjudicación y la distribución de los casos irresolubles. La referencia ciega produce las métricas principales; las medidas recalculadas después de adjudicar discrepancias se presentan como análisis secundario. Al existir una sola persona codificadora, no se estima confiabilidad intercoder; puede evaluarse estabilidad intracoder mediante una recodificación diferida y ciega de un subconjunto.
 

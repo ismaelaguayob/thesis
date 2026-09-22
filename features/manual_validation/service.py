@@ -26,6 +26,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from features.passage_highlights import append_passage_highlight
 from features.political_alignment import PartyAlignment, load_party_alignment
 
 SCHEMA_VERSION = "manual-validation-2.6.0"
@@ -763,10 +764,12 @@ class ValidationService:
         output_dir: Path,
         timezone_name: str = DEFAULT_TIMEZONE,
         party_alignment: PartyAlignment | None = None,
+        highlights_path: Path | None = None,
     ) -> None:
         self.source_path = source_path.resolve()
         self.codebook_path = codebook_path.resolve()
         self.output_dir = output_dir.resolve()
+        self.highlights_path = highlights_path.resolve() if highlights_path else None
         self.timezone_name = timezone_name
         try:
             self.party_alignment = party_alignment or load_party_alignment(
@@ -1437,6 +1440,14 @@ class ValidationService:
         concept_ids = {
             str(concept["id"]) for concept in session.get("codebook", {}).get("concepts", [])
         }
+        closed_codebook = session.get("codebook", {}).get("status") == "closed"
+        if closed_codebook and any(
+            isinstance(raw, dict) and raw.get("concept_status") == "review"
+            for raw in raw_annotations
+        ):
+            raise ValidationError(
+                "El libro de códigos está cerrado y no admite conceptos propuestos"
+            )
         existing = {
             annotation.get("annotation_id", ""): annotation for annotation in item["annotations"]
         }
@@ -1454,11 +1465,14 @@ class ValidationService:
                 annotation["span"]["end_char"],
                 annotation["concept_id"],
                 " ".join((annotation["proposed_concept"] or "").casefold().split()),
+                annotation["stance"],
             )
             for annotation in normalized
         ]
         if len(semantic_ids) != len(set(semantic_ids)):
-            raise ValidationError("La misma evidencia y concepto están duplicados")
+            raise ValidationError(
+                "La misma evidencia, concepto y orientación están duplicados"
+            )
 
         timestamps = timestamp_pair(self.timezone_name)
         evaluation_included, evaluation_exclusion_reasons = evaluation_inclusion(
@@ -1479,6 +1493,60 @@ class ValidationService:
         item["completed_at_local"] = item.get("completed_at_local") or timestamps["local"]
         self._save_session(session)
         return self.open_item(session_id, index)
+
+    def save_highlight(
+        self, session_id: str, index: int, payload: dict[str, Any]
+    ) -> dict[str, object]:
+        """Append an exact blind-coding span to the interpretation passage ledger."""
+        if self.highlights_path is None:
+            raise ValidationError("No se configuró un archivo para pasajes destacados")
+        session = self._load_session(session_id)
+        items = session["items"]
+        if index < 0 or index >= len(items):
+            raise ValidationError("Índice de unidad fuera de rango")
+        item = items[index]
+        target_text = item["target_text"]
+        start = payload.get("start_char")
+        end = payload.get("end_char")
+        if type(start) is not int or type(end) is not int:
+            raise ValidationError("Los límites del pasaje deben ser enteros")
+        if start < 0 or end <= start or end > len(target_text):
+            raise ValidationError("El pasaje está fuera de los límites del bloque")
+        selected = target_text[start:end]
+        if not selected.strip():
+            raise ValidationError("Selecciona un pasaje con texto")
+        if payload.get("text") != selected:
+            raise ValidationError("El pasaje no coincide con el texto objetivo")
+        title = payload.get("title", "")
+        note = payload.get("note", "")
+        if not isinstance(title, str) or not isinstance(note, str):
+            raise ValidationError("El título y la nota deben ser texto")
+        title = " ".join(title.split())
+        note = note.strip()
+        if not title or len(title) > 180 or len(note) > 3000:
+            raise ValidationError("El título o la nota del pasaje no son válidos")
+
+        law_number = str(
+            item.get("law_number")
+            or LAW_BY_BILL.get(session.get("bill_number"), session.get("bill_number") or "")
+        )
+        source_session = str(item["document_uri"]).rsplit("/", 1)[-1]
+        paragraph_start = item.get("paragraph_start", item.get("paragraph_number"))
+        paragraph_end = item.get("paragraph_end", item.get("paragraph_number"))
+        metadata = (
+            f"**Fuente:** Ley {law_number} · sesión {source_session} · "
+            f"bloque {index + 1} · párrafos {paragraph_start}–{paragraph_end}\n\n"
+            "**Procedencia:** Codificación ciega"
+        )
+        marker = f"<!-- destacado:blind:{session_id}:{index}:{start}:{end} -->"
+        return append_passage_highlight(
+            self.highlights_path,
+            marker=marker,
+            title=title,
+            text=selected,
+            metadata=metadata,
+            note=note,
+        )
 
 
 class ValidationRequestHandler(BaseHTTPRequestHandler):
@@ -1605,6 +1673,32 @@ class ValidationRequestHandler(BaseHTTPRequestHandler):
             if parts == ["api", "sessions"]:
                 summary = self.service.create_session(self._read_payload())
                 self._send_json(summary, HTTPStatus.CREATED)
+                return
+            if (
+                len(parts) == 6
+                and parts[:2] == ["api", "sessions"]
+                and parts[3] == "items"
+                and parts[5] == "highlights"
+            ):
+                self._send_json(
+                    self.service.save_highlight(
+                        parts[2], self._item_index(parts[4]), self._read_payload()
+                    ),
+                    HTTPStatus.CREATED,
+                )
+                return
+            if (
+                len(parts) == 7
+                and parts[:3] == ["api", "llm", "runs"]
+                and parts[4] == "items"
+                and parts[6] == "highlights"
+            ):
+                self._send_json(
+                    self.service.llm_review.save_highlight(
+                        parts[3], self._item_index(parts[5]), self._read_payload()
+                    ),
+                    HTTPStatus.CREATED,
+                )
                 return
             self._send_json({"error": "Ruta inexistente"}, HTTPStatus.NOT_FOUND)
         except Exception as exc:

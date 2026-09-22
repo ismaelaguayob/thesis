@@ -8,21 +8,31 @@ from pathlib import Path
 
 from features.llm_annotations.pipeline import RUN_ID_RE, load_sample
 from features.manual_validation.service import ValidationError, atomic_write_json, sha256_file
+from features.passage_highlights import append_passage_highlight
 
 VERDICTS = {'accepted', 'needs_changes', 'discard'}
-ISSUES = {'span', 'concept', 'stance', 'omission', 'justification', 'context', 'segmentation', 'other'}
+ISSUES = {
+    'span', 'concept', 'stance', 'omission', 'justification', 'context',
+    'segmentation', 'out_of_scope', 'codebook_coverage', 'other',
+}
+ANNOTATION_ISSUES = {
+    'span', 'concept', 'stance', 'justification', 'context',
+    'out_of_scope', 'codebook_coverage', 'other',
+}
 
 
 class AnnotationReviewService:
     def __init__(self, runs_dir: Path, reviews_dir: Path,
                  unit_metadata: dict[str, dict[str, str]] | None = None,
                  source_hashes: dict[str, str] | None = None,
-                 results_dir: Path | None = None):
+                 results_dir: Path | None = None,
+                 highlights_path: Path | None = None):
         self.inputs_dir = runs_dir.resolve()
         self.results_dir = (results_dir or runs_dir).resolve()
         self.reviews_dir = reviews_dir.resolve()
         self.unit_metadata = unit_metadata or {}
         self.source_hashes = source_hashes
+        self.highlights_path = highlights_path.resolve() if highlights_path else None
         self.lock = threading.RLock()
 
     def _run_dirs(self, run_id: str) -> tuple[Path, Path]:
@@ -168,6 +178,8 @@ class AnnotationReviewService:
                 raise ValidationError('Una respuesta inválida o fallida no puede aceptarse')
             if verdict is not None and verdict != 'accepted' and not note.strip():
                 raise ValidationError('Describe qué debe cambiar o por qué se descarta el bloque')
+            if verdict is not None and verdict != 'accepted' and not issues:
+                raise ValidationError('Clasifica el problema del bloque antes de guardarlo')
             if not isinstance(annotations, list) or len(annotations) != len(valid_ids):
                 raise ValidationError('Revisa cada código antes de guardar')
             seen = set()
@@ -179,22 +191,84 @@ class AnnotationReviewService:
                 seen.add(entry['annotation_id'])
                 if not isinstance(entry.get('note', ''), str) or len(entry.get('note', '')) > 2000:
                     raise ValidationError('Comentario de anotación inválido')
+                annotation_issues = entry.get('issues', [])
+                if (
+                    not isinstance(annotation_issues, list)
+                    or any(
+                        not isinstance(issue, str) or issue not in ANNOTATION_ISSUES
+                        for issue in annotation_issues
+                    )
+                ):
+                    raise ValidationError('Tipo de problema de anotación inválido')
                 if entry['verdict'] == 'accepted' and result['status'] != 'completed':
                     raise ValidationError('Una respuesta inválida o fallida no puede aceptar códigos')
                 if entry['verdict'] != 'accepted' and not entry.get('note', '').strip():
                     raise ValidationError('Describe qué debe cambiar o por qué se descarta el código')
+                if entry['verdict'] != 'accepted' and not annotation_issues:
+                    raise ValidationError('Clasifica el problema del código antes de guardarlo')
+                if entry['verdict'] == 'accepted' and annotation_issues:
+                    raise ValidationError('Un código aceptado no puede tener problemas marcados')
             if verdict == 'accepted' and (issues or any(a['verdict'] != 'accepted' for a in annotations)):
                 raise ValidationError('Aceptar el bloque requiere aceptar sus anotaciones y no marcar problemas')
             if issues and not note.strip():
                 raise ValidationError('Describe el problema general observado en el bloque')
             now = dt.datetime.now(dt.timezone.utc).isoformat()
-            review = {'schema_version': 'llm-diagnostic-review-1.0.0', 'run_id': run_id,
+            review = {'schema_version': 'llm-diagnostic-review-1.1.0', 'run_id': run_id,
                       'sample_index': index, 'unit_id': item['item']['unit_id'],
                       'result_sha256': item['result_sha256'], 'reviewer': reviewer.strip(),
                       'verdict': verdict, 'issues': sorted(set(issues)), 'note': note.strip(),
-                      'annotations': [{k: a.get(k, '') for k in ['annotation_id', 'verdict', 'note']} for a in annotations],
+                      'annotations': [{
+                          'annotation_id': annotation['annotation_id'],
+                          'verdict': annotation['verdict'],
+                          'issues': sorted(set(annotation.get('issues', []))),
+                          'note': annotation.get('note', '').strip(),
+                      } for annotation in annotations],
                       'revision': old.get('revision', 0) + 1,
                       'created_at_utc': old.get('created_at_utc', now), 'updated_at_utc': now,
                       'validation_mode': 'diagnostic_unblinded'}
             atomic_write_json(self._review_path(run_id, index), review)
             return {'review': review}
+
+    def save_highlight(self, run_id: str, index: int, payload: dict) -> dict:
+        """Append an exact target-text span to the interpretation passage ledger."""
+        if self.highlights_path is None:
+            raise ValidationError('No se configuró un archivo para pasajes destacados')
+        with self.lock:
+            item = self.open_item(run_id, index)
+            target_text = item['item']['content']
+            start = payload.get('start_char')
+            end = payload.get('end_char')
+            if type(start) is not int or type(end) is not int:
+                raise ValidationError('Los límites del pasaje deben ser enteros')
+            if start < 0 or end <= start or end > len(target_text):
+                raise ValidationError('El pasaje está fuera de los límites del bloque')
+            selected = target_text[start:end]
+            if not selected.strip():
+                raise ValidationError('Selecciona un pasaje con texto')
+            if payload.get('text') != selected:
+                raise ValidationError('El pasaje no coincide con el texto objetivo')
+            title = payload.get('title', '')
+            note = payload.get('note', '')
+            if not isinstance(title, str) or not isinstance(note, str):
+                raise ValidationError('El título y la nota deben ser texto')
+            title = ' '.join(title.split())
+            note = note.strip()
+            if not title or len(title) > 180 or len(note) > 3000:
+                raise ValidationError('El título o la nota del pasaje no son válidos')
+
+            marker = f'<!-- destacado:{run_id}:{index}:{start}:{end} -->'
+            record = item['item']
+            session = str(record['document_uri']).rsplit('/', 1)[-1]
+            metadata = (
+                f"**Fuente:** Ley {record['law_number']} · sesión {session} · "
+                f"bloque {index + 1} · párrafos "
+                f"{record['paragraph_start']}–{record['paragraph_end']}"
+            )
+            return append_passage_highlight(
+                self.highlights_path,
+                marker=marker,
+                title=title,
+                text=selected,
+                metadata=metadata,
+                note=note,
+            )

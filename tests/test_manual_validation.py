@@ -32,6 +32,7 @@ class ManualValidationTestCase(unittest.TestCase):
         self.source_path = self.root / "coding_chunks_long.parquet"
         self.codebook_path = self.root / "codebook.json"
         self.output_dir = self.root / "validation"
+        self.highlights_path = self.root / "pasajes-destacados.md"
         self.party_alignment = PartyAlignment(
             left=("Partido Socialista de Chile",),
             center=("Partido Demócrata Cristiano",),
@@ -45,6 +46,7 @@ class ManualValidationTestCase(unittest.TestCase):
             codebook_path=self.codebook_path,
             output_dir=self.output_dir,
             party_alignment=self.party_alignment,
+            highlights_path=self.highlights_path,
         )
 
     def tearDown(self) -> None:
@@ -664,6 +666,48 @@ class ManualValidationTestCase(unittest.TestCase):
                 "decision": "statements", "annotations": [first, second],
             })
 
+    def test_same_concept_with_opposite_stances_is_allowed(self) -> None:
+        summary = self._session(1)
+        session_id = summary["session_id"]
+        text = self.service.open_item(session_id, 0)["item"]["target_text"]
+        evidence = text[: min(8, len(text))]
+        base = {
+            "start_char": 0,
+            "end_char": len(evidence),
+            "evidence_text": evidence,
+            "concept_status": "in_codebook",
+            "concept_id": "solidaridad",
+            "proposed_concept": "",
+        }
+        saved = self.service.save_item(session_id, 0, {
+            "decision": "statements",
+            "annotations": [
+                {**base, "annotation_id": "support", "stance": "support"},
+                {**base, "annotation_id": "oppose", "stance": "oppose"},
+            ],
+        })
+        self.assertEqual(2, len(saved["item"]["annotations"]))
+
+    def test_closed_codebook_rejects_concept_proposals(self) -> None:
+        self.service.codebook["status"] = "closed"
+        summary = self._session(1)
+        session_id = summary["session_id"]
+        text = self.service.open_item(session_id, 0)["item"]["target_text"]
+        evidence = text[: min(8, len(text))]
+        with self.assertRaisesRegex(ValidationError, "libro de códigos está cerrado"):
+            self.service.save_item(session_id, 0, {
+                "decision": "statements",
+                "annotations": [{
+                    "start_char": 0,
+                    "end_char": len(evidence),
+                    "evidence_text": evidence,
+                    "concept_status": "review",
+                    "concept_id": None,
+                    "proposed_concept": "Nueva regla",
+                    "stance": "support",
+                }],
+            })
+
     def test_http_api_contract_and_bad_index(self) -> None:
         server = create_server(self.service, STATIC_DIR, "127.0.0.1", 0)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -701,6 +745,29 @@ class ManualValidationTestCase(unittest.TestCase):
                 summary = json.load(response)
             self.assertEqual(summary["sample_size"], 2)
 
+            with urllib.request.urlopen(
+                f"{base_url}/api/sessions/{summary['session_id']}/items/0", timeout=5
+            ) as response:
+                opened = json.load(response)
+            selected = opened["item"]["target_text"][:12]
+            highlight_request = urllib.request.Request(
+                f"{base_url}/api/sessions/{summary['session_id']}/items/0/highlights",
+                data=json.dumps({
+                    "start_char": 0,
+                    "end_char": len(selected),
+                    "text": selected,
+                    "title": "Pasaje desde la codificación ciega",
+                    "note": "Nota de prueba.",
+                }).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(highlight_request, timeout=5) as response:
+                highlight = json.load(response)
+                self.assertEqual(response.status, 201)
+            self.assertTrue(highlight["saved"])
+            self.assertIn("**Procedencia:** Codificación ciega", self.highlights_path.read_text())
+
             with self.assertRaises(urllib.error.HTTPError) as caught:
                 urllib.request.urlopen(
                     f"{base_url}/api/sessions/{summary['session_id']}/items/not-a-number",
@@ -729,6 +796,51 @@ class ManualValidationTestCase(unittest.TestCase):
         self.assertIn("Array.from(prefix.toString()).length", javascript)
         self.assertIn('id="sampling-unit"', html)
         self.assertIn('id="strata-options"', html)
+        self.assertIn('id="save-highlight"', html)
+        self.assertIn('id="highlight-dialog"', html)
+        self.assertIn("async function saveHighlight(event)", javascript)
+        self.assertIn("/highlights`,", javascript)
+        self.assertIn(".highlight-dialog", styles)
+
+    def test_blind_highlight_is_exact_readable_and_does_not_change_session(self) -> None:
+        self.highlights_path.write_text(
+            "## 1. Pasaje previo\n\nTexto anterior.\n\n## \n", encoding="utf-8"
+        )
+        summary = self._session(sample_size=1)
+        session_path = self.output_dir / f"{summary['session_id']}.json"
+        before = session_path.read_bytes()
+        item = self._session_payload(summary["session_id"])["items"][0]
+        start = item["target_text"].index(" ") + 1
+        end = min(start + 24, len(item["target_text"]))
+        payload = {
+            "start_char": start,
+            "end_char": end,
+            "text": item["target_text"][start:end],
+            "title": "Argumento relevante en lectura ciega",
+            "note": "Contrastar con otras formulaciones.",
+        }
+
+        saved = self.service.save_highlight(summary["session_id"], 0, payload)
+
+        self.assertTrue(saved["saved"])
+        self.assertEqual(session_path.read_bytes(), before)
+        markdown = self.highlights_path.read_text(encoding="utf-8")
+        self.assertIn("## 2. Argumento relevante en lectura ciega", markdown)
+        self.assertNotIn("\n##\n", markdown)
+        self.assertIn(payload["text"], markdown)
+        self.assertIn("**Fuente:** Ley 21735", markdown)
+        self.assertIn("**Procedencia:** Codificación ciega", markdown)
+        self.assertIn(
+            "**Nota interpretativa:** Contrastar con otras formulaciones.", markdown
+        )
+        self.assertNotIn("modelo", markdown.casefold())
+        self.assertFalse(
+            self.service.save_highlight(summary["session_id"], 0, payload)["saved"]
+        )
+        with self.assertRaises(ValidationError):
+            self.service.save_highlight(
+                summary["session_id"], 0, {**payload, "text": "texto alterado"}
+            )
 
     def _multi_law_service(self) -> ValidationService:
         original = pd.read_parquet(self.source_path)

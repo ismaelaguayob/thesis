@@ -37,7 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--codebook-workbook",
         type=Path,
-        default=PROJECT_ROOT / "features" / "codebook" / "codebook_v0.3.xlsx",
+        default=PROJECT_ROOT / "features" / "codebook" / "codebook_v5.xlsx",
         help="XLSX editable que actúa como fuente del libro de códigos.",
     )
     parser.add_argument(
@@ -45,7 +45,7 @@ def parse_args() -> argparse.Namespace:
         "--codebook",
         dest="codebook_json",
         type=Path,
-        default=PROJECT_ROOT / "features" / "codebook" / "codebook_v0.3.json",
+        default=PROJECT_ROOT / "features" / "codebook" / "codebook_v5.json",
         help="JSON derivado que consumirá la interfaz.",
     )
     parser.add_argument(
@@ -81,6 +81,7 @@ def main() -> int:
         source_path=args.source,
         codebook_path=args.codebook_json,
         output_dir=args.output_dir,
+        highlights_path=PROJECT_ROOT / "pasajes-destacados.md",
     )
     service.llm_review = AnnotationReviewService(
         args.annotations_input_dir,
@@ -88,6 +89,7 @@ def main() -> int:
         service.sampling_metadata_by_unit,
         {source["law_number"]: source["sha256"] for source in service.sources},
         results_dir=args.annotations_results_dir,
+        highlights_path=PROJECT_ROOT / "pasajes-destacados.md",
     )
     static_dir = Path(__file__).resolve().parent / "web"
     server = create_server(service, static_dir, args.host, args.port)

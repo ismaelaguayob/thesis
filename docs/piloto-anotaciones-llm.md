@@ -86,9 +86,9 @@ carpetas de caché del usuario, asigna `UV_CACHE_DIR`, `IPYTHONDIR`,
 
 ## Libro y prompt
 
-`features/codebook/codebook_v0.3.xlsx` es la fuente editable vigente. Sus metadatos
-internos declaran **0.4.0-pilot**, con 14 conceptos; el nombre del archivo se
-conserva para compartir la misma configuración que la app. El JSON se sincroniza
+`features/codebook/codebook_v5.xlsx` es la fuente editable vigente. Sus metadatos
+internos declaran **0.5.0-candidate**, con 16 conceptos y un vocabulario cerrado
+para el chequeo final previo a la codificación ciega. El JSON se sincroniza
 mediante el conversor existente antes de cada preparación.
 
 `prompts/annotations_pilot_v1_confidence.md` contiene las instrucciones activas y
@@ -99,18 +99,19 @@ procedimiento también crea otra ejecución, sin sobrescribir la original.
 
 ## Contrato de respuesta y explicación
 
-El modelo devuelve decisión global, anotaciones, flags, límites y necesidad de
-revisión humana. Cada declaración incluye cita exacta, número de aparición,
-concepto, orientación y justificación. Los offsets se calculan localmente, en
-caracteres Unicode, y se validan mediante el contrato de la app manual. La vista
-usa puntos de código Unicode al destacar texto, incluso si hay caracteres fuera
-del plano básico como emojis.
+El modelo devuelve decisión global, anotaciones, flags y confianza. Cada
+declaración incluye cita exacta, número de aparición, concepto, orientación, una
+justificación breve y confianza. Los offsets se calculan localmente, en caracteres
+Unicode, y se validan mediante el contrato de la app manual. La vista usa puntos
+de código Unicode al destacar texto, incluso si hay caracteres fuera del plano
+básico como emojis.
 
-Las justificaciones contienen criterio específico del libro (`definition`,
-`orientation_anchor` o `include:N`), fundamento del código y orientación,
-alternativas relevantes, citas de contexto utilizadas y ambigüedades. `review`
-se reserva para un concepto normativo ausente del libro. La duda entre conceptos
-existentes se registra como incertidumbre y necesidad de revisión.
+El contrato no solicita conceptos nuevos, justificación general del bloque,
+alternativas descartadas, citas redundantes de contexto, limitaciones ni una
+decisión del modelo sobre revisión humana. El programa deriva la revisión a partir
+de confianza media o baja, flags que afectan la interpretación y la coexistencia
+de `support` y `oppose` para un mismo concepto. La justificación de cada código
+explica conjuntamente la asignación y la orientación en una o dos oraciones.
 
 La explicación aplica criterios de evidencia y comprensibilidad inspirados en
 [NISTIR 8312](https://doi.org/10.6028/NIST.IR.8312). Una justificación generada puede
@@ -157,7 +158,7 @@ uv run python -m features.manual_validation \
 ```
 
 Entra en **Revisión de anotaciones LLM**. Puedes filtrar por ley, bloques sin
-revisión, necesidad de revisión señalada por el modelo, ausencia de declaraciones
+revisión, necesidad de revisión derivada por el programa, ausencia de declaraciones
 o incidencias de ejecución. El botón Actualizar incorpora respuestas nuevas si
 el piloto sigue ejecutándose.
 
@@ -165,9 +166,16 @@ La vista presenta modelo solicitado/devuelto, esfuerzo, versión del libro,
 input/output completos, contexto, evidencia destacada y código. Los spans
 solapados conservan todos sus códigos en la leyenda y en las tarjetas de
 justificación. Cada anotación y cada bloque se acepta, marca para cambios o
-descarta. La corrección propuesta se escribe en el comentario. Las omisiones se
-registran como problema del bloque. Para aceptar un bloque deben aceptarse sus
+descarta. Los códigos no aceptados exigen una categoría estructurada —span,
+concepto, orientación, justificación, contexto, fuera de alcance, frontera del
+libro u otro— y un comentario. Las omisiones y problemas de segmentación se
+registran a nivel de bloque. Para aceptar un bloque deben aceptarse sus
 anotaciones; una salida inválida no se puede aceptar como válida.
+
+Al seleccionar texto del bloque objetivo, **Guardar pasaje destacado** abre un
+diálogo con título y nota interpretativa opcional. El servidor verifica el span
+exacto y lo añade de forma legible y trazable a `pasajes-destacados.md`, sin
+alterar la revisión ni la respuesta del modelo.
 
 Los juicios quedan en `output/annotation_reviews/<run_id>/<índice>.json`, con hash
 de la respuesta, identificador opcional del revisor y control de revisión para
@@ -184,10 +192,10 @@ uv run python -m unittest discover -s tests -q
 ```
 
 Las pruebas del piloto comprueban cuotas, citas exactas y repetidas, Unicode,
-criterios inexistentes, contexto inventado, decisiones incoherentes, conceptos
-nuevos, exclusión de identidad en el input, ejecuciones sin API, reanudación,
-fallos de generación, variantes de prompt y persistencia de revisiones sin
-modificar respuestas. La validez estructural no evalúa la calidad sustantiva.
+decisiones incoherentes, cierre del vocabulario, orientaciones opuestas,
+exclusión de identidad en el input, ejecuciones sin API, reanudación, fallos de
+generación, variantes de prompt, pasajes destacados y persistencia de revisiones
+sin modificar respuestas. La validez estructural no evalúa la calidad sustantiva.
 
 ## Balance y manifiesto offline
 

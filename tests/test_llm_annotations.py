@@ -54,12 +54,10 @@ class LLMPilotTests(unittest.TestCase):
                            previous_context={'content': 'Debemos compartir riesgos.', 'same_utterance': False},
                            next_context=None, source_segments=[])
         self.raw = {'decision': 'statements', 'annotations': [{
-            'evidence_text': 'Sí.', 'evidence_occurrence': 2, 'concept_status': 'in_codebook',
-            'concept_id': 'solidaridad', 'proposed_concept': '', 'stance': 'support', 'confidence': 'high',
-            'justification': {'criterion_reference': 'include:1', 'coding': 'Afirma solidaridad.',
-                'stance': 'La acepta.', 'alternatives': [], 'context_evidence': [], 'uncertainty': ''}}],
-            'decision_justification': 'Expresa un fundamento.', 'quality_flags': [],
-            'needs_human_review': False, 'limitations': '', 'decision_confidence': 'high'}
+            'evidence_text': 'Sí.', 'evidence_occurrence': 2,
+            'concept_id': 'solidaridad', 'stance': 'support', 'confidence': 'high',
+            'justification': 'Afirma que los riesgos deben compartirse y apoya el ancla.'}],
+            'quality_flags': [], 'decision_confidence': 'high'}
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -115,38 +113,37 @@ class LLMPilotTests(unittest.TestCase):
     def test_invalid_evidence_context_rule_code_and_decision(self):
         cases = []
         raw = copy.deepcopy(self.raw); raw['annotations'][0]['evidence_text'] = 'Una cita inventada'; cases.append(raw)
-        raw = copy.deepcopy(self.raw); raw['annotations'][0]['justification']['context_evidence'] = [{'source':'next_context','text':'inexistente'}]; cases.append(raw)
-        raw = copy.deepcopy(self.raw); raw['annotations'][0]['justification']['criterion_reference'] = 'include:9'; cases.append(raw)
         raw = copy.deepcopy(self.raw); raw['annotations'][0]['concept_id'] = 'otro'; cases.append(raw)
         raw = copy.deepcopy(self.raw); raw['decision'] = 'no_statements'; cases.append(raw)
         raw = copy.deepcopy(self.raw); raw['annotations'] *= 2; cases.append(raw)
+        raw = copy.deepcopy(self.raw); raw['annotations'][0]['justification'] = '  '; cases.append(raw)
         for raw in cases:
             with self.subTest(raw=raw):
                 with self.assertRaises((ValidationError, jsonschema.ValidationError)):
                     validate_output(raw, self.record, self.book, self.schema)
 
-    def test_missing_concept_requires_review(self):
+    def test_closed_schema_rejects_new_concept_fields(self):
         raw = copy.deepcopy(self.raw)
-        raw['annotations'][0].update(concept_status='review', concept_id=None, proposed_concept='Nueva regla')
-        raw['annotations'][0]['justification']['criterion_reference'] = 'new_concept'
-        with self.assertRaises(ValidationError): validate_output(raw, self.record, self.book, self.schema)
-        raw['needs_human_review'] = True
-        raw['limitations'] = 'El libro no contiene esta justificación normativa.'
-        self.assertEqual('review', validate_output(raw, self.record, self.book, self.schema)['annotations'][0]['concept_status'])
+        raw['annotations'][0]['proposed_concept'] = 'Nueva regla'
+        with self.assertRaises(jsonschema.ValidationError):
+            validate_output(raw, self.record, self.book, self.schema)
+        raw = copy.deepcopy(self.raw)
+        raw['annotations'][0]['concept_status'] = 'review'
+        with self.assertRaises(jsonschema.ValidationError):
+            validate_output(raw, self.record, self.book, self.schema)
 
     def test_cross_field_validation_matches_prompt_contract(self):
         self.assertNotIn('uniqueItems', canonical(self.schema))
         cases = []
-        raw = copy.deepcopy(self.raw); raw['quality_flags'] = ['truncated']; cases.append(raw)
-        raw = copy.deepcopy(self.raw); raw['quality_flags'] = ['other']; raw['needs_human_review'] = True; cases.append(raw)
+        raw = copy.deepcopy(self.raw); raw['quality_flags'] = ['other']; cases.append(raw)
         raw = copy.deepcopy(self.raw); raw['annotations'][0]['proposed_concept'] = 'No corresponde'; cases.append(raw)
-        raw = copy.deepcopy(self.raw); raw['annotations'][0]['justification']['alternatives'] = [
-            {'concept_id': 'solidaridad', 'reason': 'Otra lectura'}]; cases.append(raw)
-        raw = copy.deepcopy(self.raw); raw['annotations'][0]['justification']['alternatives'] = [
-            {'concept_id': 'solidaridad', 'reason': ''}]; cases.append(raw)
         for raw in cases:
-            with self.subTest(raw=raw), self.assertRaises(ValidationError):
+            with self.subTest(raw=raw), self.assertRaises(jsonschema.ValidationError):
                 validate_output(raw, self.record, self.book, self.schema)
+        raw = copy.deepcopy(self.raw); raw['quality_flags'] = ['truncated']
+        normalized = validate_output(raw, self.record, self.book, self.schema)
+        self.assertTrue(normalized['needs_human_review'])
+        self.assertIn('quality_flag', normalized['review_reasons'])
         raw = copy.deepcopy(self.raw); raw['quality_flags'] = ['vote', 'vote']
         with self.assertRaisesRegex(ValidationError, 'no se pueden repetir'):
             validate_output(raw, self.record, self.book, self.schema)
@@ -215,12 +212,10 @@ class LLMPilotTests(unittest.TestCase):
         for level in ('medium', 'low'):
             raw = copy.deepcopy(self.raw)
             raw['annotations'][0]['confidence'] = level
-            raw['annotations'][0]['justification']['uncertainty'] = 'La orientación es dudosa.'
-            with self.assertRaises(ValidationError):
-                validate_output(raw, self.record, self.book, self.schema)
-            raw['needs_human_review'] = True
             normalized = validate_output(raw, self.record, self.book, self.schema)
             self.assertEqual(level, normalized['annotations'][0]['confidence'])
+            self.assertTrue(normalized['needs_human_review'])
+            self.assertIn('annotation_confidence', normalized['review_reasons'])
         for level in (None, '', 0.8, 'alta'):
             raw = copy.deepcopy(self.raw)
             raw['annotations'][0]['confidence'] = level
@@ -229,11 +224,10 @@ class LLMPilotTests(unittest.TestCase):
 
     def test_no_statements_confidence(self):
         raw = {**self.raw, 'decision': 'no_statements', 'annotations': [],
-               'decision_confidence': 'low', 'needs_human_review': True}
-        with self.assertRaises(ValidationError):
-            validate_output(raw, self.record, self.book, self.schema)
-        raw['limitations'] = 'El objetivo está truncado.'
-        self.assertEqual('low', validate_output(raw, self.record, self.book, self.schema)['decision_confidence'])
+               'decision_confidence': 'low'}
+        normalized = validate_output(raw, self.record, self.book, self.schema)
+        self.assertEqual('low', normalized['decision_confidence'])
+        self.assertTrue(normalized['needs_human_review'])
         directory = self.make_run()
         with patch('features.llm_annotations.pipeline.OpenAI', return_value=self.fake_client(raw)):
             frame = run_annotations(directory, execute=True)
@@ -241,6 +235,18 @@ class LLMPilotTests(unittest.TestCase):
         spans = pd.read_parquet(directory / 'annotations.parquet')
         self.assertTrue(spans.empty)
         self.assertIn('confidence', spans.columns)
+
+    def test_opposite_stances_for_same_concept_are_allowed_and_routed(self):
+        raw = copy.deepcopy(self.raw)
+        opposite = copy.deepcopy(raw['annotations'][0])
+        opposite['stance'] = 'oppose'
+        opposite['justification'] = 'Rechaza compartir los riesgos y se opone al ancla.'
+        raw['annotations'].append(opposite)
+        normalized = validate_output(raw, self.record, self.book, self.schema)
+        self.assertEqual(2, len(normalized['annotations']))
+        self.assertTrue(normalized['needs_human_review'])
+        self.assertEqual(['solidaridad'], normalized['opposite_stance_concepts'])
+        self.assertIn('opposite_stances_same_concept', normalized['review_reasons'])
 
     def test_confidence_roundtrip_and_legacy_missing_values(self):
         directory = self.make_run()
@@ -349,9 +355,11 @@ class LLMPilotTests(unittest.TestCase):
             encoding='utf-8'
         )
         self.assertIn('"prompts/annotations_pilot_v1_confidence.md"', report)
-        for field in ('decision_confidence', 'confidence', 'needs_human_review',
-                      'proposed_concept', 'limitations'):
+        for field in ('decision_confidence', 'confidence', 'justification'):
             self.assertIn(f'`{field}`', prompt)
+        for removed in ('`needs_human_review`', '`proposed_concept`', '`limitations`',
+                        '`decision_justification`'):
+            self.assertNotIn(removed, prompt)
         self.assertIn('Usa únicamente estas flags, sin duplicarlas', prompt)
 
     def test_reviews_preserve_response_and_reject_stale_or_foreign_spans(self):
@@ -367,7 +375,8 @@ class LLMPilotTests(unittest.TestCase):
         original = (directory/'results/00000.json').read_bytes()
         item = reviewer.open_item(directory.name, 0)
         payload = {'result_sha256': item['result_sha256'], 'verdict': 'accepted', 'revision': 0,
-                   'annotations': [{'annotation_id':'llm_000', 'verdict':'accepted', 'note':''}]}
+                   'annotations': [{'annotation_id':'llm_000', 'verdict':'accepted',
+                                    'issues': [], 'note':''}]}
         review = reviewer.save_review(directory.name, 0, payload)['review']
         self.assertEqual(1, review['revision'])
         self.assertEqual(original, (directory/'results/00000.json').read_bytes())
@@ -392,9 +401,11 @@ class LLMPilotTests(unittest.TestCase):
         payload = {'result_sha256': item['result_sha256'], 'verdict': None, 'revision': 0,
                    'issues': [], 'note': '',
                    'annotations': [{'annotation_id': 'llm_000', 'verdict': 'needs_changes',
+                                    'issues': ['concept'],
                                     'note': 'Ajustar el código propuesto.'}]}
         review = reviewer.save_review(directory.name, 0, payload)['review']
         self.assertIsNone(review['verdict'])
+        self.assertEqual(['concept'], review['annotations'][0]['issues'])
         listed = reviewer.list_items(directory.name)['items'][0]
         self.assertTrue(listed['review_complete'])
         self.assertEqual('annotations_reviewed', listed['review_verdict'])
@@ -412,13 +423,43 @@ class LLMPilotTests(unittest.TestCase):
             'issues': ['omission'],
             'note': 'Falta una declaración de necesidad material.',
             'annotations': [{
-                'annotation_id': 'llm_000', 'verdict': 'accepted', 'note': ''
+                'annotation_id': 'llm_000', 'verdict': 'accepted', 'issues': [],
+                'note': ''
             }],
         }
         review = reviewer.save_review(directory.name, 0, payload)['review']
         self.assertEqual(['omission'], review['issues'])
         self.assertEqual(payload['note'], review['note'])
         self.assertIsNone(review['verdict'])
+
+    def test_highlight_is_saved_as_readable_exact_markdown(self):
+        directory = self.make_run()
+        with patch('features.llm_annotations.pipeline.OpenAI', return_value=self.fake_client()):
+            run_annotations(directory, execute=True)
+        highlights = self.root / 'pasajes-destacados.md'
+        highlights.write_text('## 1. Pasaje previo\n\nTexto anterior.\n', encoding='utf-8')
+        reviewer = AnnotationReviewService(
+            self.root/'runs', self.root/'reviews', highlights_path=highlights
+        )
+        start = self.record['content'].index('La solidaridad')
+        end = start + len('La solidaridad es necesaria.')
+        payload = {
+            'start_char': start,
+            'end_char': end,
+            'text': self.record['content'][start:end],
+            'title': 'Solidaridad como obligación colectiva',
+            'note': 'Comparar con pasajes de reparto.',
+        }
+        saved = reviewer.save_highlight(directory.name, 0, payload)
+        self.assertTrue(saved['saved'])
+        markdown = highlights.read_text(encoding='utf-8')
+        self.assertIn('## 2. Solidaridad como obligación colectiva', markdown)
+        self.assertIn(payload['text'], markdown)
+        self.assertIn('**Fuente:** Ley 21419', markdown)
+        self.assertIn('**Nota interpretativa:** Comparar con pasajes de reparto.', markdown)
+        self.assertFalse(reviewer.save_highlight(directory.name, 0, payload)['saved'])
+        with self.assertRaises(ValidationError):
+            reviewer.save_highlight(directory.name, 0, {**payload, 'text': 'alterado'})
 
     def test_new_run_defaults_and_budget_validation(self):
         self.make_run()

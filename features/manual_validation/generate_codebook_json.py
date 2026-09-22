@@ -27,12 +27,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--workbook",
         type=Path,
-        default=PROJECT_ROOT / "features" / "codebook" / "codebook_v0.3.xlsx",
+        default=PROJECT_ROOT / "features" / "codebook" / "codebook_v5.xlsx",
     )
     parser.add_argument(
         "--output",
         type=Path,
-        default=PROJECT_ROOT / "features" / "codebook" / "codebook_v0.3.json",
+        default=PROJECT_ROOT / "features" / "codebook" / "codebook_v5.json",
     )
     parser.add_argument(
         "--check",

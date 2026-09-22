@@ -20,8 +20,8 @@ agota el límite de salida, el siguiente intento duplica su holgura hasta
 `ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS` (65.536 por defecto). La configuración
 efectiva queda congelada en cada manifiesto. El prompt activo se edita en
 [`prompts/annotations_pilot_v1_confidence.md`](prompts/annotations_pilot_v1_confidence.md).
-El XLSX vigente es `features/codebook/codebook_v0.3.xlsx` (versión interna
-`0.4.0-pilot`).
+El XLSX vigente es `features/codebook/codebook_v5.xlsx` (versión interna
+`0.5.0-candidate`), cerrado para el chequeo final previo a la codificación ciega.
 
 ```bash
 uv sync --locked

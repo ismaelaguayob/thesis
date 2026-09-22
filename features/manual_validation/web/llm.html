@@ -24,7 +24,7 @@
 <label>Alineación política<select id="alignment-filter"><option value="all">Todas</option></select></label>
 <label>Género<select id="gender-filter"><option value="all">Todos</option></select></label>
 <label>Tipo de actor<select id="actor-type-filter"><option value="all">Todos</option></select></label>
-<label>Mostrar<select id="item-filter"><option value="all">Todos los bloques</option><option value="unreviewed">Sin revisión humana</option><option value="flagged">Modelo solicita revisión</option><option value="no_statements">Sin declaraciones</option><option value="errors">Incidencias de ejecución</option></select></label>
+<label>Mostrar<select id="item-filter"><option value="all">Todos los bloques</option><option value="unreviewed">Sin revisión humana</option><option value="flagged">Requiere revisión humana</option><option value="no_statements">Sin declaraciones</option><option value="errors">Incidencias de ejecución</option></select></label>
 <button id="refresh" type="button" class="secondary-button">Actualizar</button>
 <label class="llm-block-select">Bloque<select id="item-select"></select></label>
 <p id="run-summary" class="llm-block-select"></p>
@@ -35,14 +35,14 @@
 <div id="model-meta" class="summary-box"></div>
 <div class="llm-grid"><section class="llm-texts">
 <article class="intervention-card context-card"><h3>Bloque anterior <small>· contexto</small></h3><p id="previous-relation"></p><div id="previous-text" class="intervention-text"></div></article>
-<article class="intervention-card target-card"><h2>Bloque objetivo</h2><p id="target-meta"></p><p class="llm-help">Los colores identifican códigos. Selecciona una marca para ir a su justificación.</p><div id="target-text" class="intervention-text"></div><div id="code-legend" class="llm-legend"></div></article>
+<article class="intervention-card target-card"><h2>Bloque objetivo</h2><p id="target-meta"></p><p class="llm-help">Los colores identifican códigos. Selecciona una marca para ir a su justificación. También puedes seleccionar cualquier fragmento y guardarlo para la interpretación.</p><div id="target-text" class="intervention-text"></div><div class="highlight-actions"><button id="save-highlight" type="button" class="secondary-button">Guardar pasaje destacado</button><span>Se añadirá a <code>pasajes-destacados.md</code>.</span></div><div id="code-legend" class="llm-legend"></div></article>
 <article class="intervention-card context-card"><h3>Bloque siguiente <small>· contexto</small></h3><p id="next-relation"></p><div id="next-text" class="intervention-text"></div></article>
 <details class="panel"><summary>Input completo enviado al modelo</summary><pre id="raw-input"></pre></details>
 <details class="panel"><summary>Output completo y respuesta de la API</summary><h3>Texto generado</h3><pre id="raw-output"></pre><h3>Respuesta completa</h3><pre id="raw-response"></pre></details>
 <details class="panel"><summary>Libro de códigos utilizado</summary><div id="codebook"></div></details>
 </section><aside class="llm-sidebar">
 <section class="panel"><p class="step-label">Decisión del modelo</p><h2 id="decision"></h2><p id="decision-justification"></p><p id="limitations"></p><p id="flags"></p><div id="execution-errors" role="status"></div></section>
-<section class="panel"><h2>Declaraciones y justificaciones</h2><div id="annotations"></div></section>
+<section class="panel"><h2>Declaraciones y justificación</h2><div id="annotations"></div></section>
 <form id="review-form" class="panel">
 <h2 id="review-title">Juicio del revisor</h2>
 <p id="review-instruction">Revisa la salida del modelo con la evidencia visible.</p>
@@ -57,4 +57,13 @@
 <div class="llm-save"><button id="save" type="submit" class="primary-button">Guardar revisión</button><span id="save-status" role="status" aria-live="polite"></span></div>
 </form></aside></div></section>
 <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+<dialog id="highlight-dialog" class="highlight-dialog">
+<form id="highlight-form">
+<p class="step-label">Pasaje para interpretación</p><h2>Guardar fragmento destacado</h2>
+<blockquote id="highlight-preview"></blockquote>
+<label>Título interpretativo<input id="highlight-title" required maxlength="180" placeholder="Ej.: Necesidad material como justificación contra la reforma"></label>
+<label>Nota interpretativa <span class="optional">opcional</span><textarea id="highlight-note" rows="4" maxlength="3000" placeholder="Hipótesis, relación con otros pasajes o idea para el capítulo"></textarea></label>
+<div class="dialog-actions"><button id="cancel-highlight" type="button" class="secondary-button">Cancelar</button><button id="confirm-highlight" type="submit" class="primary-button">Guardar pasaje</button></div>
+</form>
+</dialog>
 </main><script src="/llm.js" defer></script></body></html>

@@ -24,7 +24,7 @@ from features.manual_validation.service import (
     sha256_file, sha256_text,
 )
 
-PIPELINE_VERSION = "llm-pilot-1.5.0"
+PIPELINE_VERSION = "llm-pilot-1.6.0"
 DEFAULT_MODEL = "gpt-5.6-luna"
 DEFAULT_REASONING_EFFORT = "max"
 # Includes reasoning AND visible output; see OpenAI's reasoning guide.
@@ -94,35 +94,23 @@ def output_schema(codebook: dict) -> dict:
     string = {"type": "string"}
     confidence = {"type": "string", "enum": ["high", "medium", "low"]}
     ids = [c["id"] for c in codebook["concepts"]]
-    justification = object_schema({
-        "criterion_reference": string, "coding": string, "stance": string,
-        "alternatives": {"type": "array", "items": object_schema({
-            "concept_id": {"type": "string", "enum": ids}, "reason": string})},
-        "context_evidence": {"type": "array", "items": object_schema({
-            "source": {"type": "string", "enum": ["previous_context", "next_context"]},
-            "text": string})},
-        "uncertainty": string,
-    })
     annotation = object_schema({
         "evidence_text": string,
         "evidence_occurrence": {"type": "integer", "minimum": 1},
-        "concept_status": {"type": "string", "enum": ["in_codebook", "review"]},
-        "concept_id": {"type": ["string", "null"], "enum": ids + [None]},
-        "proposed_concept": string,
+        "concept_id": {"type": "string", "enum": ids},
         "stance": {"type": "string", "enum": ["support", "oppose"]},
-        "justification": justification,
+        "justification": string,
         "confidence": confidence,
     })
     return object_schema({
         "decision": {"type": "string", "enum": ["statements", "no_statements"]},
         "annotations": {"type": "array", "maxItems": 50, "items": annotation},
-        "decision_justification": string,
         # Structured Outputs only accepts minItems/maxItems as array-specific
         # constraints. Duplicate flags are rejected by validate_output below.
         "quality_flags": {"type": "array",
-                          "items": {"type": "string", "enum": list(QUALITY_FLAGS)}},
-        "needs_human_review": {"type": "boolean"},
-        "limitations": string,
+                          "items": {"type": "string", "enum": [
+                              flag for flag in QUALITY_FLAGS if flag != "other"
+                          ]}},
         "decision_confidence": confidence,
     })
 
@@ -243,29 +231,31 @@ def validate_output(raw: dict, record: dict, codebook: dict, schema: dict) -> di
         raise ValidationError("Las flags de calidad no se pueden repetir")
     if bool(raw["annotations"]) != (raw["decision"] == "statements"):
         raise ValidationError("Decisión y presencia de declaraciones inconsistentes")
-    if not raw["decision_justification"].strip():
-        raise ValidationError("Falta justificación de la decisión del bloque")
     impactful_flags = {
         "too_short", "truncated", "insufficient_context",
         "segmentation_problem", "other",
     }
-    if impactful_flags.intersection(raw["quality_flags"]) and not raw["needs_human_review"]:
-        raise ValidationError("Las incidencias de calidad requieren revisión humana")
-    if "other" in raw["quality_flags"] and not raw["limitations"].strip():
-        raise ValidationError("La flag other requiere describir la limitación")
-    # Frozen legacy schemas remain valid; missing confidence is never inferred.
-    if "decision_confidence" in raw:
-        uncertain = raw["decision_confidence"] != "high"
-        if uncertain and not raw["limitations"].strip():
-            raise ValidationError("La confianza de decisión requiere explicar la limitación")
-        for annotation in raw["annotations"]:
-            level = annotation["confidence"]
-            doubt = bool(annotation["justification"]["uncertainty"].strip())
-            if doubt != (level != "high"):
-                raise ValidationError("Confianza y explicación de incertidumbre inconsistentes")
-            uncertain |= level != "high"
-        if uncertain and not raw["needs_human_review"]:
-            raise ValidationError("La confianza media o baja requiere revisión humana")
+    legacy_contract = "needs_human_review" in raw
+    if legacy_contract:
+        if not raw["decision_justification"].strip():
+            raise ValidationError("Falta justificación de la decisión del bloque")
+        if impactful_flags.intersection(raw["quality_flags"]) and not raw["needs_human_review"]:
+            raise ValidationError("Las incidencias de calidad requieren revisión humana")
+        if "other" in raw["quality_flags"] and not raw["limitations"].strip():
+            raise ValidationError("La flag other requiere describir la limitación")
+        # Frozen legacy schemas remain valid; missing confidence is never inferred.
+        if "decision_confidence" in raw:
+            uncertain = raw["decision_confidence"] != "high"
+            if uncertain and not raw["limitations"].strip():
+                raise ValidationError("La confianza de decisión requiere explicar la limitación")
+            for annotation in raw["annotations"]:
+                level = annotation["confidence"]
+                doubt = bool(annotation["justification"]["uncertainty"].strip())
+                if doubt != (level != "high"):
+                    raise ValidationError("Confianza y explicación de incertidumbre inconsistentes")
+                uncertain |= level != "high"
+            if uncertain and not raw["needs_human_review"]:
+                raise ValidationError("La confianza media o baja requiere revisión humana")
     concepts = {c["id"]: c for c in codebook["concepts"]}
     normalized = []
     seen = set()
@@ -279,53 +269,95 @@ def validate_output(raw: dict, record: dict, codebook: dict, schema: dict) -> di
             raise ValidationError(f"La cita {index + 1} no existe literalmente en el objetivo")
         start = positions[occurrence - 1]
         justification = annotation["justification"]
-        if not justification['coding'].strip() or not justification['stance'].strip():
-            raise ValidationError("Falta fundamento de código u orientación")
-        for alternative in justification['alternatives']:
-            if not alternative['reason'].strip():
-                raise ValidationError("Cada alternativa requiere una razón")
-            if alternative['concept_id'] == annotation['concept_id']:
-                raise ValidationError("Una alternativa no puede repetir el concepto elegido")
-        reference = justification['criterion_reference']
-        if annotation['concept_status'] == 'review':
-            if annotation['concept_id'] is not None or not annotation['proposed_concept'].strip():
-                raise ValidationError("review requiere concept_id null y concepto propuesto")
-            if reference != 'new_concept' or not raw['needs_human_review']:
-                raise ValidationError("Un concepto nuevo debe remitirse a revisión humana")
-            if not (justification['uncertainty'].strip() or raw['limitations'].strip()):
-                raise ValidationError("review requiere explicar la brecha conceptual")
+        if isinstance(justification, dict):
+            if not justification['coding'].strip() or not justification['stance'].strip():
+                raise ValidationError("Falta fundamento de código u orientación")
+            for alternative in justification['alternatives']:
+                if not alternative['reason'].strip():
+                    raise ValidationError("Cada alternativa requiere una razón")
+                if alternative['concept_id'] == annotation['concept_id']:
+                    raise ValidationError("Una alternativa no puede repetir el concepto elegido")
+            reference = justification['criterion_reference']
+            if annotation['concept_status'] == 'review':
+                if annotation['concept_id'] is not None or not annotation['proposed_concept'].strip():
+                    raise ValidationError("review requiere concept_id null y concepto propuesto")
+                if reference != 'new_concept' or not raw['needs_human_review']:
+                    raise ValidationError("Un concepto nuevo debe remitirse a revisión humana")
+                if not (justification['uncertainty'].strip() or raw['limitations'].strip()):
+                    raise ValidationError("review requiere explicar la brecha conceptual")
+            else:
+                concept = concepts.get(annotation['concept_id'])
+                if concept is None:
+                    raise ValidationError("Concepto ausente del libro")
+                if annotation['proposed_concept'].strip():
+                    raise ValidationError("in_codebook requiere proposed_concept vacío")
+                valid_refs = {'definition', 'orientation_anchor'} | {
+                    f'include:{i + 1}' for i in range(len(concept.get('include', [])))}
+                if reference not in valid_refs or (reference == 'orientation_anchor' and not concept.get(reference)):
+                    raise ValidationError("Referencia a criterio inexistente")
+            for context in justification['context_evidence']:
+                text = (record.get(context['source']) or {}).get('content', '')
+                if not context['text'].strip() or context['text'] not in text:
+                    raise ValidationError("La cita de contexto no coincide literalmente")
+            normalized_input = annotation
         else:
+            if not justification.strip():
+                raise ValidationError("Falta la justificación breve del código y su orientación")
             concept = concepts.get(annotation['concept_id'])
             if concept is None:
                 raise ValidationError("Concepto ausente del libro")
-            if annotation['proposed_concept'].strip():
-                raise ValidationError("in_codebook requiere proposed_concept vacío")
-            valid_refs = {'definition', 'orientation_anchor'} | {
-                f'include:{i + 1}' for i in range(len(concept.get('include', [])))}
-            if reference not in valid_refs or (reference == 'orientation_anchor' and not concept.get(reference)):
-                raise ValidationError("Referencia a criterio inexistente")
-        for context in justification['context_evidence']:
-            text = (record.get(context['source']) or {}).get('content', '')
-            if not context['text'].strip() or context['text'] not in text:
-                raise ValidationError("La cita de contexto no coincide literalmente")
+            # The closed-book model contract omits manual-coding fields. Inject
+            # their fixed values only in the normalized representation so the
+            # downstream evaluation tables remain backward compatible.
+            normalized_input = {
+                **annotation,
+                'concept_status': 'in_codebook',
+                'proposed_concept': '',
+            }
         normalized_annotation = ValidationService._normalize_annotation({
-            **annotation, 'annotation_id': f'llm_{index:03d}', 'start_char': start,
+            **normalized_input, 'annotation_id': f'llm_{index:03d}', 'start_char': start,
             'end_char': start + len(evidence), 'note': '',
         }, record['content'], set(concepts), {})
         identity = (
             start,
             start + len(evidence),
             annotation['concept_id'],
-            ' '.join(annotation['proposed_concept'].casefold().split()),
+            annotation['stance'],
         )
         if identity in seen:
-            raise ValidationError("Se repitió el mismo span/concepto")
+            raise ValidationError("Se repitió el mismo span, concepto y orientación")
         seen.add(identity)
         if 'confidence' in annotation:
             normalized_annotation['confidence'] = annotation['confidence']
         normalized_annotation['justification'] = justification
         normalized.append(normalized_annotation)
-    return {**raw, 'annotations': normalized}
+    stances_by_concept: dict[str, set[str]] = {}
+    for annotation in normalized:
+        concept_id = annotation.get('concept_id')
+        if concept_id is not None:
+            stances_by_concept.setdefault(concept_id, set()).add(annotation['stance'])
+    mixed_concepts = sorted(
+        concept_id for concept_id, stances in stances_by_concept.items()
+        if stances == {'support', 'oppose'}
+    )
+    review_reasons = []
+    if impactful_flags.intersection(raw['quality_flags']):
+        review_reasons.append('quality_flag')
+    if raw.get('decision_confidence') not in (None, 'high'):
+        review_reasons.append('decision_confidence')
+    if any(annotation.get('confidence') not in (None, 'high') for annotation in raw['annotations']):
+        review_reasons.append('annotation_confidence')
+    if mixed_concepts:
+        review_reasons.append('opposite_stances_same_concept')
+    if raw.get('needs_human_review') and not review_reasons:
+        review_reasons.append('model_requested')
+    return {
+        **raw,
+        'annotations': normalized,
+        'needs_human_review': bool(review_reasons),
+        'review_reasons': review_reasons,
+        'opposite_stance_concepts': mixed_concepts,
+    }
 
 
 def load_sample(run_dir: Path) -> list[dict]:
@@ -763,6 +795,7 @@ def export_results(input_run_dir: Path,
                    ),
                    reasoning_effort=spec['reasoning_effort'],
                    needs_human_review=output.get('needs_human_review'),
+                   review_reasons=canonical(output.get('review_reasons', [])),
                    decision_justification=output.get('decision_justification'),
                    limitations=output.get('limitations'),
                    decision_confidence=output.get('decision_confidence'),
@@ -780,7 +813,11 @@ def export_results(input_run_dir: Path,
                           'start_char': annotation['span']['start_char'], 'end_char': annotation['span']['end_char'],
                           'evidence_text': annotation['span']['text'],
                           'confidence': annotation.get('confidence'),
-                          'justification': canonical(annotation['justification'])})
+                          'justification': (
+                              annotation['justification']
+                              if isinstance(annotation['justification'], str)
+                              else canonical(annotation['justification'])
+                          )})
     frame = pd.DataFrame(rows)
     atomic_write_parquet(frame, result_dir / 'results.parquet')
     span_frame = pd.DataFrame(spans, columns=['sample_index','unit_id','utterance_id','law_number',

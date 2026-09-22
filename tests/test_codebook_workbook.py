@@ -22,7 +22,7 @@ class CodebookWorkbookTestCase(unittest.TestCase):
             check=False,
         )
         self.assertEqual(0, result.returncode, result.stderr)
-        self.assertIn("features/codebook/codebook_v0.3.xlsx", result.stdout)
+        self.assertIn("features/codebook/codebook_v5.xlsx", result.stdout)
 
     def test_v01_xlsx_remains_the_exact_source_of_its_json(self) -> None:
         workbook = PROJECT_ROOT / "features" / "codebook" / "codebook_v0.1.xlsx"
@@ -115,6 +115,35 @@ class CodebookWorkbookTestCase(unittest.TestCase):
             any(
                 "preferencias ciudadanas" in criterion
                 for criterion in concepts["acuerdos_moderacion"]["exclude"]
+            )
+        )
+
+    def test_v5_is_closed_and_contains_the_saturated_concepts(self) -> None:
+        workbook = PROJECT_ROOT / "features" / "codebook" / "codebook_v5.xlsx"
+        generated_json = PROJECT_ROOT / "features" / "codebook" / "codebook_v5.json"
+        expected = read_codebook_workbook(workbook)
+        actual = json.loads(generated_json.read_text(encoding="utf-8"))
+        self.assertEqual(expected, actual)
+        self.assertEqual("0.5.0-candidate", expected["version"])
+        self.assertEqual("closed", expected["status"])
+        self.assertEqual(16, len(expected["concepts"]))
+        concepts = {concept["id"]: concept for concept in expected["concepts"]}
+        self.assertIn("solidaridad_previsional_colectiva", concepts)
+        self.assertIn("libertad_eleccion_previsional", concepts)
+        self.assertIn(
+            "mera capacidad de elegir no basta",
+            concepts["control_responsabilidad_individual"]["definition"],
+        )
+        self.assertTrue(
+            any(
+                "Posesivos rutinarios" in criterion
+                for criterion in concepts["identidad"]["exclude"]
+            )
+        )
+        self.assertTrue(
+            any(
+                "no se puede financiar" in criterion
+                for criterion in concepts["conciencia_costos"]["include"]
             )
         )
 
