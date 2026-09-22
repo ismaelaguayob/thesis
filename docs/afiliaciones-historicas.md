@@ -3,7 +3,8 @@
 La tabla editable es
 [`data/curation/party_at_date_overrides.csv`](../data/curation/party_at_date_overrides.csv).
 Contiene una fila por persona, documento y fecha cuyo historial de militancia de
-la BCN quedó como `ambiguous` o `not_found`. La extracción original en
+la BCN quedó sin resolver o cuya regla por tipo de actor debe corregirse. La clave
+incluye `speaker`, de modo que también admite personas sin `person_href`. La extracción original en
 `parliamentarian_affiliations.parquet` no se modifica.
 
 Para conservar una fila pendiente, deje `resolution=pending`. Para incorporar
@@ -17,6 +18,6 @@ una decisión respaldada, use una de estas alternativas:
   no cambia la tabla analítica.
 
 Al renderizar `proc.qmd`, solo las dos primeras alternativas se aplican a filas
-automáticas `unknown`. La salida conserva `manual_documented`, el método de
+automáticas `unknown` o `not_applicable`. La salida conserva `manual_documented`, el método de
 resolución y la URL de evidencia; no sustituye una afiliación histórica hallada
-por la BCN ni una función marcada como `not_applicable`.
+por la BCN.

@@ -6,7 +6,8 @@ from pathlib import Path
 import pandas as pd
 
 
-KEY_COLUMNS = ("document_uri", "reference_date", "person_href")
+KEY_COLUMNS = ("document_uri", "reference_date", "person_href", "speaker")
+MATCH_COLUMNS = ("document_uri", "reference_date", "_person_key")
 REQUIRED_COLUMNS = {
     *KEY_COLUMNS,
     "resolution",
@@ -16,6 +17,7 @@ REQUIRED_COLUMNS = {
     "evidence_note",
     "reviewed_by",
     "reviewed_at",
+    "speaker",
 }
 RESOLUTIONS = {"pending", "confirmed", "nonpartisan", "unresolved"}
 APPLIED_RESOLUTIONS = {"confirmed", "nonpartisan"}
@@ -26,7 +28,7 @@ class AffiliationOverrideError(ValueError):
 
 
 def _text(value: object) -> str:
-    return "" if value is None else str(value).strip()
+    return "" if value is None or pd.isna(value) else str(value).strip()
 
 
 def _require(value: object, field: str, row_number: int) -> str:
@@ -85,10 +87,12 @@ def apply_affiliation_overrides(
 
     The BCN extraction is intentionally left untouched. This function changes the
     derived speech table only after validating that each editable row maps to an
-    observed discussion/person/date and that it does not overwrite an automatic
-    resolution or a role for which party affiliation is inapplicable.
+    observed discussion/person/date/name and that it does not overwrite an
+    automatically matched affiliation.
     """
-    required = {"document_uri", "date", "person_href", "party_at_date_status"}
+    required = {
+        "document_uri", "date", "person_href", "speaker", "party_at_date_status"
+    }
     missing = sorted(required.difference(speeches.columns))
     if missing:
         raise AffiliationOverrideError(
@@ -96,6 +100,11 @@ def apply_affiliation_overrides(
         )
     result = speeches.copy()
     result["reference_date"] = result["date"].map(_text)
+    result["person_href"] = result["person_href"].map(_text)
+    result["speaker"] = result["speaker"].map(_text)
+    result["_person_key"] = result["person_href"].where(
+        result["person_href"].ne(""), "speaker:" + result["speaker"].str.casefold()
+    )
     # Keep the analytical schema stable even while every editable row is pending.
     for column in (
         "affiliation_evidence_url",
@@ -105,15 +114,18 @@ def apply_affiliation_overrides(
     ):
         result[column] = None
     active = overrides.loc[overrides["resolution"].isin(APPLIED_RESOLUTIONS)].copy()
+    active["_person_key"] = active["person_href"].where(
+        active["person_href"].ne(""), "speaker:" + active["speaker"].str.casefold()
+    )
     # The editable queue covers every law. A single-law render must apply only
     # its own rows, while still validating an exact person/date match in scope.
     active = active.loc[active["document_uri"].isin(result["document_uri"].unique())].copy()
     if active.empty:
         result["affiliation_resolution_method"] = "automatic"
-        return result, active
+        return result.drop(columns="_person_key"), active.drop(columns="_person_key")
 
-    observed = result[["document_uri", "reference_date", "person_href"]].drop_duplicates()
-    checked = active.merge(observed, on=list(KEY_COLUMNS), how="left", indicator=True)
+    observed = result[list(MATCH_COLUMNS)].drop_duplicates()
+    checked = active.merge(observed, on=list(MATCH_COLUMNS), how="left", indicator=True)
     unmatched = checked.loc[checked["_merge"].ne("both"), list(KEY_COLUMNS)]
     if not unmatched.empty:
         raise AffiliationOverrideError(
@@ -122,22 +134,24 @@ def apply_affiliation_overrides(
         )
 
     status_by_key = result.merge(
-        active[list(KEY_COLUMNS)], on=list(KEY_COLUMNS), how="inner", validate="many_to_one"
+        active[list(MATCH_COLUMNS)],
+        on=list(MATCH_COLUMNS), how="inner", validate="many_to_one"
     )
     ineligible = status_by_key.loc[
-        ~status_by_key["party_at_date_status"].eq("unknown"),
+        ~status_by_key["party_at_date_status"].isin({"unknown", "not_applicable"}),
         [*KEY_COLUMNS, "party_at_date_status"],
     ].drop_duplicates()
     if not ineligible.empty:
         raise AffiliationOverrideError(
-            "Una corrección manual solo puede resolver afiliaciones unknown: "
+            "Una corrección manual solo puede resolver afiliaciones unknown o "
+            "not_applicable: "
             + str(ineligible.to_dict("records")[:3])
         )
 
     result = result.merge(
         active[
             [
-                *KEY_COLUMNS,
+                *MATCH_COLUMNS,
                 "resolution",
                 "party_at_date",
                 "party_at_date_href",
@@ -157,7 +171,7 @@ def apply_affiliation_overrides(
                 "reviewed_at": "_override_reviewed_at",
             }
         ),
-        on=list(KEY_COLUMNS),
+        on=list(MATCH_COLUMNS),
         how="left",
         validate="many_to_one",
     )
@@ -195,4 +209,6 @@ def apply_affiliation_overrides(
             "_override_reviewed_at",
         ]
     )
+    result = result.drop(columns="_person_key")
+    active = active.drop(columns="_person_key")
     return result, active

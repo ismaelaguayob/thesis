@@ -20,13 +20,15 @@ class AffiliationOverridesTestCase(unittest.TestCase):
         self.speeches = pd.DataFrame([
             {
                 "document_uri": "document-1", "date": "2025-01-29",
-                "person_href": "person-1", "party_at_date": None,
+                "person_href": "person-1", "speaker": "Persona Uno",
+                "party_at_date": None,
                 "party_at_date_href": None, "party_at_date_status": "unknown",
                 "party_at_date_source": None,
             },
             {
                 "document_uri": "document-2", "date": "2025-01-29",
-                "person_href": "person-2", "party_at_date": "Partido A",
+                "person_href": "person-2", "speaker": "Persona Dos",
+                "party_at_date": "Partido A",
                 "party_at_date_href": "party-a", "party_at_date_status": "matched",
                 "party_at_date_source": "bcn_militancy_history",
             },
@@ -44,6 +46,7 @@ class AffiliationOverridesTestCase(unittest.TestCase):
             "document_uri": "document-1",
             "reference_date": "2025-01-29",
             "person_href": "person-1",
+            "speaker": "Persona Uno",
             "resolution": "pending",
             "party_at_date": "",
             "party_at_date_href": "",
@@ -87,12 +90,33 @@ class AffiliationOverridesTestCase(unittest.TestCase):
             load_affiliation_overrides(self.path)
 
         self._write([self._row(
-            document_uri="document-2", person_href="person-2", resolution="confirmed",
+            document_uri="document-2", person_href="person-2", speaker="Persona Dos",
+            resolution="confirmed",
             party_at_date="Partido A", evidence_url="https://example.test/evidence",
             evidence_note="Fuente.", reviewed_by="ismael", reviewed_at="2026-09-19",
         )])
-        with self.assertRaisesRegex(AffiliationOverrideError, "solo puede resolver afiliaciones unknown"):
+        with self.assertRaisesRegex(
+            AffiliationOverrideError, "solo puede resolver afiliaciones unknown o not_applicable"
+        ):
             apply_affiliation_overrides(self.speeches, load_affiliation_overrides(self.path))
+
+    def test_documented_resolution_can_replace_not_applicable_role_rule(self) -> None:
+        speeches = self.speeches.iloc[[0]].copy()
+        speeches.loc[0, "person_href"] = None
+        speeches.loc[0, "party_at_date_status"] = "not_applicable"
+        self._write([self._row(
+            person_href="", resolution="confirmed", party_at_date="Partido A",
+            evidence_url="https://example.test/evidence", evidence_note="Fuente.",
+            reviewed_by="ismael", reviewed_at="2026-09-22",
+        )])
+
+        result, applied = apply_affiliation_overrides(
+            speeches, load_affiliation_overrides(self.path)
+        )
+
+        self.assertEqual(1, len(applied))
+        self.assertEqual("matched", result.loc[0, "party_at_date_status"])
+        self.assertEqual("Partido A", result.loc[0, "party_at_date"])
 
     def test_rows_for_another_law_do_not_block_a_single_law_render(self) -> None:
         self._write([self._row(
