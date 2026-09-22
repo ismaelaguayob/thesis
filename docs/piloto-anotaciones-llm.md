@@ -44,16 +44,28 @@ Las variables `ANNOTATIONS_EXECUTE` y `ANNOTATIONS_PROMPT` no convierten este
 reporte histórico en un ejecutor de nuevas variantes. Para preparar una nueva
 muestra se usa `features.llm_annotations.pipeline.prepare_run`, con el servicio,
 registros seleccionados, metadatos de muestreo, ruta del prompt y directorio de
-salida. Sus valores predeterminados son `gpt-5.6-luna`, `effort="max"`,
+salida. Sus valores predeterminados son `gpt-6-luna`, `effort="max"`,
 `max_output_tokens=32768` y cuatro reintentos (cinco intentos totales).
-`ANNOTATIONS_MODEL`, `ANNOTATIONS_MAX_RETRIES` y
+`ANNOTATIONS_MODEL`, `REASONING_LEVEL`, `ANNOTATIONS_MAX_RETRIES` y
 `ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS` seleccionan desde `.env` el modelo,
-entre cero y cuatro reintentos y el techo alternativo. Los valores efectivos
+el esfuerzo, entre cero y cuatro reintentos y el techo alternativo. Los valores efectivos
 quedan congelados en el manifiesto. Preparar una ejecución es una operación local.
 `run_annotations(input_run_dir, output_root=Path("output/annotations"),
 execute=True, limit=N)` lee únicamente los inputs congelados y escribe únicamente
 en `output_root/<run_id>/`. Solo genera si la política permite esa ejecución;
 `limit=0` no envía nada y los límites negativos se rechazan.
+
+Para preparar un censo de los bloques materializados, ejecuta
+`python -m features.llm_annotations.prepare_all` desde la raíz del proyecto.
+Este comando local lee los tres `coding_chunks_long.parquet`, el prompt con
+glosario y el libro vigente; genera un request por bloque sin usar la API.
+El censo preparado el 2026-09-22 es `pilot_10223cb6237f3d1ee34f`:
+3.609 bloques, con `gpt-6-luna` y esfuerzo `max`. Terminó con 2.813 respuestas
+válidas y 796 errores `project_spend_limit_exceeded` por el límite de gasto del
+proyecto. La continuación `pilot_d4e0291b4df3fc0f5343` reutiliza las 2.813
+respuestas válidas y deja 796 bloques pendientes. Su autorización específica
+está en `data/proc_data/llm_pilots/api_policy.json`; requiere restablecer el
+límite de gasto e invocar `run_annotations` de forma explícita.
 
 La API usa Responses, `store=false` y esquema JSON estricto. El límite de salida
 incluye razonamiento y texto visible. El piloto original utilizó `max` y 16.384
@@ -61,7 +73,7 @@ tokens: 109 respuestas se interrumpieron por agotamiento del límite. La
 [guía de razonamiento de OpenAI](https://developers.openai.com/api/docs/guides/reasoning)
 explica este comportamiento y recomienda reservar al menos 25.000 tokens al
 comenzar a experimentar. El nuevo techo de 32.768 deja un margen adicional;
-el modelo puede terminar antes. La [ficha de Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna)
+el modelo puede terminar antes. La [ficha de Luna](https://developers.openai.com/api/docs/models/gpt-6-luna)
 admite esfuerzo `max` y hasta 128.000 tokens de salida. Estos ajustes reducen el
 riesgo observado; ningún límite finito garantiza todas las respuestas futuras.
 
@@ -91,7 +103,7 @@ internos declaran **0.5.1-candidate**, con 16 conceptos y un vocabulario cerrado
 para el nuevo piloto previo a la codificación ciega. El JSON se sincroniza
 mediante el conversor existente antes de cada preparación.
 
-`prompts/annotations_pilot_v1_confidence.md` contiene las instrucciones activas y
+`prompts/annotations_prompt_final.md` contiene las instrucciones activas y
 editables. Cada ejecución
 congela el prompt y el libro completos. Un ID derivado de hashes separa variantes
 de prompt, libro, muestra, configuración y programa. Cambiar el código del

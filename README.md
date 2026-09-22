@@ -13,13 +13,14 @@
 
 `annotations.qmd` sortea el 10% de los bloques elegibles por ley y sesión,
 reutiliza el contexto y los controles de la app manual y anota cada bloque objetivo.
-Las ejecuciones nuevas usan por defecto `gpt-5.6-luna`, esfuerzo `max` y hasta
-cinco intentos totales; `ANNOTATIONS_MODEL` y `ANNOTATIONS_MAX_RETRIES` permiten
-escoger el modelo y entre cero y cuatro reintentos desde `.env`. Si una respuesta
+Las ejecuciones nuevas usan por defecto `gpt-6-luna`, esfuerzo `max` y hasta
+cinco intentos totales; `ANNOTATIONS_MODEL`, `REASONING_LEVEL` y
+`ANNOTATIONS_MAX_RETRIES` permiten escoger el modelo, el esfuerzo y entre cero y
+cuatro reintentos desde `.env`. Si una respuesta
 agota el límite de salida, el siguiente intento duplica su holgura hasta
 `ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS` (65.536 por defecto). La configuración
 efectiva queda congelada en cada manifiesto. El prompt activo se edita en
-[`prompts/annotations_pilot_v1_confidence.md`](prompts/annotations_pilot_v1_confidence.md).
+[`prompts/annotations_prompt_final.md`](prompts/annotations_prompt_final.md).
 El XLSX vigente es `features/codebook/codebook_v5.xlsx` (versión interna
 `0.5.1-candidate`), cerrado para el nuevo piloto previo a la codificación ciega.
 
@@ -29,6 +30,8 @@ uv sync --locked
 uv run quarto render annotations.qmd
 # Preparar inputs de un piloto nuevo, sin llamadas a la API:
 ANNOTATIONS_PREPARE_INPUTS=1 uv run quarto render annotations.qmd
+# Preparar un input con todos los bloques materializados, sin llamadas a la API:
+uv run python -m features.llm_annotations.prepare_all
 # El reporte no ejecuta la API; las llamadas exigen autorización por run_id.
 # Revisar modelo, input, output, códigos destacados y justificaciones:
 uv run python -m features.manual_validation

@@ -47,13 +47,12 @@ from datetime import datetime, timezone
 
 FRACTION = 0.10
 SEED = 20260908
-(CANDIDATE_MODEL, CANDIDATE_SDK_MAX_RETRIES,
+(CANDIDATE_MODEL, CANDIDATE_REASONING_EFFORT, CANDIDATE_SDK_MAX_RETRIES,
  CANDIDATE_INCOMPLETE_MAX_OUTPUT_TOKENS) = execution_config_from_env()
-CANDIDATE_REASONING_EFFORT = "max"
 CANDIDATE_MAX_OUTPUT_TOKENS = 32768
 PREPARE_CANDIDATE_INPUTS = os.environ.get("ANNOTATIONS_PREPARE_INPUTS") == "1"
 PROMPT_PATH = Path(os.environ.get(
-    "ANNOTATIONS_PROMPT", "prompts/annotations_pilot_v1_confidence.md"
+    "ANNOTATIONS_PROMPT", "prompts/annotations_prompt_final.md"
 ))
 CODEBOOK_WORKBOOK = Path("features/codebook/codebook_v5.xlsx")
 CODEBOOK_JSON = CODEBOOK_WORKBOOK.with_suffix(".json")
@@ -226,7 +225,7 @@ objetivos adicionales.
 
 ## Prompt, libro y trazabilidad
 
-El [prompt activo](prompts/annotations_pilot_v1_confidence.md) define evidencia literal,
+El [prompt activo](prompts/annotations_prompt_final.md) define evidencia literal,
 orientación respecto del ancla de cada concepto y tratamiento de justificaciones
 ausentes del libro. Se adjunta el libro completo: definiciones, inclusión,
 exclusión y anclas. Solo se envían el objetivo, su contexto y los metadatos públicos
@@ -238,7 +237,7 @@ La respuesta utiliza un [esquema JSON estricto](https://developers.openai.com/ap
 La API no recibe una semilla: se reproduce la selección, los inputs y la
 configuración, pero nuevas generaciones pueden diferir. El modelo, los reintentos
 y el techo alternativo para respuestas incompletas se leen desde
-`ANNOTATIONS_MODEL`, `ANNOTATIONS_MAX_RETRIES` y
+`ANNOTATIONS_MODEL`, `REASONING_LEVEL`, `ANNOTATIONS_MAX_RETRIES` y
 `ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS` en `.env`; los valores efectivos quedan
 congelados en el manifiesto.
 
@@ -248,7 +247,8 @@ la muestra y los requests en una carpeta identificada por su contenido, sin llam
 a la API. Para no acumular inputs no utilizados, el render no los prepara por
 defecto: se debe usar `ANNOTATIONS_PREPARE_INPUTS=1`. Esta preparación no exige
 coincidencia con la muestra ni con el libro del piloto histórico. Los requests
-nuevos reciben explícitamente `{python} CANDIDATE_MODEL`, razonamiento `max`,
+nuevos reciben explícitamente `{python} CANDIDATE_MODEL`, razonamiento
+`{python} CANDIDATE_REASONING_EFFORT`,
 `{python} CANDIDATE_SDK_MAX_RETRIES` reintentos y un límite base de 32.768 tokens
 de salida. Un `incomplete` por agotamiento duplica el límite del intento siguiente
 hasta `{python} CANDIDATE_INCOMPLETE_MAX_OUTPUT_TOKENS` tokens.
@@ -405,7 +405,7 @@ atomic_write_csv(execution_summary, TABLE_ROOT / f"{pilot_run_dir.name}_executio
 
 ## Confianza en el prompt activo
 
-El [prompt activo](prompts/annotations_pilot_v1_confidence.md) conserva
+El [prompt activo](prompts/annotations_prompt_final.md) conserva
 los campos de justificación y añade `confidence` por anotación y
 `decision_confidence` por bloque, ambos con niveles `high`, `medium` y `low`.
 El esquema y el exportador de `features/llm_annotations/pipeline.py` guardan esos
@@ -413,7 +413,7 @@ valores en `annotations.parquet` y `results.parquet`, respectivamente. Los CSV
 exportados arriba conservan las mismas columnas. La confianza del bloque incluye
 las decisiones `no_statements`, necesarias para revisar posibles omisiones.
 
-Para nuevas ejecuciones, `prepare_run` usa ahora Luna con esfuerzo `max` y un
+Para nuevas ejecuciones, `prepare_run` usa Luna con el esfuerzo configurado y un
 máximo de 32.768 tokens, compartido entre razonamiento y texto visible. Los
 resultados exportan `response_status`, `incomplete_reason`, `api_error_code`,
 `attempt_count`, `base_max_output_tokens`, `max_output_tokens` y

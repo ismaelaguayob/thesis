@@ -10,6 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import jsonschema
+import httpx2
 import pandas as pd
 
 import features.llm_annotations.pipeline as pipeline
@@ -351,10 +352,11 @@ class LLMPilotTests(unittest.TestCase):
     def test_active_prompt_documents_current_schema(self):
         root = Path(__file__).resolve().parents[1]
         report = (root / 'annotations.qmd').read_text(encoding='utf-8')
-        prompt = (root / 'prompts/annotations_pilot_v1_confidence.md').read_text(
+        prompt = (root / 'prompts/annotations_prompt_final.md').read_text(
             encoding='utf-8'
         )
-        self.assertIn('"prompts/annotations_pilot_v1_confidence.md"', report)
+        self.assertIn('"prompts/annotations_prompt_final.md"', report)
+        self.assertIn('GLOSARIO DE SIGLAS', prompt)
         for field in ('decision_confidence', 'confidence', 'justification'):
             self.assertIn(f'`{field}`', prompt)
         for removed in ('`needs_human_review`', '`proposed_concept`', '`limitations`',
@@ -473,6 +475,7 @@ class LLMPilotTests(unittest.TestCase):
             manifest['spec']['party_alignment'], service.party_alignment.snapshot()
         )
         request = json.loads((directory / 'requests/00000.json').read_text())['body']
+        self.assertEqual('gpt-6-luna', request['model'])
         self.assertEqual('max', request['reasoning']['effort'])
         self.assertEqual(32768, request['max_output_tokens'])
         self.assertEqual(4, manifest['spec']['sdk_max_retries'])
@@ -488,14 +491,23 @@ class LLMPilotTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 prepare_run(service, [self.record], {}, self.root / 'prompt.md', self.root,
                             sdk_max_retries=retries)
+        with self.assertRaises(ValueError):
+            prepare_run(service, [self.record], {}, self.root / 'prompt.md', self.root,
+                        effort='invalid')
 
-    def test_model_and_retries_are_selectable_from_environment(self):
+    def test_model_reasoning_and_retries_are_selectable_from_environment(self):
         with patch.dict(os.environ, {
             'ANNOTATIONS_MODEL': 'gpt-test-model',
+            'REASONING_LEVEL': 'HIGH',
             'ANNOTATIONS_MAX_RETRIES': '2',
             'ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS': '49152',
         }):
-            self.assertEqual(('gpt-test-model', 2, 49152), execution_config_from_env())
+            self.assertEqual(('gpt-test-model', 'high', 2, 49152), execution_config_from_env())
+        for value in ('', 'invalid', 'ultra'):
+            with self.subTest(reasoning=value), patch.dict(
+                os.environ, {'REASONING_LEVEL': value}, clear=False
+            ), self.assertRaises(ValueError):
+                execution_config_from_env()
         for value in ('-1', '5', 'abc', ''):
             with self.subTest(value=value), patch.dict(
                 os.environ, {'ANNOTATIONS_MAX_RETRIES': value}, clear=False
@@ -532,6 +544,46 @@ class LLMPilotTests(unittest.TestCase):
         self.assertIn('max_output_tokens', frame.iloc[0].validation_errors)
         self.assertIsNone(frame.iloc[0].decision)
         client.close.assert_called_once()
+
+    def test_rate_limit_retry_waits_for_server_delay(self):
+        directory = self.make_run()
+        response = httpx2.Response(
+            429,
+            request=httpx2.Request('POST', 'https://api.openai.com/v1/responses'),
+            headers={'Retry-After': '2'},
+            json={'error': {'code': 'rate_limit_exceeded'}},
+        )
+        error = pipeline.APIStatusError('Rate limited', response=response,
+                                        body=response.json())
+        client = self.fake_client()
+        success = client.responses.create.return_value
+        client.responses.create.side_effect = [error, success]
+        with patch('features.llm_annotations.pipeline.OpenAI', return_value=client), \
+             patch('features.llm_annotations.pipeline.time.sleep') as sleep, \
+             patch('features.llm_annotations.pipeline.random.uniform', return_value=0.1):
+            frame = run_annotations(directory, execute=True)
+        self.assertEqual('completed', frame.iloc[0].status)
+        self.assertEqual(2, client.responses.create.call_count)
+        sleep.assert_called_once_with(2.1)
+
+    def test_project_spend_limit_is_not_retried(self):
+        directory = self.make_run()
+        response = httpx2.Response(
+            429,
+            request=httpx2.Request('POST', 'https://api.openai.com/v1/responses'),
+            json={'error': {'code': 'project_spend_limit_exceeded'}},
+        )
+        error = pipeline.APIStatusError('Project spend limit', response=response,
+                                        body=response.json())
+        client = self.fake_client()
+        client.responses.create.side_effect = error
+        with patch('features.llm_annotations.pipeline.OpenAI', return_value=client), \
+             patch('features.llm_annotations.pipeline.time.sleep') as sleep:
+            frame = run_annotations(directory, execute=True, workers=1)
+        self.assertEqual('error', frame.iloc[0].status)
+        self.assertEqual(1, frame.iloc[0].attempt_count)
+        self.assertEqual(1, client.responses.create.call_count)
+        sleep.assert_not_called()
 
     def test_completed_results_can_be_reused_in_compatible_retry_run(self):
         source = self.make_run()

@@ -1,6 +1,6 @@
 ---
-title: "Análisis inicial de H1"
-subtitle: "Piloto de codificación de justificaciones normativas"
+title: "Análisis de H1"
+subtitle: "Censo de bloques de justificaciones normativas"
 lang: es
 format:
   html:
@@ -16,19 +16,20 @@ execute:
 
 ## Alcance
 
-Este documento inicia el análisis de H1 para la Ley N.º 21.735. H1a busca
-coaliciones discursivas asociadas con los polos de preservación y transformación;
-H1b examina la intermediación de la centroizquierda y de `necesidad_material`.
+Este documento analiza H1 para la Ley N.º 21.735. H1a busca coaliciones
+discursivas asociadas con los polos de preservación y transformación; H1b
+examina la intermediación de la centroizquierda y de `necesidad_material`.
 
-La ejecución disponible contiene una muestra de fragmentos. Por ello, sus
-resultados son exploratorios. El mismo código funciona con una ejecución del
-corpus completo siempre que mantenga los archivos `sample.parquet`,
-`results.parquet` y `annotations.parquet`.
+La última iteración es un censo de 3.609 bloques entre tres leyes. Este análisis
+usa los 2.439 bloques de la Ley 21.735. Las respuestas se guardan como JSON por
+bloque; el informe distingue su estado y analiza solo las respuestas completas
+disponibles al momento del render. Las tablas y figuras se guardan en una carpeta
+con el ID de la iteración para conservar su procedencia.
 
 ## Configuración y datos
 
 Las decisiones principales quedan reunidas al comienzo. Los objetos y figuras se
-sobrescriben en `output/analysis/h1/` en cada render.
+guardan en `output/analysis/h1/<RUN_ID>/`.
 
 ```{r}
 #| label: setup
@@ -37,14 +38,10 @@ pacman::p_load(
   igraph, ggraph, jsonlite, knitr, scales, tibble
 )
 
-INPUT_DIR <- file.path(
-  "data", "proc_data", "annotations_inputs",
-  "pilot_bbf87273f96292ef3d66"
-)
-RESULT_DIR <- file.path(
-  "output", "annotations", "pilot_bbf87273f96292ef3d66"
-)
-OUTPUT_DIR <- file.path("output", "analysis", "h1")
+RUN_ID <- "pilot_d4e0291b4df3fc0f5343"
+INPUT_DIR <- file.path("data", "proc_data", "annotations_inputs", RUN_ID)
+RESULT_DIR <- file.path("output", "annotations", RUN_ID)
+OUTPUT_DIR <- file.path("output", "analysis", "h1", RUN_ID)
 FIGURE_DIR <- file.path(OUTPUT_DIR, "figures")
 
 TARGET_LAW <- "21735"
@@ -72,8 +69,9 @@ knitr::opts_chunk$set(fig.path = paste0(FIGURE_DIR, "/"))
 theme_set(theme_minimal(base_size = 12))
 ```
 
-Cargamos la muestra, los estados, las anotaciones y el libro congelado con la
-ejecución.
+Cargamos la entrada y el libro de códigos congelados. Los resultados se leen
+desde los JSON que escribe la corrida; los archivos que aún no existen quedan
+como pendientes.
 
 ```{r}
 #| label: cargar-datos
@@ -86,11 +84,130 @@ codebook_raw <- jsonlite::fromJSON(file.path(INPUT_DIR, "codebook.json"))
 sample_blocks <- arrow::read_parquet(file.path(INPUT_DIR, "sample.parquet")) |>
   mutate(across(c(law_number, unit_id, utterance_id, document_uri), as.character))
 
-results <- arrow::read_parquet(file.path(RESULT_DIR, "results.parquet")) |>
-  mutate(across(c(law_number, unit_id, utterance_id, document_uri), as.character))
+if (!identical(manifest$run_id, RUN_ID)) {
+  stop("El RUN_ID no coincide con el manifiesto de entrada.")
+}
+if (anyDuplicated(sample_blocks$unit_id)) {
+  stop("sample.parquet contiene unit_id duplicados.")
+}
 
-annotations <- arrow::read_parquet(file.path(RESULT_DIR, "annotations.parquet")) |>
-  mutate(across(c(law_number, unit_id, utterance_id, document_uri), as.character))
+scalar_chr <- function(x, default = NA_character_) {
+  if (is.null(x) || length(x) == 0L) default else as.character(x[[1L]])
+}
+scalar_int <- function(x, default = NA_integer_) {
+  if (is.null(x) || length(x) == 0L) default else as.integer(x[[1L]])
+}
+or_default <- function(x, default) {
+  if (is.null(x)) default else x
+}
+
+empty_annotations <- tibble(
+  unit_id = character(),
+  concept_id = character(),
+  stance = character(),
+  evidence_text = character(),
+  start_char = integer(),
+  end_char = integer(),
+  confidence = character(),
+  justification = character()
+)
+
+read_result_file <- function(path) {
+  result <- jsonlite::fromJSON(path, simplifyVector = FALSE)
+  normalized <- or_default(result$normalized, list())
+  quality_flags <- normalized$quality_flags
+  if (is.null(quality_flags)) quality_flags <- character()
+
+  annotation_records <- or_default(normalized$annotations, list())
+  annotation_rows <- if (length(annotation_records) == 0L) {
+    empty_annotations
+  } else {
+    map_dfr(annotation_records, function(annotation) {
+      span <- or_default(annotation$span, list())
+      tibble(
+        unit_id = scalar_chr(result$unit_id),
+        concept_id = scalar_chr(annotation$concept_id),
+        stance = scalar_chr(annotation$stance),
+        evidence_text = scalar_chr(span$text),
+        start_char = scalar_int(span$start_char),
+        end_char = scalar_int(span$end_char),
+        confidence = scalar_chr(annotation$confidence),
+        justification = scalar_chr(annotation$justification)
+      )
+    })
+  }
+
+  list(
+    summary = tibble(
+      sample_index = scalar_int(result$sample_index),
+      unit_id = scalar_chr(result$unit_id),
+      status = scalar_chr(result$status, default = "pending"),
+      quality_flags = list(as.character(unlist(quality_flags, use.names = FALSE)))
+    ),
+    annotations = annotation_rows
+  )
+}
+
+result_paths <- sort(list.files(
+  file.path(RESULT_DIR, "results"),
+  pattern = "\\.json$",
+  full.names = TRUE
+))
+result_records <- map(result_paths, read_result_file)
+result_index <- if (length(result_records) == 0L) {
+  tibble(
+    sample_index = integer(),
+    unit_id = character(),
+    status = character(),
+    quality_flags = list()
+  )
+} else {
+  map_dfr(result_records, ~ .x$summary)
+}
+annotation_rows <- if (length(result_records) == 0L) {
+  empty_annotations
+} else {
+  map_dfr(result_records, ~ .x$annotations)
+}
+
+if (anyDuplicated(result_index$unit_id) ||
+    anyDuplicated(result_index$sample_index)) {
+  stop("Los resultados tienen unit_id o sample_index duplicados.")
+}
+
+sample_index_lookup <- sample_blocks |>
+  transmute(
+    sample_index = row_number() - 1L,
+    expected_unit_id = unit_id
+  )
+result_id_mismatches <- result_index |>
+  left_join(sample_index_lookup, by = "sample_index") |>
+  filter(is.na(expected_unit_id) | unit_id != expected_unit_id)
+result_ids_outside_sample <- anti_join(
+  result_index |> select(unit_id),
+  sample_blocks |> select(unit_id),
+  by = "unit_id"
+)
+if (nrow(result_id_mismatches) > 0L ||
+    nrow(result_ids_outside_sample) > 0L) {
+  stop("Los resultados no coinciden con los unit_id de sample.parquet.")
+}
+
+clean_flags <- function(flags) {
+  if (is.null(flags) || length(flags) == 0L || all(is.na(flags))) {
+    character()
+  } else {
+    as.character(flags)
+  }
+}
+
+results <- sample_blocks |>
+  select(law_number, document_uri, utterance_id, unit_id) |>
+  left_join(result_index, by = "unit_id") |>
+  mutate(
+    status = coalesce(status, "pending"),
+    quality_flags = map(quality_flags, clean_flags)
+  )
 
 concepts <- as_tibble(codebook_raw$concepts) |>
   transmute(
@@ -102,15 +219,25 @@ concepts <- as_tibble(codebook_raw$concepts) |>
 execution_scope <- tibble(
   input_blocks = nrow(sample_blocks),
   eligible_blocks = as.integer(manifest$spec$sampling$eligible_blocks),
-  full_corpus = input_blocks == eligible_blocks
+  input_is_census = input_blocks == eligible_blocks,
+  target_law = TARGET_LAW,
+  target_eligible_blocks = as.integer(
+    manifest$spec$sampling$blocks_by_law[[TARGET_LAW]]
+  ),
+  target_input_blocks = sum(sample_blocks$law_number == TARGET_LAW),
+  target_completed_results = sum(
+    results$law_number == TARGET_LAW & results$status == "completed"
+  ),
+  target_not_completed = target_input_blocks - target_completed_results
 )
 
 execution_scope
 ```
 
-**Interpretación.** La ejecución actual cubre una muestra de fragmentos, no el
-corpus completo. La ausencia de un concepto en la muestra no debe interpretarse
-como ausencia en toda la intervención.
+**Interpretación.** La entrada sí cubre todos los bloques elegibles de las tres
+leyes, pero la cobertura de anotación puede seguir incompleta. Solo se analizan
+respuestas «completed»; revisa el estado de la Ley 21.735 antes de interpretar
+ausencias de conceptos.
 
 Revisamos los estados y retenemos únicamente salidas completas. Las banderas de
 votación y procedimiento se excluyen del análisis sustantivo.
@@ -118,44 +245,39 @@ votación y procedimiento se excluyen del análisis sustantivo.
 ```{r}
 #| label: preparar-resultados
 status_summary <- results |>
+  filter(law_number == TARGET_LAW) |>
   count(status, name = "blocks") |>
-  mutate(share = blocks / sum(blocks))
+  mutate(share = blocks / sum(blocks)) |>
+  arrange(factor(status, levels = c("completed", "started", "error", "pending")))
 
 status_summary
 
 valid_results <- results |>
-  mutate(flags = map(replace_na(quality_flags, "[]"), jsonlite::fromJSON)) |>
   filter(
     status == "completed",
-    !map_lgl(flags, ~ any(.x %in% c("vote", "procedural")))
+    !map_lgl(quality_flags, ~ any(.x %in% c("vote", "procedural")))
   )
 
-annotations <- annotations |>
+annotations <- annotation_rows |>
+  left_join(
+    sample_blocks |> select(law_number, document_uri, utterance_id, unit_id),
+    by = "unit_id"
+  ) |>
   semi_join(
     valid_results,
     by = c("law_number", "document_uri", "utterance_id", "unit_id")
   ) |>
-  mutate(
-    proposed_concept = str_squish(proposed_concept),
-    concept_key = if_else(
-      !is.na(concept_id) & nzchar(concept_id),
-      concept_id,
-      paste0("additional::", proposed_concept)
-    )
-  ) |>
-  filter(nzchar(concept_key), stance %in% c("support", "oppose"))
-
-additional_concepts <- annotations |>
-  filter(str_starts(concept_key, "additional::")) |>
-  distinct(concept_key, proposed_concept) |>
-  transmute(
-    concept_id = concept_key,
-    concept_label = proposed_concept,
-    concept_family = "Concepto adicional"
+  filter(
+    !is.na(concept_id),
+    concept_id %in% concepts$concept_id,
+    stance %in% c("support", "oppose")
   )
 
-concepts <- bind_rows(concepts, additional_concepts) |>
-  distinct(concept_id, .keep_all = TRUE)
+unknown_annotation_concepts <- annotation_rows |>
+  filter(is.na(concept_id) | !concept_id %in% concepts$concept_id)
+if (nrow(unknown_annotation_concepts) > 0L) {
+  stop("Hay anotaciones con concept_id fuera del libro de códigos congelado.")
+}
 ```
 
 ## Declaraciones y actores
@@ -178,32 +300,72 @@ actor_data <- map_dfr(corpus_paths, function(path) {
   arrow::read_parquet(path) |>
     transmute(
       law_number = law,
-      unit_id,
-      utterance_id,
-      document_uri,
-      speaker_id,
-      speaker,
-      role,
-      party_at_date,
-      party_at_date_status,
-      political_alignment,
-      gender
+      unit_id = as.character(unit_id),
+      utterance_id = as.character(utterance_id),
+      document_uri = as.character(document_uri),
+      speaker_id = as.character(speaker_id),
+      speaker = as.character(speaker),
+      speaker_bcn_id = as.character(speaker_bcn_id),
+      role = as.character(role),
+      party_at_date = as.character(party_at_date),
+      party_at_date_status = as.character(party_at_date_status),
+      political_alignment = as.character(political_alignment),
+      gender = as.character(gender)
     )
 }) |>
-  distinct(law_number, document_uri, utterance_id, unit_id, .keep_all = TRUE)
+  mutate(
+    normalized_role = str_to_lower(str_squish(coalesce(role, ""))),
+    actor_type = case_when(
+      str_detect(normalized_role, "diputad|senador") ~ "Parlamentario",
+      str_detect(normalized_role, "ministr|subsecret") ~ "Ejecutivo",
+      str_detect(
+        normalized_role,
+        "president|vicepresident|secretari|prosecretari"
+      ) ~ "Autoridad de la cámara",
+      !nzchar(normalized_role) &
+        (nzchar(coalesce(speaker_bcn_id, "")) |
+           nzchar(coalesce(party_at_date, ""))) ~ "Parlamentario",
+      TRUE ~ "Otro o sin dato"
+    )
+  ) |>
+  select(-normalized_role)
 
-actor_type <- sample_blocks |>
-  select(law_number, document_uri, utterance_id, unit_id, actor_type)
+actor_join_keys <- c(
+  "law_number", "document_uri", "utterance_id", "unit_id"
+)
+actor_duplicate_keys <- actor_data |>
+  count(across(all_of(actor_join_keys))) |>
+  filter(n > 1L)
+missing_actor_keys <- anti_join(
+  sample_blocks |> select(all_of(actor_join_keys)),
+  actor_data |> select(all_of(actor_join_keys)),
+  by = actor_join_keys
+)
+if (nrow(actor_duplicate_keys) > 0L) {
+  stop("coding_chunks_long.parquet tiene claves de bloque duplicadas.")
+}
+if (nrow(missing_actor_keys) > 0L) {
+  stop("Hay bloques de entrada sin metadatos en coding_chunks_long.parquet.")
+}
 
 annotations <- annotations |>
   left_join(
     actor_data,
-    by = c("law_number", "document_uri", "utterance_id", "unit_id")
-  ) |>
-  left_join(
-    actor_type,
-    by = c("law_number", "document_uri", "utterance_id", "unit_id")
+    by = actor_join_keys
   )
+
+join_audit <- tibble(
+  input_blocks = nrow(sample_blocks),
+  unique_input_unit_ids = n_distinct(sample_blocks$unit_id),
+  result_files = nrow(result_index),
+  result_ids_outside_input = nrow(result_ids_outside_sample),
+  result_index_id_mismatches = nrow(result_id_mismatches),
+  metadata_rows = nrow(actor_data),
+  duplicate_metadata_keys = nrow(actor_duplicate_keys),
+  input_blocks_without_metadata = nrow(missing_actor_keys)
+)
+
+join_audit
 ```
 
 El vacío en `party_at_date` no siempre es un dato faltante. Para integrantes del
@@ -249,11 +411,9 @@ declarations <- annotations |>
   filter(law_number == TARGET_LAW, !is.na(speaker_id)) |>
   distinct(
     document_uri, utterance_id, speaker_id,
-    concept_key, stance,
+    concept_id, stance,
     .keep_all = TRUE
-  ) |>
-  select(-concept_id) |>
-  rename(concept_id = concept_key)
+  )
 
 concept_summary <- declarations |>
   count(concept_id, stance) |>
@@ -323,7 +483,22 @@ actor_nodes <- declarations |>
     .groups = "drop"
   ) |>
   rename(name = speaker_id)
+
+network_scale <- tibble(
+  target_law_blocks = sum(sample_blocks$law_number == TARGET_LAW),
+  active_speakers = nrow(actor_nodes),
+  actor_pairs = nrow(actor_pairs),
+  spin_glass_replicates = N_SPINGLASS_RUNS
+)
+
+network_scale
 ```
+
+**Escala.** El crecimiento a 3.609 bloques no crea un nodo por bloque: las
+matrices agregan declaraciones por hablante y concepto, y las proyecciones
+forman pares entre hablantes activos. Por eso la carga de las redes depende del
+número de hablantes con anotaciones y de sus pares; `network_scale` muestra el
+tamaño efectivo. Se mantienen las 100 repeticiones de *spin-glass*.
 
 ### Red actor–concepto
 
