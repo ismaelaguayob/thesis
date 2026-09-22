@@ -75,7 +75,7 @@ La estrategia recomendada es `stratified`. La unidad primaria predeterminada es
 
 Las dimensiones seleccionables son ley, cámara, alineación política, género, tipo de actor, documento y longitud. La alineación se deriva de `party_at_date`, obtenido por persona y fecha de discusión. `PARTY_ALIGNMENT`, leída desde `.env`, enumera explícitamente los partidos de izquierda, centro, derecha y `nonpartisan`; un partido no listado queda como `unclassified`, no como centro. Los resultados históricos `not_found` o `ambiguous` forman `Sin dato`, mientras las funciones para las que no corresponde afiliación forman `No aplica`; ninguno se imputa al centro.
 
-El valor predeterminado es `ley × cámara × alineación × género`. El tipo de actor permanece disponible y puede anexarse por `unit_id` después de congelar la referencia ciega. La asignación es proporcional mediante mayores restos y el JSON conserva población, muestra, probabilidad de inclusión y peso inverso por estrato. Antes del sorteo definitivo debe comprobarse que el tamaño elegido no produzca estratos con cuota cero.
+El valor predeterminado es `ley × cámara × alineación × género`, con una muestra inicial de 180 bloques. El tipo de actor permanece disponible y puede anexarse por `unit_id` después de congelar la referencia ciega. La asignación reserva una unidad para cada estrato no vacío y distribuye los cupos restantes mediante mayores restos, en proporción a las unidades restantes de cada estrato. El JSON conserva población, muestra, probabilidad de inclusión y peso inverso por estrato. El tamaño elegido debe ser al menos igual al número de estratos no vacíos.
 
 La semilla hace que el sorteo sea reproducible para un corpus idéntico. `random` implementa muestreo aleatorio simple y registra una probabilidad común. Los valores ausentes forman la categoría explícita `Sin dato`. La cámara se determina a nivel de documento a partir de las funciones parlamentarias; cuando esas funciones faltan en un tercer trámite, se hereda la cámara del primer trámite del mismo proyecto.
 
@@ -100,7 +100,7 @@ Los dieciséis conceptos activos son:
 - necesidad material;
 - igualdad y universalismo;
 - conciencia de costos;
-- solidaridad previsional colectiva;
+- solidaridad como deber colectivo;
 - solidaridad intergeneracional;
 - libertad de elección previsional;
 - ineficiencia y riesgo estatal;
@@ -116,7 +116,7 @@ Los dieciséis conceptos activos son:
 
 Una afirmación sobre la sostenibilidad financiera presente o futura puede codificarse aunque no incluya montos, siempre que funcione como razón para limitar, rechazar o defender la reforma. Esta regla conserva como válida la codificación realizada en el ítem 13 de la ronda anterior.
 
-`Solidaridad previsional colectiva` registra recursos o riesgos compartidos mediante redistribución, seguro social o financiamiento común sin una relación generacional explícita. `Solidaridad intergeneracional` se reserva para responsabilidades, transferencias o riesgos entre cohortes activas y jubiladas. La mención retórica de solidaridad o de un fondo común no basta para ninguno de los dos códigos.
+`Solidaridad como deber colectivo` registra la justificación normativa de que la comunidad debe apoyarse y compartir sacrificios, cargas, recursos o riesgos previsionales. Un seguro social, fondo común, reparto, aporte estatal o mecanismo de financiamiento no activa el código si el pasaje no formula ese deber de apoyo mutuo. `Solidaridad intergeneracional` se reserva para responsabilidades, transferencias o riesgos entre cohortes activas y jubiladas.
 
 `Libertad de elección previsional` registra la autonomía para escoger administradora, alternativa previsional o destino institucional de cotizaciones obligatorias. No equivale a propiedad de los fondos, autofinanciamiento individual, competencia de mercado ni responsabilidad por las consecuencias de una conducta controlable.
 

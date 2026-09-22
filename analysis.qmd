@@ -24,7 +24,7 @@ justicia política. H1b espera una mayor intermediación de los actores de
 centroizquierda y de `necesidad_material`.
 
 El documento está preparado para leer directamente el piloto activo, que usa el
-libro `0.4.0-pilot` y el contrato `llm-pilot-1.4.0`. No llama a la API ni modifica
+libro `0.5.0-pilot` y el contrato `llm-pilot-1.5.0`. No llama a la API ni modifica
 las respuestas del modelo. Cada celda realiza una operación reconocible y puede
 ejecutarse por separado, respetando las dependencias creadas por las celdas
 anteriores. Los objetos derivados y las figuras se sobrescriben en
@@ -91,6 +91,13 @@ TARGET_LAW <- "21735"
 N_PARTITION_RUNS <- 200L
 BASE_SEED <- 20260921L
 SPINS <- 10L
+START_TEMP <- 1
+STOP_TEMP <- 0.01
+COOLING_FACTOR <- 0.99
+UPDATE_RULE <- "config"
+GAMMA_POSITIVE <- 1
+GAMMA_NEGATIVE <- 1
+NETWORK_DISPLAY_QUANTILE <- 0.75
 NUMERIC_TOLERANCE <- 1e-12
 
 ANALYSIS_DIR <- file.path("output", "analysis", "h1")
@@ -103,10 +110,6 @@ dir.create(FIGURE_DIR, recursive = TRUE, showWarnings = FALSE)
 knitr::opts_chunk$set(
   fig.path = paste0(FIGURE_DIR, "/")
 )
-
-show_table <- function(data, digits = 3) {
-  knitr::kable(data, digits = digits, format = "html")
-}
 ```
 
 ### Archivos de la ejecución
@@ -184,7 +187,7 @@ concepts <- tibble::as_tibble(codebook_raw$concepts) |>
     orientation_anchor = as.character(orientation_anchor)
   )
 
-concept_ids <- concepts$concept_id
+codebook_concept_ids <- concepts$concept_id
 ```
 
 ### Estado de la ejecución
@@ -202,12 +205,8 @@ status_summary <- block_results |>
   mutate(share = n_blocks / sum(n_blocks)) |>
   arrange(desc(n_blocks))
 
-show_table(status_summary)
+status_summary
 ```
-
-**Lectura pendiente.** Completar cuando haya terminado la anotación. Se debe
-informar el número y porcentaje de salidas válidas, incompletas, inválidas y sin
-intento antes de interpretar cualquier red.
 
 La siguiente celda detiene el análisis si quedan intentos en curso. Los estados
 terminales distintos de `completed` se conservan en el diagnóstico, pero no se
@@ -247,8 +246,7 @@ parse_json_array <- function(value) {
   if (is.na(value) || !nzchar(value)) {
     return(character())
   }
-  parsed <- tryCatch(jsonlite::fromJSON(value), error = function(error) character())
-  as.character(parsed)
+  as.character(jsonlite::fromJSON(value))
 }
 
 block_results <- block_results |>
@@ -272,12 +270,8 @@ block_audit <- block_results |>
 valid_blocks <- block_results |>
   filter(status == "completed", !excluded_by_quality)
 
-show_table(block_audit)
+block_audit
 ```
-
-**Lectura pendiente.** Describir cuántos fragmentos ingresan al análisis y qué
-proporción se pierde por ejecución o calidad textual. Una pérdida concentrada por
-grupo político o fase deberá tratarse como posible sesgo del piloto.
 
 ### Anotaciones válidas del libro
 
@@ -287,8 +281,7 @@ hasta su adjudicación y se cuentan por separado.
 
 ```{r}
 #| label: preparar-anotaciones
-review_proposals <- model_annotations |>
-  filter(concept_status == "review")
+review_proposals <- model_annotations
 
 annotations_clean <- model_annotations |>
   inner_join(
@@ -322,12 +315,8 @@ annotation_audit <- tibble(
   )
 )
 
-show_table(annotation_audit)
+annotation_audit
 ```
-
-**Lectura pendiente.** Registrar la magnitud de los conceptos propuestos y de
-los bloques sin declaraciones. Ninguna de esas dos categorías debe confundirse
-con un error de ejecución.
 
 ## Reconstrucción de actores y declaraciones
 
@@ -447,11 +436,8 @@ if (nrow(observed_declarations) == 0) {
   stop("No hay declaraciones utilizables para la ley objetivo.")
 }
 
-show_table(join_audit)
+join_audit
 ```
-
-**Lectura pendiente.** Comprobar que la unión recupera todos los actores. Los
-faltantes no pueden imputarse a una alineación política.
 
 ### Descripción de las declaraciones observadas
 
@@ -489,11 +475,8 @@ concept_observed_summary <- observed_declarations |>
   ) |>
   arrange(desc(interventions_support + interventions_oppose))
 
-show_table(concept_observed_summary)
+concept_observed_summary
 ```
-
-**Lectura pendiente.** Identificar conceptos con evidencia suficiente para una
-proyección relacional y aquellos cuya escasez vuelva inestable cualquier vínculo.
 
 ## H1a: polos discursivos y coaliciones
 
@@ -694,7 +677,7 @@ if (igraph::vcount(main_signed_graph) < 3 || igraph::ecount(main_signed_graph) =
   stop("El componente principal es insuficiente para signed spin-glass.")
 }
 
-show_table(component_summary)
+component_summary
 ```
 
 **Lectura pendiente.** Informar qué proporción de actores cubre el componente

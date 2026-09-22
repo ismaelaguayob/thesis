@@ -124,12 +124,21 @@ class CodebookWorkbookTestCase(unittest.TestCase):
         expected = read_codebook_workbook(workbook)
         actual = json.loads(generated_json.read_text(encoding="utf-8"))
         self.assertEqual(expected, actual)
-        self.assertEqual("0.5.0-candidate", expected["version"])
+        self.assertEqual("0.5.1-candidate", expected["version"])
         self.assertEqual("closed", expected["status"])
         self.assertEqual(16, len(expected["concepts"]))
         concepts = {concept["id"]: concept for concept in expected["concepts"]}
         self.assertIn("solidaridad_previsional_colectiva", concepts)
         self.assertIn("libertad_eleccion_previsional", concepts)
+        collective_duty = concepts["solidaridad_previsional_colectiva"]
+        self.assertEqual("Solidaridad como deber colectivo", collective_duty["label"])
+        self.assertIn("deber de apoyo mutuo", collective_duty["definition"])
+        self.assertTrue(
+            any(
+                "Estado debe financiar" in criterion
+                for criterion in collective_duty["exclude"]
+            )
+        )
         self.assertIn(
             "conectar una conducta efectivamente controlable con una consecuencia distributiva",
             concepts["control_responsabilidad_individual"]["definition"],

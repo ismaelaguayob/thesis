@@ -21,7 +21,7 @@ agota el límite de salida, el siguiente intento duplica su holgura hasta
 efectiva queda congelada en cada manifiesto. El prompt activo se edita en
 [`prompts/annotations_pilot_v1_confidence.md`](prompts/annotations_pilot_v1_confidence.md).
 El XLSX vigente es `features/codebook/codebook_v5.xlsx` (versión interna
-`0.5.0-candidate`), cerrado para el chequeo final previo a la codificación ciega.
+`0.5.1-candidate`), cerrado para el nuevo piloto previo a la codificación ciega.
 
 ```bash
 uv sync --locked

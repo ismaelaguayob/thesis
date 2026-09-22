@@ -87,8 +87,8 @@ carpetas de caché del usuario, asigna `UV_CACHE_DIR`, `IPYTHONDIR`,
 ## Libro y prompt
 
 `features/codebook/codebook_v5.xlsx` es la fuente editable vigente. Sus metadatos
-internos declaran **0.5.0-candidate**, con 16 conceptos y un vocabulario cerrado
-para el chequeo final previo a la codificación ciega. El JSON se sincroniza
+internos declaran **0.5.1-candidate**, con 16 conceptos y un vocabulario cerrado
+para el nuevo piloto previo a la codificación ciega. El JSON se sincroniza
 mediante el conversor existente antes de cada preparación.
 
 `prompts/annotations_pilot_v1_confidence.md` contiene las instrucciones activas y

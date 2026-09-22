@@ -17,6 +17,7 @@ from features.manual_validation.service import (
     ValidationService,
     create_server,
     sample_records,
+    sample_with_design,
 )
 from features.political_alignment import PartyAlignment
 
@@ -274,13 +275,13 @@ class ManualValidationTestCase(unittest.TestCase):
             json.dumps(codebook, ensure_ascii=False), encoding="utf-8"
         )
 
-    def _session(self, sample_size: int = 5) -> dict:
+    def _session(self, sample_size: int = 5, strategy: str = "stratified") -> dict:
         return self.service.create_session(
             {
                 "coder_id": "test-coder",
                 "sample_size": sample_size,
                 "seed": 1122,
-                "strategy": "stratified",
+                "strategy": strategy,
             }
         )
 
@@ -373,6 +374,36 @@ class ManualValidationTestCase(unittest.TestCase):
         self.assertEqual(len(first_ids), len(set(first_ids)))
         self.assertTrue(all("sampling_stratum" in item for item in first))
 
+    def test_stratified_design_guarantees_one_unit_per_nonempty_stratum(self) -> None:
+        records = [
+            {"unit_id": "a-1", "law_number": "a"},
+            {"unit_id": "a-2", "law_number": "a"},
+            {"unit_id": "a-3", "law_number": "a"},
+            {"unit_id": "a-4", "law_number": "a"},
+            {"unit_id": "b-1", "law_number": "b"},
+            {"unit_id": "c-1", "law_number": "c"},
+            {"unit_id": "c-2", "law_number": "c"},
+        ]
+
+        selected, design = sample_with_design(
+            records, 5, 29, "stratified", ["law_number"]
+        )
+
+        quotas = {row["values"]["law_number"]: row["sampled_units"] for row in design}
+        self.assertEqual(len(selected), 5)
+        self.assertEqual(quotas, {"a": 3, "b": 1, "c": 1})
+        self.assertTrue(all(quota >= 1 for quota in quotas.values()))
+
+    def test_stratified_design_requires_space_for_all_nonempty_strata(self) -> None:
+        records = [
+            {"unit_id": "a-1", "law_number": "a"},
+            {"unit_id": "b-1", "law_number": "b"},
+            {"unit_id": "c-1", "law_number": "c"},
+        ]
+
+        with self.assertRaisesRegex(ValidationError, "estratos no vacíos"):
+            sample_with_design(records, 2, 29, "stratified", ["law_number"])
+
     def test_identity_fields_are_never_exposed_or_persisted(self) -> None:
         summary = self._session()
         public = self.service.open_item(summary["session_id"], 0)
@@ -424,6 +455,7 @@ class ManualValidationTestCase(unittest.TestCase):
 
     def test_default_strata_add_alignment_for_both_sampling_units(self) -> None:
         self.assertEqual(self.service.config()["defaults"]["sampling_unit"], "block")
+        self.assertEqual(self.service.config()["defaults"]["sample_size"], 180)
         self.assertEqual(
             self.service.config()["defaults"]["strata"],
             ["law_number", "chamber", "alignment", "gender"],
@@ -598,7 +630,7 @@ class ManualValidationTestCase(unittest.TestCase):
         self.assertEqual(saved["session"]["evaluation_excluded"], 1)
 
     def test_same_span_with_different_concepts_uses_normal_annotation_rules(self) -> None:
-        summary = self._session(1)
+        summary = self._session(1, strategy="random")
         session_id = summary["session_id"]
         text = self.service.open_item(session_id, 0)["item"]["target_text"]
         evidence = text[: min(18, len(text))]
@@ -642,7 +674,7 @@ class ManualValidationTestCase(unittest.TestCase):
         ))
 
     def test_review_requires_proposal_and_semantic_duplicates_are_rejected(self) -> None:
-        summary = self._session(1)
+        summary = self._session(1, strategy="random")
         session_id = summary["session_id"]
         text = self.service.open_item(session_id, 0)["item"]["target_text"]
         evidence = text[: min(8, len(text))]
@@ -667,7 +699,7 @@ class ManualValidationTestCase(unittest.TestCase):
             })
 
     def test_same_concept_with_opposite_stances_is_allowed(self) -> None:
-        summary = self._session(1)
+        summary = self._session(1, strategy="random")
         session_id = summary["session_id"]
         text = self.service.open_item(session_id, 0)["item"]["target_text"]
         evidence = text[: min(8, len(text))]
@@ -690,7 +722,7 @@ class ManualValidationTestCase(unittest.TestCase):
 
     def test_closed_codebook_rejects_concept_proposals(self) -> None:
         self.service.codebook["status"] = "closed"
-        summary = self._session(1)
+        summary = self._session(1, strategy="random")
         session_id = summary["session_id"]
         text = self.service.open_item(session_id, 0)["item"]["target_text"]
         evidence = text[: min(8, len(text))]
@@ -806,7 +838,7 @@ class ManualValidationTestCase(unittest.TestCase):
         self.highlights_path.write_text(
             "## 1. Pasaje previo\n\nTexto anterior.\n\n## \n", encoding="utf-8"
         )
-        summary = self._session(sample_size=1)
+        summary = self._session(sample_size=1, strategy="random")
         session_path = self.output_dir / f"{summary['session_id']}.json"
         before = session_path.read_bytes()
         item = self._session_payload(summary["session_id"])["items"][0]
