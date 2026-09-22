@@ -24,7 +24,7 @@ justicia política. H1b espera una mayor intermediación de los actores de
 centroizquierda y de `necesidad_material`.
 
 El documento está preparado para leer directamente el piloto activo, que usa el
-libro `0.4.0-pilot` y el contrato `llm-pilot-1.2.1`. No llama a la API ni modifica
+libro `0.4.0-pilot` y el contrato `llm-pilot-1.4.0`. No llama a la API ni modifica
 las respuestas del modelo. Cada celda realiza una operación reconocible y puede
 ejecutarse por separado, respetando las dependencias creadas por las celdas
 anteriores. Los objetos derivados y las figuras se sobrescriben en
@@ -40,10 +40,9 @@ El análisis confirmatorio deberá utilizar intervenciones completamente procesa
 y anotaciones adjudicadas.
 :::
 
-El cuaderno aún no ha sido ejecutado porque la salida de la anotación está en
-proceso. Por esa razón, después de cada celda de resultados se deja una indicación
-de la lectura que deberá completarse una vez disponible el output, sin anticipar
-hallazgos.
+El cuaderno no incorpora interpretaciones precalculadas. Después de cada celda de
+resultados se deja una indicación de la lectura que deberá completarse al ejecutar
+e inspeccionar el output, sin anticipar hallazgos.
 
 ## Configuración
 
@@ -77,10 +76,16 @@ pacman::p_load(
 options(dplyr.summarise.inform = FALSE)
 theme_set(theme_minimal(base_size = 12))
 
-ANNOTATION_DIR <- file.path(
-  "output",
+ANNOTATION_INPUT_DIR <- file.path(
+  "data",
+  "proc_data",
   "annotations_inputs",
-  "pilot_92b89349279f604a2071"
+  "pilot_bbf87273f96292ef3d66"
+)
+ANNOTATION_RESULT_DIR <- file.path(
+  "output",
+  "annotations",
+  "pilot_bbf87273f96292ef3d66"
 )
 TARGET_LAW <- "21735"
 N_PARTITION_RUNS <- 200L
@@ -112,11 +117,11 @@ tablas generadas por `export_results()`. Esta celda no interpreta el contenido.
 ```{r}
 #| label: archivos-requeridos
 required_paths <- c(
-  manifest = file.path(ANNOTATION_DIR, "manifest.json"),
-  codebook = file.path(ANNOTATION_DIR, "codebook.json"),
-  sample = file.path(ANNOTATION_DIR, "sample.parquet"),
-  results = file.path(ANNOTATION_DIR, "results.parquet"),
-  annotations = file.path(ANNOTATION_DIR, "annotations.parquet")
+  manifest = file.path(ANNOTATION_INPUT_DIR, "manifest.json"),
+  codebook = file.path(ANNOTATION_INPUT_DIR, "codebook.json"),
+  sample = file.path(ANNOTATION_INPUT_DIR, "sample.parquet"),
+  results = file.path(ANNOTATION_RESULT_DIR, "results.parquet"),
+  annotations = file.path(ANNOTATION_RESULT_DIR, "annotations.parquet")
 )
 
 missing_paths <- required_paths[!file.exists(required_paths)]
@@ -217,7 +222,7 @@ if (in_progress_n > 0) {
   stop(
     sprintf(
       "La ejecución %s aún tiene %s fragmentos pendientes o en curso.",
-      basename(ANNOTATION_DIR),
+      basename(ANNOTATION_RESULT_DIR),
       in_progress_n
     )
   )
