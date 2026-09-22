@@ -131,7 +131,7 @@ class CodebookWorkbookTestCase(unittest.TestCase):
         self.assertIn("solidaridad_previsional_colectiva", concepts)
         self.assertIn("libertad_eleccion_previsional", concepts)
         self.assertIn(
-            "mera capacidad de elegir no basta",
+            "conectar una conducta efectivamente controlable con una consecuencia distributiva",
             concepts["control_responsabilidad_individual"]["definition"],
         )
         self.assertTrue(

@@ -1,0 +1,247 @@
+{
+  "sample_index": 40,
+  "unit_id": "utt_34dec9d9e6eae9ed12df::p0001-p0003",
+  "request_sha256": "7bd4557ed7f95404dd185e398080eba84be1cf526c13d01b1debaf8148fd6bef",
+  "started_at_utc": "2026-09-22T06:23:31.592161+00:00",
+  "status": "completed",
+  "validation_errors": [],
+  "normalized": {
+    "decision": "no_statements",
+    "annotations": [],
+    "quality_flags": [],
+    "decision_confidence": "high",
+    "needs_human_review": false,
+    "review_reasons": [],
+    "opposite_stance_concepts": []
+  },
+  "output_text": "{\"decision\":\"no_statements\",\"annotations\":[],\"quality_flags\":[],\"decision_confidence\":\"high\"}",
+  "response": {
+    "id": "resp_075af28dcad351f0016ab21ee3c1c087d19c2ae20a1184a000",
+    "created_at": 1790058211.0,
+    "error": null,
+    "incomplete_details": null,
+    "instructions": "Eres un anotador de justificaciones normativas en debates legislativos chilenos\nsobre pensiones. Tu tarea es aplicar de manera estricta y reproducible el libro\nde códigos incluido al final de estas instrucciones.\n\nALCANCE\n\nCodifica una declaración cuando el `target_text` contiene una razón normativa\nque justifica cómo debe organizarse, asignarse, ampliarse, restringirse,\nfinanciarse o legitimarse la protección previsional. Debe existir una conexión\ndefendible entre una premisa valorativa y una consecuencia para la política\nprevisional.\n\nNo codifiques como declaración normativa:\n\n- una descripción, cifra, diagnóstico o antecedente histórico sin consecuencia\n  justificativa;\n- el nombre de una institución, mecanismo o concepto sin una razón normativa;\n- una preferencia, anuncio, voto o crítica política que no explique por qué una\n  alternativa es correcta, legítima, justa o viable;\n- actos procedimentales, agradecimientos, saludos, llamados al orden o referencias\n  a la tramitación;\n- una razón que aparece solo en `previous_context` o `next_context`.\n\nLIBRO CERRADO\n\nUsa exclusivamente los IDs incluidos en el libro de códigos. No propongas,\ninventes, renombres ni combines categorías. Si una justificación explícita no\nencaja razonablemente en ningún concepto, no la fuerces dentro de un código. En\nese caso solo codifica otras declaraciones del objetivo que sí estén cubiertas;\nsi ninguna lo está, usa `decision=\"no_statements\"`.\n\nAplica primero la definición y el `orientation_anchor`; usa las reglas `include`\ny `exclude` para resolver fronteras. Una coincidencia temática o léxica no basta.\nLas exclusiones tienen prioridad cuando describen exactamente el caso. No\ntransformes automáticamente palabras como «solidaridad», «igualdad», «libertad»,\n«responsabilidad», «propiedad», «sostenibilidad» o «acuerdo» en códigos.\n\nUNIDAD Y EVIDENCIA\n\nLa unidad codificable es una proposición normativa expresada en el\n`target_text`. Si el objetivo contiene varias proposiciones codificables,\nregistra cada una por separado. No dupliques una misma proposición con el mismo\ncódigo y orientación.\n\nPara cada anotación:\n\n1. Copia en `evidence_text` la subcadena literal mínima del `target_text` que\n   permita reconocer la razón y su sentido. Puede contener más de una oración si\n   eso es indispensable.\n2. No corrijas ortografía, espacios, mayúsculas, puntuación ni saltos de línea.\n3. Si esa subcadena aparece más de una vez, indica en `evidence_occurrence` su\n   aparición empezando en 1; en otro caso usa 1.\n4. La evidencia debe provenir siempre del objetivo. El contexto adyacente solo\n   puede ayudar a resolver una referencia o el alcance de una negación; nunca\n   crea una anotación ausente del objetivo.\n\nSOLAPAMIENTO\n\nUna misma evidencia puede recibir más de un concepto solo cuando expresa razones\nnormativas distintas y cada código satisface por separado su definición. No\nañadas códigos por asociación temática, por enumerar alternativas cercanas ni\npor repetir la misma explicación con etiquetas diferentes.\n\nORIENTACIÓN (`stance`)\n\nUsa exclusivamente `support` u `oppose`, siempre respecto del\n`orientation_anchor` del concepto elegido:\n\n- `support`: la evidencia afirma, defiende o presupone la proposición del ancla;\n- `oppose`: la evidencia niega, critica, rechaza o refuta esa proposición.\n\nConserva el alcance de negaciones, condicionales y citas atribuidas. No deduzcas\nla orientación desde el voto a favor o en contra de un proyecto. Una crítica al\ngobierno o a una institución tampoco fija por sí sola la orientación.\n\nJUSTIFICACIÓN BREVE\n\nEn `justification` escribe una o dos oraciones breves. Explica conjuntamente:\n\n- qué razón normativa expresa la evidencia y por qué cumple la definición o una\n  regla de inclusión del concepto;\n- por qué esa evidencia apoya u opone el `orientation_anchor`.\n\nNo repitas la cita completa, no enumeres alternativas descartadas, no cites\níndices del libro y no incluyas razonamiento paso a paso.\n\nCONFIANZA\n\nUsa `high`, `medium` o `low`. Son niveles ordinales de confianza percibida, no\nprobabilidades.\n\nPara `confidence`, considera conjuntamente que la evidencia sea una\njustificación normativa, el código, la orientación y la suficiencia del span:\n\n- `high`: la asignación está directamente respaldada por el texto y el libro;\n- `medium`: existe una lectura preferible, pero persiste una duda acotada;\n- `low`: falta contexto necesario o dos lecturas sustantivas siguen siendo\n  comparables.\n\n`decision_confidence` expresa la confianza en que el bloque contiene al menos una\ndeclaración cubierta por el libro o no contiene ninguna. No la calcules como\npromedio de las anotaciones. Un bloque sin códigos puede tener confianza alta si\nla ausencia de razones codificables es clara.\n\nFLAGS DE CALIDAD\n\nUsa únicamente estas flags, sin duplicarlas:\n\n- `vote`: el objetivo contiene una votación, un voto o una justificación de voto;\n- `procedural`: predomina la tramitación, el informe, el orden o la formalidad y\n  no hay una razón sustantiva codificable;\n- `too_short`: el fragmento es demasiado breve para decidir con fiabilidad;\n- `truncated`: el texto comienza o termina de manera visiblemente incompleta;\n- `insufficient_context`: una referencia, negación, sujeto u orientación depende\n  de contexto ausente o insuficiente;\n- `segmentation_problem`: la frontera del bloque mezcla intervenciones o corta\n  una unidad de sentido de modo que afecta la codificación.\n\nNo marques `insufficient_context` si el objetivo sigue siendo autosuficiente. La\nausencia de códigos no prueba que el tema esté ausente del corpus.\n\nDECISIÓN Y CONTRATO DE SALIDA\n\nUsa `decision=\"statements\"` si hay al menos una anotación válida. Usa\n`decision=\"no_statements\"` y `annotations=[]` si el objetivo no contiene ninguna\njustificación normativa cubierta por el libro.\n\nEntrega únicamente un objeto JSON válido, sin Markdown, comentarios, preámbulo,\nconclusión ni claves adicionales. Respeta exactamente el esquema recibido:\n\n- La raíz contiene solo `decision`, `annotations`, `quality_flags` y\n  `decision_confidence`.\n- Cada anotación contiene solo `evidence_text`, `evidence_occurrence`,\n  `concept_id`, `stance`, `justification` y `confidence`.\n- `concept_id` debe ser un ID existente del libro.\n- Si `decision=\"no_statements\"`, `annotations` debe ser exactamente `[]`.\n- No incluyas offsets, IDs de anotación, conceptos propuestos, notas generales,\n  campos de revisión humana, probabilidades ni cadenas de pensamiento. El\n  programa calcula offsets, asigna IDs y decide qué casos remitir a revisión.\n\n\nLIBRO DE CÓDIGOS (snapshot íntegro)\n{\"concepts\":[{\"definition\":\"Las cotizaciones previsionales deben acumularse en cuentas individuales y financiar la pensión de su titular, de modo que cada persona sostenga su protección previsional principalmente con su propio ahorro.\",\"exclude\":[\"Menciones descriptivas al sistema AFP o a la capitalización sin una justificación sobre el destino individual de las cotizaciones.\",\"Afirmaciones sobre propiedad, expropiación o heredabilidad sin una regla sobre el financiamiento individual de la pensión.\",\"El esfuerzo o las contribuciones usados para afirmar que el trabajador merece recibir, conservar o controlar recursos, correspondientes a reciprocidad contributiva; ambos códigos pueden coexistir si también se formula el destino individual.\",\"Defensas o críticas de la industria AFP, el lucro o la competencia de mercado, correspondientes a previsión como mercado.\"],\"family\":\"Justificación distributiva del caso\",\"id\":\"capitalizacion_individual\",\"include\":[\"Defensa de que todas o la mayor parte de las cotizaciones ingresen a la cuenta individual del trabajador.\",\"Afirmaciones de que cada persona debe financiar su propia pensión mediante ahorro previsional individual.\",\"Críticas explícitas a la capitalización individual porque el ahorro propio produce pensiones insuficientes o reproduce desigualdades.\"],\"label\":\"Capitalización individual como regla de autofinanciamiento\",\"orientation_anchor\":\"Las cotizaciones previsionales deben ingresar a cuentas individuales y financiar la pensión de su titular.\",\"theoretical_basis\":\"Principio institucional y distributivo del debate previsional chileno; componente del núcleo de preservación formulado en la tesis.\"},{\"definition\":\"El saldo acumulado otorga al cotizante un título individual sobre los fondos que justifica su destino exclusivo, control, heredabilidad o protección frente a transferencias a terceros.\",\"exclude\":[\"Referencias a cuentas individuales que carecen de una afirmación sobre titularidad o derecho adquirido.\",\"Afirmaciones sobre libertad de elección que no mencionan pertenencia, control o destino de los fondos.\",\"Críticas a la administración estatal que no afirman quién es propietario de los recursos.\"],\"family\":\"Justificación distributiva del caso\",\"id\":\"propiedad_individual_fondos\",\"include\":[\"Afirmaciones sobre propiedad, heredabilidad, expropiación, apropiación o destino exclusivo de los fondos.\",\"Uso del saldo acumulado o de la titularidad individual como razón para aceptar o rechazar una reforma.\",\"Alegaciones de que una transferencia desconoce un derecho adquirido sobre las cotizaciones.\"],\"label\":\"Propiedad individual de los fondos\",\"orientation_anchor\":\"Los fondos previsionales son propiedad individual del cotizante y ese derecho debe prevalecer en su asignación.\",\"theoretical_basis\":\"Vínculo analítico con entitlement como estatus adquirido por acumulación previa; inferencia del estudio a partir de Hülle et al. (2018).\"},{\"definition\":\"Las cotizaciones, el trabajo o el esfuerzo contributivo previo generan un título moral sobre recursos, beneficios o protección previsional. Este criterio justifica que quienes han contribuido reciban una contraprestación, prioridad o control sobre el destino de lo aportado.\",\"exclude\":[\"Descripción técnica de una tasa de cotización sin una consecuencia normativa o distributiva justificada.\",\"Referencias a saldos como propiedad cuando el argumento central es la titularidad jurídica, la heredabilidad o la expropiación de los fondos.\",\"Afirmaciones generales sobre mérito que no se vinculan con contribuciones, trabajo o esfuerzo contributivo previo.\",\"Defensa o crítica del destino exclusivo de las cotizaciones en la cuenta y pensión de su titular sin apelar al esfuerzo o la contribución como título moral, correspondiente a capitalización individual.\"],\"family\":\"CARIN\",\"id\":\"reciprocidad_contributiva\",\"include\":[\"Vínculos normativos entre aportes, años trabajados o esfuerzo contributivo y beneficios, prioridad o protección.\",\"Afirmaciones de que el esfuerzo o las cotizaciones hacen que una persona o grupo merezca recibir, conservar o controlar determinados recursos o beneficios.\",\"Premios, compensaciones o condiciones de acceso basados en contribuciones previas.\",\"Críticas a una política porque desconoce, debilita o rompe la contraprestación debida por el trabajo o los aportes previos.\"],\"label\":\"Reciprocidad contributiva\",\"orientation_anchor\":\"El trabajo, las cotizaciones o el esfuerzo contributivo previo generan un título moral a recibir, conservar o controlar recursos y protección previsional.\",\"theoretical_basis\":\"CARIN: reciprocity; Laenen et al. (2019).\"},{\"definition\":\"El grado de control de una persona sobre las conductas que originan su situación previsional se usa para atribuirle responsabilidad y justificar que su protección varíe. Requiere conectar una conducta efectivamente controlable con una consecuencia distributiva.\",\"exclude\":[\"Diagnósticos sobre informalidad, desempleo o lagunas previsionales que no atribuyen responsabilidad ni justifican una regla de protección.\",\"Defensas de elegir administradora, modalidad o destino de cotizaciones sin atribuir responsabilidad por el resultado, correspondientes a libertad de elección previsional.\",\"Uso de la palabra responsabilidad referido al Estado, empleadores o administradoras.\",\"Años trabajados, cotizaciones o esfuerzo previo usados como título moral, correspondientes a reciprocidad contributiva.\"],\"family\":\"CARIN\",\"id\":\"control_responsabilidad_individual\",\"include\":[\"Atribución de responsabilidad por decisiones controlables de cotización, ahorro, formalización o momento de pensionarse cuando se deriva una consecuencia para su protección.\",\"Afirmaciones de que una persona causó o pudo evitar su insuficiencia previsional y que por ello merece una cobertura distinta.\",\"Rechazo explícito de esa atribución porque desempleo, cuidados, enfermedad, precariedad u otras circunstancias relevantes se consideran fuera de su control.\"],\"label\":\"Control y responsabilidad individual\",\"orientation_anchor\":\"La protección previsional puede ampliarse, restringirse o condicionarse según la responsabilidad de las personas por conductas controlables que produjeron su situación.\",\"theoretical_basis\":\"CARIN: control; Laenen et al. (2019).\"},{\"definition\":\"La actitud atribuida a una persona o grupo frente al apoyo recibido o a la comunidad justifica que reciba mayor, menor o distinta protección previsional.\",\"exclude\":[\"Conductas que explican haber causado o evitado la necesidad previsional, correspondientes a control.\",\"Contribuciones o años trabajados, correspondientes a reciprocidad contributiva.\",\"Evaluaciones de la actitud del gobierno, parlamentarios o administradores.\"],\"family\":\"CARIN\",\"id\":\"actitud\",\"include\":[\"Gratitud, cooperación, respeto de normas o docilidad usados para justificar protección o prioridad.\",\"Ingratitud, abuso, hostilidad o una actitud considerada indebida usados para restringir o cuestionar beneficios.\"],\"label\":\"Actitud del beneficiario\",\"orientation_anchor\":\"Una actitud valorada como cooperativa, agradecida o respetuosa hace más merecedora de protección previsional a una persona o grupo.\",\"theoretical_basis\":\"CARIN: attitude; Laenen et al. (2019).\"},{\"definition\":\"La cercanía, semejanza o pertenencia de una persona o grupo a una comunidad considerada propia construye una obligación especial de protección previsional. Incluye la identificación enfática del grupo como propio cuando aporta fuerza normativa, aunque coexista con otra razón principal.\",\"exclude\":[\"Posesivos rutinarios o fórmulas de referencia —por ejemplo, «nuestro sistema»— sin fuerza evaluativa ni obligación especial hacia un grupo.\",\"Menciones descriptivas de una categoría social que no usan pertenencia o cercanía como razón.\",\"Carencias económicas o vulnerabilidad sin apelación a pertenencia, correspondientes a necesidad material.\",\"Desigualdades de género o edad que apelan a igualdad y no a una comunidad considerada propia.\"],\"family\":\"CARIN\",\"id\":\"identidad\",\"include\":[\"Apelaciones enfáticas a «nuestros adultos mayores», «nuestros pensionados», «nuestros trabajadores» o «nuestros compatriotas», solo cuando la pertenencia refuerza un deber de cuidado, urgencia o lealtad.\",\"Fronteras entre grupos internos y externos usadas para ampliar, restringir o cuestionar beneficios.\",\"Identificación con un grupo usada para exigir que no sea abandonado o para intensificar su protección, aunque necesidad o igualdad también expliquen la asignación.\"],\"label\":\"Identidad y pertenencia grupal\",\"orientation_anchor\":\"La pertenencia o cercanía de un grupo con la comunidad considerada propia crea una obligación especial de protección previsional.\",\"theoretical_basis\":\"CARIN: identity; Laenen et al. (2019).\"},{\"definition\":\"La carencia económica, vulnerabilidad o dificultad para satisfacer necesidades básicas justifica mayor prioridad o protección previsional.\",\"exclude\":[\"Referencias generales a pensiones bajas que no convierten la necesidad en una razón distributiva.\",\"Focalización descrita únicamente como mecanismo administrativo.\",\"Igualdad de acceso o trato formulada con independencia del nivel de necesidad.\"],\"family\":\"CARIN\",\"id\":\"necesidad_material\",\"include\":[\"Pobreza, vulnerabilidad, carencia de ingresos o gastos inevitables usados como criterio de asignación.\",\"Priorización de personas con menores recursos o mayores necesidades.\",\"Pensiones bajas cuando la privación resultante se usa para justificar una respuesta distributiva.\"],\"label\":\"Necesidad material\",\"orientation_anchor\":\"Quienes enfrentan mayores necesidades materiales deben recibir mayor protección previsional.\",\"theoretical_basis\":\"CARIN: need; Laenen et al. (2019).\"},{\"definition\":\"La igualdad o la universalidad se invoca explícitamente como estándar normativo para diseñar el acceso, la cobertura, el trato o el nivel de protección previsional. No basta describir una cobertura amplia, una regla uniforme o una brecha.\",\"exclude\":[\"Descripción de cobertura, beneficiarios o brechas sin una exigencia de igualdad o universalidad.\",\"Uniformidad técnica o aplicación general de una regla mencionada sin presentarla como estándar normativo.\",\"Priorización de grupos por pobreza o vulnerabilidad, correspondiente a necesidad material.\",\"Financiamiento compartido que apela a solidaridad sin afirmar igualdad de acceso, trato o protección.\"],\"family\":\"Criterio contextual\",\"id\":\"igualdad_universalismo\",\"include\":[\"Cobertura o acceso para todas las personas defendidos explícitamente como derecho universal.\",\"Igualdad de trato, reglas o nivel de beneficios para personas en condiciones comparables invocada como exigencia de justicia.\",\"Corrección de brechas de género u otras desigualdades cuando se apela expresamente a igualdad o universalidad.\",\"Defensa de coberturas diferenciadas o restringidas, o rechazo de una igualación, cuando el argumento discute explícitamente si la igualdad o universalidad debe regir.\"],\"label\":\"Igualdad y universalismo\",\"orientation_anchor\":\"La protección previsional debe otorgarse de manera igual o universal, con independencia del estatus o pertenencia de las personas.\",\"theoretical_basis\":\"Criterio contextual emergente en Laenen et al. (2019).\"},{\"definition\":\"La inviabilidad financiera de una reforma o expansión previsional se usa como razón para rechazarla, limitarla, reducirla, postergarla o focalizarla. También incluye la refutación explícita de esa inviabilidad. Una mera mención al financiamiento no activa el código.\",\"exclude\":[\"Menciones a montos, tasas, costos, fuentes de financiamiento o proyecciones sin concluir que la reforma es viable o inviable.\",\"Llamados generales a financiar responsablemente una política sin afirmar que la reforma evaluada no puede financiarse.\",\"Argumentos de eficiencia institucional o comisiones privadas sin una restricción sobre el financiamiento de la reforma.\",\"Evaluaciones generales sobre la economía que no se conectan con la viabilidad financiera de la política previsional.\"],\"family\":\"Criterio contextual\",\"id\":\"conciencia_costos\",\"include\":[\"Afirmaciones de que la reforma no se puede financiar, carece de recursos suficientes o no tiene una fuente sostenible de financiamiento.\",\"Afirmaciones de que la reforma será demasiado cara, fiscalmente inviable o insostenible para el Estado o el sistema.\",\"Límites presupuestarios, deuda, déficit, gasto permanente o costos administrativos usados para rechazar, reducir, postergar o focalizar una expansión previsional.\",\"Refutaciones explícitas de la inviabilidad, incluidas afirmaciones de que la reforma sí está financiada, es sostenible o cabe dentro de la capacidad fiscal.\"],\"label\":\"Conciencia de costos como restricción de gasto\",\"orientation_anchor\":\"La reforma o expansión previsional evaluada no puede financiarse de manera sostenible o excede la capacidad fiscal disponible.\",\"theoretical_basis\":\"Operacionalización restrictiva de cost awareness, criterio contextual emergente en Laenen et al. (2019).\"},{\"definition\":\"La responsabilidad compartida entre personas o grupos justifica redistribuir recursos o distribuir riesgos mediante seguro social, fondos comunes o financiamiento colectivo, sin requerir una relación explícita entre generaciones.\",\"exclude\":[\"Uso retórico de «solidaridad», «seguridad social» o «fondo común» sin una regla de recursos o riesgos compartidos.\",\"Transferencias o riesgos entre cohortes activas y jubiladas identificadas explícitamente, correspondientes a solidaridad intergeneracional.\",\"Universalidad o igualdad de acceso sin financiamiento colectivo o redistribución.\",\"Dignidad, suficiencia o necesidad material invocadas sin una responsabilidad compartida sobre recursos o riesgos.\"],\"family\":\"Justificación distributiva del caso\",\"id\":\"solidaridad_previsional_colectiva\",\"include\":[\"Defensas de un seguro social, fondo común o componente colectivo porque permite compartir recursos o riesgos entre personas.\",\"Financiamiento tripartito de trabajadores, empleadores y Estado cuando se presenta como responsabilidad compartida y no solo como diseño técnico.\",\"Redistribución desde quienes tienen mayores recursos hacia quienes tienen menos, o compensación intrageneracional, justificada como solidaridad.\",\"Compensaciones por cuidados, género o lagunas financiadas con recursos compartidos cuando el argumento apela a solidaridad colectiva.\"],\"label\":\"Solidaridad previsional colectiva\",\"orientation_anchor\":\"Los recursos o riesgos previsionales deben compartirse colectivamente mediante redistribución, seguro social o financiamiento común.\",\"theoretical_basis\":\"Principio normativo del debate previsional chileno; extensión saturada del pilotaje para recursos y riesgos compartidos sin relación generacional explícita.\"},{\"definition\":\"La responsabilidad compartida entre generaciones justifica transferir recursos o distribuir riesgos previsionales entre cohortes activas y jubiladas.\",\"exclude\":[\"Redistribución o riesgos compartidos entre personas o grupos sin una relación explícita entre generaciones, correspondientes a solidaridad previsional colectiva.\",\"Compensaciones de género, cuidados o lagunas previsionales que no invoquen una responsabilidad entre generaciones.\",\"Universalidad, igualdad de acceso o piso común justificados sin referencia al financiamiento o riesgo entre generaciones.\",\"Uso retórico de solidaridad o mención de un fondo común sin identificar una relación entre cohortes activas y jubiladas.\"],\"family\":\"Justificación distributiva del caso\",\"id\":\"solidaridad_intergeneracional\",\"include\":[\"Cotizaciones o aportes presentes destinados a financiar total o parcialmente las pensiones de jubilados actuales.\",\"Aportes de trabajadores, empleadores o Estado a fondos comunes justificados por la responsabilidad de las generaciones activas hacia las jubiladas.\",\"Distribución entre generaciones de riesgos de longevidad, demográficos o financieros usada para defender un seguro social o mecanismo de reparto.\",\"Rechazo explícito de transferencias intergeneracionales, incluidas afirmaciones de que cada persona o cohorte debe financiar exclusivamente su propia pensión.\"],\"label\":\"Solidaridad intergeneracional\",\"orientation_anchor\":\"Las generaciones activas deben compartir recursos o riesgos previsionales con las generaciones jubiladas.\",\"theoretical_basis\":\"Principio normativo del debate previsional chileno; delimitación operacional centrada en relaciones entre generaciones.\"},{\"definition\":\"La autonomía de las personas para elegir administradora, alternativa previsional o destino institucional de sus cotizaciones se usa para justificar o cuestionar el diseño del sistema.\",\"exclude\":[\"Propiedad, heredabilidad, expropiación o titularidad de fondos sin una elección entre alternativas institucionales.\",\"Destino exclusivo del ahorro a la cuenta y pensión de su titular, correspondiente a capitalización individual.\",\"Responsabilidad por las consecuencias de decisiones controlables, correspondiente a control y responsabilidad individual.\",\"Competencia, eficiencia o rentabilidad de administradores, consultas políticas y ahorro voluntario sin vínculo con la elección dentro del sistema obligatorio.\"],\"family\":\"Justificación distributiva del caso\",\"id\":\"libertad_eleccion_previsional\",\"include\":[\"Defensa del derecho a escoger entre una administradora pública, privada u otras entidades autorizadas.\",\"Defensa de poder elegir entre alternativas o regímenes previsionales institucionalmente distintos.\",\"Afirmaciones de que la persona debe decidir el destino institucional de nuevas cotizaciones o aportes obligatorios.\",\"Rechazo de una asignación obligatoria a AFP, entidad estatal u opción única porque elimina la elección individual.\"],\"label\":\"Libertad de elección previsional\",\"orientation_anchor\":\"Cada persona debe poder elegir quién administra sus cotizaciones o entre alternativas institucionales para su ahorro y protección previsional.\",\"theoretical_basis\":\"Principio de autonomía individual recurrente en el debate previsional chileno, incorporado tras la saturación del pilotaje.\"},{\"definition\":\"La ineficiencia, uso político, apropiación, dilapidación o riesgo de pérdida atribuido al Estado justifica excluir, limitar o rechazar su administración de fondos previsionales.\",\"exclude\":[\"Preferencias generales por administración privada o pública que carecen de una justificación sobre capacidad o resguardo.\",\"Críticas a costos administrativos sin atribuir incapacidad o uso indebido al Estado.\",\"Afirmaciones sobre propiedad individual que no evalúan la administración estatal.\"],\"family\":\"Justificación institucional del caso\",\"id\":\"ineficiencia_estado\",\"include\":[\"Afirmaciones de que el Estado robará, expropiará, gastará, dilapidará o desviará los fondos de los trabajadores.\",\"Desconfianza en la capacidad, eficiencia, transparencia o independencia política del Estado usada como razón contra su administración.\",\"Refutaciones explícitas de esos riesgos, por ejemplo defensas de una gestión estatal profesional, transparente o segura.\"],\"label\":\"Ineficiencia y riesgo estatal\",\"orientation_anchor\":\"La administración estatal amenaza el resguardo legítimo de las cotizaciones por ineficiencia, uso indebido o riesgo de apropiación.\",\"theoretical_basis\":\"Justificación normativa emergente del pilotaje; combina una premisa sobre capacidad estatal con el deber de resguardar las cotizaciones.\"},{\"definition\":\"La competencia, la inversión financiera, la rentabilidad privada y los incentivos de mercado se presentan como mecanismos legítimos o ilegítimos para organizar la protección previsional.\",\"exclude\":[\"Datos descriptivos sobre rentabilidad, pérdidas, comisiones o desempeño que carecen de una evaluación normativa del mercado o del negocio previsional.\",\"Defensa o crítica de la cuenta individual y del autofinanciamiento sin una afirmación sobre mercado, lucro, competencia o incentivos.\",\"Afirmaciones sobre propiedad, expropiación o heredabilidad de los fondos, correspondientes a propiedad individual.\",\"Juicios sobre la responsabilidad o actitud moral de personas concretas; los efectos agregados de un beneficio sobre trabajo, productividad o formalidad sí se incluyen aquí.\"],\"family\":\"Justificación institucional del caso\",\"id\":\"prevision_como_mercado\",\"include\":[\"Defensas de la competencia, la administración privada, la inversión financiera o la rentabilidad como mecanismos eficientes o legítimos de protección previsional.\",\"Afirmaciones de que un beneficio social o redistributivo debilita los incentivos al trabajo, la productividad, el ahorro o la formalización laboral.\",\"Críticas a la previsión por tratarla como mercado o negocio, anteponer intereses empresariales al derecho social o permitir captura y lucro privado.\",\"Comisiones o ganancias calificadas como excesivas, abusivas o como extracción injustificada de los recursos de los cotizantes.\"],\"label\":\"Previsión como mercado, negocio e incentivos\",\"orientation_anchor\":\"La protección previsional puede organizarse legítimamente mediante competencia de mercado, inversión financiera, actividad empresarial privada e incentivos individuales al trabajo, el ahorro y la formalidad.\",\"theoretical_basis\":\"Operacionalización de la comodificación o mercantilización de la protección previsional y de sus justificaciones mediante incentivos de mercado.\"},{\"definition\":\"El origen autoritario, la imposición coercitiva o los engaños fundacionales del sistema previsional debilitan su legitimidad presente y justifican reformarlo o reemplazarlo.\",\"exclude\":[\"Fechas o descripciones históricas que no derivan una conclusión sobre legitimidad presente.\",\"Críticas contemporáneas al desempeño de las AFP que no recurren al origen autoritario o engañoso.\",\"Promesas incumplidas que no se conectan con la creación o imposición original del sistema.\",\"Críticas al lucro, negocio o interés empresarial, correspondientes a previsión como mercado.\"],\"family\":\"Justificación institucional del caso\",\"id\":\"ilegitimidad_origen_dictatorial\",\"include\":[\"Afirmaciones de que el sistema fue impuesto durante la dictadura, sin deliberación democrática o sin posibilidad de oposición.\",\"Alegaciones de que trabajadores fueron obligados, presionados o engañados para incorporarse a las AFP.\",\"Promesas fundacionales incumplidas, como tasas de reemplazo altas, cuando se vinculan con la imposición o el engaño de origen.\",\"Refutaciones explícitas de que el origen dictatorial, coercitivo o engañoso afecte la legitimidad actual del sistema.\"],\"label\":\"Ilegitimidad del origen dictatorial\",\"orientation_anchor\":\"El origen dictatorial, coercitivo o engañoso del sistema de AFP debilita su legitimidad actual.\",\"theoretical_basis\":\"Línea argumental histórica sobre la legitimidad democrática del sistema previsional chileno.\"},{\"definition\":\"La búsqueda de acuerdos amplios, el compromiso entre posiciones contrapuestas y la moderación se consideran valiosos para alcanzar una solución previsional legítima y viable.\",\"exclude\":[\"Menciones descriptivas a que existió un acuerdo o una negociación sin atribuirles valor normativo o legitimidad.\",\"Apelaciones a preferencias ciudadanas, consulta, mayoría o libertad de elección que no afirman compromiso entre posiciones contrapuestas.\",\"Defensas de un sistema mixto basadas únicamente en su eficacia técnica, sin valorar el acuerdo, el equilibrio o la moderación.\",\"Actos procedimentales, votaciones o llamados al orden que no justifican la reforma mediante acuerdos o moderación.\"],\"family\":\"Justificación procedimental del caso\",\"id\":\"acuerdos_moderacion\",\"include\":[\"Defensas de la política de los acuerdos como instrumento válido o necesario para la convivencia democrática y la reforma previsional.\",\"Llamados a abandonar posiciones extremas, maximalistas o refundacionales y converger en una solución intermedia por el valor de la moderación.\",\"Defensas de una solución imperfecta, mixta o transaccional porque expresa compromiso, consenso o capacidad de alcanzar una reforma.\",\"Críticas explícitas a los acuerdos o la moderación por considerarlos ilegítimos, una renuncia de principios o una imposición encubierta.\"],\"label\":\"Acuerdos y moderación democrática\",\"orientation_anchor\":\"Los acuerdos amplios, el compromiso y la moderación entre posiciones contrapuestas otorgan valor o legitimidad democrática a una reforma previsional.\",\"theoretical_basis\":\"Justificación normativa emergente de la segunda validación manual; legitimidad procedimental basada en compromiso, acuerdos amplios y rechazo de posiciones extremas.\"}],\"description\":\"Instrumento cerrado posterior a la validación manual del piloto. Añade solidaridad previsional colectiva y libertad de elección previsional; delimita control, identidad, igualdad/universalismo y conciencia de costos antes de la codificación ciega.\",\"schema_version\":\"codebook-1.1.0\",\"status\":\"closed\",\"title\":\"Justificaciones normativas del debate previsional chileno\",\"version\":\"0.5.0-candidate\"}",
+    "metadata": {},
+    "model": "gpt-5.6-luna",
+    "object": "response",
+    "output": [
+      {
+        "id": "rs_075af28dcad351f0016ab21ee45cf087d18c9f477642bb7133",
+        "summary": [],
+        "type": "reasoning",
+        "content": [],
+        "encrypted_content": "gAAAAABqsh7xm361qpobXq4RSy2DA5proUI3x9b5kaeap5Is7MiMXOWtbV7vnCX9BGHvg8Qx2DqvtsFDye3yeiALZHFSVIFCRBqeCLUXSgLk9T3YjwUUoHRyIo5mW2qFo8KHGddXv9FRtD84R4oqeVArqvzFmKa1xKdlyvPUo0t2MOTZWYVGptoEymUR0Vz6cD3cXWksfAlxrDhi6TiIJoSjpgyTQ3lnBrKJB2lQJp5WBMOvbEFIjdxsKKSKDj8HUKy6_YzjI_rMFlKgZAKcWTpncJ0LmOq4TP6otZo6hQurdCNcM4lJxsVnLSNfmkpGiot2Mk46OFcopmdP0ACOlAuxj6uQScfJbTMaV3yN8aSCJNwjPeRCLU_5oN9DhwmM8IqTsoUe8UiMPggXYRNwhQk4bE6isL-d8f9OZreJhtnP9n9leTdcYNeiYKAirb7S0HwQwkHBxAWxtp13kkYoDJTM9NI7NFpNPNJ7SaNUE1ceF6Gkq-T_zJpX4VmQw7zKM-NVjH1RcYplC1VbFamunM_mDv6ZbZykYRwU6H-V57Nc6BkornbSoLGwDqgd3TLM_Y6AgBWtNLFYPSghOJ1AhRau8B5YaI0RdhU-3oZyJ10cD6LT91xFC6auCOD8HY1j7mtXkilZiKoo9h1s494pE0I2mq2MiOFOTOGzTeN8fkPkP03TwELePdikxTOYxsT52Ol9XFATo8aoadYdooGwhOchH_s0tMMpmau_5w_fj_ugdACdy3oerp70ftQibjxIBe7pyg-5vNIZt88fwU5XWbLpKbRXXBTY7Qn7ykucRTr6Pr52MLJOFKU5pXLQiWPypnp21e0DgMGEqVSeb_Nic1crATemjocaSYrkrABclLcmp-2Nee57isTdy0XV5dZUwu5qZRSqfuH_52_LZ196rWmjFdFJPD8qeJzyetwCrJZaKo4zCYOnm12DPEiv-NLHMglsJj3dA1soYCpcgIW432OXh2rg3l4jJ8vAgu_uSGEcbDfmI_7l0TgF831OqmhH8w6OctpT1rLvd3vl8TL-r6GzusRM4_p020j28fG0H_ipoydtCUjjcF2RMPcRefr_5xulD-VMsQ1yx-V7ZWKg8VvemO5mX9gDqOthUqQM3Fcbl9Az5sipAof2rEEwUI4l4khL9MRkQ_H2qfZj_5ljZBEslq1DHAccHO3ELtfX5hvan4V9215wYASZt2Li8TBeJ4A6BHZB-GoIP0WdYxlwdWk9JYCJl1DZbo4Hh4-4s7TLQsBWECsD5emrnjmx1IMNgbygvg5VgN1o1RXcyWgCrb2no82lLpKenfVDwwkPAvf-ogO7cp7EI59DB_38LE-zyzP1S7f_L8n3yOogfG0TM7fOJPZGFEMgMS0FclRHq63Dtu5JI_8Tipw8L7wymWT5B8f-qR5vaaEKahHIll2lLJa42AOOJaW5hjJDgbG_NJX8X-TIkKPF3B-ePq_MRxVcOP4jy-U8UOQjZwBE4ZwULo29TyiKRaB54WEr5SgtdDh3j0qGCw-jYDdk8dBIfygU68mR8gW48wRNlJ2w0WrPFfjnFeH8EJR_-Sz3U9qsGteCTND1hc48_N86u9R074BH-mucfPhJhVwD7aPMoqwg0EGEUXPJ-lvZ_KvZWSHTMJLFkhAMPwyw8OGemwNFB5IAZJCzseKC9yNxhGPNNZ8NIMDJcGR4_3ZQ4kRVaIU9Yxi8TNpF8EpPgD_E9G3cxh-qv8r6ZWVgU30w_DDreSIggngkAdru-wIh9tc-PD0c3WPibB21fBhhppBm2RUeO86_iWMaNWiHsS9C-JC9ZSYv2F-qZwohdoQc3VD__l5h4-5neIRbs4Jh2XQzeLhc8LBVwFEiCQbBk_t0V7HVomFk90Al7cs0vz4kI3sgqK5wHCtxb4WmVFIufpzHaDNmR9SBfNVmHBbBaVlhiRM34sPviJEh_RAfZWEaWF0WJLunJc9G19UyTBvYMyjg772CImwwCk-mwFS7geHs2yLtO94mPTYqAZeZ4J2fCEmjd8LxPNzyI_eDBPYEBXuX8rgoYX7xjwmQwEgaBHR2v6qnENAzbfZ9ju4HqL5Qm6jB-mQFw_l_3anJILh3bymskvnizm4fNvbO4pN7DOjV06TZo6WdCyx4pJv3zfkcWfoq2AJxk0RXMhzwHk-nk8FXWXH0eH2jwnhaSRUbNeNbMLctWtvYdXcVnihEI6Tf-IdZpVjC5tgdHfsy-EGS_6YBfI9kIWj8Iq-u-ktnJ4cz9TtqJXR6D0O8S9T6Ar0OMY5mfzLJcQ67CSjhPsR_HD5prAcM4unVY8c3nwsk8GyJWlqxmEbO9dRo_Bvix2ihm3FQDfDmJc6caWRFYLsE_tYQZuNgYCBSQvtdqNwn8CkixMN0lqtvTOp38A9hXYREch-e_xfL3VProthVm76YYGWR4sV8l94-nqqbeLqGOhWGGf8P9TptfRlkF4kgN7En7KSfOAi27rR84v15K3P-7OwVWKMxS3dt7jWKnObVVDVe8xNeL3k3qbgrDWt_WPsA0eyO8earnIXUN91K1RvnDqQIMexLG9SsDnSr3B9FPvxGK5MJaLiAYlLLb-0gbtiUFxIi3omHaLFhEyT7UD0EBsdlS_FAZbM_4KS-fb2KFpLHxy79PIwHpUdthwHtNxIKpU41RqpAve-3nWwnBZ8k7Rs-9dEQGEQu2DZlLM6bOP7z4wr1SUfKykyohSkRBHi24Tje2OeJjeta24ppJIdGE29TstkkxHUra7qcOT1iRn7isPReyDgR3-U2htphoA5apvu7uifkZf-GqNZ7jRUvYX2EIxIArQ03hS-TpGpf9ldmFtvpFPQ6zy9Tu-G9vIFNBfLkz9GUMbU1dqUEmvlePS-COfllDxx3RFzeaBZEZQL9_zcMJZar8du9_z0xAg4WwzmEXdrE5_9KTP44GLqy4ip_X2S7yicvcBMGLJQKVUKwdIlSRJTRnsV9DM1NqQ9qKBgrTmfTmCQoyGWtnCEBB944NEwno1f21GC070HOoUtTjuHAi-SPfNCUgi3gXsbN38KnDu4FPnZNkV7AY-P_0P-Vl0vH-tSDbkDKikdLAwayrsBY4DeFnIPSTWB8PntWzOU9TaAIKbdiQesGo51fGOGrTZfQiSSgNLTlYCmKXexScKdIcg096k6nIRwZLPA-Xrqk7AHOqugNFs4ipAHhrg0KbWUSqDjSO1_V0HZ5aCRg-qJWk5JG0nOmc1MuVFWCEkpXdmX-7HZkR9bQMHsnu4eaKnbtOOy-e3_DFnS94R-P7kQ9L0xfNRyhMvRK351p21BcDLv2Y4MJjrYCyWOQNe18WHYeqWiigZwYg06fPHL8Uwty65x5G78jzaNaezt79veDessxCbZ5Z2SAJKYK5Lc7A6SWgxLDdNBUtWzMWSL0A5cR1HHI1NbkBzTzsTzaAmiXkqU66rtB-GSFRl4-il87tJ-DsTciFs0FQ4V-XxwtiZwpKjp_rtiJSGfsVm77tnK9INvPdYeIT0CXnvbeuyt0YDAmT6PSdzEKp6zVCTmONi6CSnVMquLDgRMDLg30FayJZnU3km440fNT5mBgIIbAG9Q34ySKWssDKXFZMRhND4l2cBcVQSWqOD6hJHqVe9ZV3JjJj0pEe2TS_uppfNfm4ZTlb4gAXMHnVHif5JD55-MxgInVYj1Ty6Z81znB65C0wsj5aKFeVgVs1dVDKZ1f_I2c35BH7dwn2rIQT2omCx2Ecglah3wqCuW5HOMfgdqTmfqjNsQbAp6RrTGyVdE_V0cHeIdLHVbzmTfRs1PZQE2M58aizdwMho-h-NTLzqbs7TzUiTpZgXHPYHx0TFnawvTRXs5DHl9aIiGIkXT9ExwxHaj0aLqZOpa4jL-JUfSiq786RtO2CbNxCw4FGc_rtYvuGGtmMUjfd-wrjT3Z2peGihPVEJe9U1MrrTJvP_bQa9wKAHrfHkGBBlcjbSfHlNAL5Aogr4kxHYoudbFsHJ3vB5unOe7-vfTq_ruXkl0wCAo5YSP0pWV3tfZCPoPHQMhCuSmvYgcEYmq-d_0P0yAjeYTmtbj5i6iRr2EBWGy5qClTpe2XTFUMPcUy_Qo29SaQXlAYu5_gqcT3-D6Oauh6edgTTGXwNInX09qFCxqVS2RfJJ-4h2fl5Dxj4mFlqzbrm_Wc66UxcdLSv-L8U9up-y8a7UEnMLqaFc-1N5f4chNv5HHbbQzGnCf_cHxFLLKWvErYqHryAzr3iQi2gJIl7U7Vb4A-RJ8HAYvktu4J1ffkvfyKnZXO3zIiWGTnEjTf3L6RV-NGpqX7m7tBQ5-0Uyzo6ga-d4YbRavV3KOu12qDbTB_gmnIY1BAE8hRPjTcx06ENpnWSX6lVjrjdr4DnS09495nXY4QUdUljKAdUZ9RuhI5irbHEEaSnNm4x40_27IJOaKK7Fz6pBnQM2A_SRq7Bh6SupMFtQErko3AqHYZmscFSyLAF_KzYYfvLwxPL3t5-9uooGrzewaodIw_ylu1mzp5aGqLRFTu13Mc7_Rqnuwzz0ku4eOHFzun_S1gIYBg0Uq_l_F8QsYtH0kA2mNeRlr8nUY7AKEW-WfoIXRFK4NqX-Xb2Euqyp1Ny_RakDadzjPe2ns4qmX5GdxM-t36H7bDw2t24nv0Be6bjBaa2P76Zp6Tl15BOVZ9fq7VI8fn1DcodWuai__1Wk03SJc1tIgT-PkEKuIUwENr6c2jIccB5o65YEMsnz_n5rkKP6r4-Q4FTpbAipEh6LfYRg6ycUelpPOgaAZI3aExi0Qmnw8vZGnxOPpuXpg=",
+        "status": null
+      },
+      {
+        "id": "rs_075af28dcad351f0016ab21eeafe0087d18fdeaf113b2b1adf",
+        "summary": [],
+        "type": "reasoning",
+        "content": [],
+        "encrypted_content": "gAAAAABqsh7xOVpke4GVY08E9SsMNSgIFT4z32mDRoybrsrQmnVqxssh_k3tI8qJCF_Fd7lSPs8_9E0vhnCtk7AH1OI7QfTsbQTDvIdxogpbjO2KS9ZDGOqzfeLQ9B_qX7yNtNwvH19lyckO7VCYFZ0HmOMaWjnWU6rNQWKs-L3wUl2NNSAKovAufnyhugSBhSNvN8V4Qe0kj37rAa0uMH1zfL24l4Qqj8GanNTP6Ou-BavKXOOi5VWifKuYTbTyw86Kuy6LcVjR36TApH8pGzebIjJYfBP0EjQivG1ewOFhQRsoNh1lsepAf1HwECgGyqsAevaAozXflg45OaVPsFLV1UmYO-Y5wjVPaZy3Lz8R2-7-c5mjd-T3e6B_W-ao2Q_EHQaYgA_i-_z15h2_osz-H6FdIlMkibBw55f40nby7PTh464MzBC0sDGBT5--OK_LgNXPzgJl7hq23j7rsrqAQqLjrXEZvp0OXJfu66shPCle7S2vXpam7rjICqCyVNIJG0YlADjBttqYVoXGjPuKAV892_578UWLjV6XRC6hTGhKWprN4DBsWkl8UQ1PDMOZ00DEba8YQt0rodobA2OFOBzXuw613396RwfToRnMZ03XBzTMoFAxnJgJotkeV7YJQJu6SvEioXESy8CnU0N7EGvsCLXUoWT7yLC4Kphv3pvOpAR2mu1Tkf8iBdj44JRl7v9d6djuCkdA5hups6wcfjqSyzNS8tauRpbe0JGaK5fWfVGhGODgOZ7YnuXpJbLh57nazCE_6r8VQwGSdr2izdJdcfLml-jMQLpNKb0uhvzVWqtKTfG_30wk2UGhrzDLX3v8o2VYX5B3NUuTGjZTgDlf91czn3ihCzDKp5cWufeai5Y14YYC7JvhN3BRcP8zzRalv1x7MNsAyctP5pi2NPazXHcgRVn8FLzCAxUrMVPY9PUicMbMo5cKyOPPaJh7FHNbGcXjTDLW6JrH_KDGjMnb82mSTH0L1XJ7e6Rzw59-x_I7ONJ1ZR4_-LRllRBwv_Z0wHl1hJeNEIpNrFieb_OAeGseFSbthougUuN6iaKE2p76UU8KANPlmz_IX_MayF_A_nptxio_6Xd-7HP9L622TIgKAx07U3k9L3-FCaiNI-2-N77Cl5etqgw2GtagTDTm_XnKPh-vaC7Z4Odlp4gdIqjjFS6ccTTSLvfarUDKOOa9_hqMgwcQAMGYsdSRJzDO2nBBt6_DDYu-8RSB7kS3wTPpZVOuHiGexT8N7JRy9h8ZY3tF1f7TQBLFziZ2-hNagjWJ6nukjDxSCIk0NZ19sTouulM6vKFyijMVmzKwo1XohoAoLEoQhNrDZ4J2WDBUuWqeRVHGjjSUb0JH402HxmqeZ7MjGjh2I9wr1ZfwJJ0QFT6jAxTAxqxU94Ar6MdD5_tFNCDSATW6nhV4jj-iCv4uS1Eu-1Xa0XblO0Vz52lx-NWiUkgowhYIGJfoqcDXUQhPAnO-ntsJun5uZSh04d154H8yO-kAAt-bZeLPIIUYHT6tk1AZPMTyk9992-Y2ysQuNKb09PfERJBg4pJwRchGzOYi-fXJO_ehb_28VM6zdPXej8Cz99AV3a-3T1dyxCfdCmcwaxNvfz5N3_UV4_jLhugly3YZ_ma_8vNpVXQnf8rfW5oHtCKgLAZigeAYrQLgy_dcaElVACZ4n03o6H-pZnQWDkhO7PbXw13RSq0Ym-gbpuTfYWuVFUJMtyRqkB3oY1LoWxGl1DXixzjVkJfxj_ZL1DG6cpp0FjdiJCLVcWEdm8GKI6xjucm0eYW5Sua21DMy1A7HACyxhPYwOgLwwYoLmgE9PsFfymhcwUT2ediz02q3sWnPbJ2un1k6bglPJ-xORHdpgcwasnMeR1T-L-WXJmDKEuDx80pHZ8FYRHj7YcMqB1KyP-EfUOm5wEGkx2o2PJ69hTz0y3KpiV0shsFk30kolZy5o1vAJ5TGZygMjGxRO80fvjZWaXoRTbMWgRlABTQkYeBDyV3g_lFguX9hH5usFhm-tD2hSTTl7Espg1O_opmufwiOkB678NHHANVKe_PtmgIa14Gk4YTCmYBq9zTBj4wh9ha18PoBG602sCIEbquOdGWYAnBbu0O7fXPJV5BhTbQRBoVJ0Fbe_8Lx2Qgb3FadtSnng_XphZtwiq7pri2hq3S5uu3HI3WaYIQKGUtg0IdjOdXbi-mVYmgoqyQXU6kppI1GDxqpm3UA0ZeBI07HRlgkcofBLxKgtDNvLbghLTd16Xtsla_TEClZSuvtwdAZK2zcjRJLMb0C55MLIBg9b25tndSNeJT8lZsv9-REAaIcFZ3ZAcO8DEokNXM30N1JK4-LZfGZN_bq1SlqQ-N8GOssP8a02UjGM73jyZcDEOf7QQtkgwCAWuG60ki1GfEaGQTSLvYWpvXIWGXieiVF_Pl4GWOpJSnyGhr7MOpLw7ahrQGfabE-ZLOqHrS0-oO-dU-QUhOqSl3tu-HC0NzM8R7jLCNzed46OiDpO5TPlKBlLrtos-fMY1ixno00yi48jWxYgYulBEdPR80SHSNB8qdbA4eOE9TjQAYDNltz-bvtYufNCDTu-GVzp_Xal0JSVkRqLuTX7-JPymLlK5kQCLrU1z3ilAAXpPa2HPSiaUtd1P-tIgWDRygqywvZGogS_UAtCLjET342dFvZsaJpaKYP-UW38QkRnST2LcFrQUtKR7HhC4qcw_W9S3FPkfkcnLT1nTyu8-DmjkyvPOvXoHEFvth1MLgDtXh0YGKFjjduzdyIXxMsn3-Iti6_1_k7ATenkZyS4Ws5cT5Ppie4bBVNdBl3rh9KRwLzrh-ZpCPre59XNYcZHRL0LTppRAXWL5agu8hf0DRt9YJjSHocDTj-hJ45J0fMANCVttt_gaQzZL8ftz192K1tp8cUBwLS9IaaCqUD9owV-eGf3r9YK_QdgqyUxm4gT9WUp1EkvVrEigsQzaFQPKMNcie7MLKRmQOrcymrtRYupepRqyqcxL_9t35iij6AnRN1k3iQIo6O9hcG51Vx4At5BXDJTH_kWWzhfEGJC3JL9YC3rRGSgrVWZNA1AG-Ms--ifdy6GGW77XLvs9V5cgGXVAiuBatMXNKX36m2ak_x6gnRuXG8uDuqlUlhgL2vvv1Zxj8WMTzbSNdm5RMUn4_-7jD3_f6MVTSrBej4D0MJYEwzJTIdSzdbiDX6QWswICyLu_8ittRbl_nVzvbfRBXXFfKnJX7eqnT5mQ19gzzUUJNIZwyzuFeh7gTtDJDA4fNL2R68UD9irpWdwrmLD-DVNitFjDfqSJWZRWF9aq9pnO6ZtO6TVcKB1DivsMS84cj7-DPJJNwHsaZxQY_fXAbNGXZvDgr9gKcNwlQ9LrPNW3Zx-pCWhLfY5FFOm2sk4pxxQ4MHauF1nHwBaWqOb4V_7e0-L7n1FduHM6yAiE-KzPhKiFaV_ThWLUhX1GgXmDUOIg9H2QB_3bgvPNzB6mAGukqEKPEF2gPfJFDjvDc_gsLA9LCZr2-xh7H8ENQOPPLEI_t2uhNO3o7rxpsD1H6vKnSEQGRy5u1-jYqrqFFCPoCodzVMKsRUyoCuRoVAxk1B6hAWCn2KiM8foce1YQRNwnp83cDZGcyvTuYpc8LtNUIWt5-rZGU3tbCjGrEJdQhZk0Os2TtNabtkGpyroC6Q-1Pk2mIAICM1_IYCQxq_kjs7IAnGtqLvydjUURdQUhhAEPICSFmRLzdmHuecvVGMaN-sQnRgn0Vn5zfkDbr6TMVu5YN0iTEyp9vq2h6uOlOZxUYRova9MK0OYRn_R2bGj0bG7wO4SaV1K4PpqKdLS9P8UybcStMQtULOStIW1DJ0mSeHc5K_xnvNEx-jUQ9IcrPKbizwQyzRZykWr0b3YQqgWh5hCZh6wCx88-DGfaCc_vcfQACcgs2TU4nG4QfEFXi6Vg1n7ucYFTGXKj8mpT614Ij1R2gIgTR0tTiSiX65-Au6FSLy195eO1fciq5gYevty92KTnsLfRi5aRVej5vdzu7pnyNOb-oEOB0BKbq_onENi_5DpuWQl75OKmU1PrD2AvGEu3WjTLcSALTg5BFtqkWikaHa__U4gSJ2ckQqpE_OYV3uuxlxPBl-lJRUdjRRRb4GT5VkrQsQ4XUnP9wFWtBuI6UFqqe-7zVyVHQjDyJLy-ZU5u-7wW1QAqIGM09JdNMQk_EfWohqJvHtbGn-2kurkkRo9B7XSiBgzdcQbhZecGHY1lDSDbwUYrikPJwFb-I9u5qyy15iESpDoOqOyf703OH-ZhoEZwUxuvJ0ngddNuTjQcKNi2v80mB0DZfog_FbkX_ZcXcllPoCAJ17v6cf3EPL9Tt4byvh8Zor3StCDN5THo_jXo1CT1tOh_ZBgmTIlB4kCK24S7oM2W2IqSx9acUoBFWm_lOGRAN3AM9V4cGgeA9IC4ApULqkQE2kU1q_AJoKFKmmtmVo-Gx5OJaQtIFRaZ89eKA5RLFnmjb2rBMJbX9eyqdsIgVkfNiK-cLsLxxfBbW_0EDqXKYX308pO87WVPr3vf7I",
+        "status": null
+      },
+      {
+        "id": "msg_075af28dcad351f0016ab21ef1974087d19dbc03cac5f42ba3",
+        "content": [
+          {
+            "annotations": [],
+            "text": "{\"decision\":\"no_statements\",\"annotations\":[],\"quality_flags\":[],\"decision_confidence\":\"high\"}",
+            "type": "output_text",
+            "logprobs": []
+          }
+        ],
+        "role": "assistant",
+        "status": "completed",
+        "type": "message",
+        "phase": "final_answer"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "temperature": 1.0,
+    "tool_choice": "auto",
+    "tools": [],
+    "top_p": 0.98,
+    "background": false,
+    "completed_at": 1790058225.0,
+    "conversation": null,
+    "max_output_tokens": 32768,
+    "max_tool_calls": null,
+    "moderation": null,
+    "previous_response_id": null,
+    "prompt": null,
+    "prompt_cache_diagnostics": null,
+    "prompt_cache_key": null,
+    "prompt_cache_options": null,
+    "prompt_cache_retention": "24h",
+    "reasoning": {
+      "context": "all_turns",
+      "effort": "max",
+      "generate_summary": null,
+      "mode": "standard",
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "text": {
+      "format": {
+        "name": "pilot_annotation",
+        "schema_": {
+          "type": "object",
+          "properties": {
+            "decision": {
+              "type": "string",
+              "enum": [
+                "statements",
+                "no_statements"
+              ]
+            },
+            "annotations": {
+              "type": "array",
+              "maxItems": 50,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "evidence_text": {
+                    "type": "string"
+                  },
+                  "evidence_occurrence": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "concept_id": {
+                    "type": "string",
+                    "enum": [
+                      "capitalizacion_individual",
+                      "propiedad_individual_fondos",
+                      "reciprocidad_contributiva",
+                      "control_responsabilidad_individual",
+                      "actitud",
+                      "identidad",
+                      "necesidad_material",
+                      "igualdad_universalismo",
+                      "conciencia_costos",
+                      "solidaridad_previsional_colectiva",
+                      "solidaridad_intergeneracional",
+                      "libertad_eleccion_previsional",
+                      "ineficiencia_estado",
+                      "prevision_como_mercado",
+                      "ilegitimidad_origen_dictatorial",
+                      "acuerdos_moderacion"
+                    ]
+                  },
+                  "stance": {
+                    "type": "string",
+                    "enum": [
+                      "support",
+                      "oppose"
+                    ]
+                  },
+                  "justification": {
+                    "type": "string"
+                  },
+                  "confidence": {
+                    "type": "string",
+                    "enum": [
+                      "high",
+                      "medium",
+                      "low"
+                    ]
+                  }
+                },
+                "required": [
+                  "evidence_text",
+                  "evidence_occurrence",
+                  "concept_id",
+                  "stance",
+                  "justification",
+                  "confidence"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "quality_flags": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "vote",
+                  "procedural",
+                  "too_short",
+                  "truncated",
+                  "insufficient_context",
+                  "segmentation_problem"
+                ]
+              }
+            },
+            "decision_confidence": {
+              "type": "string",
+              "enum": [
+                "high",
+                "medium",
+                "low"
+              ]
+            }
+          },
+          "required": [
+            "decision",
+            "annotations",
+            "quality_flags",
+            "decision_confidence"
+          ],
+          "additionalProperties": false
+        },
+        "type": "json_schema",
+        "description": null,
+        "strict": true
+      },
+      "verbosity": "medium"
+    },
+    "top_logprobs": 0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 7206,
+      "input_tokens_details": {
+        "cache_write_tokens": 548,
+        "cached_tokens": 6655
+      },
+      "output_tokens": 1037,
+      "output_tokens_details": {
+        "reasoning_tokens": 1007
+      },
+      "total_tokens": 8243
+    },
+    "user": null,
+    "billing": {
+      "payer": "developer"
+    },
+    "frequency_penalty": 0.0,
+    "presence_penalty": 0.0,
+    "store": false,
+    "tool_usage": {
+      "image_gen": {
+        "input_tokens": 0,
+        "input_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "output_tokens": 0,
+        "output_tokens_details": {
+          "image_tokens": 0,
+          "text_tokens": 0
+        },
+        "total_tokens": 0
+      },
+      "web_search": {
+        "num_requests": 0
+      }
+    }
+  },
+  "attempt_count": 1,
+  "max_retries": 4,
+  "retry_seed": null,
+  "attempt_max_output_tokens": 32768,
+  "last_attempt_started_at_utc": "2026-09-22T06:23:31.597531+00:00",
+  "finished_at_utc": "2026-09-22T06:23:46.234777+00:00"
+}
