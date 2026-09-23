@@ -17,7 +17,7 @@ execute:
 
 ## Pregunta y alcance
 
-¿Qué conceptos aparecen en cada ley y cómo cambia su presencia entre trámites?
+¿Qué conceptos aparecen en cada ley y qué posturas se registran sobre ellos?
 Este informe compara las leyes 21.419, 21.538 y 21.735 con el mismo libro de
 códigos. La unidad para los porcentajes es la **intervención sustantiva**:
 una intervención cuenta una sola vez por concepto aunque tenga varios bloques o
@@ -31,10 +31,10 @@ de la Ley 21.735 se procesó íntegramente en Bedrock. La cobertura por proveedo
 se presenta abajo para que esa coincidencia sea visible. Las comparaciones
 describen este corpus y no prueban cambios causales en el debate.
 
-Las redes finales se limitan a la Ley 21.735 y permiten explorar dos formas
-de coaparición de conceptos entre actores. La congruencia se muestra con dos
-normalizaciones para comparar directamente su efecto visual. El análisis de
-comunidades se reserva para una siguiente versión.
+La red de congruencia se limita a la Ley 21.735. Esta versión de entrega
+presenta cuatro resultados: la cobertura de intervenciones, el perfil de
+conceptos por ley, la tabla de posturas y una red exploratoria. El análisis
+de comunidades se reserva para una siguiente versión.
 
 ## Preparación
 
@@ -44,7 +44,7 @@ cada ejecución.
 
 ```{r}
 #| label: setup
-pacman::p_load(arrow, dplyr, tidyr, stringr, ggplot2, igraph,
+pacman::p_load(arrow, dplyr, tidyr, stringr, ggplot2,
                jsonlite, knitr, scales, tibble, readr, ggrepel,
                flextable, officer)
 source("R/apa7_word_table.R")
@@ -133,10 +133,10 @@ concentrado en un trámite puede confundirse con una diferencia temporal.
 
 ```{r}
 #| label: cobertura
+#| include: false
 coverage <- blocks |>
   count(law, stage, provider, name = "bloques") |>
   arrange(law, stage, provider)
-knitr::kable(coverage, caption = "Bloques completos por ley, trámite y proveedor")
 ```
 
 La combinación contiene `r sum(coverage$bloques[coverage$provider == "openai"])`
@@ -147,7 +147,7 @@ trámite coincide por completo con
 Bedrock; por ello, un contraste con los otros trámites combina diferencias del
 corpus y de procedencia del modelo.
 
-## Frecuencia de conceptos
+## Intervenciones incluidas y descartadas
 
 El denominador incluye todas las intervenciones con al menos un bloque
 sustantivo, también aquellas sin conceptos anotados. Una intervención se
@@ -177,21 +177,19 @@ intervention_audit <- blocks |>
 stopifnot(!anyNA(intervention_audit$reason))
 
 denominator_table <- intervention_audit |>
-  count(law, stage, reason) |>
-  pivot_wider(names_from = reason, values_from = n, values_fill = 0L) |>
-  mutate(total = included + procedural + vote + both,
-         excluded = procedural + vote + both) |>
-  arrange(law, stage) |>
-  select(law, stage, total, procedural, vote, both, excluded, included)
+  group_by(law, stage) |>
+  summarise(total = n(), descartadas = sum(!included),
+            sustantivas = sum(included), .groups = "drop") |>
+  arrange(law, stage)
 denominators <- denominator_table |>
-  transmute(law, stage, intervenciones = included)
-stopifnot(sum(denominator_table$included) == nrow(interventions),
-          all(denominator_table$total == denominator_table$included +
-                denominator_table$excluded))
+  transmute(law, stage, intervenciones = sustantivas)
+stopifnot(sum(denominator_table$sustantivas) == nrow(interventions),
+          all(denominator_table$total == denominator_table$descartadas +
+                denominator_table$sustantivas))
 
 knitr::kable(denominator_table,
-             col.names = c("Ley", "Trámite", "Total", "Proc.", "Vot.",
-                           "Ambas", "Desc.", "Denominador"),
+             col.names = c("Ley", "Trámite", "Total", "Descartadas",
+                           "Sustantivas"),
              caption = "Intervenciones incluidas y descartadas por ley y trámite")
 ```
 
@@ -199,13 +197,12 @@ Los totales son `r sum(denominators$intervenciones[denominators$law == "Ley 21.4
 `r sum(denominators$intervenciones[denominators$law == "Ley 21.538"])` y
 `r sum(denominators$intervenciones[denominators$law == "Ley 21.735"])`
 intervenciones sustantivas, respectivamente. Se descartaron
-`r sum(denominator_table$excluded)` intervenciones completas. Los
+`r sum(denominator_table$descartadas)` intervenciones completas. Los
 denominadores por trámite son pequeños en algunos casos. Las variaciones de
 varios puntos porcentuales deben leerse junto con estos tamaños.
 
 La misma tabla se exporta a Word con el estilo de reglas horizontales,
-tipografía y espaciado de los materiales de replicación. La nota del archivo
-define cada categoría de descarte.
+tipografía y espaciado de los materiales de replicación.
 
 ```{r}
 #| label: tabla-denominadores-word
@@ -214,18 +211,20 @@ denominator_word <- denominator_table |>
                         `Primer Trámite Constitucional` = "Primero",
                         `Segundo Trámite Constitucional` = "Segundo",
                         `Tercer Trámite Constitucional` = "Tercero")) |>
-  setNames(c("Ley", "Trámite", "Total", "Proc.", "Vot.",
-             "Ambas", "Desc.", "Denom."))
+  setNames(c("Ley", "Trámite", "Total", "Descartadas", "Sustantivas"))
 export_apa7_word_table(
   denominator_word,
   path = file.path(OUTPUT_DIR, "denominadores_apa7.docx"),
   title = "Intervenciones incluidas y descartadas por ley y trámite",
-  note = paste("Proc. = solo procedimiento; Vot. = solo votación;",
-               "Ambas = ambas marcas; Desc. = total descartado;",
-               "Denom. = intervenciones con al menos un bloque sustantivo."),
-  left_columns = 2L
+  note = paste("Se descartan las intervenciones compuestas solo por bloques",
+               "de votación o procedimiento, o ambos. Sustantivas =",
+               "intervenciones con al menos un bloque sustantivo."),
+  left_columns = 2L,
+  column_widths = c(1.15, 1.2, 0.75, 1.55, 1.55)
 )
 ```
+
+## Perfiles de conceptos por ley
 
 Una misma intervención puede contener varios bloques con el mismo concepto.
 Se reduce cada combinación intervención–concepto a una presencia y luego se
@@ -274,7 +273,7 @@ concept_order <- c(concept_order, setdiff(concepts$concept_id, concept_order))
 plot_law <- prevalence_law |>
   mutate(concept_id = factor(concept_id, levels = concept_order))
 
-p_law <- ggplot(plot_law,
+perfiles_por_ley <- ggplot(plot_law,
                 aes(x = concept_id, y = proporcion, color = law, group = law)) +
   geom_line(linewidth = 0.9) +
   geom_point(size = 2.5) +
@@ -285,18 +284,18 @@ p_law <- ggplot(plot_law,
        y = "Proporción de intervenciones", color = "Ley") +
   theme(axis.text.x = element_text(angle = 55, hjust = 1, vjust = 1),
         legend.position = "top")
-print(p_law)
-ggsave(file.path(FIGURE_DIR, "perfiles_por_ley.png"), p_law,
+print(perfiles_por_ley)
+ggsave(file.path(FIGURE_DIR, "perfiles_por_ley.png"), perfiles_por_ley,
        width = 12, height = 7, dpi = 180)
 ```
 
 La lectura puntual de cualquier marca es «en esta ley, este porcentaje de
-intervenciones sustantivas mencionó el concepto». Para facilitar la lectura
-exacta, la tabla siguiente muestra los cinco conceptos de mayor prevalencia en
-cada ley. Su orden puede cambiar cuando se revisen las anotaciones.
+intervenciones sustantivas mencionó el concepto». El orden de los conceptos
+de mayor presencia puede cambiar cuando se revisen las anotaciones.
 
 ```{r}
 #| label: conceptos-dominantes
+#| include: false
 top_law <- prevalence_law |>
   group_by(law) |>
   slice_max(proporcion, n = 5, with_ties = FALSE) |>
@@ -306,8 +305,6 @@ top_law <- prevalence_law |>
             intervenciones = intervenciones_con_concepto,
             total = intervenciones,
             porcentaje = percent(proporcion, accuracy = 0.1))
-knitr::kable(top_law,
-             caption = "Cinco conceptos más presentes en cada ley")
 ```
 
 En la Ley 21.419 predomina necesidad material
@@ -391,6 +388,66 @@ knitr::kable(stance_cells, format = "html", escape = FALSE,
              caption = "Intervenciones con apoyo y oposición por concepto y ley")
 ```
 
+Exportamos la misma tabla a Word; la negrita conserva la distinción de los
+recuentos altos de apoyo y oposición dentro de cada ley.
+
+```{r}
+#| label: tabla-posturas-word
+word_concept_labels <- c(
+  capitalizacion_individual = "Capitalización individual",
+  propiedad_individual_fondos = "Propiedad de fondos",
+  reciprocidad_contributiva = "Reciprocidad contributiva",
+  control_responsabilidad_individual = "Control individual",
+  actitud = "Actitud del beneficiario",
+  identidad = "Identidad grupal",
+  necesidad_material = "Necesidad material",
+  igualdad_universalismo = "Igualdad y universalismo",
+  conciencia_costos = "Conciencia de costos",
+  solidaridad_previsional_colectiva = "Solidaridad colectiva",
+  solidaridad_intergeneracional = "Solidaridad intergeneracional",
+  libertad_eleccion_previsional = "Libertad de elección",
+  ineficiencia_estado = "Riesgo estatal",
+  prevision_como_mercado = "Previsión como mercado",
+  ilegitimidad_origen_dictatorial = "Origen dictatorial",
+  acuerdos_moderacion = "Acuerdos y moderación"
+)
+stance_word <- stance_counts |>
+  mutate(positive = sprintf("+ %d (%.1f%%)",
+                            support, 100 * proporcion_positiva),
+         negative = sprintf("− %d (%.1f%%)",
+                            oppose, 100 * proporcion_negativa),
+         cell = if_else(total_posturas == 0, "—",
+                        paste(positive, negative, sep = "\n"))) |>
+  transmute(concept_id, concept_label = unname(word_concept_labels[concept_id]),
+            law, cell) |>
+  pivot_wider(names_from = law, values_from = cell) |>
+  arrange(match(concept_id, concepts$concept_id)) |>
+  select(-concept_id) |>
+  setNames(c("Concepto", unname(law_names)))
+stance_emphasis <- stance_counts |>
+  filter(total_posturas > 0) |>
+  transmute(row = match(concept_id, concepts$concept_id),
+            column = match(as.character(law), unname(law_names)) + 1L,
+            positive = sprintf("+ %d (%.1f%%)",
+                               support, 100 * proporcion_positiva),
+            negative = sprintf("− %d (%.1f%%)",
+                               oppose, 100 * proporcion_negativa),
+            bold_positive = destacar_positivos,
+            bold_negative = destacar_negativos)
+export_apa7_word_table(
+  stance_word,
+  path = file.path(OUTPUT_DIR, "posturas_por_concepto_ley_apa7.docx"),
+  title = "Posturas sobre cada concepto por ley",
+  note = paste("+ = apoyo; − = oposición; % = N/(N+ + N−).",
+               "Negrita = tres N mayores por postura y ley, con empates."),
+  table_number = 2L, left_columns = 1L,
+  max_width = 9.7, landscape = TRUE,
+  column_widths = c(3.1, 2.2, 2.2, 2.2),
+  body_font_size = 12, cell_padding = 7,
+  rich_cells = stance_emphasis
+)
+```
+
 En la Ley 21.735, necesidad material reúne 129 presencias positivas y ninguna
 negativa; previsión como mercado reúne 82 positivas y 87 negativas. Este último
 concepto aparece en 155 intervenciones, pero suma 169 presencias de postura
@@ -399,137 +456,29 @@ describen el balance **entre posturas registradas para un concepto**; la figura
 de prevalencia anterior usa todas las intervenciones sustantivas como
 denominador.
 
-### Evolución por trámite
-
-Se conserva el mismo denominador en cada combinación ley–trámite. El gráfico
-muestra los seis conceptos más frecuentes en todo el corpus para mantener
-legibles los paneles; las tablas exportadas conservan los 16. Los trámites son
-una secuencia legislativa, pero los conjuntos de hablantes y documentos cambian
-entre ellos.
-
-```{r}
-#| label: prevalencia-por-tramite
-prevalence_stage <- concept_presence |>
-  count(law, stage, concept_id, name = "intervenciones_con_concepto") |>
-  complete(nesting(law, stage), concept_id = concepts$concept_id,
-           fill = list(intervenciones_con_concepto = 0L)) |>
-  left_join(denominators, by = c("law", "stage")) |>
-  mutate(proporcion = intervenciones_con_concepto / intervenciones) |>
-  left_join(concepts, by = "concept_id")
-
-top_six <- head(concept_order, 6)
-market_trend <- prevalence_stage |>
-  filter(law == "Ley 21.735", concept_id == "prevision_como_mercado") |>
-  arrange(stage) |>
-  pull(proporcion)
-```
-
-En cada panel, una línea indica cómo cambia la proporción de intervenciones
-que contienen un concepto entre trámites de la misma ley. El eje Y es común a
-los tres paneles. El tercer trámite de la Ley 21.735 exige especial cautela
-porque coincide con el cambio de proveedor.
-
-```{r}
-#| label: fig-evolucion
-#| fig-cap: "Presencia de los seis conceptos más frecuentes a lo largo de los trámites"
-#| fig-alt: "Tres paneles, uno por ley, muestran las proporciones de seis conceptos por trámite constitucional."
-#| fig-width: 12
-#| fig-height: 6
-p_stage <- prevalence_stage |>
-  filter(concept_id %in% top_six) |>
-  mutate(concepto = factor(concept_id, levels = top_six,
-                           labels = concepts$concept_label[match(top_six,
-                                                                 concepts$concept_id)])) |>
-  ggplot(aes(x = stage, y = proporcion, color = concepto,
-             group = concepto)) +
-  geom_line(linewidth = 0.8) +
-  geom_point(size = 2) +
-  facet_wrap(~ law, nrow = 1) +
-  scale_x_discrete(labels = c("1.º", "2.º", "3.º"), drop = TRUE) +
-  scale_y_continuous(labels = label_percent(accuracy = 1),
-                     limits = c(0, 0.75)) +
-  labs(x = "Trámite constitucional", y = "Proporción de intervenciones",
-       color = "Concepto") +
-  theme(legend.position = "bottom",
-        legend.text = element_text(size = 8)) +
-  guides(color = guide_legend(nrow = 3, byrow = TRUE))
-print(p_stage)
-ggsave(file.path(FIGURE_DIR, "evolucion_por_tramite.png"), p_stage,
-       width = 12, height = 6, dpi = 180)
-```
-
-En la Ley 21.735, previsión como mercado pasa de
-`r percent(market_trend[1], accuracy = 0.1)`
-en el primer trámite a
-`r percent(market_trend[2], accuracy = 0.1)`
-en el segundo y
-`r percent(market_trend[3], accuracy = 0.1)`
-en el tercero. Las trayectorias describen la composición de intervenciones
-anotadas en cada trámite. No permiten atribuir el cambio a la deliberación
-misma: también varían
-la agenda, los participantes, el tamaño del corpus y, en un caso, el proveedor.
-
-### Fragmentos para interpretar la codificación
-
-Los siguientes extractos son ejemplos de anotaciones de alta confianza del
-modelo, seleccionados para ilustrar tres lecturas distintas. Son fragmentos de
-intervenciones, no citas representativas de toda la ley. La postura se refiere
-al concepto codificado y requiere revisión humana antes de publicación.
-
-```{r}
-#| label: ejemplos-cualitativos
-example_ids <- c("utt_7fc73dffd2b779cd007d::p0005-p0008",
-                 "utt_85f42f17857afc0059c3::p0007-p0008",
-                 "utt_a19db6a389cb8ef40869::p0003-p0004")
-example_concepts <- c("necesidad_material", "igualdad_universalismo",
-                      "prevision_como_mercado")
-examples <- annotation_rows |>
-  filter(unit_id %in% example_ids, concept_id %in% example_concepts,
-         confidence == "high") |>
-  mutate(selected = match(unit_id, example_ids),
-         expected_concept = example_concepts[selected]) |>
-  filter(concept_id == expected_concept) |>
-  left_join(concepts, by = "concept_id") |>
-  transmute(ley = law_names[law_number], concepto = concept_label,
-            postura = if_else(stance == "support", "apoya", "cuestiona"),
-            extracto = evidence_text) |>
-  arrange(match(ley, unname(law_names)))
-stopifnot(nrow(examples) == 3L)
-knitr::kable(examples, caption = "Extractos anotados, uno por ley")
-```
-
-Los ejemplos muestran por qué presencia y postura son medidas distintas: una
-mención crítica de la previsión como negocio suma a la prevalencia de ese
-concepto, aunque su postura codificada sea de oposición.
-
-## Dos redes exploratorias de conceptos
+## Red exploratoria de congruencia
 
 Leifeld describe la proyección de matrices binarias de afiliación y el coseno
-como normalización de solapamientos [@leifeld_discourse_2017]. La implementación
-de ejemplo en `example/discourse_networks.R` también reduce a uno las menciones
-repetidas de un actor a un concepto. Aquí se registra por separado si cada actor
-apoyó o cuestionó un concepto **al menos una vez** en la Ley 21.735. Un mismo
-actor puede figurar con ambas posturas; esa ambivalencia se conserva y se
-cuantifica abajo.
+como normalización de solapamientos [@leifeld_discourse_2017]. El ejemplo en
+`example/discourse_networks.R` reduce las menciones repetidas de un actor a un
+concepto. Aquí se registra por separado si cada actor apoyó o cuestionó un
+concepto **al menos una vez** en la Ley 21.735. La red une dos conceptos cuando
+un mismo actor apoyó ambos o cuestionó ambos. Un actor con ambas posturas
+puede contribuir dos coincidencias al numerador.
 
-La red de congruencia conecta conceptos tratados con **igual postura por los
-mismos actores**. La segunda conecta conceptos tratados con **posturas opuestas
-por los mismos actores**. Esta última se rotula «contraste de posturas»: no
-equivale automáticamente a conflicto ideológico entre conceptos. Leifeld
-recomienda nodos concepto–postura para interpretaciones sustantivas más fuertes
-de redes de conceptos [@leifeld_discourse_2017].
-
-Leemos la identidad de hablante del corpus de la Ley 21.735. El enlace se hace
-por `unit_id` y se exige un hablante identificado para cada anotación usada.
+Leemos la identidad del hablante por `unit_id` y exigimos un identificador
+válido para las anotaciones usadas en la red. El análisis reúne los tres
+trámites de la ley; por ello, una variación de postura entre trámites se
+conserva como ambivalencia del actor.
 
 ```{r}
 #| label: afiliacion-actor-concepto
 speakers <- arrow::read_parquet(
   "data/proc_data/ley_21735/coding_chunks_long.parquet"
 ) |>
-  transmute(unit_id = as.character(unit_id), speaker_id = as.character(speaker_id)) |>
+  transmute(unit_id = as.character(unit_id),
+            speaker_id = as.character(speaker_id)) |>
   distinct()
-
 network_claims <- annotation_rows |>
   filter(law_number == "21735", stance %in% c("support", "oppose")) |>
   inner_join(blocks |>
@@ -538,32 +487,25 @@ network_claims <- annotation_rows |>
   left_join(speakers, by = "unit_id") |>
   filter(!is.na(speaker_id), speaker_id != "") |>
   distinct(speaker_id, concept_id, stance)
-
 ambivalence <- network_claims |>
   count(speaker_id, concept_id) |>
   summarise(pares_con_dos_posturas = sum(n == 2L),
             pares_actor_concepto = n(), .groups = "drop")
-knitr::kable(ambivalence,
-             caption = "Actores que usaron un concepto con ambas posturas")
 ```
 
 Hay `r ambivalence$pares_con_dos_posturas` pares actor–concepto con ambas
-posturas entre `r ambivalence$pares_actor_concepto` pares observados. Los pares
-con dos posturas pueden alimentar ambos tipos de vínculos. Esta
-medida reúne todo el debate de la Ley 21.735, de modo que una variación de
-postura entre trámites aparece como ambivalencia agregada.
+posturas entre `r ambivalence$pares_actor_concepto` pares observados. Esta
+ambivalencia impide leer cada vínculo como una adhesión estable del actor.
 
-Se construyen dos matrices binarias actor × concepto: apoyo y oposición. Para
-dos conceptos, la congruencia suma actores que apoyaron ambos u objetaron
-ambos; el contraste suma actores que apoyaron uno y objetaron el otro. Aplicamos
-la opción `cosine` **tal como está programada en el
+Construimos matrices binarias actor × concepto para apoyo y oposición. El
+numerador de congruencia suma los productos correspondientes a posturas
+iguales. Aplicamos la opción `cosine` **tal como figura en el
 [exportador Java de DNA](https://github.com/leifeld-lab/dna/blob/master/dna/src/main/java/dna/export/Exporter.java#L1458-L1473)**:
-divide cada numerador por $\sqrt{d_i^2}\sqrt{d_j^2}=d_i d_j$, donde
+dividimos por $\sqrt{d_i^2}\sqrt{d_j^2}=d_i d_j$, donde
 $d_i=\sum_a(A^+_{ai}+A^-_{ai})$ es la actividad binaria del concepto $i$.
-Se usa el mismo divisor para ambas redes, y los ceros y la diagonal se tratan
-explícitamente. Esta fórmula del programa difiere del coseno binario
-$1/\sqrt{d_i d_j}$ para un único vínculo compartido que describe el capítulo;
-los pesos de este informe reproducen la **opción del programa DNA**.
+Fijamos en cero la diagonal y los pares sin actividad. Esta fórmula del
+programa difiere del coseno matemático binario que describe el capítulo; la
+figura usa la implementación de DNA.
 
 ```{r}
 #| label: proyeccion-conceptos
@@ -572,7 +514,6 @@ concept_ids <- concepts$concept_id
 support <- matrix(0, nrow = length(actor_ids), ncol = length(concept_ids),
                   dimnames = list(actor_ids, concept_ids))
 oppose <- support
-
 support_rows <- network_claims |> filter(stance == "support")
 oppose_rows <- network_claims |> filter(stance == "oppose")
 support[cbind(match(support_rows$speaker_id, actor_ids),
@@ -581,121 +522,88 @@ oppose[cbind(match(oppose_rows$speaker_id, actor_ids),
              match(oppose_rows$concept_id, concept_ids))] <- 1
 
 same_counts <- crossprod(support) + crossprod(oppose)
-opposite_counts <- crossprod(support, oppose) + crossprod(oppose, support)
 concept_activity <- colSums(support + oppose)
-denominator <- outer(sqrt(concept_activity^2),
-                     sqrt(concept_activity^2))
+denominator <- outer(sqrt(concept_activity^2), sqrt(concept_activity^2))
 congruence <- same_counts / denominator
-contrast <- opposite_counts / denominator
-mathematical_norm <- sqrt(colSums(support^2 + oppose^2))
-mathematical_denominator <- outer(mathematical_norm, mathematical_norm)
-congruence_mathematical <- same_counts / mathematical_denominator
-contrast_mathematical <- opposite_counts / mathematical_denominator
 congruence[!is.finite(congruence)] <- 0
-contrast[!is.finite(contrast)] <- 0
-congruence_mathematical[!is.finite(congruence_mathematical)] <- 0
-contrast_mathematical[!is.finite(contrast_mathematical)] <- 0
 diag(congruence) <- 0
-diag(contrast) <- 0
-diag(congruence_mathematical) <- 0
-diag(contrast_mathematical) <- 0
 
-# An actor with both stances may add two matches to the DNA numerator.
-# Count each actor once per concept pair for the descriptive tables/layout.
+# Para seleccionar aristas, cada actor cuenta una vez por par de conceptos.
 same_actors <- matrix(0L, length(concept_ids), length(concept_ids))
-opposite_actors <- same_actors
 for (i in seq_along(concept_ids)) {
   for (j in seq_along(concept_ids)) {
     same_actors[i, j] <- sum(
       (support[, i] == 1 & support[, j] == 1) |
         (oppose[, i] == 1 & oppose[, j] == 1)
     )
-    opposite_actors[i, j] <- sum(
-      (support[, i] == 1 & oppose[, j] == 1) |
-        (oppose[, i] == 1 & support[, j] == 1)
-    )
   }
 }
-
 stopifnot(all(congruence >= 0 & congruence <= 1),
-          all(contrast >= 0 & contrast <= 1),
-          all(congruence_mathematical >= 0 & congruence_mathematical <= 1),
-          all(contrast_mathematical >= 0 & contrast_mathematical <= 1),
           isTRUE(all.equal(congruence, t(congruence))),
-          isTRUE(all.equal(contrast, t(contrast))),
-          isTRUE(all.equal(congruence_mathematical,
-                           t(congruence_mathematical))),
-          all(same_actors <= same_counts),
-          all(opposite_actors <= opposite_counts))
+          all(same_actors <= same_counts))
 
 toy <- matrix(c(1, 1, 1, 0), nrow = 2)
 toy_activity <- colSums(toy)
 toy_dna_cosine <- crossprod(toy)[1, 2] /
   prod(sqrt(toy_activity^2))
-toy_mathematical_cosine <- crossprod(toy)[1, 2] /
-  prod(sqrt(colSums(toy^2)))
-stopifnot(isTRUE(all.equal(toy_dna_cosine, 0.5)),
-          isTRUE(all.equal(toy_mathematical_cosine, 1 / sqrt(2))))
+stopifnot(isTRUE(all.equal(toy_dna_cosine, 0.5)))
 ```
 
-Las aristas candidatas son todos los pares de conceptos con peso positivo. Un
-actor con ambas posturas puede aportar dos coincidencias al numerador de DNA;
-para seleccionar aristas y ubicar nodos lo contamos una sola vez por par. El
-divisor de DNA reduce mucho el peso de conceptos frecuentes; si se muestran
-solo los mayores cocientes, algunos vínculos sostenidos por decenas de actores
-desaparecen del dibujo. Por legibilidad, seleccionamos los **20 pares de
-congruencia compartidos por más actores** y hasta 20 pares de contraste entre
-esos mismos conceptos. El peso DNA se conserva en el grosor y en la tabla
-completa. La disposición se calcula a partir de la congruencia, ponderada por
-el número de actores con igual postura. Ambas figuras comparten posiciones,
-tamaños de nodo y escala de grosor; el tamaño representa la prevalencia del
-concepto en intervenciones de la Ley 21.735.
+Para que los 16 conceptos estén visibles, mostramos primero los 20 pares
+compartidos por más actores y añadimos el vínculo más frecuente de cada
+concepto aún ausente. Un concepto sin vínculo positivo se dibuja aislado. El
+grosor representa el peso normalizado de DNA. La disposición se fija tomando
+como referencia la figura exploratoria anterior para separar las dos zonas
+del debate y facilitar la lectura; **las distancias entre nodos no son una
+medida estadística**.
 
 ```{r}
 #| label: aristas-y-layout
 pairs <- as_tibble(t(combn(concept_ids, 2)), .name_repair = "minimal") |>
   setNames(c("from", "to")) |>
-  mutate(congruencia = congruence[cbind(match(from, concept_ids),
-                                        match(to, concept_ids))],
-         contraste = contrast[cbind(match(from, concept_ids),
-                                    match(to, concept_ids))],
-         congruencia_coseno_matematico = congruence_mathematical[
-           cbind(match(from, concept_ids), match(to, concept_ids))],
-         contraste_coseno_matematico = contrast_mathematical[
-           cbind(match(from, concept_ids), match(to, concept_ids))],
-         actores_igual_postura = same_actors[cbind(match(from, concept_ids),
-                                                   match(to, concept_ids))],
-         actores_postura_opuesta = opposite_actors[cbind(match(from, concept_ids),
-                                                         match(to, concept_ids))])
-edges_long <- pairs |>
-  pivot_longer(c(congruencia, contraste),
-               names_to = "tipo", values_to = "coseno") |>
-  filter(coseno > 0) |>
-  mutate(actores = if_else(tipo == "congruencia",
-                          actores_igual_postura, actores_postura_opuesta)) |>
-  group_by(tipo) |>
-  arrange(desc(actores), desc(coseno), from, to, .by_group = TRUE) |>
-  mutate(orden = row_number()) |>
-  ungroup()
-visible_congruence <- edges_long |>
-  filter(tipo == "congruencia", orden <= 20L)
-visible_concepts <- unique(c(visible_congruence$from,
-                             visible_congruence$to))
-visible_contrast <- edges_long |>
-  filter(tipo == "contraste", from %in% visible_concepts,
-         to %in% visible_concepts) |>
-  slice_head(n = 20L)
-visible_edges <- bind_rows(visible_congruence, visible_contrast)
-edge_scale_max <- max(visible_edges$coseno)
-
-set.seed(20260922)
-layout_graph <- graph_from_data_frame(
-  visible_congruence |> distinct(from, to, actores), directed = FALSE,
-  vertices = tibble(name = visible_concepts)
+  mutate(coseno_DNA = congruence[cbind(match(from, concept_ids),
+                                       match(to, concept_ids))],
+         actores = same_actors[cbind(match(from, concept_ids),
+                                     match(to, concept_ids))])
+candidate_edges <- pairs |>
+  filter(coseno_DNA > 0) |>
+  arrange(desc(actores), desc(coseno_DNA), from, to)
+visible_edges <- candidate_edges |> slice_head(n = 20L)
+missing_concepts <- setdiff(
+  concept_ids, unique(c(visible_edges$from, visible_edges$to))
 )
-xy <- layout_with_fr(layout_graph, weights = E(layout_graph)$actores)
-nodes <- tibble(concept_id = V(layout_graph)$name,
-                x = xy[, 1], y = xy[, 2]) |>
+for (concept_id in missing_concepts) {
+  best_edge <- candidate_edges |>
+    filter(from == concept_id | to == concept_id) |>
+    slice_head(n = 1L)
+  visible_edges <- bind_rows(visible_edges, best_edge)
+}
+visible_edges <- visible_edges |>
+  distinct(from, to, .keep_all = TRUE)
+linked_concepts <- unique(c(candidate_edges$from, candidate_edges$to))
+isolated_concepts <- setdiff(concept_ids, linked_concepts)
+stopifnot(setequal(concept_ids,
+                   c(unique(c(visible_edges$from, visible_edges$to)),
+                     isolated_concepts)))
+
+reference_layout <- tibble(
+  concept_id = c(
+    "identidad", "igualdad_universalismo", "necesidad_material",
+    "reciprocidad_contributiva", "acuerdos_moderacion",
+    "solidaridad_previsional_colectiva", "ilegitimidad_origen_dictatorial",
+    "capitalizacion_individual", "prevision_como_mercado",
+    "propiedad_individual_fondos", "control_responsabilidad_individual",
+    "ineficiencia_estado", "libertad_eleccion_previsional",
+    "solidaridad_intergeneracional", "conciencia_costos", "actitud"
+  ),
+  x = c(236, 179, 142, 245, 313, 65, 50, 172, 232, 355, 420, 423,
+        545, 261, 349, 75),
+  y = c(433, 383, 333, 328, 346, 388, 234, 223, 251, 208, 240, 172,
+        160, 104, 91, 95)
+)
+stopifnot(setequal(reference_layout$concept_id, concept_ids),
+          !anyDuplicated(reference_layout$concept_id))
+nodes <- reference_layout |>
   left_join(concepts, by = "concept_id") |>
   left_join(prevalence_law |>
               filter(as.character(law) == "Ley 21.735") |>
@@ -705,7 +613,7 @@ nodes <- tibble(concept_id = V(layout_graph)$name,
     propiedad_individual_fondos = "Propiedad de fondos",
     reciprocidad_contributiva = "Reciprocidad",
     control_responsabilidad_individual = "Control individual",
-    actitud = "Actitud",
+    actitud = "Actitud · sin enlace",
     identidad = "Identidad grupal",
     necesidad_material = "Necesidad material",
     igualdad_universalismo = "Igualdad",
@@ -722,209 +630,88 @@ plot_edges <- visible_edges |>
             by = "from") |>
   left_join(nodes |> select(to = concept_id, x_to = x, y_to = y),
             by = "to")
-plot_edges_mathematical <- plot_edges |>
-  filter(tipo == "congruencia") |>
-  mutate(coseno = pairs$congruencia_coseno_matematico[
-    match(paste(from, to), paste(pairs$from, pairs$to))])
-mathematical_scale_max <- max(plot_edges_mathematical$coseno)
+stopifnot(nrow(nodes) == 16L, !anyNA(plot_edges$x_from),
+          !anyNA(plot_edges$x_to))
 ```
 
-La selección muestra `r nrow(nodes)` de los 16 conceptos. En congruencia, una
-arista une conceptos que los mismos actores trataron con igual postura. La
-cercanía visual responde a estos vínculos y a su número de actores, además de
-las decisiones del algoritmo de distribución; no es una distancia estadística.
-El grosor indica el peso normalizado por la opción `cosine` de DNA.
+La figura incluye los 16 conceptos y `r nrow(plot_edges)` vínculos. Una arista
+significa que al menos un actor trató ambos conceptos con igual postura. La
+cercanía visual sigue la disposición de referencia y no es una distancia
+estadística. El tamaño del nodo indica la
+proporción de intervenciones sustantivas de la Ley 21.735 que mencionaron el
+concepto. `r paste(nodes$network_label[nodes$concept_id %in%
+isolated_concepts], collapse = ", ")` aparece aislado porque ningún actor lo
+compartió con otro concepto bajo la misma postura.
 
 ```{r}
 #| label: fig-congruencia
-#| fig-cap: "Red exploratoria de congruencia entre conceptos, Ley 21.735"
-#| fig-alt: "Conceptos incidentes a los veinte vínculos de congruencia con más actores compartidos; el grosor azul indica el peso normalizado por DNA."
-#| fig-width: 10
-#| fig-height: 8
+#| fig-cap: "Red exploratoria de congruencia entre los 16 conceptos, Ley 21.735"
+#| fig-alt: "Dieciséis conceptos, uno aislado, y los vínculos de congruencia seleccionados por actores compartidos; el grosor indica el coseno de DNA."
+#| fig-width: 11
+#| fig-height: 8.6
 p_congruence <- ggplot() +
-  geom_segment(data = filter(plot_edges, tipo == "congruencia"),
+  geom_segment(data = plot_edges,
                aes(x = x_from, y = y_from, xend = x_to, yend = y_to,
-                   linewidth = coseno), color = "#1889A4", alpha = 0.68) +
+                   linewidth = coseno_DNA), color = "#1889A4", alpha = 0.78) +
   geom_point(data = nodes, aes(x = x, y = y, size = proporcion),
              color = "#13738A") +
   ggrepel::geom_label_repel(data = nodes,
                             aes(x = x, y = y, label = network_label),
-                            size = 3.5, max.overlaps = Inf, seed = 20260922,
-                            box.padding = 0.6, point.padding = 0.5,
+                            size = 2.8, max.overlaps = Inf, seed = 20260922,
+                            box.padding = 0.35, point.padding = 0.3,
                             fill = "white", label.size = 0.15,
                             min.segment.length = 0) +
-  scale_linewidth(range = c(0.5, 3), limits = c(0, edge_scale_max),
+  scale_linewidth(range = c(0.25, 1.6),
+                  limits = c(0, max(plot_edges$coseno_DNA)),
                   labels = label_number(accuracy = 0.001)) +
-  scale_size_area(max_size = 12, limits = c(0, 0.55),
-                  labels = label_percent(accuracy = 1)) +
+  scale_size_continuous(range = c(2, 7), limits = c(0, 0.55),
+                        breaks = c(0.1, 0.3, 0.5),
+                        labels = label_percent(accuracy = 1)) +
   coord_equal(clip = "off") +
   labs(linewidth = "Coseno DNA", size = "Presencia\nen intervenciones") +
-  theme_void() + theme(legend.position = "bottom",
-                       plot.background = element_rect(fill = "white", color = NA),
-                       plot.margin = margin(15, 35, 15, 35))
+  theme_void() +
+  theme(legend.position = "bottom",
+        plot.background = element_rect(fill = "white", color = NA),
+        plot.margin = margin(15, 25, 15, 25))
 print(p_congruence)
 ggsave(file.path(FIGURE_DIR, "red_congruencia.png"), p_congruence,
-       width = 10, height = 8, dpi = 180, bg = "white")
+       width = 11, height = 8.6, dpi = 180, bg = "white")
 ```
 
-Para aislar el efecto del divisor, la figura siguiente conserva exactamente
-los mismos 20 pares, nodos, tamaños y posiciones. Cambia solo el peso de las
-aristas a $G_{ij}/\sqrt{d_i d_j}$, el coseno matemático binario descrito en el
-capítulo. Cada figura muestra sus valores reales en la leyenda; las escalas de
-grosor se ajustan a rangos distintos y no deben compararse por su espesor
-absoluto entre imágenes.
-
-```{r}
-#| label: fig-congruencia-matematica
-#| fig-cap: "Mismos vínculos de congruencia con coseno matemático, Ley 21.735"
-#| fig-alt: "Los mismos conceptos, pares y posiciones de la figura DNA; cambia el grosor de las aristas según el coseno binario matemático."
-#| fig-width: 10
-#| fig-height: 8
-p_congruence_mathematical <- ggplot() +
-  geom_segment(data = plot_edges_mathematical,
-               aes(x = x_from, y = y_from, xend = x_to, yend = y_to,
-                   linewidth = coseno), color = "#1889A4", alpha = 0.68) +
-  geom_point(data = nodes, aes(x = x, y = y, size = proporcion),
-             color = "#13738A") +
-  ggrepel::geom_label_repel(data = nodes,
-                            aes(x = x, y = y, label = network_label),
-                            size = 3.5, max.overlaps = Inf, seed = 20260922,
-                            box.padding = 0.6, point.padding = 0.5,
-                            fill = "white", label.size = 0.15,
-                            min.segment.length = 0) +
-  scale_linewidth(range = c(0.5, 3),
-                  limits = c(0, mathematical_scale_max),
-                  labels = label_number(accuracy = 0.01)) +
-  scale_size_area(max_size = 12, limits = c(0, 0.55),
-                  labels = label_percent(accuracy = 1)) +
-  coord_equal(clip = "off") +
-  labs(linewidth = "Coseno matemático",
-       size = "Presencia\nen intervenciones") +
-  theme_void() + theme(legend.position = "bottom",
-                       plot.background = element_rect(fill = "white", color = NA),
-                       plot.margin = margin(15, 35, 15, 35))
-print(p_congruence_mathematical)
-ggsave(file.path(FIGURE_DIR, "red_congruencia_coseno_matematico.png"),
-       p_congruence_mathematical, width = 10, height = 8, dpi = 180,
-       bg = "white")
-```
-
-La comparación permite ver cómo cambia el énfasis relativo de los vínculos
-sin alterar la muestra visualizada. La distribución espacial procede de los
-actores compartidos en congruencia, por lo que conserva las mismas posiciones
-en ambas imágenes.
-
-La disposición permite explorar la hipótesis de dos economías morales. Acuerdos
-y reciprocidad contributiva aparecen conectados con conceptos de ambos lados;
-su papel de puente es una lectura descriptiva de estos vínculos, todavía sin
-una medida formal de intermediación ni revisión de las declaraciones.
-
-La segunda red usa los mismos nodos y posiciones. Una arista expresa contraste
-de posturas **dentro de los actores**: que un actor apoye un concepto y objete
-otro. Ese patrón admite varias lecturas sustantivas y exige revisar ejemplos
-textuales antes de llamarlo conflicto entre ideas.
-
-```{r}
-#| label: fig-contraste
-#| fig-cap: "Red exploratoria de posturas opuestas entre conceptos, Ley 21.735"
-#| fig-alt: "Los mismos conceptos y posiciones; hasta veinte aristas rojas unen conceptos que los mismos actores trataron con posturas opuestas."
-#| fig-width: 10
-#| fig-height: 8
-p_contrast <- ggplot() +
-  geom_segment(data = filter(plot_edges, tipo == "contraste"),
-               aes(x = x_from, y = y_from, xend = x_to, yend = y_to,
-                   linewidth = coseno), color = "#BD5C47", alpha = 0.68) +
-  geom_point(data = nodes, aes(x = x, y = y, size = proporcion),
-             color = "#13738A") +
-  ggrepel::geom_label_repel(data = nodes,
-                            aes(x = x, y = y, label = network_label),
-                            size = 3.5, max.overlaps = Inf, seed = 20260922,
-                            box.padding = 0.6, point.padding = 0.5,
-                            fill = "white", label.size = 0.15,
-                            min.segment.length = 0) +
-  scale_linewidth(range = c(0.5, 3), limits = c(0, edge_scale_max),
-                  labels = label_number(accuracy = 0.001)) +
-  scale_size_area(max_size = 12, limits = c(0, 0.55),
-                  labels = label_percent(accuracy = 1)) +
-  coord_equal(clip = "off") +
-  labs(linewidth = "Coseno DNA", size = "Presencia\nen intervenciones") +
-  theme_void() + theme(legend.position = "bottom",
-                       plot.background = element_rect(fill = "white", color = NA),
-                       plot.margin = margin(15, 35, 15, 35))
-print(p_contrast)
-ggsave(file.path(FIGURE_DIR, "red_contraste.png"), p_contrast,
-       width = 10, height = 8, dpi = 180, bg = "white")
-```
-
-La tabla siguiente presenta los cinco vínculos compartidos por más actores en
-cada tipo de red, con ambos pesos de coseno. Sirve para leer las figuras
-sin depender de distancias del diseño gráfico. Los demás pares siguen
-disponibles en las tablas exportadas.
-
-```{r}
-#| label: principales-vinculos
-top_edges <- edges_long |>
-  filter(orden <= 5L) |>
-  left_join(concepts |> select(from = concept_id, concepto_1 = concept_label),
-            by = "from") |>
-  left_join(concepts |> select(to = concept_id, concepto_2 = concept_label),
-            by = "to") |>
-  transmute(red = tipo, concepto_1, concepto_2, actores,
-            coseno_DNA = round(coseno, 4),
-            coseno_matematico = round(if_else(
-              tipo == "congruencia", congruencia_coseno_matematico,
-              contraste_coseno_matematico), 3))
-knitr::kable(top_edges,
-             caption = "Cinco vínculos compartidos por más actores de cada red")
-```
-
-El vínculo de congruencia compartido por más actores une reciprocidad
-contributiva con
-necesidad material (`r top_edges$coseno_DNA[top_edges$red == "congruencia"][1]`,
-`r top_edges$actores[top_edges$red == "congruencia"][1]` actores). En contraste
-de posturas, el primer par de la tabla reúne
-`r top_edges$actores[top_edges$red == "contraste"][1]` actores. Los vínculos
-son asociaciones descriptivas de los actores identificados
-en esta ley. Para evaluar cuál red comunica mejor el debate, conviene contrastar
-estos pares con fragmentos de sus intervenciones y revisar los pares
-actor–concepto que recibieron ambas posturas.
+La figura permite explorar la hipótesis de dos economías morales. Acuerdos y
+reciprocidad contributiva aparecen conectados con conceptos de ambos lados;
+su papel de puente es una lectura descriptiva, sin una medida formal de
+intermediación ni revisión de todas las declaraciones.
 
 ## Archivos reproducibles y límites
 
-Guardamos las tablas completas en Parquet y versiones CSV de las dos tablas de
-prevalencia. Las rutas se mantienen constantes entre ejecuciones.
+Las dos tablas se exportan a Word. Guardamos además las cifras de base y todos
+los pares de conceptos en Parquet; las rutas se reemplazan en cada ejecución.
 
 ```{r}
 #| label: exportar
 arrow::write_parquet(prevalence_law,
                      file.path(OUTPUT_DIR, "prevalencia_por_ley.parquet"))
-arrow::write_parquet(prevalence_stage,
-                     file.path(OUTPUT_DIR, "prevalencia_por_tramite.parquet"))
 arrow::write_parquet(pairs,
-                     file.path(OUTPUT_DIR, "redes_conceptos_pares.parquet"))
-arrow::write_parquet(coverage,
-                     file.path(OUTPUT_DIR, "cobertura_proveedor.parquet"))
+                     file.path(OUTPUT_DIR, "red_congruencia_pares.parquet"))
 arrow::write_parquet(denominator_table,
                      file.path(OUTPUT_DIR, "denominadores.parquet"))
 arrow::write_parquet(stance_counts,
                      file.path(OUTPUT_DIR, "posturas_por_concepto_ley.parquet"))
 readr::write_csv(prevalence_law,
                  file.path(OUTPUT_DIR, "prevalencia_por_ley.csv"))
-readr::write_csv(prevalence_stage,
-                 file.path(OUTPUT_DIR, "prevalencia_por_tramite.csv"))
 readr::write_csv(stance_counts,
                  file.path(OUTPUT_DIR, "posturas_por_concepto_ley.csv"))
 ```
 
-Este informe ofrece un mapa de conceptos para la entrega preliminar. La
-revisión de calidad de las anotaciones, una prueba de sensibilidad por
-proveedor, la desagregación temporal de las redes y una versión con nodos
+La revisión de calidad de las anotaciones, una prueba de sensibilidad por
+proveedor, la desagregación temporal de la red y una versión con nodos
 concepto–postura quedan como pasos de validación. El análisis de comunidades
 Spin Glass no forma parte de estos resultados.
 
 ## Referencia metodológica
 
-La definición de redes de congruencia y conflicto, la binarización y la
-normalización por coseno se contrastaron con el texto original de
-[@leifeld_discourse_2017], el ejemplo local `example/discourse_networks.R` y
-el [código fuente del paquete DNA](https://github.com/leifeld-lab/dna).
+La binarización y la normalización por coseno se contrastaron con el texto
+original de [@leifeld_discourse_2017], el ejemplo local
+`example/discourse_networks.R` y el
+[código fuente del paquete DNA](https://github.com/leifeld-lab/dna).
