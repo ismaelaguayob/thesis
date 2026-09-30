@@ -76,6 +76,10 @@ from features.affiliation_overrides import (
     apply_affiliation_overrides,
     load_affiliation_overrides,
 )
+from features.independent_blocs import (
+    apply_independent_blocs,
+    load_independent_blocs,
+)
 from features.atomic_io import atomic_write_bytes, atomic_write_csv, atomic_write_parquet
 from features.manual_validation.service import atomic_write_json
 from features.political_alignment import load_party_alignment
@@ -103,6 +107,7 @@ PROC_DATA_DIR = Path("data/proc_data") / f"ley_{LAW_NUMBER}"
 TABLE_OUTPUT_DIR = Path("output/tables") / f"ley_{LAW_NUMBER}"
 PARTY_ALIGNMENT = load_party_alignment(Path(".env"))
 AFFILIATION_OVERRIDES_PATH = Path("data/curation/party_at_date_overrides.csv")
+INDEPENDENT_BLOCS_PATH = Path("data/curation/independent_bloc_assignments.csv")
 
 PROC_DATA_DIR.mkdir(parents=True, exist_ok=True)
 TABLE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -334,6 +339,14 @@ DOCUMENT_SPEAKER_OVERRIDES_BY_LAW = {
         "http://datos.bcn.cl/recurso/cl/documento/698998": {
             "ORTIZ": bcn_person("1209"), "SCHILLING": bcn_person("3014"),
             "UNDURRAGA": bcn_person("4563"), "VENEGAS": bcn_person("3192"),
+            # Los metadatos AKN asignan el marcador a Juan Luis Ossa Bulnes
+            # (persona/1563); el ministro Segpres en enero de 2022 era su hijo.
+            "OSSA": {
+                "speaker": "Juan José Ossa Santa Cruz",
+                "speaker_id": "PersonaExt21419Ossa",
+                "speaker_href": "https://en.wikipedia.org/wiki/Juan_Jos%C3%A9_Ossa",
+                "role": "Ministro Secretario General de la Presidencia",
+            },
         },
     },
     "21538": {
@@ -566,6 +579,14 @@ if speech_df_full.loc[
     speech_df_full["party_at_date_status"].eq("unknown"), "party_at_date"
 ].notna().any():
     raise ValueError("Una afiliación unknown contiene party_at_date")
+
+# Los independientes se asignan al grupo de su bancada en la fecha o, en su
+# defecto, al partido de su cupo electoral. `party_at_date` conserva la
+# militancia histórica; la alineación se deriva de `political_group_party`.
+independent_blocs = load_independent_blocs(INDEPENDENT_BLOCS_PATH, PARTY_ALIGNMENT)
+speech_df_full, applied_independent_blocs = apply_independent_blocs(
+    speech_df_full, independent_blocs
+)
 ```
 
 La afiliación histórica queda separada de la militancia vigente. Exportamos los
@@ -599,6 +620,7 @@ atomic_write_parquet(affiliation_gaps, PROC_DATA_DIR / "parliamentarian_affiliat
 atomic_write_csv(affiliation_gaps, TABLE_OUTPUT_DIR / "parliamentarian_affiliation_gaps.csv")
 atomic_write_csv(affiliation_overrides, TABLE_OUTPUT_DIR / "party_at_date_overrides_status.csv")
 atomic_write_csv(applied_affiliation_overrides, TABLE_OUTPUT_DIR / "party_at_date_overrides_applied.csv")
+atomic_write_csv(applied_independent_blocs, TABLE_OUTPUT_DIR / "independent_blocs_applied.csv")
 affiliation_summary = (
     speech_df_full.loc[
         speech_df_full["person_href"].notna(),
@@ -649,13 +671,14 @@ speech_df_full.loc[
 ] = "unresolved_text"
 speech_df = speech_df_full.loc[analysis_mask].copy().reset_index(drop=True)
 
-# La alineación se deriva solo desde la afiliación histórica validada. Los
+# La alineación se deriva solo desde la afiliación histórica validada y, para
+# los independientes, desde su asignación documentada a una bancada o cupo.
 # Solo partidos enumerados en la configuración reciben una categoría política.
 # La ausencia, la no aplicabilidad y los nombres no clasificados permanecen
 # explícitos para impedir imputarlos silenciosamente a centro.
 def political_alignment_at_date(row):
     if row["party_at_date_status"] == "matched":
-        return PARTY_ALIGNMENT.classify(row["party_at_date"])
+        return PARTY_ALIGNMENT.classify(row["political_group_party"])
     if row["party_at_date_status"] == "not_applicable":
         return "No aplica"
     return "Sin dato"
@@ -776,6 +799,10 @@ CODING_METADATA_COLUMNS = [
     "militancy_at_date_candidates",
     "affiliation_data_status",
     "affiliation_error",
+    "political_group_party",
+    "political_group_source",
+    "political_group_evidence_url",
+    "political_group_evidence_note",
     "political_alignment",
     "speaker_data_status",
 ]

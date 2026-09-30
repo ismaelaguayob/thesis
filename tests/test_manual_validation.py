@@ -475,7 +475,7 @@ class ManualValidationTestCase(unittest.TestCase):
                 for row in session["sampling"]["strata_table"]
             ))
 
-    def test_executive_role_is_not_assigned_a_partisan_alignment(self) -> None:
+    def test_executive_role_uses_its_documented_party(self) -> None:
         dataframe = pd.read_parquet(self.source_path)
         target = dataframe["unit_id"].eq("doc-a-1::p0001-p0002")
         dataframe.loc[target, "role"] = "Ministro"
@@ -491,6 +491,42 @@ class ManualValidationTestCase(unittest.TestCase):
         )
         metadata = service.sampling_metadata("doc-a-1::p0001-p0002")
         self.assertEqual(metadata["actor_type"], "Ejecutivo")
+        self.assertEqual(metadata["alignment"], "derecha")
+
+    def test_independent_keeps_party_and_takes_group_alignment(self) -> None:
+        dataframe = pd.read_parquet(self.source_path)
+        target = dataframe["unit_id"].eq("doc-a-1::p0001-p0002")
+        dataframe.loc[target, "party_at_date"] = "Independiente"
+        dataframe.loc[target, "party_at_date_status"] = "matched"
+        dataframe["political_group_party"] = dataframe["party_at_date"]
+        dataframe.loc[target, "political_group_party"] = "Partido Renovación Nacional"
+        dataframe.to_parquet(self.source_path, index=False)
+
+        service = ValidationService(
+            self.source_path,
+            self.codebook_path,
+            self.output_dir,
+            party_alignment=self.party_alignment,
+        )
+        metadata = service.sampling_metadata("doc-a-1::p0001-p0002")
+        self.assertEqual(metadata["party"], "Independiente")
+        self.assertEqual(metadata["alignment"], "derecha")
+
+    def test_executive_without_documented_party_is_not_applicable(self) -> None:
+        dataframe = pd.read_parquet(self.source_path)
+        target = dataframe["unit_id"].eq("doc-a-1::p0001-p0002")
+        dataframe.loc[target, "role"] = "Ministro"
+        dataframe.loc[target, "party_at_date"] = None
+        dataframe.loc[target, "party_at_date_status"] = "not_applicable"
+        dataframe.to_parquet(self.source_path, index=False)
+
+        service = ValidationService(
+            self.source_path,
+            self.codebook_path,
+            self.output_dir,
+            party_alignment=self.party_alignment,
+        )
+        metadata = service.sampling_metadata("doc-a-1::p0001-p0002")
         self.assertEqual(metadata["alignment"], "No aplica")
 
     def test_multiple_annotations_and_review_are_persisted(self) -> None:

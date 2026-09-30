@@ -42,7 +42,8 @@ def load_affiliation_overrides(path: Path) -> pd.DataFrame:
     """Read and validate the user-editable, source-backed resolution queue."""
     if not path.is_file():
         raise FileNotFoundError(f"Falta la tabla editable de afiliaciones: {path}")
-    table = pd.read_csv(path, dtype=str, keep_default_na=False)
+    # utf-8-sig tolera el BOM que agregan las planillas al guardar CSV.
+    table = pd.read_csv(path, dtype=str, keep_default_na=False, encoding="utf-8-sig")
     missing = sorted(REQUIRED_COLUMNS.difference(table.columns))
     if missing:
         raise AffiliationOverrideError(
@@ -52,6 +53,14 @@ def load_affiliation_overrides(path: Path) -> pd.DataFrame:
     for column in REQUIRED_COLUMNS:
         table[column] = table[column].map(_text)
     table["resolution"] = table["resolution"].str.casefold()
+    bad_dates = table.loc[
+        ~table["reference_date"].str.fullmatch(r"\d{4}-\d{2}-\d{2}"), "reference_date"
+    ].unique()
+    if len(bad_dates):
+        raise AffiliationOverrideError(
+            "reference_date debe usar el formato AAAA-MM-DD; una planilla pudo "
+            "reformatear las fechas: " + ", ".join(sorted(bad_dates)[:5])
+        )
     invalid = table.loc[~table["resolution"].isin(RESOLUTIONS), "resolution"].unique()
     if len(invalid):
         raise AffiliationOverrideError(

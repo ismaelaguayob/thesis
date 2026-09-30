@@ -541,9 +541,15 @@ def load_corpus_records(
             if party_status == "not_applicable"
             else _sampling_value(row["party_at_date"])
         )
+        # La alineación de los independientes se deriva del grupo asignado en
+        # proc.qmd; ``party`` conserva la afiliación registrada. Los corpus
+        # anteriores a esa asignación usan party_at_date.
+        group_party = row.get("political_group_party")
+        group_party = party if party_status == "not_applicable" or not _text(group_party) else _text(group_party)
         record["_sampling_metadata"] = {
             "chamber": document_chambers[str(record["document_uri"])],
             "party": party,
+            "group_party": group_party,
             "gender": _sampling_value(row["gender"]),
             "actor_type": _actor_type(
                 row["role"], row.get("speaker_bcn_id"), row["party_at_date"]
@@ -820,13 +826,14 @@ class ValidationService:
                 record["law_number"] = law_number
                 private_metadata = record.pop("_sampling_metadata")
                 party = private_metadata["party"]
+                group_party = private_metadata["group_party"]
                 actor_type = private_metadata["actor_type"]
-                if actor_type in {"Ejecutivo", "Autoridad de la cámara"}:
+                if actor_type == "Autoridad de la cámara":
                     alignment = "No aplica"
-                elif party in {"Sin dato", "No aplica"}:
-                    alignment = party
+                elif group_party in {"Sin dato", "No aplica"}:
+                    alignment = group_party
                 else:
-                    alignment = self.party_alignment.classify(party)
+                    alignment = self.party_alignment.classify(group_party)
                 self.sampling_metadata_by_unit[str(record["unit_id"])] = {
                     "law_number": law_number,
                     "chamber": private_metadata["chamber"],
