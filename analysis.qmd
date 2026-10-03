@@ -50,7 +50,7 @@ pacman::p_load(arrow, dplyr, tidyr, stringr, ggplot2,
 source("R/apa7_word_table.R")
 
 INPUT_DIR <- "data/proc_data/annotations_inputs/pilot_d4e0291b4df3fc0f5343"
-RESULT_DIR <- "output/annotations/combined_gpt6luna_20260922"
+RESULT_DIR <- "output/annotations/openai_gpt6luna_20261002"
 OUTPUT_DIR <- "output/analysis/concepts"
 FIGURE_DIR <- file.path(OUTPUT_DIR, "figures")
 dir.create(FIGURE_DIR, recursive = TRUE, showWarnings = FALSE)
@@ -128,8 +128,7 @@ blocks <- sample_blocks |>
 ```
 
 Se cuentan bloques para describir la procedencia de las anotaciones. Los
-porcentajes analíticos usarán intervenciones, calculadas después. Un proveedor
-concentrado en un trámite puede confundirse con una diferencia temporal.
+porcentajes analíticos usarán intervenciones, calculadas después.
 
 ```{r}
 #| label: cobertura
@@ -137,15 +136,14 @@ concentrado en un trámite puede confundirse con una diferencia temporal.
 coverage <- blocks |>
   count(law, stage, provider, name = "bloques") |>
   arrange(law, stage, provider)
+stopifnot(identical(unique(coverage$provider), "openai"))
 ```
 
-La combinación contiene `r sum(coverage$bloques[coverage$provider == "openai"])`
-bloques de OpenAI y `r sum(coverage$bloques[coverage$provider == "bedrock"])`
-de Bedrock. Los primeros 2.813 índices pertenecen a OpenAI y los 796 restantes
-a Bedrock; todos coinciden con su bloque original. En la Ley 21.735, el tercer
-trámite coincide por completo con
-Bedrock; por ello, un contraste con los otros trámites combina diferencias del
-corpus y de procedencia del modelo.
+El censo contiene `r sum(coverage$bloques)` bloques, todos anotados por
+`gpt-6-luna` en OpenAI con los mismos requests congelados. Los 2.813 bloques
+anotados el 22-09 se reutilizaron; los 796 que en esa fecha se habían anotado en
+Bedrock se volvieron a anotar en OpenAI, de modo que la procedencia del modelo no
+coincide con ningún trámite.
 
 ## Intervenciones incluidas y descartadas
 

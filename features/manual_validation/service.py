@@ -43,7 +43,27 @@ ALLOWED_STANCES = {"support", "oppose"}
 ALLOWED_CONCEPT_STATUSES = {"in_codebook", "review"}
 ALLOWED_DECISIONS = {"statements", "no_statements"}
 ALLOWED_RESOLUTION_STATUSES = {"resolved", "unresolved"}
-ALLOWED_STRATEGIES = {"stratified", "random"}
+ALLOWED_STRATEGIES = {"stratified", "random", "predicted_concept"}
+# Strata derived from an LLM run for the blind validation. They are used only by
+# the server to draw the sample; the browser never receives them.
+NO_ANNOTATION_STRATUM = "sin_anotaciones"
+PROCEDURAL_STRATUM = "sin_anotaciones_voto_procedimiento"
+PREDICTED_STRATUM_LABELS = {
+    NO_ANNOTATION_STRATUM: "Sin anotaciones del modelo",
+    PROCEDURAL_STRATUM: "Sin anotaciones del modelo, marcado como voto o procedimiento",
+}
+PRIMARY_CONCEPT_RULE = (
+    "Cada bloque con anotaciones pertenece al estrato de su concepto predicho menos "
+    "frecuente en la ejecución completa; los empates se resuelven por identificador. "
+    "Los bloques sin anotaciones se separan según el modelo los haya marcado como voto "
+    "o procedimiento."
+)
+DEFAULT_CONCEPT_DESIGN = {
+    "min_per_concept": 15,
+    "no_annotation_units": 50,
+    "procedural_units": 15,
+    "secondary_strata": ["law_number", "chamber", "alignment", "gender"],
+}
 ALLOWED_SAMPLING_UNITS = {"block", "utterance"}
 STRATIFICATION_FIELDS = {
     "law_number": "Ley",
@@ -784,6 +804,318 @@ def sample_with_design(
     return selected, design
 
 
+def pending_annotation_mask(annotations: pd.DataFrame) -> pd.Series:
+    """Annotations that are not codebook concepts: proposals or null concepts."""
+    pending = annotations["concept_id"].isna() | annotations["concept_id"].astype(str).str.strip().eq("")
+    if "concept_status" in annotations.columns:
+        pending |= annotations["concept_status"].fillna("in_codebook").ne("in_codebook")
+    return pending
+
+
+def load_annotation_run(run_dir: Path, concept_ids: set[str]) -> dict[str, Any]:
+    """Read a completed LLM run as block-level predictions for sampling."""
+    results_path = run_dir / "results.parquet"
+    annotations_path = run_dir / "annotations.parquet"
+    for path in (results_path, annotations_path):
+        if not path.is_file():
+            raise ValidationError(f"La ejecución {run_dir.name} no tiene {path.name}")
+    results = pd.read_parquet(results_path)
+    annotations = pd.read_parquet(annotations_path)
+    missing = {"unit_id", "status", "decision", "quality_flags"}.difference(results.columns)
+    if missing:
+        raise ValidationError(
+            f"results.parquet de {run_dir.name} carece de: {', '.join(sorted(missing))}"
+        )
+    if results["unit_id"].duplicated().any():
+        raise ValidationError(f"La ejecución {run_dir.name} repite unit_id")
+    incomplete = results.loc[~results["status"].eq("completed"), "unit_id"]
+    if len(incomplete):
+        raise ValidationError(
+            f"La ejecución {run_dir.name} tiene {len(incomplete)} bloques sin completar"
+        )
+    # Earlier pilots allowed proposals outside the codebook (concept_status=review,
+    # concept_id null). They are not codebook concepts and cannot define strata of a
+    # closed-codebook validation, so such runs are rejected instead of coerced.
+    pending = pending_annotation_mask(annotations)
+    if pending.any():
+        raise ValidationError(
+            f"La ejecución {run_dir.name} tiene {int(pending.sum())} anotaciones sin concepto "
+            "del libro (pendientes de revisión); no puede definir los estratos de una "
+            "validación con libro cerrado"
+        )
+    unknown = sorted(set(annotations["concept_id"].dropna()).difference(concept_ids))
+    if unknown:
+        raise ValidationError(
+            f"La ejecución {run_dir.name} usa conceptos fuera del libro: {', '.join(unknown)}"
+        )
+
+    def flags(value: Any) -> list[str]:
+        if isinstance(value, str):
+            value = json.loads(value) if value.strip() else []
+        return [str(flag) for flag in (value if value is not None else [])]
+
+    concepts_by_unit: dict[str, set[str]] = defaultdict(set)
+    for unit_id, concept_id in annotations[["unit_id", "concept_id"]].itertuples(index=False):
+        concepts_by_unit[str(unit_id)].add(str(concept_id))
+    predictions = {}
+    for row in results[["unit_id", "decision", "quality_flags"]].itertuples(index=False):
+        unit_id = str(row.unit_id)
+        predictions[unit_id] = {
+            "decision": row.decision,
+            "concepts": concepts_by_unit.get(unit_id, set()),
+            "procedural": bool(set(flags(row.quality_flags)) & EVALUATION_EXCLUSION_FLAGS),
+        }
+    frequency: dict[str, int] = defaultdict(int)
+    for prediction in predictions.values():
+        for concept_id in prediction["concepts"]:
+            frequency[concept_id] += 1
+    return {
+        "run_id": run_dir.name,
+        "results_sha256": sha256_file(results_path),
+        "annotations_sha256": sha256_file(annotations_path),
+        "predictions": predictions,
+        "concept_frequency": dict(frequency),
+    }
+
+
+def predicted_stratum(prediction: dict[str, Any], frequency: dict[str, int]) -> str:
+    """Assign a block to its least frequent predicted concept or a no-annotation stratum."""
+    if prediction["concepts"]:
+        return min(prediction["concepts"], key=lambda concept: (frequency[concept], concept))
+    return PROCEDURAL_STRATUM if prediction["procedural"] else NO_ANNOTATION_STRATUM
+
+
+def allocate_concept_design(
+    counts: dict[str, int],
+    sample_size: int,
+    min_per_concept: int,
+    no_annotation_units: int,
+    procedural_units: int,
+) -> dict[str, int]:
+    """Fix the no-annotation quotas, guarantee a minimum per concept and
+    apportion the rest among concepts by their remaining blocks."""
+    fixed = {
+        NO_ANNOTATION_STRATUM: no_annotation_units,
+        PROCEDURAL_STRATUM: procedural_units,
+    }
+    quotas: dict[str, int] = {}
+    for stratum, requested in fixed.items():
+        available = counts.get(stratum, 0)
+        if requested > available:
+            raise ValidationError(
+                f"Se pidieron {requested} bloques de «{PREDICTED_STRATUM_LABELS[stratum]}», "
+                f"pero solo hay {available}"
+            )
+        if available:
+            quotas[stratum] = requested
+    concepts = sorted(stratum for stratum in counts if stratum not in fixed)
+    for concept in concepts:
+        quotas[concept] = min(min_per_concept, counts[concept])
+    remaining = sample_size - sum(quotas.values())
+    if remaining < 0:
+        raise ValidationError(
+            f"El tamaño de muestra ({sample_size}) no alcanza para los mínimos del diseño "
+            f"({sum(quotas.values())} bloques)"
+        )
+    capacity = {concept: counts[concept] - quotas[concept] for concept in concepts}
+    total_capacity = sum(capacity.values())
+    if remaining > total_capacity:
+        raise ValidationError(
+            f"El tamaño de muestra supera los bloques con anotaciones disponibles "
+            f"({sum(counts[concept] for concept in concepts)})"
+        )
+    ideal = {
+        concept: capacity[concept] * remaining / total_capacity if total_capacity else 0
+        for concept in concepts
+    }
+    for concept in concepts:
+        addition = math.floor(ideal[concept])
+        quotas[concept] += addition
+        remaining -= addition
+    for concept in sorted(concepts, key=lambda c: (-(ideal[c] - math.floor(ideal[c])), c)):
+        if remaining == 0:
+            break
+        if quotas[concept] < counts[concept]:
+            quotas[concept] += 1
+            remaining -= 1
+    return quotas
+
+
+def implicit_stratified_draw(
+    records: list[dict[str, Any]],
+    size: int,
+    fields: list[str],
+    rng: random.Random,
+) -> list[dict[str, Any]]:
+    """Systematic draw over a frame sorted by secondary dimensions.
+
+    Sorting by the secondary strata before a systematic draw spreads the sample
+    across them in proportion to their size, without requiring a cell per
+    combination. Every unit keeps the inclusion probability size / len(records).
+    """
+    if size == 0:
+        return []
+    keyed = [
+        (tuple(_sampling_value(record.get(field)) for field in fields), rng.random(), record)
+        for record in records
+    ]
+    keyed.sort(key=lambda entry: (entry[0], entry[1]))
+    interval = len(keyed) / size
+    start = rng.random() * interval
+    return [keyed[math.floor(start + index * interval)][2] for index in range(size)]
+
+
+def sample_by_predicted_concept(
+    records: list[dict[str, Any]],
+    run: dict[str, Any],
+    sample_size: int,
+    seed: int,
+    min_per_concept: int,
+    no_annotation_units: int,
+    procedural_units: int,
+    secondary_strata: list[str],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, int]]:
+    """Draw blocks stratified by the LLM prediction, with implicit secondary strata."""
+    missing = [
+        str(record["unit_id"]) for record in records
+        if str(record["unit_id"]) not in run["predictions"]
+    ]
+    if missing:
+        raise ValidationError(
+            f"La ejecución {run['run_id']} no cubre {len(missing)} bloques del marco "
+            f"(por ejemplo {missing[0]}); regenera las anotaciones con el corpus actual"
+        )
+    groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for record in records:
+        prediction = run["predictions"][str(record["unit_id"])]
+        groups[predicted_stratum(prediction, run["concept_frequency"])].append(record)
+    counts = {stratum: len(group) for stratum, group in groups.items()}
+    quotas = allocate_concept_design(
+        counts, sample_size, min_per_concept, no_annotation_units, procedural_units
+    )
+    rng = random.Random(seed)
+    selected: list[dict[str, Any]] = []
+    design: list[dict[str, Any]] = []
+    for stratum in sorted(groups):
+        values = {"predicted_stratum": stratum}
+        identifier = _stratum_id(values)
+        sampled = quotas.get(stratum, 0)
+        probability = sampled / counts[stratum]
+        design.append({
+            "stratum_id": identifier,
+            "values": values,
+            "population_units": counts[stratum],
+            "sampled_units": sampled,
+            "inclusion_probability": probability,
+        })
+        for record in implicit_stratified_draw(groups[stratum], sampled, secondary_strata, rng):
+            selected.append(dict(
+                record,
+                sampling_stratum_id=identifier,
+                inclusion_probability=probability,
+                selection_weight=1 / probability,
+            ))
+    rng.shuffle(selected)
+    return selected, design, counts
+
+
+def _run_codebook_sha256(run_id: str, manifest_dirs: list[Path]) -> str | None:
+    """Codebook hash recorded by an LLM run, from its frozen inputs or results."""
+    for directory in manifest_dirs:
+        path = directory / run_id / "manifest.json"
+        if not path.is_file():
+            continue
+        try:
+            with path.open(encoding="utf-8") as handle:
+                manifest = json.load(handle)
+        except (OSError, json.JSONDecodeError):
+            continue
+        digest = (manifest.get("spec") or {}).get("codebook_sha256") or (
+            manifest.get("artifact_sha256") or {}
+        ).get("codebook.json")
+        if digest:
+            return str(digest)
+    return None
+
+
+def previously_seen_units(
+    records: list[dict[str, Any]],
+    validation_dir: Path,
+    reviews_dir: Path | None,
+    codebook_sha256: str,
+    run_manifest_dirs: list[Path] | None = None,
+) -> dict[str, Any]:
+    """Find current blocks whose text was already seen with the same codebook.
+
+    Only items actually opened or completed count as seen, and only in manual
+    sessions or LLM reviews that used the current codebook; rounds with other
+    codebook versions belong to earlier iterations of the instrument. Earlier
+    sessions may use another segmentation, so a current block is excluded when
+    it overlaps the character range of a seen block in the same intervention;
+    items without offsets exclude the whole intervention.
+    """
+    ranges: dict[str, list[tuple[int, int] | None]] = defaultdict(list)
+    used_sessions: list[str] = []
+    skipped_sessions: list[str] = []
+    for path in sorted(validation_dir.glob("validation_*.json")):
+        try:
+            with path.open(encoding="utf-8") as handle:
+                session = json.load(handle)
+        except (OSError, json.JSONDecodeError):
+            continue
+        if (session.get("codebook") or {}).get("sha256") != codebook_sha256:
+            skipped_sessions.append(path.name)
+            continue
+        used_sessions.append(path.name)
+        for item in session.get("items", []):
+            seen = item.get("status") == "completed" or item.get("first_opened_at_utc")
+            utterance_id = str(item.get("utterance_id") or "")
+            if not seen or not utterance_id:
+                continue
+            start, end = item.get("source_start_char"), item.get("source_end_char")
+            ranges[utterance_id].append(
+                (int(start), int(end)) if start is not None and end is not None else None
+            )
+    reviewed: set[str] = set()
+    used_runs: set[str] = set()
+    skipped_runs: set[str] = set()
+    if reviews_dir and reviews_dir.is_dir():
+        for run_dir in sorted(path for path in reviews_dir.iterdir() if path.is_dir()):
+            if _run_codebook_sha256(run_dir.name, run_manifest_dirs or []) != codebook_sha256:
+                skipped_runs.add(run_dir.name)
+                continue
+            used_runs.add(run_dir.name)
+            for path in sorted(run_dir.glob("*.json")):
+                try:
+                    with path.open(encoding="utf-8") as handle:
+                        unit_id = json.load(handle).get("unit_id")
+                except (OSError, json.JSONDecodeError, AttributeError):
+                    continue
+                if unit_id:
+                    reviewed.add(str(unit_id))
+    excluded: set[str] = set()
+    for record in records:
+        unit_id = str(record["unit_id"])
+        if unit_id in reviewed:
+            excluded.add(unit_id)
+            continue
+        for seen in ranges.get(str(record["utterance_id"]), []):
+            if seen is None or (
+                int(record["source_start_char"]) < seen[1]
+                and seen[0] < int(record["source_end_char"])
+            ):
+                excluded.add(unit_id)
+                break
+    return {
+        "unit_ids": excluded,
+        "codebook_sha256": codebook_sha256,
+        "validation_sessions": used_sessions,
+        "skipped_validation_sessions": skipped_sessions,
+        "review_runs": sorted(used_runs),
+        "skipped_review_runs": sorted(skipped_runs),
+    }
+
+
 class ValidationService:
     """State and persistence layer for the local annotation application."""
 
@@ -795,8 +1127,18 @@ class ValidationService:
         timezone_name: str = DEFAULT_TIMEZONE,
         party_alignment: PartyAlignment | None = None,
         highlights_path: Path | None = None,
+        annotations_results_dir: Path | None = None,
+        reviews_dir: Path | None = None,
+        annotations_inputs_dir: Path | None = None,
     ) -> None:
         self.source_path = source_path.resolve()
+        self.annotations_results_dir = (
+            annotations_results_dir.resolve() if annotations_results_dir else None
+        )
+        self.reviews_dir = reviews_dir.resolve() if reviews_dir else None
+        self.annotations_inputs_dir = (
+            annotations_inputs_dir.resolve() if annotations_inputs_dir else None
+        )
         self.codebook_path = codebook_path.resolve()
         self.output_dir = output_dir.resolve()
         self.highlights_path = highlights_path.resolve() if highlights_path else None
@@ -954,6 +1296,43 @@ class ValidationService:
             if law_number == "all" or record["law_number"] == law_number
         ]
 
+    def annotation_runs(self) -> list[dict[str, Any]]:
+        """List LLM runs that can stratify a blind sample of the current corpus."""
+        if not self.annotations_results_dir or not self.annotations_results_dir.is_dir():
+            return []
+        corpus_ids = set(self.records_by_id)
+        runs = []
+        for run_dir in sorted(self.annotations_results_dir.iterdir()):
+            results_path = run_dir / "results.parquet"
+            if not (results_path.is_file() and (run_dir / "annotations.parquet").is_file()):
+                continue
+            try:
+                results = pd.read_parquet(results_path, columns=["unit_id", "status"])
+                annotations = pd.read_parquet(run_dir / "annotations.parquet")
+                pending = int(pending_annotation_mask(annotations).sum())
+            except (OSError, ValueError, KeyError):
+                continue
+            completed = set(results.loc[results["status"].eq("completed"), "unit_id"].astype(str))
+            covers = corpus_ids.issubset(completed)
+            runs.append({
+                "run_id": run_dir.name,
+                "completed_blocks": len(completed),
+                "covers_corpus": covers,
+                "pending_annotations": pending,
+                "usable": covers and pending == 0,
+            })
+        return runs
+
+    def _annotation_run(self, run_id: str) -> dict[str, Any]:
+        if not self.annotations_results_dir:
+            raise ValidationError("La aplicación no tiene configurada la carpeta de anotaciones")
+        if not re.fullmatch(r"[A-Za-z0-9_.-]+", run_id):
+            raise ValidationError("Identificador de ejecución inválido")
+        run_dir = self.annotations_results_dir / run_id
+        if not run_dir.is_dir():
+            raise ValidationError(f"No existe la ejecución {run_id}")
+        return load_annotation_run(run_dir, self.concept_ids)
+
     def config(self) -> dict[str, Any]:
         by_document: dict[str, int] = defaultdict(int)
         by_length: dict[str, int] = defaultdict(int)
@@ -995,6 +1374,11 @@ class ValidationService:
                 ],
             },
             "sessions": self.list_sessions(),
+            "annotation_runs": self.annotation_runs(),
+            "concept_design_defaults": {
+                **DEFAULT_CONCEPT_DESIGN,
+                "exclude_seen": True,
+            },
             "defaults": {
                 "sample_size": 180,
                 "seed": 20260824,
@@ -1119,12 +1503,94 @@ class ValidationService:
         else:
             eligible_primary = self.block_sampling_units(law_number)
             default_strata = DEFAULT_EVALUATION_STRATA
-        strata = normalize_strata(payload.get("strata"), default_strata) if (
-            strategy == "stratified"
-        ) else []
-        selected_primary, design = sample_with_design(
-            eligible_primary, sample_size, seed, strategy, strata
-        )
+        exclude_seen = bool(payload.get("exclude_seen", strategy == "predicted_concept"))
+        exclusion: dict[str, Any] = {"enabled": exclude_seen}
+        if exclude_seen:
+            manifest_dirs = [
+                path for path in (self.annotations_inputs_dir, self.annotations_results_dir)
+                if path
+            ]
+            seen = previously_seen_units(
+                eligible_blocks, self.output_dir, self.reviews_dir,
+                self.codebook_sha256, manifest_dirs,
+            )
+            excluded_ids = seen["unit_ids"]
+            exclusion.update({
+                "rule": (
+                    "Se excluyen los bloques abiertos o completados en sesiones manuales y "
+                    "los revisados en el diagnóstico LLM, solo cuando usaron el mismo libro "
+                    "de códigos (sha256). Un bloque actual se excluye si su texto se solapa "
+                    "con un bloque visto de la misma intervención; los ítems sin offsets "
+                    "excluyen la intervención completa."
+                ),
+                "excluded_blocks": len(excluded_ids),
+                **{key: value for key, value in seen.items() if key != "unit_ids"},
+            })
+            eligible_primary = [
+                unit for unit in eligible_primary
+                if not set(map(str, unit.get("unit_ids", [unit["unit_id"]]))) & excluded_ids
+            ]
+        concept_design: dict[str, Any] | None = None
+        if strategy == "predicted_concept":
+            if sampling_unit != "block":
+                raise ValidationError(
+                    "La estratificación por concepto predicho requiere bloques como unidad"
+                )
+            run_id = _limited_text(payload.get("annotation_run_id", ""), "annotation_run_id", 120)
+            if not run_id:
+                raise ValidationError("Selecciona la ejecución LLM que define los estratos")
+            run = self._annotation_run(run_id)
+            defaults = DEFAULT_CONCEPT_DESIGN
+            min_per_concept = _integer(
+                payload.get("min_per_concept", defaults["min_per_concept"]), "min_per_concept"
+            )
+            no_annotation_units = _integer(
+                payload.get("no_annotation_units", defaults["no_annotation_units"]),
+                "no_annotation_units",
+            )
+            procedural_units = _integer(
+                payload.get("procedural_units", defaults["procedural_units"]), "procedural_units"
+            )
+            if min(min_per_concept, no_annotation_units, procedural_units) < 0:
+                raise ValidationError("Los mínimos del diseño no pueden ser negativos")
+            # Absent field: default secondary strata. Empty list: no ordering, so the
+            # within-stratum draw is a simple random sample.
+            raw_strata = payload.get("strata")
+            if raw_strata is None:
+                strata = list(defaults["secondary_strata"])
+            elif raw_strata == []:
+                strata = []
+            else:
+                strata = normalize_strata(raw_strata, defaults["secondary_strata"])
+            selected_primary, design, counts = sample_by_predicted_concept(
+                eligible_primary, run, sample_size, seed, min_per_concept,
+                no_annotation_units, procedural_units, strata,
+            )
+            concept_design = {
+                "annotation_run_id": run["run_id"],
+                "results_sha256": run["results_sha256"],
+                "annotations_sha256": run["annotations_sha256"],
+                "primary_stratum_rule": PRIMARY_CONCEPT_RULE,
+                "concept_frequency": dict(sorted(run["concept_frequency"].items())),
+                "min_per_concept": min_per_concept,
+                "no_annotation_units": no_annotation_units,
+                "procedural_units": procedural_units,
+                "secondary_strata": strata,
+                "secondary_strata_rule": (
+                    "Selección sistemática dentro de cada estrato sobre el marco ordenado "
+                    "por las dimensiones secundarias (estratificación implícita)."
+                    if strata else
+                    "Sin dimensiones secundarias: muestreo aleatorio simple dentro de cada estrato."
+                ),
+                "population_by_stratum": dict(sorted(counts.items())),
+            }
+        else:
+            strata = normalize_strata(payload.get("strata"), default_strata) if (
+                strategy == "stratified"
+            ) else []
+            selected_primary, design = sample_with_design(
+                eligible_primary, sample_size, seed, strategy, strata
+            )
         selected: list[dict[str, Any]] = []
         for primary in selected_primary:
             unit_ids = primary.get("unit_ids", [primary["unit_id"]])
@@ -1242,6 +1708,8 @@ class ValidationService:
                 "target_block_words": self.target_block_words,
                 "max_block_words": self.max_block_words,
                 "strata": strata,
+                "exclusion": exclusion,
+                "predicted_concept_design": concept_design,
                 "party_alignment": self.party_alignment.snapshot(),
                 "strata_table": [
                     {

@@ -64,11 +64,41 @@
               Estrategia
               <select id="sampling-strategy" name="strategy">
                 <option value="stratified">Estratificada</option>
+                <option value="predicted_concept">Por concepto predicho (validación ciega)</option>
                 <option value="random">Aleatoria simple</option>
               </select>
             </label>
+            <fieldset id="concept-design-fieldset" class="hidden">
+              <legend>Diseño por concepto predicho</legend>
+              <p class="field-help">
+                Los estratos se calculan en el servidor con la ejecución elegida. La interfaz de
+                codificación no recibe los conceptos predichos ni las anotaciones del modelo.
+              </p>
+              <label>
+                Ejecución LLM
+                <select id="annotation-run" name="annotation_run_id"></select>
+              </label>
+              <div class="form-row">
+                <label>
+                  Mínimo por concepto
+                  <input id="min-per-concept" type="number" min="0" step="1">
+                </label>
+                <label>
+                  Sin anotaciones
+                  <input id="no-annotation-units" type="number" min="0" step="1">
+                </label>
+                <label>
+                  Voto o procedimiento
+                  <input id="procedural-units" type="number" min="0" step="1">
+                </label>
+              </div>
+            </fieldset>
+            <label class="quality-flag-option">
+              <input id="exclude-seen" type="checkbox">
+              Excluir bloques vistos en sesiones o revisiones anteriores
+            </label>
             <fieldset id="strata-fieldset">
-              <legend>Dimensiones de estratificación</legend>
+              <legend id="strata-legend">Dimensiones de estratificación</legend>
               <div id="strata-options" class="quality-flags"></div>
             </fieldset>
             <button class="primary-button" type="submit">Crear muestra y comenzar</button>

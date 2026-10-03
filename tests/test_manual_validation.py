@@ -16,6 +16,11 @@ from features.manual_validation.service import (
     ValidationError,
     ValidationService,
     create_server,
+    NO_ANNOTATION_STRATUM,
+    PROCEDURAL_STRATUM,
+    allocate_concept_design,
+    implicit_stratified_draw,
+    predicted_stratum,
     sample_records,
     sample_with_design,
 )
@@ -1020,3 +1025,186 @@ class ManualValidationTestCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PredictedConceptSamplingTestCase(ManualValidationTestCase):
+    """Blind-validation design stratified by an LLM run."""
+
+    def _write_run(
+        self, run_id: str = "run_test", skip: str | None = None, pending: bool = False
+    ) -> Path:
+        results_dir = self.root / "annotations"
+        run_dir = results_dir / run_id
+        run_dir.mkdir(parents=True)
+        unit_ids = sorted(record["unit_id"] for record in self.service.records)
+        concepts = {
+            "doc-a-1::p0001-p0002": ["solidaridad"],
+            "doc-a-2::p0001-p0002": ["solidaridad", "propiedad_individual_fondos"],
+            "doc-a-3::p0001": ["solidaridad"],
+        }
+        results, annotations = [], []
+        for unit_id in unit_ids:
+            if unit_id == skip:
+                continue
+            found = concepts.get(unit_id, [])
+            procedural = unit_id == "doc-b-2::p0001"
+            results.append({
+                "unit_id": unit_id,
+                "status": "completed",
+                "decision": "statements" if found else "no_statements",
+                "quality_flags": json.dumps(["procedural"] if procedural else []),
+            })
+            annotations.extend(
+                {"unit_id": unit_id, "concept_id": c, "concept_status": "in_codebook"}
+                for c in found
+            )
+        if pending:
+            annotations.append({
+                "unit_id": "doc-b-1::p0001", "concept_id": None, "concept_status": "review",
+            })
+        pd.DataFrame(results).to_parquet(run_dir / "results.parquet", index=False)
+        pd.DataFrame(annotations, columns=["unit_id", "concept_id", "concept_status"]).to_parquet(
+            run_dir / "annotations.parquet", index=False
+        )
+        self.service.annotations_results_dir = results_dir
+        return run_dir
+
+    def _concept_session(self, **values) -> dict:
+        payload = {
+            "sample_size": 5,
+            "seed": 7,
+            "strategy": "predicted_concept",
+            "annotation_run_id": "run_test",
+            "min_per_concept": 1,
+            "no_annotation_units": 2,
+            "procedural_units": 1,
+            "exclude_seen": False,
+            **values,
+        }
+        return self.service.create_session(payload)
+
+    def test_least_frequent_concept_defines_stratum(self) -> None:
+        frequency = {"solidaridad": 3, "propiedad_individual_fondos": 1}
+        prediction = {"concepts": {"solidaridad", "propiedad_individual_fondos"},
+                      "procedural": False}
+        self.assertEqual(predicted_stratum(prediction, frequency), "propiedad_individual_fondos")
+        self.assertEqual(
+            predicted_stratum({"concepts": set(), "procedural": True}, frequency),
+            PROCEDURAL_STRATUM,
+        )
+        self.assertEqual(
+            predicted_stratum({"concepts": set(), "procedural": False}, frequency),
+            NO_ANNOTATION_STRATUM,
+        )
+
+    def test_allocation_keeps_minimums_and_apportions_rest_to_concepts(self) -> None:
+        counts = {"a": 100, "b": 10, "c": 2, NO_ANNOTATION_STRATUM: 500,
+                  PROCEDURAL_STRATUM: 400}
+        quotas = allocate_concept_design(counts, 40, 5, 10, 3)
+
+        self.assertEqual(sum(quotas.values()), 40)
+        self.assertEqual(quotas[NO_ANNOTATION_STRATUM], 10)
+        self.assertEqual(quotas[PROCEDURAL_STRATUM], 3)
+        self.assertEqual(quotas["c"], 2)
+        self.assertGreaterEqual(quotas["b"], 5)
+        self.assertGreater(quotas["a"], quotas["b"])
+
+    def test_allocation_rejects_sizes_below_the_minimums(self) -> None:
+        with self.assertRaisesRegex(ValidationError, "no alcanza"):
+            allocate_concept_design({"a": 10, NO_ANNOTATION_STRATUM: 10}, 5, 5, 5, 0)
+        with self.assertRaisesRegex(ValidationError, "solo hay"):
+            allocate_concept_design({"a": 10, NO_ANNOTATION_STRATUM: 2}, 9, 1, 5, 0)
+
+    def test_implicit_draw_spreads_sample_across_secondary_strata(self) -> None:
+        import random as random_module
+        records = [{"unit_id": f"u{i}", "law_number": "A" if i < 50 else "B"}
+                   for i in range(100)]
+        drawn = implicit_stratified_draw(records, 10, ["law_number"], random_module.Random(3))
+
+        self.assertEqual(len({record["unit_id"] for record in drawn}), 10)
+        self.assertEqual(sum(record["law_number"] == "A" for record in drawn), 5)
+
+    def test_session_records_design_without_exposing_predictions(self) -> None:
+        self._write_run()
+        summary = self._concept_session()
+        session = self._session_payload(summary["session_id"])
+        design = session["sampling"]["predicted_concept_design"]
+
+        self.assertEqual(len(session["items"]), 5)
+        self.assertEqual(design["annotation_run_id"], "run_test")
+        self.assertEqual(design["population_by_stratum"][NO_ANNOTATION_STRATUM], 3)
+        self.assertEqual(
+            {row["values"]["predicted_stratum"] for row in session["sampling"]["strata_table"]},
+            {"solidaridad", "propiedad_individual_fondos", NO_ANNOTATION_STRATUM,
+             PROCEDURAL_STRATUM},
+        )
+        opened = self.service.open_item(summary["session_id"], 0)
+        serialized = json.dumps(opened, ensure_ascii=False)
+        for hidden in ("predicted_stratum", "predicted_concept_design", "strata_table",
+                       "sampling_stratum_id", "run_test", NO_ANNOTATION_STRATUM):
+            self.assertNotIn(hidden, serialized)
+        self.assertNotIn("predicted", json.dumps(opened["item"], ensure_ascii=False))
+
+    def test_run_must_cover_the_sampling_frame(self) -> None:
+        self._write_run(skip="doc-a-3::p0002")
+        with self.assertRaisesRegex(ValidationError, "no cubre"):
+            self._concept_session()
+
+    def test_concept_design_requires_blocks(self) -> None:
+        self._write_run()
+        with self.assertRaisesRegex(ValidationError, "bloques como unidad"):
+            self._concept_session(sampling_unit="utterance")
+
+    def _empty_design(self, **values) -> dict:
+        return self._concept_session(
+            sample_size=3, min_per_concept=0, no_annotation_units=0, procedural_units=0,
+            **values,
+        )
+
+    def test_only_opened_blocks_with_the_same_codebook_are_excluded(self) -> None:
+        self._write_run()
+        first = self._session(sample_size=2)
+        items = self._session_payload(first["session_id"])["items"]
+        self.service.open_item(first["session_id"], 0)
+        summary = self._empty_design(exclude_seen=True)
+        session = self._session_payload(summary["session_id"])
+        drawn = {item["unit_id"] for item in session["items"]}
+
+        self.assertNotIn(items[0]["unit_id"], drawn)
+        self.assertEqual(session["sampling"]["exclusion"]["excluded_blocks"], 1)
+        self.assertIn(first["session_id"] + ".json",
+                      session["sampling"]["exclusion"]["validation_sessions"])
+
+    def test_sessions_with_another_codebook_are_not_excluded(self) -> None:
+        self._write_run()
+        first = self._session(sample_size=2)
+        self.service.open_item(first["session_id"], 0)
+        path = self.output_dir / f"{first['session_id']}.json"
+        stored = json.loads(path.read_text(encoding="utf-8"))
+        stored["codebook"]["sha256"] = "otro-libro"
+        path.write_text(json.dumps(stored), encoding="utf-8")
+        summary = self._empty_design(exclude_seen=True)
+        exclusion = self._session_payload(summary["session_id"])["sampling"]["exclusion"]
+
+        self.assertEqual(exclusion["excluded_blocks"], 0)
+        self.assertIn(first["session_id"] + ".json", exclusion["skipped_validation_sessions"])
+
+    def test_pending_annotations_cannot_define_strata(self) -> None:
+        self._write_run(pending=True)
+        with self.assertRaisesRegex(ValidationError, "pendientes de revisión"):
+            self._concept_session()
+        run = next(run for run in self.service.annotation_runs() if run["run_id"] == "run_test")
+        self.assertEqual(run["pending_annotations"], 1)
+        self.assertFalse(run["usable"])
+
+    def test_empty_secondary_strata_are_respected(self) -> None:
+        self._write_run()
+        explicit = self._session_payload(self._concept_session(strata=[])["session_id"])
+        default = self._session_payload(self._concept_session()["session_id"])
+
+        self.assertEqual(explicit["sampling"]["predicted_concept_design"]["secondary_strata"], [])
+        self.assertEqual(
+            default["sampling"]["predicted_concept_design"]["secondary_strata"],
+            ["law_number", "chamber", "alignment", "gender"],
+        )
+

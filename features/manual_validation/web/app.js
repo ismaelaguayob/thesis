@@ -119,7 +119,39 @@ function renderStratificationOptions() {
 }
 
 function updateStrategyState() {
-  elements.strataFieldset.disabled = elements.samplingStrategy.value !== "stratified";
+  const strategy = elements.samplingStrategy.value;
+  const byConcept = strategy === "predicted_concept";
+  elements.strataFieldset.disabled = strategy === "random";
+  elements.conceptDesignFieldset.classList.toggle("hidden", !byConcept);
+  elements.strataLegend.textContent = byConcept
+    ? "Dimensiones secundarias (estratificación implícita dentro de cada concepto)"
+    : "Dimensiones de estratificación";
+  if (byConcept) {
+    elements.samplingUnit.value = "block";
+    elements.excludeSeen.checked = true;
+  }
+  elements.samplingUnit.disabled = byConcept;
+}
+
+function renderAnnotationRuns() {
+  const runs = state.config.annotation_runs || [];
+  elements.annotationRun.replaceChildren();
+  const usable = runs.filter((run) => run.usable);
+  if (!usable.length) {
+    elements.annotationRun.add(new Option("No hay ejecuciones completas del corpus actual con libro cerrado", ""));
+  }
+  usable
+    .slice()
+    .reverse()
+    .forEach((run) => {
+      elements.annotationRun.add(
+        new Option(`${run.run_id} · ${run.completed_blocks} bloques`, run.run_id),
+      );
+    });
+  const design = state.config.concept_design_defaults || {};
+  elements.minPerConcept.value = design.min_per_concept ?? 15;
+  elements.noAnnotationUnits.value = design.no_annotation_units ?? 50;
+  elements.proceduralUnits.value = design.procedural_units ?? 15;
 }
 
 function renderLawOptions() {
@@ -707,6 +739,11 @@ async function createSession(event) {
         seed: Number(elements.sampleSeed.value),
         strategy: elements.samplingStrategy.value,
         sampling_unit: elements.samplingUnit.value,
+        exclude_seen: elements.excludeSeen.checked,
+        annotation_run_id: elements.annotationRun.value,
+        min_per_concept: Number(elements.minPerConcept.value),
+        no_annotation_units: Number(elements.noAnnotationUnits.value),
+        procedural_units: Number(elements.proceduralUnits.value),
         strata: [...elements.strataOptions.querySelectorAll('input[type="checkbox"]:checked')]
           .map((input) => input.value),
       }),
@@ -808,7 +845,14 @@ async function initialize() {
     "sampling-strategy",
     "sampling-unit",
     "strata-fieldset",
+    "strata-legend",
     "strata-options",
+    "concept-design-fieldset",
+    "annotation-run",
+    "min-per-concept",
+    "no-annotation-units",
+    "procedural-units",
+    "exclude-seen",
     "corpus-summary",
     "sessions-list",
     "session-label",
@@ -864,6 +908,7 @@ async function initialize() {
     elements.sampleSeed.value = state.config.defaults.seed;
     elements.samplingStrategy.value = state.config.defaults.strategy;
     elements.samplingUnit.value = state.config.defaults.sampling_unit;
+    renderAnnotationRuns();
     renderStratificationOptions();
     renderCorpusSummary();
     showSetup();

@@ -82,6 +82,9 @@ def main() -> int:
         codebook_path=args.codebook_json,
         output_dir=args.output_dir,
         highlights_path=PROJECT_ROOT / "pasajes-destacados.md",
+        annotations_results_dir=args.annotations_results_dir,
+        reviews_dir=args.reviews_dir,
+        annotations_inputs_dir=args.annotations_input_dir,
     )
     service.llm_review = AnnotationReviewService(
         args.annotations_input_dir,
