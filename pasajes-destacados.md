@@ -86,3 +86,63 @@ Hoy tenemos la opción de atender lo que les encanta prometer en campaña: que v
 **Procedencia:** Codificación ciega
 
 <!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:63:330:668 -->
+
+## 10. Reciprocidad +++
+
+Esta reforma obliga a cotizar al empleador, crea un seguro social, y reconoce la solidaridad como base de nuestra existencia. ¿Acaso alguien en esta Sala nació sin que otra persona lo criara, que le cambiara los pañales, que le diera leche, que le diera amor? No. Porque nadie sobrevive solo en este mundo, nadie, si no por el trabajo de otro y, fundamentalmente, de otra.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 81 · párrafos 1–2
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:80:277:649 -->
+
+## 11. Ilegitimidad del origen dictatorial
+
+Hoy es un día muy importante, porque tenemos la oportunidad de cambiar un poquito esa nefasta realidad. Enfrentar estas deudas pendientes de la transición democrática, estas heridas de Chile y de su pueblo, desde el fin de la dictadura, es el sentido y la razón de ser del gobierno del Presidente Boric.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 87 · párrafos 2–2
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:86:0:303 -->
+
+## 12. Propiedad individual + retiros
+
+Fíjese que soy uno de los once diputados que votó en contra de todos los retiros, pero reconozco que esa mala política pública generó la conciencia en los chilenos de que la plata era suya y de que los ahorros eran de ellos y de su propiedad.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 91 · párrafos 1–5
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:90:605:847 -->
+
+## 13. Solidaridad (+), capitalización individual (-)
+
+En medio de un discurso dominante y casi único introducido en el país orientado a fomentar una lógica individualista durante décadas en distintas dimensiones de la vida, esto que ha sentado la idea de que cada persona debe lograr un estado de desarrollo y plenitud sobre la base del esfuerzo personal, independiente de los demás, y que desconfía de la sociedad y de los otros, lo que se ha traducido en un sistema de pensiones de capitalización individual, instalar en el debate público una visión distinta que se funda en el destino personal no puede entenderse si no es en una relación con los otros y en el destino colectivo: sin solidaridad y sin cooperación no hay desarrollo posible ni sostenible.
+
+**Fuente:** Ley 21419 · sesión 696951 · bloque 93 · párrafos 1–2
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:92:29:732 -->
+
+## 14. Literalmente CARIN
+
+A pesar de aquello, vamos a apoyar esta iniciativa. ¿Por qué? Porque nos parecen más importantes las dos cosas que mencioné inicialmente: mejorar la calidad de vida de nuestros compatriotas, que lo necesitan con urgencia, y consolidar el triunfo conceptual sobre la idea de la focalización, asociada al neoliberalismo, de la cual tan enamorados están los de enfrente.
+
+**Fuente:** Ley 21419 · sesión 698998 · bloque 95 · párrafos 7–7
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:94:0:367 -->
+
+## 15. Jaime Guzmán
+
+Esta iniciativa va en concordancia con el estilo y los principios que nuestro fundador Jaime Guzmán impulsó durante su brillante carrera, actuando sin mezquindades y retribuyendo de forma adecuada el trabajo de hombres y mujeres que han entregado toda su vida al engrandecimiento de nuestro país.
+
+**Fuente:** Ley 21735 · sesión 706982 · bloque 96 · párrafos 11–14
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:95:0:296 -->
