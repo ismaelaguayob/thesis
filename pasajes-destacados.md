@@ -146,3 +146,232 @@ Esta iniciativa va en concordancia con el estilo y los principios que nuestro fu
 **Procedencia:** Codificación ciega
 
 <!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:95:0:296 -->
+
+## 16. Izquierda consciencia de costos -> impuesto superricos
+
+este proyecto de ley no se sostiene con una propuesta de financiamiento permanente. Por eso le hemos planteado al gobierno que demuestre voluntad política y establezca un mecanismo de financiamiento permanente no solo a través de las exenciones tributarias, sino también a través de la aplicación de un impuesto a los superricos, por ejemplo.
+
+**Fuente:** Ley 21419 · sesión 697505 · bloque 105 · párrafos 6–6
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:104:144:486 -->
+
+## 17. Consciencia de costos
+
+Estaremos todos los chilenos obligados a confiar en los mismos que crearon el Transantiago, en los mismos que compraron de forma ilegal la casa de Allende con dineros fiscales, en los mismos que apoyaron la reforma tributaria de la entonces Presidenta Michelle Bachelet , que ha vuelto más pobre a nuestro país, y en este ministro de Hacienda, que calculó mal el presupuesto, lo cual es una vergüenza.
+
+¿Seguiremos confiando en ellos? ¿Por qué se da este préstamo forzoso entre los trabajadores con el Estado? Porque el gobierno no puede optar a más créditos con la banca y no se puede seguir endeudando debido al mal manejo de un ministro de Hacienda que no sabe sacar cálculos.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 107 · párrafos 5–6
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:106:35:714 -->
+
+## 18. Necesidad material
+
+Me duele ver en mi Región de Los Lagos, particularmente en Chiloé, Puerto Montt, Maullín , Calbuco y en la provincia de Palena, a adultos mayores trabajando en distintos rubros para poder llegar a fin de mes.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 109 · párrafos 4–5
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:108:279:487 -->
+
+## 19. Control (-)
+
+Lo que le dirían a la gente es que la culpa de las bajas pensiones no es de las AFP, sino de ellos, de los trabajadores, porque cotizan poco, se jubilan jóvenes y se mueren viejos. Si cotizaran mucho más, tal vez el 50 por ciento de su sueldo; si se jubilaran no a los 60 o 65 años, sino a los 70, y si tuvieran la consideración de morirse a los 75, tendrían pensiones de príncipe, diría la ultraderecha.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 111 · párrafos 4–6
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:110:59:463 -->
+
+## 20. rechazo prevision como percado y reflexión sobre el pasado
+
+Pero quiero que hagamos esta reflexión, puesto que aquí se va a revisar la historia y va a ser difícil explicar cómo en dos o tres años pasamos de rechazar el 3 a 3, porque era absolutamente ignominioso contra los trabajadores y significaba fortalecer la industria, a dar hoy día un seis coma y tanto por ciento, y mucho más.
+
+**Fuente:** Ley 21735 · sesión 706982 · bloque 118 · párrafos 6–7
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:117:0:325 -->
+
+## 21. solidaridad, igualdad y reciprocidad
+
+Este proyecto nos dará mucho más que una estructura de pensiones dignas; creo que nos dará una nueva forma de pensar y de sentir nuestra sociedad, en donde me importa lo que le pasa a mi compatriota, me importa la calidad de vida de otros, me importa cómo se siente y cómo vive la gente, donde me enfurece que a las mujeres se les dé un trato desigual y con peores sueldos, donde me conmueve que a una adulta mayor que trabajó toda su vida no se le reconozca el valor de ello y tenga que vivir bajo la línea de pobreza.
+
+**Fuente:** Ley 21735 · sesión 704142 · bloque 120 · párrafos 6–8
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:119:0:519 -->
+
+## 22. Rechazo sistema de reparto + incentivos e informalidad
+
+Una vez más, la clase media se ha de llevar toda la carga aportando con sus fondos a un sistema de reparto en el que verán poco y nada de esos aportes cuando se jubilen. En simple, si la pensión autofinanciada es mayor a 100.000 pesos, los pensionados no van a ver ningún peso adicional. ¿Es justo aquello? Obviamente que no, pero al gobierno poco le importa porque eso ocurrirá en mucho tiempo más. Ello promoverá la informalidad, ya que no va a haber ningún incentivo, solo desincentivos. Los trabajadores dirán: “¿Para qué formalizarse si voy a aportar plata y no me la van a devolver?”.
+
+**Fuente:** Ley 21735 · sesión 704142 · bloque 143 · párrafos 3–5
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:142:195:785 -->
+
+## 23. Acuerdos y moderación
+
+Solo saliendo de las trincheras ha sido posible arribar a acuerdos. Y esos acuerdos están pensados fundamentalmente en el beneficio y en el bienestar de todos los chilenos.
+
+Esta es una reforma que afecta a todos los chilenos y chilenas.
+
+La consigna "No+AFP", que el Gobierno e incluso el propio Presidente acuñaron dentro de sus banderas, era una trinchera que evidentemente había que superar.
+
+"Con mi plata NO", en el otro extremo, también representaba un mecanismo que generaba conflictos de trinchera y que estaba llevando a una polarización absolutamente innecesaria.
+
+**Fuente:** Ley 21735 · sesión 706982 · bloque 148 · párrafos 1–7
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:147:225:799 -->
+
+## 24. Rechazo prevision como mercado
+
+Lo más grave es que el proyecto no toca la causa verdadera y exclusiva de las bajas pensiones, que no es otra que el desvío de las cotizaciones obligatorias al ahorro forzoso, principalmente para beneficio de un puñado de empresarios que controlan dicho sistema a partir de sus compañías de seguros, que son el corazón del mismo.
+
+**Fuente:** Ley 21419 · sesión 697505 · bloque 151 · párrafos 10–10
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:150:0:329 -->
+
+## 25. Control (-)
+
+donde los campesinos casi no tienen ahorro en sus cuentas, donde vemos muchas historias de mujeres que dedicaron toda su vida al cuidado de sus hijos y nunca pudieron ahorrar para pensiones. No acepto que alguien venga a decir que la gente de campo tiene pensiones de miseria porque es floja. ¡No lo acepto!
+
+**Fuente:** Ley 21735 · sesión 704058 · bloque 153 · párrafos 7–10
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:152:32:339 -->
+
+## 26. Prevision como mercado - y +?
+
+se ha favorecido a la administradora mediante medidas que deslegitimaron el sistema y consolidaron prácticas cuestionables, como la integración vertical entre administradoras y aseguradoras, permitiendo que estas últimas sean dueñas de AFP; y de esta forma se le sacó competencia al sistema, beneficiando a las aseguradoras, ¡mientras los ahorrantes veían cómo sus jubilaciones se diluían!
+
+**Fuente:** Ley 21735 · sesión 706982 · bloque 158 · párrafos 1–5
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:157:545:934 -->
+
+## 27. Acuerdos (-) prevision como mercado (-) ilegitimidad dictadura (+)
+
+Señor Presidente, sin duda, esta llamada reforma de pensiones no es lo esperado; es una iniciativa de acuerdo que rejuvenece a las AFP, un modelo abusivo ideado por José Piñera e implantado a la fuerza por la dictadura de Pinochet y sus secuaces.
+
+Aun así, le molesta a la derecha, la que ha torpedeado hasta el límite para que no le toquen el bolsillo a los más poderosos, y apostaron por este acuerdo porque el mercado mantiene su lógica, pero hubo tirria al hablar de seguridad social.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 163 · párrafos 1–3
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:162:0:489 -->
+
+## 28. Acuerdos y moderación (++)
+
+Debemos construir acuerdos políticos de largo plazo, de estabilidad social, que entreguen a nuestras hijas e hijos cada vez más razones para confiar en el futuro de este país. Moraleja: requerimos más acuerdos. Chile puede ser un gran país, un país desarrollado, si logramos justamente volver a la política de los acuerdos.
+
+Tenemos litio, la industria del cobre, el hidrógeno verde, la agroindustria, la pesca, la madera, la agricultura y la ganadería. Estamos geográficamente muy bien instalados, pero requerimos acuerdos si efectivamente queremos mejorar las condiciones, y no solamente populismo de uno u otro lado.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 164 · párrafos 6–7
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:163:0:619 -->
+
+## 29. Igualdad y universalismo
+
+No es de ahora. Reitero: hablamos de derechos universales y garantizados para los chilenos. Incluso, siempre se habló de llegar al ciento por ciento de la población. Algunos se preguntarán por qué darle pensión universal al ciento por ciento de los chilenos o a los más ricos.
+Lógicamente, esto es algo que tiene que venir de la mano de una reforma tributaria, y ese 10 por ciento debiese pagar mucho más impuesto, no solo los 185.000 para ellos, sino para otras personas también. Pero esa es una discusión que tendrá que darse en el futuro.
+
+**Fuente:** Ley 21419 · sesión 697505 · bloque 173 · párrafos 1–2
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:172:633:909 -->
+
+## 30. Ineficiencia estado (manotazo)
+
+Mientras Chile enfrenta una economía estancada, bajo crecimiento y una deuda fiscal creciente, ¿quién garantiza a los trabajadores que su dinero les será devuelto?
+
+Este proyecto exige un financiamiento estable en el tiempo, pero la eficiencia del Estado en la administración de los recursos fiscales no da certeza de que estos compromisos se cumplirán. Esto, más bien, es un manotazo a los ahorros previsionales.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 178 · párrafos 4–6
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:177:244:657 -->
+
+## 31. Identidad, control y reciprocidad
+
+¿Qué pasará en el futuro con la inmigración descontrolada, por ejemplo, y con los millones de trabajadores informales que no pagan impuestos ni cotizaciones? Tendrán jubilaciones pagadas por quienes trabajan y pagaron impuestos durante toda su vida.
+
+**Fuente:** Ley 21735 · sesión 704058 · bloque 184 · párrafos 6–8
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:183:0:249 -->
+
+## 32. Reciprocidad y necesidad
+
+¿Cómo no va a ser importante el aporte que hacemos a las mujeres en Chile para reconocer lo que valen en la sociedad? ¿Y cómo no va a ser relevante lo de la PGU, que para la gente más modesta significará también un aporte importante?
+
+**Fuente:** Ley 21735 · sesión 706982 · bloque 206 · párrafos 18–20
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:205:555:788 -->
+
+## 33. Ineficiencia estado (caja fuerte Jackson)
+
+Lamentablemente, lo que quiere este gobierno es un topón para adentro. Quiere sacarle el candado al ahorro de los chilenos. ¿Para qué? Para que desaparezca igual que la caja fuerte del exministro Jackson .
+
+**Fuente:** Ley 21735 · sesión 704058 · bloque 213 · párrafos 1–4
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:212:472:677 -->
+
+## 34. Ineficiencia estado (-)
+
+Les decimos que queremos subir la PGU y nos dicen: “Pero eso no incentiva la cotización”. Entonces, le proponemos crear un seguro social entre quienes cotizan. Ahí, ya sin argumentos, gritan elevando fantasmas de supuestas expropiaciones por parte del Estado.
+
+Diputados, el recurso de “Chilezuela” está bien agotado; búsquense otro.
+
+**Fuente:** Ley 21735 · sesión 704058 · bloque 225 · párrafos 5–6
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:224:251:585 -->
+
+## 35. Identidad + reciprocidad
+
+Sin lugar a dudas, nuestro país -siempre lo hemos dicho tiene una deuda con nuestros jubilados, con nuestros pensionados y pensionadas, quienes han entregado toda una vida al crecimiento de nuestro país. Son personas que con mucha ilusión enteraron sus cotizaciones en el momento adecuado; otras, por diversos motivos, no lo pudieron hacer.
+
+**Fuente:** Ley 21538 · sesión 700181 · bloque 227 · párrafos 1–2
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:226:240:580 -->
+
+## 36. Consciencia de costos e ineficiencia estatal
+
+la crisis en los sistemas de reparto: siempre se inician con escenarios como los que afronta Chile, un país con baja tasa de natalidad y mayor expectativa de vida, de manera que habrá cada vez menos trabajadores entrando a la fuerza laboral y más personas jubilándose, y por más tiempo.
+
+Así, futuros gobiernos se verán tentados a aumentar el monto del préstamo, o a no devolverlo a los trabajadores, para postergar la inevitable quiebra del reparto que este proyecto propone.
+
+**Fuente:** Ley 21735 · sesión 706982 · bloque 240 · párrafos 6–8
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:239:20:496 -->
