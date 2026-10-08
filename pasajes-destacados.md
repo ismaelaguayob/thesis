@@ -375,3 +375,49 @@ Así, futuros gobiernos se verán tentados a aumentar el monto del préstamo, o 
 **Procedencia:** Codificación ciega
 
 <!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:239:20:496 -->
+
+## 37. Ilegitimidad origen dictatorial
+
+O recuperamos la esperanza y la dignidad para la mayoría de las trabajadoras y los trabajadores de nuestro país o seguiremos sumidos en esta obscena herencia económica de la dictadura que tanto dolor ha traído a las familias mayoritariamente pobres de nuestro país.
+
+Por la dignidad de Chile, vamos a aprobar este proyecto de ley.
+
+**Fuente:** Ley 21735 · sesión 704058 · bloque 241 · párrafos 4–6
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:240:0:330 -->
+
+## 38. Solidaridad (-) propiedad (+)
+
+Este debería haber sido el foco de la reforma, no los mecanismos para que el Estado imponga un impuesto al trabajo enmarcado por la vía de la fórmula “4-2” o “3-3”. Es inmoral pretender financiar la solidaridad con cargo a los propios trabajadores, y eso es lo que pretende este proyecto del Ejecutivo. Para mejorar hoy las pensiones tenemos que trabajar en aumentar la PGU, pero como corresponde, con su financiamiento claro.
+
+Por esto mismo, anuncio mi voto en contra de esta mala reforma, que no es más que una falsa promesa para los ciudadanos. Lo que necesitamos hoy es mejorar las pensiones de la gente que está jubilada, pero también trabajar en que las pensiones a futuro aumenten.
+
+No estoy disponible para que ese 6 por ciento, que es de los trabajadores, se utilice para otra cosa.
+
+**Fuente:** Ley 21735 · sesión 704142 · bloque 244 · párrafos 7–10
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:243:0:793 -->
+
+## 39. Control (-) reciprocidad (-)
+
+En esta Sala se ha dicho injustamente que no puede existir la solidaridad, que cómo vamos a apoyar a aquellos que nunca cotizaron, e incluso se ha dicho que no podemos apoyar a personas que son flojas.
+
+**Fuente:** Ley 21735 · sesión 704058 · bloque 245 · párrafos 4–5
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:244:330:532 -->
+
+## 40. Respuesta de la izq a varios argumentos de derecha
+
+Chilenas y chilenos, este no es un proyecto refundacional ni existirá el tal manotazo a sus ahorros. Estos seguirán siendo de su propiedad, validados en su cuenta personal, y podrán elegir entre diferentes agentes inversores, lo que llevará a disminuir las comisiones que se cobran. Además, las mujeres tendrán en régimen una pensión igual a la de los hombres
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 246 · párrafos 7–11
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:245:0:359 -->
