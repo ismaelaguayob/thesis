@@ -165,6 +165,15 @@ class AnthropicCensusTests(unittest.TestCase):
         self.assertEqual('completed', frame.iloc[0].status)
         self.assertEqual(2, frame.iloc[0].attempt_count)
 
+    def test_census_manifest_only_when_every_block_completed(self):
+        self.assertIsNone(census.write_census_manifest(self.input, self.output))
+        client = self.fake_client(('end_turn', json.dumps(self.raw)))
+        census.run(self.input, self.output, execute=True, workers=1, client=client)
+        path = census.write_census_manifest(self.input, self.output)
+        manifest = json.loads(path.read_text())
+        self.assertEqual(1, manifest['total_completed'])
+        self.assertEqual({'1': 1}, manifest['attempts'])
+
     def test_unauthorized_run_never_creates_client(self):
         pipeline.API_POLICY_PATH.write_text(json.dumps({'allow_api_calls': False}))
         with patch('features.llm_annotations.anthropic_census.anthropic.Anthropic') as constructor:

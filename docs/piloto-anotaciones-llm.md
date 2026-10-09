@@ -110,6 +110,17 @@ razonó unas ocho veces más que Luna y 2 bloques superaron 32.768 tokens. Ese
 piloto se conserva en `output/annotations/bedrock_haiku55_20261008_piloto_tope32k`
 y su input se eliminó.
 
+El censo terminó el 2026-10-09 con los 3.609 bloques completos. Cuatro bloques
+(2710, 3013, 3103 y 3161) recibieron un error del servidor durante el
+streaming, que llega con estado HTTP 200 y que la primera versión del runner no
+reintentaba. Se corrigió y se recuperaron con `--release-stream-errors`: el
+resultado fallido se conserva en `stream_errors/`, un retry seed mantiene el
+intento ya usado y el bloque se completó en el segundo intento. Cada resultado
+nuevo registra el `runner_sha256` que lo produjo. El output definitivo es
+`output/annotations/bedrock_haiku55_20261008/`, con un resultado por bloque en
+`results/` y el cierre en `haiku_census_manifest.json`, que solo se escribe
+cuando todos los bloques están completos.
+
 Aunque la ficha de AWS indica lo contrario, Bedrock aplica la salida
 estructurada de Haiku 5.5, pero rechaza `maxItems` y `minimum`. Por eso se
 quitan solo del esquema que se envía a la API; la validación local aplica el

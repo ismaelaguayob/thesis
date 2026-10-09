@@ -30,6 +30,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import collections
 import concurrent.futures
 import datetime as dt
 import fcntl
@@ -425,6 +426,36 @@ def release_stream_errors(result_dir: Path, max_retries: int) -> list[int]:
     return released
 
 
+def write_census_manifest(input_run_dir: Path, result_dir: Path) -> Path | None:
+    """Mark a fully completed census as the definitive Haiku output."""
+    manifest = json.loads((input_run_dir / "manifest.json").read_text())
+    results = [json.loads((result_dir / "results" / f"{i:05d}.json").read_text())
+               if (result_dir / "results" / f"{i:05d}.json").exists() else {}
+               for i in range(manifest["sample_size"])]
+    if any(result.get("status") != "completed" for result in results):
+        return None
+    path = result_dir / "haiku_census_manifest.json"
+    atomic_write_json(path, {
+        "schema_version": "haiku-census-1.0.0",
+        "run_id": result_dir.name,
+        "input_run_id": input_run_dir.name,
+        "input_manifest_sha256": sha256_file(input_run_dir / "manifest.json"),
+        "source_run_id": manifest["spec"]["source_run_id"],
+        "provider": PROVIDER, "model_requested": manifest["spec"]["model"],
+        "total_completed": len(results),
+        "attempts": {str(k): v for k, v in sorted(collections.Counter(
+            result["attempt_count"] for result in results).items())},
+        "stream_error_recoveries": sorted(
+            int(p.stem) for p in (result_dir / "stream_errors").glob("*.json")),
+        "runner_sha256": sorted({result.get("runner_sha256")
+                                 or manifest["spec"]["runner_sha256"] for result in results}),
+        "results_parquet_sha256": sha256_file(result_dir / "results.parquet"),
+        "annotations_parquet_sha256": sha256_file(result_dir / "annotations.parquet"),
+        "created_at_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
+    })
+    return path
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--prepare", action="store_true", help="Congelar los requests (local)")
@@ -471,6 +502,8 @@ def main() -> None:
     else:
         frame = run(input_dir, result_dir, execute=False, workers=args.workers)
     counts = {str(k): int(v) for k, v in frame["status"].value_counts().items()}
+    if indices is None and write_census_manifest(input_dir, result_dir):
+        print(f"Censo Haiku completo en {result_dir}")
     print(json.dumps({"input_run_dir": str(input_dir), "output_run_dir": str(result_dir),
                       "counts": counts}, ensure_ascii=False))
 
