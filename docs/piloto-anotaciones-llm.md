@@ -83,6 +83,43 @@ en el subconjunto Bedrock, por lo que la comparación entre trámites también
 podría reflejar diferencias de ejecución entre proveedores. No se hizo una
 comparación pareada de respuestas entre OpenAI y Bedrock antes de la entrega.
 
+El 2026-10-02 los 796 bloques se completaron también en OpenAI
+(`output/annotations/openai_gpt6luna_20261002`), de modo que el censo de Luna-6
+proviene de un solo proveedor.
+
+### Réplica con Claude Haiku 5.5
+
+`python -m features.llm_annotations.anthropic_census` replica el censo
+`pilot_d4e0291b4df3fc0f5343` con `global.anthropic.claude-haiku-5-5` en
+`bedrock-runtime` (Oregón), mediante la Messages API. El input
+`pilot_cc90579cd758717a60d7` copia byte a byte la muestra, el prompt, el libro y
+el esquema del censo. No duplica los 3.609 requests: el runner los deriva en
+cada llamada desde los requests congelados del censo, conservando exactamente
+sus instrucciones y contenido de usuario, y verifica cada uno contra el hash
+registrado en el manifiesto. No se regenera desde el corpus porque los
+`coding_chunks_long.parquet` cambiaron después del censo. Los resultados quedan
+en `output/annotations/bedrock_haiku55_20261008`.
+
+Decisiones del protocolo (2026-10-08): esfuerzo `max` con razonamiento
+adaptativo y cuatro reintentos con la misma contabilidad del pipeline. El tope
+de salida es de 65.536 tokens y sube a 128.000 (el máximo de Haiku 5.5) tras
+`max_tokens`; Luna usó 32.768 y 65.536. El modelo no conoce el tope, por lo que
+subirlo no cambia su razonamiento: solo evita cortar respuestas largas, que
+además se cobran completas. Se decidió tras un piloto de 20 bloques en que Haiku
+razonó unas ocho veces más que Luna y 2 bloques superaron 32.768 tokens. Ese
+piloto se conserva en `output/annotations/bedrock_haiku55_20261008_piloto_tope32k`
+y su input se eliminó.
+
+Aunque la ficha de AWS indica lo contrario, Bedrock aplica la salida
+estructurada de Haiku 5.5, pero rechaza `maxItems` y `minimum`. Por eso se
+quitan solo del esquema que se envía a la API; la validación local aplica el
+esquema congelado completo. Un rechazo (`refusal`) cuenta como intento fallido
+dentro del mismo límite. El bloque de instrucciones usa caché explícita, que
+reduce el costo sin cambiar la salida. La temperatura es la predeterminada en
+ambos modelos. Los conteos de tokens no son comparables entre modelos porque los
+tokenizadores difieren, y `input_tokens` suma los tokens cacheados para seguir la
+convención de OpenAI.
+
 Para nuevos lotes, `ANNOTATIONS_PROVIDER=openai` mantiene el proveedor
 predeterminado. `ANNOTATIONS_PROVIDER=bedrock` usa `AWS_BEDROCK_API_KEY`,
 `AWS_BEDROCK_REGION` y `ANNOTATIONS_BEDROCK_MODEL_ID`; el proveedor, región,

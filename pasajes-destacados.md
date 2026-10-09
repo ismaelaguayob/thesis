@@ -421,3 +421,211 @@ Chilenas y chilenos, este no es un proyecto refundacional ni existirá el tal ma
 **Procedencia:** Codificación ciega
 
 <!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:245:0:359 -->
+
+## 41. Discurso de izquierda: solidaridad, identidad, mercado (-)
+
+La solidaridad no es caridad, sino justicia. Es la convicción de que el esfuerzo colectivo es la base de una convivencia democrática y que, frente a las incertidumbres de la vida, ningún chileno o chilena debe ser dejado atrás.
+
+Pretender reducir la previsión social a una cuenta de ahorro individual ha fracasado. La experiencia nos ha demostrado que el mercado no puede ser el único árbitro de las pensiones. Esta reforma corrige esa distorsión, combinando el ahorro individual con la solidaridad, lo que nos hace más fuertes como sociedad.
+
+**Fuente:** Ley 21735 · sesión 706982 · bloque 254 · párrafos 19–21
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:253:0:543 -->
+
+## 42. Acuerdos (+)
+
+, hoy tenemos la oportunidad de resolver un tema que se viene arrastrando desde hace más de doce años, respecto del cual ha habido muchas propuestas, pero estas han quedado en nada.
+
+Frente a eso, tenemos dos alternativas: ser una oposición mezquina, que legisla con calculadora en la mano, parecida a aquella a la que le gustaba la retroexcavadora, o bien nos centramos y legislamos para el futuro, enfocados en solucionar el tema de las jubilaciones mediante la construcción de acuerdos.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 257 · párrafos 1–3
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:256:16:505 -->
+
+## 43. Ilegitimidad dictadura, necesidad y mercado (-)
+
+Señor Presidente, hoy es un día histórico para Chile y sus ciudadanos, porque durante más de 40 años jubilar en este país ha sido la puerta de entrada a la extrema pobreza, a la miseria, la que, además, fue impuesta a punta de pistola.
+
+Un sistema manchado con sangre y que ha lucrado con las pensiones de los adultos mayores por décadas, que ha permitido que los dueños de este país se hicieran más ricos, mientras que las personas mayores se hicieron más pobres, recibiendo pensiones de miseria.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 260 · párrafos 1–2
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:259:0:497 -->
+
+## 44. Manotazo
+
+Entonces, señorita Presidenta, honestamente, lo que nos están contando aquí es que no le quieren pegar un manotón a la plata, pero sabemos que al final es eso lo que van a hacer, porque la historia nos lo muestra: siempre que el Estado tiene la posibilidad de meterle la mano a la caja, lo hace, con las mejores intenciones, y después les deja el problema a los políticos de la siguiente generación.
+
+Eso no se lo merecen los jubilados del futuro, esos que van a pagar la cuenta del populismo y la farra de hoy.
+
+**Fuente:** Ley 21735 · sesión 704142 · bloque 265 · párrafos 12–14
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:264:0:511 -->
+
+## 45. Propidad y rol del mercado
+
+Y en la derecha, sin ninguna duda, seguiremos pensando en que este tema se puede solucionar sin echarle mano a los fondos de los trabajadores, sin reparto y sin subir los impuestos.
+
+Y para nuestro sector, para nuestro mundo, esa es la principal virtud.
+
+Nuestro mundo es el del principio de subsidiariedad; el que entiende el rol del mundo privado como el que empuja el carro; el que entiende que no debemos asfixiar el emprendimiento con más impuestos.
+
+**Fuente:** Ley 21735 · sesión 706982 · bloque 269 · párrafos 11–14
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:268:291:745 -->
+
+## 46. Reciprocidad, propiedad y capitalización individual.
+
+nos recuerdan día a día que los ahorros son fruto de su esfuerzo y que, por tanto, le pertenecen a cada uno de ellos. Los fondos de pensiones son propiedad de los trabajadores, por lo que cada punto de cotización adicional debe destinarse a sus cuentas individuales y no a un sistema de reparto administrado por el Estado.
+
+“Nadie va a expropiar nada” dicen los mismos que hace algunos años advertían que los fondos de pensiones ya no serían nuestra platita. Chile les dijo que no; por lo tanto, nosotros volveremos a decirles que no.
+
+**Fuente:** Ley 21735 · sesión 704058 · bloque 271 · párrafos 3–4
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:270:199:733 -->
+
+## 47. Previsión como mercado (-)
+
+El principal objetivo de las AFP fue permitir el ascenso de una nueva clase capitalista en nuestro país.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 275 · párrafos 4–4
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:274:261:365 -->
+
+## 48. Izquierda (?) apoyando cosas de derecha
+
+Además, me habría gustado que el aumento de la pensión garantizada universal (PGU) fuera de manera inmediata para todos los mayores de 65 años. Pero, siendo responsables fiscalmente, y con el objeto de no generar inestabilidades económicas, será implementada gradualmente en 30 meses desde la publicación de la ley, pero abarcando hasta el 90 por ciento de las familias de menores ingresos.
+
+En la misma línea, y con el objeto de bajar las comisiones de administración, la llegada de nuevos actores al sistema es un aporte importante, pues aumenta la competencia y da mayores opciones a las personas para decidir a cuál AFP destinar sus fondos.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 280 · párrafos 6–8
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:279:0:645 -->
+
+## 49. Solidaridad subyugada a la propiedad individual
+
+Defenderé la solidaridad, porque los sistemas de seguridad social exitosos requieren solidaridad, como propone esta reforma. Hay chilenos que no confían en este modelo mixto y que prefieren la certeza débil de la cuenta individual paupérrima. Tienen razón, porque es mejor tener la plata ahí, aunque sea poca, pero es de ellos. Pues bien, esta reforma no toca esa cuenta individual ni ahora ni en el futuro. Seguirá siendo heredable.
+
+**Fuente:** Ley 21735 · sesión 704058 · bloque 282 · párrafos 4–4
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:281:0:433 -->
+
+## 50. Reciprocidad por labores de cuidado
+
+En ese sentido, hablamos de un proyecto que viene a reconocer no solo las diferencias estructurales que han afectado a las mujeres de nuestro país, sino también la importancia que tienen las labores de cuidado en el desarrollo de nuestra sociedad.
+
+**Fuente:** Ley 21735 · sesión 704058 · bloque 285 · párrafos 2–3
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:284:476:723 -->
+
+## 51. Identidad como construcción lingüística
+
+es una deuda que tenemos como legisladores y como clase política con miles de chilenos y chilenas desde hace casi diez años. Esto ocurre porque hoy las pensiones de nuestros compatriotas son vergonzosas y despiadadamente bajas, y nadie aquí ni fuera de este Congreso Nacional puede afirmar lo contrario sin que se le caiga la cara de vergüenza
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 292 · párrafos 1–2
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:291:296:639 -->
+
+## 52. Justificar la reforma por su efecto en el empleo y la economía
+
+Votaremos a favor pensando en la clase media, que será la primera beneficiada con el fortalecimiento del mercado de capitales, que generará más inversión y más empleo.
+
+Votaremos a favor pensando en las pymes, porque, en el marco de este acuerdo, el gobierno se comprometió, en un proyecto que será aprobado en marzo, a rebajar a la mitad los impuestos a las pymes.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 295 · párrafos 10–13
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:294:0:365 -->
+
+## 53. Izquierda más izquierda.
+
+La reforma previsional es una de las más grandes y vergonzosas deudas que tenemos con nuestros adultos mayores, aquellos que lo dieron todo por construir el país que hoy tenemos, un país que les dio la espalda. Esto, gracias al espurio sistema de AFP, impuesto a sangre y fuego en dictadura para asegurarle un jugoso negocio a un puñado de oligarcas que se enriquecieron más allá de lo imaginable gracias a la apropiación de nuestros ahorros previsionales.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 300 · párrafos 1–3
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:299:185:641 -->
+
+## 54. Rechazo al manotazo
+
+Alguien podrá señalar: "No, es que es una expropiación". ¿Expropiación de qué? Si justamente estamos ratificando que aquí todo tiene una seguridad total, porque además de establecerse una gobernanza muy seria, existe una documentación legal, por lo que, incluso, cualquier persona podría demandar al Estado si es que esos recursos se llegaran a tocar alguna vez.
+
+**Fuente:** Ley 21735 · sesión 706982 · bloque 314 · párrafos 11–14
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:313:0:362 -->
+
+## 55. Aprueba y rechaza mecanismos del mercado
+
+Lo que necesitamos hoy día es aprobar la idea de legislar y los artículos que vienen contenidos en el proyecto de ley, en orden a separar la industria, a quitar el negocio de la administración de los fondos a empresas que han lucrado permanentemente, a generar fondos de inversión que tengan mayor nivel de competencia y a mejorar y aumentar la pensión garantizada universal (PGU) ahora.
+
+**Fuente:** Ley 21735 · sesión 704058 · bloque 322 · párrafos 4–4
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:321:297:684 -->
+
+## 56. Izq resignada, pero aprueba porq necesidad + reciprocidad + identidad
+
+No es mi ideal; no era lo que yo soñaba. Reconozco que no quiero más AFP, que quería un mejor pilar solidario, pero ya van muchos años y nuestros adultos mayores se están muriendo. A lo menos, significa un incremento para quienes hoy necesitan recursos con urgencia, porque pasan frío, porque pasan hambre. Porque son quienes construyeron este país, porque son nuestros adultos mayores y van más de diez años, es hora de que pensemos en ellas y ellos.
+
+**Fuente:** Ley 21735 · sesión 706988 · bloque 328 · párrafos 5–6
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:327:0:452 -->
+
+## 57. Ilegitimidad dictadura
+
+Tenemos un sistema previsional que rige a todos los chilenos, el sistema de AFP, que fue impuesto en la dictadura bajo engaño. Los creadores, el hermano del Presidente Sebastián Piñera y los militares de la época, nos dijeron que todas las personas se jubilarían con el ciento por ciento del último sueldo. Todos los chilenos saben que esa es una gran mentira.
+
+**Fuente:** Ley 21735 · sesión 704058 · bloque 341 · párrafos 3–3
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:340:0:360 -->
+
+## 58. Argumento fuerte en favor de los acuerdos
+
+El gobierno ha buscado un acuerdo, acogiendo propuestas y cediendo, una y otra vez, con tal de mejorar las pensiones, pero se ha encontrado con el muro de la intransigencia y la mezquindad de la derecha, cuyos parlamentarios no solo no quieren ceder un centímetro en sus posiciones, sino que además han declarado que prefieren chutear la reforma hasta el próximo gobierno, como si los jubilados tuviesen todo el tiempo del mundo para esperar un aumento de sus pensiones o como si no hubiesen existido personas que se suicidaron esperando más de diez años esta reforma.
+
+**Fuente:** Ley 21735 · sesión 704142 · bloque 343 · párrafos 4–5
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:342:0:568 -->
+
+## 59. Solidaridad intergeneracional
+
+la experiencia internacional ha demostrado que los sistemas contributivos mixtos son los que responden de mejor manera a las necesidades de sus países, donde el componente solidario es fundamental para lograr tal meta. Este componente solidario se resume, en palabras fáciles, en que todos los trabajadores activos hacen su aporte previsional total o parcial a un fondo común que beneficia a los actuales jubilados a través de diferentes herramientas.
+
+**Fuente:** Ley 21735 · sesión 706982 · bloque 347 · párrafos 13–15
+
+**Procedencia:** Codificación ciega
+
+<!-- destacado:blind:validation_20261004T182304711670Z_1c31732c:346:12:463 -->

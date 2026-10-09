@@ -12,7 +12,7 @@
 /ENV/
 
 # Python cache and compiled files
-pycache/
+__pycache__/
 *.py[cod]
 *$py.class
 
@@ -41,29 +41,57 @@ pycache/
 /renv/
 
 # Quarto
-# Rendered output directories
+# _output/ and thesis_files/ stay versioned: GitHub Pages serves the renders.
 /_site/
 /_book/
 
 # Quarto cache, metadata, and freeze directories
 /.quarto/
 /_freeze/
-
-# IDE-specific files
-# VS Code / Positron
-.vscode/
-.positron/
-*.code-workspace
-
-# Large files
-
-data/media
 **/*.quarto_ipynb
 
-# Regenerable literature-retrieval cache
-/review-workspace/cache/
+# IDE and coding-agent local settings
+.vscode
+.positron/
+*.code-workspace
+/.idea
+/.claude/
+/.codex
+/.codex-subagents/
+/.mcp.json
+
+# Empty mount points left in the root by agent sandboxes
+/.bash_profile
+/.bashrc
+/.gitconfig
+/.gitmodules
+/.profile
+/.ripgreprc
+/.zprofile
+/.zshrc
+
+# Large files
+data/media
+
+# Regenerable caches (scraper, literature retrieval)
+/.cache/
+
+# Literature review workspace (kept outside the reproducible project)
+/review-workspace/
+
+# LLM annotation runs: only the final censuses are versioned. Superseded runs
+# and development pilots stay on disk; their manifests and audit tables remain
+# in data/proc_data/llm_pilots/, and human reviews in output/annotation_reviews/.
+/data/proc_data/annotations_inputs/*
+!/data/proc_data/annotations_inputs/README.md
+!/data/proc_data/annotations_inputs/pilot_d4e0291b4df3fc0f5343/
+!/data/proc_data/annotations_inputs/pilot_cc90579cd758717a60d7/
+/output/annotations/*
+!/output/annotations/openai_gpt6luna_20261002/
+!/output/annotations/bedrock_haiku55_20261008/
+.execution.lock
 
 # PC specific
-
+# references.bib is exported locally (e.g., Zotero); rendering needs a copy.
 references.bib
 Tesis.bib
