@@ -261,7 +261,7 @@ async function refresh() {
   runs.forEach(run => $('run-select').add(new Option(`${run.model} · ${run.reasoning_effort} · ${run.created_at_utc.slice(0, 16)} · ${run.prompt_sha256.slice(0, 8)} · ${run.attempted}/${run.sample_size}`, run.run_id)));
   if (runs.some(r => r.run_id === previous)) $('run-select').value = previous;
   if (runs.length) await loadRun();
-  else { $('empty-state').classList.remove('hidden'); $('empty-state').textContent = 'No hay ejecuciones todavía. Genera el piloto desde annotations.qmd.'; }
+  else { $('empty-state').classList.remove('hidden'); $('empty-state').textContent = 'No hay ejecuciones todavía. Prepara y ejecuta un lote como indica docs/pipeline-anotacion-llm.md.'; }
 }
 async function saveReview(event) {
   event.preventDefault();

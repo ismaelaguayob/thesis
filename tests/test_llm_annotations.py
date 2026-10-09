@@ -395,7 +395,7 @@ class LLMPilotTests(unittest.TestCase):
 
     def test_active_prompt_documents_current_schema(self):
         root = Path(__file__).resolve().parents[1]
-        report = (root / 'annotations.qmd').read_text(encoding='utf-8')
+        report = (root / 'features/llm_annotations/prepare_all.py').read_text(encoding='utf-8')
         prompt = (root / 'prompts/annotations_prompt_final.md').read_text(
             encoding='utf-8'
         )

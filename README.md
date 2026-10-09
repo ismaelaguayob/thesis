@@ -7,47 +7,35 @@
 - `features/discourse_network/`: generación de productos ilustrativos de redes discursivas.
 - `output/figures/`, `output/tables/` y `output/validation/`: resultados producidos por el proyecto.
 - `_output/`: sitio HTML generado por Quarto; replica únicamente los recursos necesarios para publicar el reporte.
-- `review-workspace/`: configuración, búsquedas, textos convertidos y notas de la revisión bibliográfica.
+- `review-workspace/`: revisión bibliográfica local; no se versiona.
 
-## Piloto de anotación LLM
+## Anotación LLM
 
-`annotations.qmd` sortea el 10% de los bloques elegibles por ley y sesión,
-reutiliza el contexto y los controles de la app manual y anota cada bloque objetivo.
-Las ejecuciones nuevas usan por defecto `gpt-6-luna`, esfuerzo `max` y hasta
-cinco intentos totales; `ANNOTATIONS_MODEL`, `REASONING_LEVEL` y
-`ANNOTATIONS_MAX_RETRIES` permiten escoger el modelo, el esfuerzo y entre cero y
-cuatro reintentos desde `.env`. `ANNOTATIONS_PROVIDER` selecciona `openai`
-(predeterminado) o `bedrock`; Bedrock usa su propia clave, región e identificador
-de modelo, como indica [la documentación del lote](docs/piloto-anotaciones-llm.md).
-Si una respuesta
-agota el límite de salida, el siguiente intento duplica su holgura hasta
-`ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS` (65.536 por defecto). La configuración
-efectiva queda congelada en cada manifiesto. El prompt activo se edita en
-[`prompts/annotations_prompt_final.md`](prompts/annotations_prompt_final.md).
-El XLSX vigente es `features/codebook/codebook_v5.xlsx` (versión interna
-`0.5.1-candidate`), cerrado para el nuevo piloto previo a la codificación ciega.
+Los bloques del corpus se anotan con un LLM sobre inputs congelados: un request
+por bloque, con el prompt [`prompts/annotations_prompt_final.md`](prompts/annotations_prompt_final.md)
+y el libro `features/codebook/codebook_v5.xlsx` (versión interna
+`0.5.1-candidate`). Los resultados que respaldan el análisis son el censo de
+Luna-6 (`output/annotations/openai_gpt6luna_20261002`) y su réplica con Claude
+Haiku 5.5 (`output/annotations/bedrock_haiku55_20261008`). El
+[pipeline de anotación](docs/pipeline-anotacion-llm.md) explica preparación,
+autorización, ejecución, variables de `.env` y replicación; la
+[secuencia de validación](docs/secuencia-validacion-instrumento.md) resume los
+pilotos y versiones del instrumento.
 
 ```bash
 uv sync --locked
-# Renderizar usando solamente resultados guardados:
-uv run quarto render annotations.qmd
-# Preparar inputs de un piloto nuevo, sin llamadas a la API:
-ANNOTATIONS_PREPARE_INPUTS=1 uv run quarto render annotations.qmd
 # Preparar un input con todos los bloques materializados, sin llamadas a la API:
 uv run python -m features.llm_annotations.prepare_all
-# El reporte no ejecuta la API; las llamadas exigen autorización por run_id.
 # Revisar modelo, input, output, códigos destacados y justificaciones:
 uv run python -m features.manual_validation
 ```
 
-Se necesita Quarto CLI en el PATH. Abre la opción **Revisión de anotaciones LLM**
-en <http://127.0.0.1:8765> o entra directamente en
-<http://127.0.0.1:8765/llm.html>. Los inputs de cada ejecución nueva quedan en
-`data/proc_data/annotations_inputs/` y sus resultados en `output/annotations/`.
-El piloto histórico autocontenido permanece también bajo `output/annotations/`;
+Las llamadas exigen una autorización explícita por `run_id` en
+`data/proc_data/llm_pilots/api_policy.json`. Abre la opción **Revisión de
+anotaciones LLM** en <http://127.0.0.1:8765> o entra directamente en
+<http://127.0.0.1:8765/llm.html>. Los inputs de cada ejecución quedan en
+`data/proc_data/annotations_inputs/` y sus resultados en `output/annotations/`;
 los juicios diagnósticos se guardan por separado en `output/annotation_reviews/`.
-La [guía del piloto](docs/piloto-anotaciones-llm.md)
-explica ejecución, variantes y límites de interpretación.
 
 La variable `PARTY_ALIGNMENT` de `.env` contiene cuatro listas explícitas:
 `left`, `center`, `right` y `nonpartisan`. El procesamiento y la validación
@@ -62,4 +50,4 @@ persona revisora y fecha; las filas `pending` no alteran el corpus. El
 procesamiento conserva la extracción de BCN y aplica estas decisiones solo a la
 tabla derivada de discursos.
 
-El [manifiesto del análisis del piloto](data/proc_data/llm_pilots/pilot_f3a69c2f81c587271ef5/manifest.json) resume tokens confirmados y métricas. La política `data/proc_data/llm_pilots/api_policy.json` limita las llamadas a ejecuciones autorizadas explícitamente.
+El [manifiesto de auditoría del primer piloto](data/proc_data/llm_pilots/audits/pilot_f3a69c2f81c587271ef5/manifest.json) resume tokens confirmados y métricas. La política `data/proc_data/llm_pilots/api_policy.json` limita las llamadas a ejecuciones autorizadas explícitamente.

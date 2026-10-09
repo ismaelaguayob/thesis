@@ -4,7 +4,7 @@
 
 Esta aplicación local permite construir una muestra reproducible de las leyes 21.735, 21.419 y 21.538, juntas o por separado, y codificar declaraciones delimitadas por un *span* textual, su concepto y su orientación de apoyo o rechazo. La unidad textual que recibe la persona o el LLM es un bloque objetivo formado por uno o más párrafos de una misma intervención, acompañado por los bloques inmediatamente anterior y siguiente.
 
-La aplicación no llama a OpenAI ni a ningún otro servicio externo. La clave de API no se carga ni se envía al navegador. La modalidad manual permite depurar el libro de códigos y producir una referencia humana. La opción **Revisión de anotaciones LLM** abre una modalidad diagnóstica separada que lee las respuestas generadas desde `annotations.qmd`, muestra modelo, input, output y códigos destacados, y guarda los juicios humanos sin modificar esas respuestas. Consulta [la guía del piloto](piloto-anotaciones-llm.md).
+La aplicación no llama a OpenAI ni a ningún otro servicio externo. La clave de API no se carga ni se envía al navegador. La modalidad manual permite depurar el libro de códigos y producir una referencia humana. La opción **Revisión de anotaciones LLM** abre una modalidad diagnóstica separada que lee las respuestas guardadas en `output/annotations/`, muestra modelo, input, output y códigos destacados, y guarda los juicios humanos sin modificar esas respuestas (ver [Revisión de anotaciones LLM](#revisión-de-anotaciones-llm)). La generación de esas respuestas se documenta en [el pipeline de anotación](pipeline-anotacion-llm.md).
 
 ## Iniciar la aplicación
 
@@ -95,63 +95,18 @@ La estrategia **Por concepto predicho (validación ciega)** sortea bloques a par
 
 ## Libro de códigos
 
-La fuente editable activa está en `features/codebook/codebook_v5.xlsx`. Las versiones anteriores se conservan sin cambios para reconstruir las rondas de calibración. Todas contienen las hojas `README`, `Metadatos` y `Conceptos`.
+La fuente editable activa es `features/codebook/codebook_v5.xlsx` (versión interna 0.5.1-candidate, 16 conceptos, cerrado). Las definiciones, criterios de inclusión y exclusión y proposiciones de orientación están en ese archivo; su historia, en [la secuencia de validación](secuencia-validacion-instrumento.md). Las versiones anteriores se conservan sin cambios para reconstruir las rondas de calibración.
 
-La versión conceptual 0.5.0 está diseñada para analizar *discourse coalitions*. Sus conceptos representan justificaciones normativas empleadas para apoyar o rechazar una posición previsional. Una descripción factual, un diagnóstico o una preferencia por un instrumento que carezca de justificación se marca como `Sin declaraciones codificables`.
-
-Los dieciséis conceptos activos son:
-
-- capitalización individual como regla de autofinanciamiento;
-- propiedad individual de los fondos;
-- reciprocidad contributiva;
-- control y responsabilidad individual;
-- actitud del beneficiario;
-- identidad y pertenencia grupal;
-- necesidad material;
-- igualdad y universalismo;
-- conciencia de costos;
-- solidaridad como deber colectivo;
-- solidaridad intergeneracional;
-- libertad de elección previsional;
-- ineficiencia y riesgo estatal;
-- previsión como mercado, negocio e incentivos;
-- ilegitimidad del origen dictatorial;
-- acuerdos y moderación democrática.
-
-`Suficiencia de las pensiones` se retiró porque describía un resultado deseable o un diagnóstico. `Capitalización individual` se reincorpora con una frontera estricta: codifica que las cotizaciones deben ingresar a cuentas individuales y financiar la pensión de su titular. La mención descriptiva al sistema AFP sigue fuera.
-
-`Reciprocidad contributiva` abarca el título moral que el trabajo, las cotizaciones o el esfuerzo contributivo pueden generar para recibir, conservar o controlar recursos y protección previsional. Por ello, “quien cotizó más debe recibir más” y “no es justo hacer solidaridad con el esfuerzo de los trabajadores” expresan reciprocidad. La capitalización identifica la regla institucional sobre el destino individual del aporte; reciprocidad identifica el merecimiento derivado del aporte. Ambos códigos pueden coexistir cuando una declaración formula las dos proposiciones.
-
-`Conciencia de costos como restricción de gasto` se activa cuando la inviabilidad financiera de la reforma se usa como argumento: que no se puede financiar, carece de una fuente sostenible o excede la capacidad fiscal. Por tanto, `Apoyo` corresponde a afirmar esa restricción y `Rechazo` a refutarla sosteniendo que la medida sí está financiada, es sostenible o cabe dentro de la capacidad fiscal. Las menciones neutrales a montos o fuentes quedan fuera, sin excluir refutaciones negativas explícitas.
-
-Una afirmación sobre la sostenibilidad financiera presente o futura puede codificarse aunque no incluya montos, siempre que funcione como razón para limitar, rechazar o defender la reforma. Esta regla conserva como válida la codificación realizada en el ítem 13 de la ronda anterior.
-
-`Solidaridad como deber colectivo` registra la justificación normativa de que la comunidad debe apoyarse y compartir sacrificios, cargas, recursos o riesgos previsionales. Un seguro social, fondo común, reparto, aporte estatal o mecanismo de financiamiento no activa el código si el pasaje no formula ese deber de apoyo mutuo. `Solidaridad intergeneracional` se reserva para responsabilidades, transferencias o riesgos entre cohortes activas y jubiladas.
-
-`Libertad de elección previsional` registra la autonomía para escoger administradora, alternativa previsional o destino institucional de cotizaciones obligatorias. No equivale a propiedad de los fondos, autofinanciamiento individual, competencia de mercado ni responsabilidad por las consecuencias de una conducta controlable.
-
-`Previsión como mercado, negocio e incentivos` reúne defensas y críticas de la competencia, inversión financiera, rentabilidad privada, lucro e incentivos de mercado. Incluye el argumento de que un beneficio reduce trabajo, productividad, ahorro o formalidad. Las comisiones abusivas se codifican aquí cuando funcionan como crítica a una extracción o ganancia privada; un porcentaje descriptivo de comisión queda fuera.
-
-`Ilegitimidad del origen dictatorial` registra argumentos que vinculan el origen autoritario, coercitivo o engañoso del sistema con su legitimidad actual. Las fechas históricas y las críticas contemporáneas sin ese vínculo se excluyen.
-
-`Acuerdos y moderación democrática` registra la valoración normativa del compromiso entre posiciones contrapuestas, la política de los acuerdos y el rechazo de extremos o maximalismos como bases de una reforma legítima. No incluye la mera existencia de una negociación, la eficacia técnica de un sistema mixto ni las apelaciones a preferencias ciudadanas, consulta o mayoría que no expresan compromiso entre posiciones. Estas últimas se mantienen como posible candidato inductivo de responsividad democrática.
-
-El JSON `features/codebook/codebook_v5.json` es un archivo derivado y no debe editarse directamente. Se genera o comprueba con:
+El JSON `features/codebook/codebook_v5.json` es derivado y no se edita. Se genera o comprueba con:
 
 ```bash
 uv run python -m features.manual_validation.generate_codebook_json
 uv run python -m features.manual_validation.generate_codebook_json --check
 ```
 
-La aplicación ejecuta la generación automáticamente antes de iniciar. Cada concepto contiene familia, base teórica, definición, proposición de orientación y criterios de inclusión y exclusión. `Apoyo` significa que el actor afirma la proposición de orientación; `Rechazo` significa que la niega, refuta o declara inaplicable.
+La aplicación lo regenera antes de iniciar. `Apoyo` significa que el actor afirma la proposición de orientación; `Rechazo`, que la niega, refuta o declara inaplicable. La interfaz no permite proponer conceptos: una razón fuera de alcance no se fuerza dentro del libro. Los campos históricos `concept_status` y `proposed_concept` se conservan para leer rondas antiguas.
 
-El instrumento está cerrado. La interfaz de codificación ya no ofrece la opción
-de proponer categorías: se usan exclusivamente los conceptos del libro y una
-razón fuera de alcance no se fuerza dentro de ellos. Los campos históricos de
-estado conceptual se conservan en el archivo para compatibilidad, pero las
-anotaciones nuevas quedan fijadas como `in_codebook`.
-
-No se debe editar el libro incorporado dentro de una sesión ya iniciada. Al crearla, la aplicación congela una copia íntegra del libro y su SHA-256, lo que permite reconstruir exactamente los criterios disponibles para cada decisión.
+Al crear una sesión, la aplicación congela una copia íntegra del libro y su SHA-256. No se debe editar el libro de una sesión ya iniciada.
 
 ## Contrato del JSON
 
@@ -188,15 +143,19 @@ En las sesiones nuevas `concept_status` permanece en `in_codebook` y
 
 Los offsets se validan en el servidor: el texto enviado debe coincidir carácter por carácter con `target_text[start_char:end_char]`. Este mismo contrato debe imponerse después a la respuesta estructurada del LLM. Cada unidad conserva `unit_id`, `utterance_id`, `paragraph_start`, `paragraph_end`, `paragraph_count`, `source_segments` y sus offsets de origen. Los metadatos de identidad pueden reincorporarse únicamente después de la anotación, mediante `utterance_id`, para construir la red discursiva sin exponerlos durante la decisión de codificación.
 
-## Secuencia recomendada para el piloto
+## Revisión de anotaciones LLM
 
-1. **Chequeo de cierre:** inspeccionar una muestra breve de casos remitidos a revisión, especialmente confianza baja, fronteras del libro y orientaciones opuestas del mismo concepto.
-2. **Codificación ciega:** iniciar una muestra nueva sin consultar respuestas del piloto y conservarla como referencia independiente.
-3. **Control de estabilidad:** volver a codificar un subconjunto aleatorio después de un intervalo, sin consultar la primera decisión.
-4. **Prompt del LLM:** entregar el bloque anterior, el bloque objetivo, el bloque siguiente y el mismo snapshot del libro; exigir el mismo esquema de spans, conceptos y orientación.
-5. **Evaluación:** comparar primero detección de declaraciones y offsets; luego concepto y orientación, reportando métricas por concepto y no solo un promedio global.
+```bash
+uv run python -m features.manual_validation \
+  --annotations-input-dir data/proc_data/annotations_inputs \
+  --annotations-results-dir output/annotations
+```
 
-Con una sola codificadora no es posible estimar confiabilidad intercoder humana. Sí es posible documentar estabilidad intracoder: volver a codificar, sin consultar las respuestas previas, un subconjunto aleatorio de la muestra después de un intervalo y comparar ambas rondas.
+La opción **Revisión de anotaciones LLM** (o <http://127.0.0.1:8765/llm.html>) muestra modelo, esfuerzo, versión del libro, input y output completos, contexto, evidencia destacada y códigos. Se puede filtrar por ley, bloques sin revisión, remisión a revisión derivada por el programa, ausencia de declaraciones o incidencias de ejecución. Cada anotación y cada bloque se acepta, se marca para cambios o se descarta; los códigos no aceptados exigen una categoría (span, concepto, orientación, justificación, contexto, fuera de alcance, frontera del libro u otro) y un comentario.
+
+Es una modalidad diagnóstica: el revisor ve la salida del modelo, por lo que no constituye validación ciega. Los juicios quedan en `output/annotation_reviews/<run_id>/<índice>.json`, con hash de la respuesta y control de revisión, sin modificar los resultados del LLM. `--reviews-dir` permite otra carpeta.
+
+Con una sola codificadora no es posible estimar confiabilidad intercoder humana; sí estabilidad intracoder, recodificando sin consultar las respuestas previas un subconjunto aleatorio después de un intervalo.
 
 ## Pruebas
 
