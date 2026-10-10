@@ -1,0 +1,684 @@
+---
+title: "Validación de las anotaciones LLM: Luna-6 y Haiku 5.5 frente a la referencia humana ciega"
+lang: es
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: true
+  message: false
+---
+
+Este reporte compara las anotaciones de los censos de Luna-6 (`gpt-6-luna`,
+modelo principal) y Claude Haiku 5.5 con la codificación manual ciega de 360
+bloques. Sigue las decisiones registradas en
+[`docs/decisiones-validacion.md`](docs/decisiones-validacion.md). El texto
+principal usa el alfa de Krippendorff y F1, sin ponderar, por pares de
+codificadores. El material suplementario agrega precisión, sensibilidad,
+coeficientes alternativos, los análisis por ley, género y alineación política, la
+reproducción con Haiku y la concordancia entre modelos en el censo.
+
+La codificación humana es una referencia humana ciega de una sola persona, no un
+*gold standard*: F1, precisión y sensibilidad miden acuerdo con esa referencia y
+no exactitud.
+
+## Seteo de la sesión
+
+Cargamos los paquetes, el helper de tablas APA 7 y las rutas de entrada.
+`irr` calcula Krippendorff, Cohen y Fleiss; `irrCAC`, el AC1 de Gwet;
+`yardstick`, F1, precisión y sensibilidad; `ggplot2`, los gráficos. Los
+intervalos de confianza se estiman remuestreando bloques con una semilla fija.
+
+```{r}
+#| label: paquetes
+pacman::p_load(arrow, dplyr, tidyr, purrr, readr, jsonlite, ggplot2,
+               yardstick, irr, irrCAC, flextable, officer)
+source("R/apa7_word_table.R")
+
+SESSION_PATH <- "output/validation/validation_20261004T182304711670Z_1c31732c.json"
+LUNA_DIR <- "output/annotations/openai_gpt6luna_20261002"
+HAIKU_DIR <- "output/annotations/bedrock_haiku55_20261008"
+CODEBOOK_PATH <- "data/proc_data/annotations_inputs/pilot_d4e0291b4df3fc0f5343/codebook.json"
+TABLE_DIR <- "output/tables/validation"
+SEED <- 20261009
+ALPHA_MINIMO <- 0.667
+dir.create(TABLE_DIR, recursive = TRUE, showWarnings = FALSE)
+```
+
+Leemos la sesión manual y conservamos todos los bloques con decisión humana,
+incluidos los de votación o contenido procedimental: son acuerdos genuinos sobre
+bloques sin justificaciones normativas. Queda fuera solo el bloque irresoluble,
+que no tiene decisión humana y se trata como dato faltante. Las anotaciones de
+los modelos se leen de los `annotations.parquet` de cada censo.
+
+```{r}
+#| label: datos
+concepts <- as_tibble(fromJSON(CODEBOOK_PATH)$concepts) |>
+  select(concept_id = id, concepto = label)
+items <- as_tibble(fromJSON(SESSION_PATH)$items)
+
+blocks <- items |>
+  filter(!is.na(decision)) |>
+  select(unit_id, law_number, decision)
+human <- items |>
+  filter(!is.na(decision)) |>
+  select(unit_id, annotations) |>
+  unnest(annotations) |>
+  select(unit_id, concept_id, stance)
+
+model_columns <- c("unit_id", "concept_id", "stance")
+coders <- bind_rows(
+  humano = human,
+  luna = read_parquet(file.path(LUNA_DIR, "annotations.parquet"), col_select = all_of(model_columns)),
+  haiku = read_parquet(file.path(HAIKU_DIR, "annotations.parquet"), col_select = all_of(model_columns)),
+  .id = "codificador"
+)
+results <- bind_rows(
+  luna = read_parquet(file.path(LUNA_DIR, "results.parquet"), col_select = c(unit_id, status, decision)),
+  haiku = read_parquet(file.path(HAIKU_DIR, "results.parquet"), col_select = c(unit_id, status, decision)),
+  .id = "codificador"
+)
+stopifnot(nrow(blocks) == 359,
+          all(results$status == "completed"),
+          all(blocks$unit_id %in% results$unit_id),
+          all(human$concept_id %in% concepts$concept_id))
+```
+
+Los metadatos del hablante proceden del corpus procesado y se unen por
+`unit_id`; la ley se toma de la sesión. El género faltante queda como «Sin dato»;
+la alineación usa `political_alignment`, derivada del grupo político en la fecha
+del debate.
+
+```{r}
+#| label: metadatos
+meta <- map_dfr(c("21419", "21538", "21735"), \(law) read_parquet(
+  sprintf("data/proc_data/ley_%s/coding_chunks_long.parquet", law),
+  col_select = c(unit_id, gender, political_alignment)
+)) |>
+  inner_join(select(blocks, unit_id, law_number), by = "unit_id") |>
+  transmute(
+    unit_id,
+    ley = factor(paste0("Ley ", substr(law_number, 1, 2), ".", substr(law_number, 3, 5))),
+    genero = factor(coalesce(gender, "Sin dato"), levels = c("hombre", "mujer", "Sin dato"),
+                    labels = c("Hombre", "Mujer", "Sin dato")),
+    alineacion = factor(political_alignment, levels = c("izquierda", "centro", "derecha", "nonpartisan"),
+                        labels = c("Izquierda", "Centro", "Derecha", "No partidista"))
+  )
+stopifnot(nrow(meta) == nrow(blocks))
+```
+
+Construimos las rejillas de comparación de las tres tareas. En **detección**, la
+unidad es el bloque y el valor indica si tiene declaraciones. En **concepto**, la
+unidad es bloque × concepto (16 por bloque) y el valor indica si el codificador
+asignó el concepto, con cualquier postura. En **concepto y postura**, la unidad
+es bloque × concepto × postura. La comparación de conjuntos por bloque no usa el
+solapamiento de las citas.
+
+```{r}
+#| label: rejillas
+presence <- function(keys) {
+  coders |>
+    distinct(codificador, unit_id, across(all_of(keys))) |>
+    mutate(valor = 1L) |>
+    pivot_wider(names_from = codificador, values_from = valor, values_fill = 0L)
+}
+
+detection_grid <- blocks |>
+  transmute(unit_id, humano = as.integer(decision == "statements")) |>
+  left_join(results |>
+              transmute(codificador, unit_id, valor = as.integer(decision == "statements")) |>
+              pivot_wider(names_from = codificador, values_from = valor),
+            by = "unit_id")
+concept_grid <- blocks |>
+  select(unit_id) |>
+  cross_join(select(concepts, concept_id)) |>
+  left_join(presence("concept_id"), by = c("unit_id", "concept_id")) |>
+  mutate(across(c(humano, luna, haiku), \(x) coalesce(x, 0L)))
+stance_grid <- blocks |>
+  select(unit_id) |>
+  cross_join(expand_grid(concept_id = concepts$concept_id, stance = c("support", "oppose"))) |>
+  left_join(presence(c("concept_id", "stance")), by = c("unit_id", "concept_id", "stance")) |>
+  mutate(across(c(humano, luna, haiku), \(x) coalesce(x, 0L)))
+grids <- list(`Detección` = detection_grid, Concepto = concept_grid,
+              `Concepto y postura` = stance_grid)
+```
+
+Definimos las piezas que se reutilizan. `principales()` calcula α nominal y F1
+para un par de codificadores; con dos codificadores, F1 equivale al acuerdo
+específico positivo y es simétrico. `bootstrap()` repite ese cálculo sobre
+bloques remuestreados con reposición, para obtener intervalos de confianza
+percentiles. `concordancia()` calcula los coeficientes del material
+suplementario. `tabla()` exporta cada tabla a Word con el estilo APA 7 y la
+muestra aquí como HTML; `val()` extrae una cifra para citarla en el texto.
+
+```{r}
+#| label: herramientas
+pares <- list(`Humano–Luna` = c("humano", "luna"), `Humano–Haiku` = c("humano", "haiku"),
+              `Luna–Haiku` = c("luna", "haiku"))
+
+principales <- function(grid, a, b) {
+  tibble(alpha = kripp.alpha(rbind(grid[[a]], grid[[b]]), method = "nominal")$value,
+         f1 = f_meas_vec(factor(grid[[a]], levels = 1:0), factor(grid[[b]], levels = 1:0)))
+}
+bootstrap <- function(grid, a, b, reps) {
+  ids <- unique(grid$unit_id)
+  map_dfr(seq_len(reps), \(r) {
+    muestra <- tibble(unit_id = sample(ids, replace = TRUE))
+    principales(inner_join(muestra, grid, by = "unit_id", relationship = "many-to-many"), a, b)
+  })
+}
+concordancia <- function(grid, set) {
+  ratings <- as.matrix(grid[set])
+  tibble(cohen = if (length(set) == 2) kappa2(ratings)$value else NA_real_,
+         fleiss = if (length(set) == 3) kappam.fleiss(ratings)$value else NA_real_,
+         krippendorff = kripp.alpha(t(ratings), method = "nominal")$value,
+         gwet_ac1 = gwet.ac1.raw(as.data.frame(ratings))$est$coeff.val)
+}
+
+tabla <- function(data, file, number, title, note) {
+  data <- mutate(data,
+                 across(where(is.double), \(x) if_else(
+                   is.na(x), "", formatC(x, format = "f", digits = 3, decimal.mark = ","))),
+                 across(where(is.integer), \(x) formatC(x, format = "d", big.mark = ".")))
+  export_apa7_word_table(data, file.path(TABLE_DIR, file), title, note,
+                         table_number = number, landscape = ncol(data) > 7)
+  flextable(data) |>
+    theme_apa() |>
+    set_caption(paste0("Tabla ", number, ". ", title)) |>
+    add_footer_lines(paste0("Nota. ", note)) |>
+    autofit() |>
+    htmltools_value()
+}
+val <- function(data, ..., col, digits = 2) {
+  x <- filter(data, ...)[[col]]
+  stopifnot(length(x) == 1)
+  formatC(x, format = "f", digits = digits, decimal.mark = ",")
+}
+```
+
+## Métricas principales
+
+### Concordancia por pares
+
+Calculamos α y F1 para las tres tareas y los tres pares de codificadores. Los
+pares humano–modelo miden la concordancia entre una persona y el instrumento
+aplicado por cada modelo; el par Luna–Haiku mide la estabilidad del instrumento
+entre modelos. La fila de media por concepto promedia los 15 conceptos con casos
+en la referencia, de modo que cada concepto pesa lo mismo.
+
+```{r}
+#| label: concordancia-pares
+principal <- expand_grid(tarea = names(grids), par = names(pares)) |>
+  mutate(res = map2(tarea, par, \(t, p) principales(grids[[t]], pares[[p]][1], pares[[p]][2]))) |>
+  unnest(res)
+
+concept_pairs <- concept_grid |>
+  filter(concept_id %in% human$concept_id) |>
+  nest(.by = concept_id) |>
+  cross_join(tibble(par = names(pares))) |>
+  mutate(res = map2(data, par, \(g, p) principales(g, pares[[p]][1], pares[[p]][2]))) |>
+  select(concept_id, par, res) |>
+  unnest(res)
+principal <- bind_rows(
+  principal,
+  concept_pairs |>
+    group_by(par) |>
+    summarise(alpha = mean(alpha), f1 = mean(f1)) |>
+    mutate(tarea = "Concepto (media por concepto)")
+) |>
+  mutate(tarea = factor(tarea, levels = c("Detección", "Concepto", "Concepto (media por concepto)",
+                                          "Concepto y postura")),
+         par = factor(par, levels = names(pares)))
+write_csv(principal, file.path(TABLE_DIR, "concordancia_pares.csv"))
+
+principal |>
+  arrange(par) |>
+  pivot_wider(names_from = par, values_from = c(alpha, f1), names_vary = "slowest",
+              names_glue = "{.value} {par}") |>
+  arrange(tarea) |>
+  rename_with(\(x) sub("^alpha ", "α ", sub("^f1 ", "F1 ", x))) |>
+  rename(Tarea = tarea) |>
+  tabla("t1_concordancia_pares.docx", "1",
+        "Alfa de Krippendorff y F1 por tarea y par de codificadores",
+        paste("Sin ponderar. Bloques evaluados:", nrow(blocks), "de 360 (se excluye el bloque irresoluble).",
+              "F1 equivale al acuerdo específico positivo."))
+```
+
+En la tarea de concepto, la concordancia con la referencia es casi igual para
+ambos modelos: α de `r val(principal, tarea == "Concepto", par == "Humano–Luna", col = "alpha")` con Luna y
+`r val(principal, tarea == "Concepto", par == "Humano–Haiku", col = "alpha")` con Haiku, y F1 de
+`r val(principal, tarea == "Concepto", par == "Humano–Luna", col = "f1")` y `r val(principal, tarea == "Concepto", par == "Humano–Haiku", col = "f1")`. Son
+valores del mismo orden que los de estudios de referencia con GPT-4 y Gemini
+(κ medio de 0,68 en Dunivin, 2025; α medio de 0,65 en Bosley, 2025). La media por
+concepto es algo menor, porque los conceptos infrecuentes concuerdan peor. Agregar
+la postura casi no cambia los valores: el desacuerdo está en qué concepto se
+asigna, no en su orientación.
+
+Luna y Haiku concuerdan más entre sí (`r val(principal, tarea == "Concepto", par == "Luna–Haiku", col = "alpha")`) que
+con la referencia. El instrumento produce codificaciones parecidas con modelos
+distintos, pero los modelos comparten parte de sus desacuerdos con la referencia,
+de modo que su acuerdo mutuo no es evidencia de validez. En detección, F1 es alto
+(`r val(principal, tarea == "Detección", par == "Humano–Luna", col = "f1")`) y α moderado
+(`r val(principal, tarea == "Detección", par == "Humano–Luna", col = "alpha")`): la mayoría de los bloques tiene
+declaraciones, y α pondera sobre todo el desacuerdo en la clase menos frecuente,
+los bloques sin declaraciones.
+
+Para describir la asimetría entre ausencias y presencias, calculamos también el
+acuerdo específico negativo, 2d/(2d + b + c), donde d son las celdas sin el
+concepto en ambos codificadores. Es el espejo de F1 en las ausencias. Calculamos
+además la concordancia de postura: entre los pares bloque–concepto que la
+referencia y el modelo asignan, la proporción con el mismo conjunto de posturas.
+
+```{r}
+#| label: asimetria-postura
+asimetria <- map_dfr(pares[1:2], \(p) {
+  x <- concept_grid[[p[1]]]; y <- concept_grid[[p[2]]]
+  tibble(positivo = 2 * sum(x & y) / (2 * sum(x & y) + sum(x != y)),
+         negativo = 2 * sum(!x & !y) / (2 * sum(!x & !y) + sum(x != y)))
+}, .id = "par")
+
+postura <- coders |>
+  group_by(codificador, unit_id, concept_id) |>
+  summarise(posturas = paste(sort(unique(stance)), collapse = "+"), .groups = "drop") |>
+  pivot_wider(names_from = codificador, values_from = posturas) |>
+  filter(unit_id %in% blocks$unit_id) |>
+  pivot_longer(c(luna, haiku), names_to = "modelo", values_to = "prediccion") |>
+  filter(!is.na(humano), !is.na(prediccion)) |>
+  group_by(modelo) |>
+  summarise(pares = n(), concordancia = mean(humano == prediccion))
+```
+
+Hay una asimetría marcada entre ausencias y presencias. El acuerdo específico
+negativo es `r val(asimetria, par == "Humano–Luna", col = "negativo")` con Luna y
+`r val(asimetria, par == "Humano–Haiku", col = "negativo")` con Haiku; el positivo
+(F1), `r val(asimetria, par == "Humano–Luna", col = "positivo")` y
+`r val(asimetria, par == "Humano–Haiku", col = "positivo")`. Los modelos casi no
+atribuyen conceptos donde la referencia no ve ninguno; el desacuerdo se concentra
+en cuál concepto corresponde cuando hay una justificación normativa, o en su
+omisión. Cuando coinciden en el concepto, la concordancia de postura es
+`r val(postura, modelo == "luna", col = "concordancia", digits = 3)` con Luna y
+`r val(postura, modelo == "haiku", col = "concordancia", digits = 3)` con Haiku:
+casi siempre coinciden también en apoyar u oponerse al ancla del concepto.
+
+
+### Concordancia por concepto (Luna)
+
+Para el modelo principal estimamos α humano–Luna por concepto con un intervalo
+de confianza del 95 % (2.000 remuestreos de bloques). La regla de inclusión
+excluye un concepto solo si todo su intervalo queda bajo 0,667. Las convenciones
+de Krippendorff (0,80 y 0,667) orientan la interpretación, sin ser vinculantes;
+la cautela se acentúa en los conceptos con pocos casos. La tabla agrega F1 y el α
+Luna–Haiku, que indica la estabilidad de cada concepto entre modelos. Un
+concepto sin casos en la referencia no es evaluable.
+
+```{r}
+#| label: luna-por-concepto
+#| cache: true
+set.seed(SEED)
+luna_boot <- concept_grid |>
+  filter(concept_id %in% human$concept_id) |>
+  nest(.by = concept_id) |>
+  mutate(boot = map(data, \(g) bootstrap(g, "humano", "luna", reps = 2000))) |>
+  transmute(concept_id,
+            ic_inf = map_dbl(boot, \(b) quantile(b$alpha, 0.025, na.rm = TRUE)),
+            ic_sup = map_dbl(boot, \(b) quantile(b$alpha, 0.975, na.rm = TRUE)))
+```
+
+```{r}
+#| label: tabla-luna-por-concepto
+#| warning: false
+por_concepto <- concept_grid |>
+  pivot_longer(c(luna, haiku), names_to = "modelo", values_to = "prediccion") |>
+  mutate(across(c(humano, prediccion), \(x) factor(x, levels = 1:0))) |>
+  group_by(concept_id, modelo) |>
+  summarise(precision = precision_vec(humano, prediccion),
+            recall = recall_vec(humano, prediccion), .groups = "drop")
+
+luna_concepts <- concepts |>
+  left_join(concept_grid |>
+              group_by(concept_id) |>
+              summarise(n_humano = sum(humano), n_luna = sum(luna), n_haiku = sum(haiku)),
+            by = "concept_id") |>
+  left_join(concept_pairs |> filter(par == "Humano–Luna") |> select(concept_id, alpha, f1),
+            by = "concept_id") |>
+  left_join(luna_boot, by = "concept_id") |>
+  left_join(concept_pairs |> filter(par == "Luna–Haiku") |> select(concept_id, alpha_lh = alpha),
+            by = "concept_id") |>
+  left_join(por_concepto |> filter(modelo == "luna") |> select(concept_id, precision, recall),
+            by = "concept_id") |>
+  mutate(inclusion = case_when(n_humano == 0 ~ "No evaluable",
+                               ic_sup < ALPHA_MINIMO ~ "No",
+                               TRUE ~ "Sí"),
+         nivel = case_when(n_humano == 0 ~ "",
+                           alpha >= 0.80 ~ "≥ 0,80",
+                           alpha >= ALPHA_MINIMO ~ "0,667–0,80",
+                           TRUE ~ "< 0,667")) |>
+  arrange(desc(n_humano))
+write_csv(luna_concepts, file.path(TABLE_DIR, "luna_por_concepto.csv"))
+
+luna_concepts |>
+  transmute(Concepto = concepto, `n` = n_humano, `α humano–Luna` = alpha,
+            `IC 95 %` = if_else(n_humano == 0, "",
+                                paste0(formatC(ic_inf, format = "f", digits = 2, decimal.mark = ","), "–",
+                                       formatC(ic_sup, format = "f", digits = 2, decimal.mark = ","))),
+            `Nivel` = nivel, `F1` = f1, `α Luna–Haiku` = alpha_lh, `Se incluye` = inclusion) |>
+  tabla("t2_luna_por_concepto.docx", "2",
+        "Concordancia entre la referencia humana y Luna-6 por concepto",
+        paste("n: bloques con el concepto en la referencia. IC 95 %: remuestreo de bloques (2.000).",
+              "Se excluye un concepto si todo su intervalo queda bajo 0,667. Nivel: convenciones de",
+              "Krippendorff, orientativas."))
+```
+
+Trece de los 15 conceptos evaluables cumplen la regla de inclusión. Se excluyen
+identidad y control y responsabilidad individual, cuyos intervalos terminan en
+0,66, apenas bajo el mínimo; el caso de control es fronterizo y su resultado
+depende del ruido del remuestreo. Ninguno de los dos sostiene hipótesis.
+`actitud` no es evaluable: Luna la asigna en dos bloques y la referencia en
+ninguno.
+
+Entre los conceptos incluidos, propiedad individual e ilegitimidad del origen
+dictatorial superan 0,80, y seis quedan entre 0,667 y 0,80. Cinco quedan bajo
+0,667 y se interpretan con cautela: necesidad material (0,66, con 47 casos, el
+segundo concepto más frecuente y en el límite del umbral), conciencia de costos,
+solidaridad intergeneracional (con solo 12 casos), solidaridad como deber
+colectivo e igualdad y universalismo (0,54, el más bajo entre los conceptos de
+hipótesis; con Haiku alcanza 0,70, ver S4). El α entre Luna y Haiku supera al α
+humano–Luna en casi todos los conceptos; la excepción es capitalización
+individual (0,64), donde Luna asigna bastante menos que Haiku.
+
+Dos conceptos muestran los patrones de error que precisión y sensibilidad
+separan (detalle en S1). Luna atribuye necesidad material de más: su precisión es
+`r val(luna_concepts, concept_id == "necesidad_material", col = "precision")` y su sensibilidad
+`r val(luna_concepts, concept_id == "necesidad_material", col = "recall")`, y la asigna en
+`r luna_concepts$n_luna[luna_concepts$concept_id == "necesidad_material"]` bloques frente a
+`r luna_concepts$n_humano[luna_concepts$concept_id == "necesidad_material"]` de la referencia. En
+solidaridad como deber colectivo ocurre lo inverso: precisión
+`r val(luna_concepts, concept_id == "solidaridad_previsional_colectiva", col = "precision")` y sensibilidad
+`r val(luna_concepts, concept_id == "solidaridad_previsional_colectiva", col = "recall")`, es decir, omite cerca de la
+mitad de los casos.
+
+### Errores por grupo
+
+Estimamos α y F1 dentro de cada grupo de ley, género y alineación política, para
+ambos modelos, con intervalos de confianza por remuestreo de bloques dentro del
+grupo (1.000 réplicas). La comparación es entre grupos dentro de cada modelo,
+no entre modelos. Los gráficos están en el material suplementario.
+
+```{r}
+#| label: grupos
+#| cache: true
+set.seed(SEED)
+group_levels <- c(levels(meta$ley), levels(meta$genero), levels(meta$alineacion))
+grupos <- concept_grid |>
+  left_join(meta, by = "unit_id") |>
+  mutate(across(c(ley, genero, alineacion), as.character)) |>
+  pivot_longer(c(ley, genero, alineacion), names_to = "variable", values_to = "grupo") |>
+  nest(.by = c(variable, grupo)) |>
+  cross_join(tibble(modelo = c("luna", "haiku"))) |>
+  mutate(bloques = map_int(data, \(g) n_distinct(g$unit_id)),
+         est = map2(data, modelo, \(g, m) principales(g, "humano", m)),
+         boot = map2(data, modelo, \(g, m) bootstrap(g, "humano", m, reps = 1000))) |>
+  transmute(variable, grupo = factor(grupo, levels = group_levels),
+            modelo = factor(modelo, levels = c("luna", "haiku"), labels = c("Luna", "Haiku")),
+            bloques, est,
+            ic = map(boot, \(b) tibble(alpha_inf = quantile(b$alpha, 0.025, na.rm = TRUE),
+                                       alpha_sup = quantile(b$alpha, 0.975, na.rm = TRUE),
+                                       f1_inf = quantile(b$f1, 0.025, na.rm = TRUE),
+                                       f1_sup = quantile(b$f1, 0.975, na.rm = TRUE)))) |>
+  unnest(c(est, ic))
+write_csv(grupos, file.path(TABLE_DIR, "concordancia_por_grupo.csv"))
+```
+
+Dentro de cada modelo, el desempeño es similar entre izquierda y derecha y entre
+hombres y mujeres. Las estimaciones son menores en la Ley 21.419 (α de Luna
+`r val(grupos, variable == "ley", grupo == "Ley 21.419", modelo == "Luna", col = "alpha")`
+frente a `r val(grupos, variable == "ley", grupo == "Ley 21.735", modelo == "Luna", col = "alpha")`
+en la Ley 21.735) y en el centro político
+(`r val(grupos, variable == "alineacion", grupo == "Centro", modelo == "Luna", col = "alpha")`),
+pero sus intervalos se solapan con los de los demás grupos. No hay evidencia de
+que los errores se concentren de forma sistemática en un grupo político (ver S3).
+
+## Material suplementario
+
+### S1. Precisión, sensibilidad y coeficientes alternativos por concepto (Luna)
+
+Para el modelo principal mostramos, por concepto, precisión, sensibilidad, AC1 de
+Gwet y kappa de Cohen del par humano–Luna, y el kappa de Fleiss de los tres
+codificadores.
+
+```{r}
+#| label: s1-alternativos
+#| warning: false
+alt_concept <- concept_grid |>
+  filter(concept_id %in% human$concept_id) |>
+  nest(.by = concept_id) |>
+  mutate(par = map(data, \(g) concordancia(g, c("humano", "luna"))),
+         tres = map(data, \(g) concordancia(g, c("humano", "luna", "haiku")))) |>
+  transmute(concept_id,
+            cohen = map_dbl(par, "cohen"), gwet = map_dbl(par, "gwet_ac1"),
+            fleiss = map_dbl(tres, "fleiss"), alpha_tres = map_dbl(tres, "krippendorff"))
+write_csv(alt_concept, file.path(TABLE_DIR, "s1_alternativos_por_concepto.csv"))
+
+luna_concepts |>
+  filter(n_humano > 0) |>
+  left_join(alt_concept, by = "concept_id") |>
+  transmute(Concepto = concepto, `Precisión` = precision, Sensibilidad = recall,
+            `AC1 de Gwet` = gwet, `Kappa de Cohen` = cohen, `Kappa de Fleiss (tres)` = fleiss) |>
+  tabla("tS1_alternativos_por_concepto.docx", "S1",
+        "Precisión, sensibilidad y coeficientes alternativos por concepto (Luna-6)",
+        "Gwet y Cohen: par humano–Luna. Fleiss: humano, Luna y Haiku. Sin ponderar.")
+```
+
+La precisión y la sensibilidad separan dos tipos de error que F1 y α combinan.
+Necesidad material y solidaridad intergeneracional tienen sensibilidad alta y
+precisión baja (el modelo asigna de más); capitalización individual, ineficiencia
+y riesgo estatal y solidaridad como deber colectivo tienen el patrón inverso (el
+modelo omite). El kappa de Cohen coincide con α en todos los conceptos. El AC1 de
+Gwet varía entre 0,87 y 0,98 y apenas distingue entre conceptos, porque cada
+concepto aparece en pocos bloques y AC1 queda cerca de la coincidencia observada,
+dominada por las ausencias. El kappa de Fleiss de los tres codificadores supera
+al par humano–Luna en casi todos los conceptos, porque incluye el acuerdo entre
+los dos modelos.
+
+### S2. Coeficientes alternativos generales
+
+Comparamos α con Cohen, Fleiss y Gwet en las tres tareas, incluido el α de los
+tres codificadores juntos. Como los modelos comparten prompt y libro y concuerdan
+más entre sí que con la referencia, su acuerdo mutuo eleva el valor conjunto.
+
+```{r}
+#| label: s2-generales
+sets <- c(pares, list(`Humano, Luna y Haiku` = c("humano", "luna", "haiku")))
+agreement <- map_dfr(grids, \(g) map_dfr(sets, \(s) concordancia(g, s), .id = "par"), .id = "tarea")
+write_csv(agreement, file.path(TABLE_DIR, "s2_coeficientes_generales.csv"))
+
+agreement |>
+  rename(Tarea = tarea, Codificadores = par, `Kappa de Cohen` = cohen, `Kappa de Fleiss` = fleiss,
+         `Alfa de Krippendorff` = krippendorff, `AC1 de Gwet` = gwet_ac1) |>
+  tabla("tS2_coeficientes_generales.docx", "S2",
+        "Coeficientes de concordancia por tarea y conjunto de codificadores",
+        "Sin ponderar. Cohen solo para pares y Fleiss solo para los tres codificadores.")
+```
+
+Cohen y Krippendorff coinciden hasta la tercera decimal, y Fleiss coincide con el
+α de los tres codificadores. El AC1 de Gwet es mucho mayor (0,94 en concepto y
+0,80 en detección, frente a α de 0,68 y 0,56): su corrección por azar supone
+poco acuerdo esperado cuando la clase positiva es rara, de modo que queda cerca de
+la coincidencia observada. Es la expresión de la asimetría descrita en el texto
+principal, no un desempeño superior. El α de los tres codificadores (0,73) supera
+a los pares humano–modelo por el acuerdo entre los modelos.
+
+### S3. Concordancia por ley, género y alineación política
+
+Cada gráfico muestra α y F1 con su intervalo del 95 % por grupo, en un panel por
+modelo. Los grupos se comparan dentro de cada panel; la línea discontinua marca
+0,667. Las etiquetas indican el número de bloques; los grupos pequeños tienen
+intervalos amplios.
+
+```{r}
+#| label: figura-grupos
+plot_groups <- function(var) {
+  grupos |>
+    filter(variable == var) |>
+    mutate(etiqueta = factor(paste0(grupo, "\n(n = ", bloques, ")"),
+                             levels = unique(paste0(grupo, "\n(n = ", bloques, ")")[order(grupo)]))) |>
+    pivot_longer(c(alpha, f1), names_to = "metrica", values_to = "valor") |>
+    mutate(inf = if_else(metrica == "alpha", alpha_inf, f1_inf),
+           sup = if_else(metrica == "alpha", alpha_sup, f1_sup),
+           metrica = factor(metrica, levels = c("alpha", "f1"), labels = c("α de Krippendorff", "F1"))) |>
+    ggplot(aes(x = etiqueta, y = valor, ymin = inf, ymax = sup, colour = metrica)) +
+    geom_hline(yintercept = ALPHA_MINIMO, linetype = "dashed", colour = "grey55") +
+    geom_pointrange(position = position_dodge(width = 0.45), size = 0.35) +
+    facet_wrap(~ modelo) +
+    scale_colour_manual(values = c("#1b6ca8", "#c0632b")) +
+    scale_y_continuous(limits = c(0, 1), labels = \(x) format(x, decimal.mark = ",")) +
+    labs(x = NULL, y = "Valor", colour = NULL) +
+    theme_minimal(base_size = 11) +
+    theme(legend.position = "bottom", panel.grid.minor = element_blank())
+}
+```
+
+```{r}
+#| label: fig-ley
+#| fig-cap: "α y F1 por ley, con intervalos del 95 %."
+#| fig-alt: "Puntos con intervalos de α y F1 para las tres leyes, en un panel para Luna y otro para Haiku."
+#| fig-width: 8
+#| fig-height: 4
+plot_groups("ley")
+```
+
+Con Luna, la Ley 21.419 tiene la concordancia más baja (α 0,60, IC 0,49–0,70)
+y la Ley 21.735, que reúne la mayoría de los bloques, la más alta y precisa (0,70,
+IC 0,66–0,73); los intervalos se tocan. Haiku es más parejo entre leyes. La Ley
+21.538 tiene solo 22 bloques y sus intervalos son amplios en ambos modelos.
+
+```{r}
+#| label: fig-genero
+#| fig-cap: "α y F1 por género del hablante, con intervalos del 95 %."
+#| fig-alt: "Puntos con intervalos de α y F1 para hombres, mujeres y sin dato, en un panel por modelo."
+#| fig-width: 8
+#| fig-height: 4
+plot_groups("genero")
+```
+
+Las diferencias por género son pequeñas: con Luna, α de 0,70 en hombres y 0,66
+en mujeres, con intervalos ampliamente solapados; Haiku muestra la misma
+dirección (0,71 y 0,68). El grupo sin dato tiene 13 bloques y su intervalo
+abarca casi todo el rango, por lo que no admite interpretación.
+
+```{r}
+#| label: fig-alineacion
+#| fig-cap: "α y F1 por alineación política del hablante, con intervalos del 95 %."
+#| fig-alt: "Puntos con intervalos de α y F1 para izquierda, centro, derecha y no partidista, en un panel por modelo."
+#| fig-width: 8
+#| fig-height: 4
+plot_groups("alineacion")
+```
+
+Izquierda y derecha tienen concordancias casi iguales en ambos modelos (α en
+torno a 0,70). El centro tiene el valor más bajo en ambos (0,57 con Luna y 0,62
+con Haiku), con 38 bloques e intervalos que se solapan con los demás grupos. El
+grupo no partidista tiene 5 bloques y no es interpretable.
+
+### S4. Reproducción con Haiku por concepto
+
+Repetimos la tabla por concepto con Haiku 5.5, con la misma regla de inclusión,
+para mostrar qué conceptos dependen de la elección del modelo.
+
+```{r}
+#| label: s4-haiku
+#| cache: true
+set.seed(SEED)
+haiku_boot <- concept_grid |>
+  filter(concept_id %in% human$concept_id) |>
+  nest(.by = concept_id) |>
+  mutate(boot = map(data, \(g) bootstrap(g, "humano", "haiku", reps = 2000))) |>
+  transmute(concept_id,
+            ic_inf = map_dbl(boot, \(b) quantile(b$alpha, 0.025, na.rm = TRUE)),
+            ic_sup = map_dbl(boot, \(b) quantile(b$alpha, 0.975, na.rm = TRUE)))
+```
+
+```{r}
+#| label: tabla-haiku
+haiku_concepts <- concepts |>
+  inner_join(luna_concepts |> filter(n_humano > 0) |> select(concept_id, n_humano), by = "concept_id") |>
+  left_join(concept_pairs |> filter(par == "Humano–Haiku") |> select(concept_id, alpha, f1),
+            by = "concept_id") |>
+  left_join(haiku_boot, by = "concept_id") |>
+  left_join(por_concepto |> filter(modelo == "haiku") |> select(concept_id, precision, recall),
+            by = "concept_id") |>
+  mutate(inclusion = if_else(ic_sup < ALPHA_MINIMO, "No", "Sí")) |>
+  arrange(desc(n_humano))
+write_csv(haiku_concepts, file.path(TABLE_DIR, "s4_haiku_por_concepto.csv"))
+
+haiku_concepts |>
+  transmute(Concepto = concepto, n = n_humano, `α humano–Haiku` = alpha,
+            `IC 95 %` = paste0(formatC(ic_inf, format = "f", digits = 2, decimal.mark = ","), "–",
+                               formatC(ic_sup, format = "f", digits = 2, decimal.mark = ",")),
+            F1 = f1, `Precisión` = precision, Sensibilidad = recall, `Se incluiría` = inclusion) |>
+  tabla("tS4_haiku_por_concepto.docx", "S4",
+        "Concordancia entre la referencia humana y Haiku 5.5 por concepto",
+        "IC 95 %: remuestreo de bloques (2.000). Misma regla de inclusión que con Luna-6.")
+```
+
+Con Haiku, la misma regla excluiría necesidad material (α 0,55, IC hasta 0,66) y
+conciencia de costos (0,52, IC hasta 0,67), ambos conceptos de hipótesis, y
+mantendría identidad y control y responsabilidad individual, cuyos intervalos son
+más anchos. Haiku supera a Luna en igualdad y universalismo (0,70 frente a 0,54).
+La elección del modelo cambia el estatus de pocos conceptos, pero entre ellos
+está el central de H1b, que con Luna se mantiene. El contraste también ilustra
+que la regla es indulgente con los conceptos con pocos casos.
+
+### S5. Luna frente a Haiku en el censo
+
+Como ambos modelos anotaron los 3.609 bloques, medimos su concordancia sobre el
+censo completo. Muestra cuánto se parecen los modelos, no cuál acierta.
+
+```{r}
+#| label: s5-censo
+census_grid <- results |>
+  filter(codificador == "luna") |>
+  select(unit_id) |>
+  cross_join(select(concepts, concept_id)) |>
+  left_join(presence("concept_id") |> select(unit_id, concept_id, luna, haiku),
+            by = c("unit_id", "concept_id")) |>
+  mutate(across(c(luna, haiku), \(x) coalesce(x, 0L)))
+census_detection <- results |>
+  transmute(codificador, unit_id, valor = as.integer(decision == "statements")) |>
+  pivot_wider(names_from = codificador, values_from = valor)
+
+census <- bind_rows(
+  `Detección` = principales(census_detection, "luna", "haiku") |>
+    mutate(luna = sum(census_detection$luna), haiku = sum(census_detection$haiku)),
+  Concepto = principales(census_grid, "luna", "haiku") |>
+    mutate(luna = sum(census_grid$luna), haiku = sum(census_grid$haiku)),
+  .id = "tarea"
+)
+census_concept <- census_grid |>
+  nest(.by = concept_id) |>
+  mutate(res = map(data, \(g) principales(g, "luna", "haiku")),
+         luna = map_int(data, \(g) sum(g$luna)), haiku = map_int(data, \(g) sum(g$haiku))) |>
+  select(-data) |>
+  unnest(res)
+write_csv(census_concept, file.path(TABLE_DIR, "s5_censo_por_concepto.csv"))
+
+census |>
+  rename(Tarea = tarea, `α Luna–Haiku` = alpha, `F1 Luna–Haiku` = f1,
+         `Positivos Luna` = luna, `Positivos Haiku` = haiku) |>
+  tabla("tS5_censo_luna_haiku.docx", "S5",
+        "Concordancia entre Luna-6 y Haiku 5.5 en el censo de 3.609 bloques",
+        paste("Positivos: en detección, bloques con declaraciones; en concepto, asignaciones",
+              "bloque × concepto. El detalle por concepto está en s5_censo_por_concepto.csv."))
+```
+
+En el censo, los modelos concuerdan en la detección (α 0,81) y en los conceptos
+(0,80), pero Haiku anota más: 1.937 bloques con declaraciones frente a 1.774, y
+3.237 asignaciones frente a 2.717 (19 % más). Según el detalle por concepto, la
+menor concordancia está en solidaridad como deber colectivo (0,56), solidaridad
+intergeneracional (0,59), capitalización individual (0,64) e identidad (0,66). En
+los tres primeros, Haiku asigna mucho más que Luna (120 frente a 62, 82 frente a
+49 y 267 frente a 149). Son los conceptos cuyas frecuencias y redes más cambiarían
+con el otro modelo, y los que conviene revisar en la reproducción con Haiku.

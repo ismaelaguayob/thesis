@@ -153,3 +153,15 @@ JSON estricto. Cada ejecución congela prompt, libro, esquema y requests.
 El instrumento no se modificó después del censo.
 
 ## 4. Validación ciega (pendiente de métricas)
+
+La referencia es la sesión ciega `validation_20261004T182304711670Z_1c31732c`
+(360 bloques, estratificados por el concepto predicho por Luna). Entran en la
+validación 359: todos los bloques con decisión humana, incluidos los de votación
+o procedimiento; queda fuera un bloque irresoluble. `validation.qmd` compara con
+ella los censos de Luna-6 (modelo principal) y Haiku 5.5. El texto principal usa
+el alfa de Krippendorff y F1, sin ponderar, por pares de codificadores, y aplica
+por concepto la regla de inclusión por intervalo de confianza. El material
+suplementario reúne precisión, sensibilidad, coeficientes alternativos, los
+análisis por ley, género y alineación política, la reproducción con Haiku y la
+concordancia entre modelos en el censo. Las decisiones y sus razones están en
+[decisiones-validacion.md](decisiones-validacion.md).
