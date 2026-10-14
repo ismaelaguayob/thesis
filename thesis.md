@@ -165,7 +165,9 @@ La comparación entre proyectos permite examinar cómo cambia la relevancia de e
 
 El corpus reúne las discusiones en Sala de tres procesos legislativos: la creación de la Pensión Garantizada Universal, Ley N.º 21.419 (boletín 14588-13); la ampliación de su universo de focalización, Ley N.º 21.538 (boletín 15625-13); y la reforma previsional, Ley N.º 21.735 (boletín 15480-13). El diseño es asimétrico; la reforma previsional constituye el caso principal para analizar coaliciones, y persistencia del repertorio, mientras que la creación de la PGU y la ampliación de su focalización constituyen dos casos separados para comparar proyectos.
 
-**Tabla 1\.** *Discusiones en Sala, intervenciones y fragmentos del corpus textual*
+**Tabla 1**
+
+*Discusiones en Sala, intervenciones y fragmentos del corpus textual*
 
 | Ley | Boletín | Cámara de Diputadas y Diputados | Senado | Total de discusiones | Intervenciones | Fragmentos |
 | :---- | :---- | ----: | ----: | ----: | ----: | ----: |
@@ -174,7 +176,7 @@ El corpus reúne las discusiones en Sala de tres procesos legislativos: la creac
 | 21.735 | 15480-13 | 3 | 1 | 4 | 723 | 2.439 |
 | **Total** |  | **6** | **3** | **9** | **1.096** | **3.609** |
 
-*Fuente: elaboración propia a partir de las Historias de la Ley de la Biblioteca del Congreso Nacional (BCN). Los conteos corresponden a las intervenciones conservadas para la codificación y a los fragmentos resultantes de su segmentación.*
+*Nota.* Elaboración propia a partir de las Historias de la Ley de la Biblioteca del Congreso Nacional (BCN). Los conteos corresponden a las intervenciones conservadas para la codificación y a los fragmentos resultantes de su segmentación.
 
 La extracción y normalización se realizaron con una biblioteca de Python desarrollada para recuperar información legislativa, [bcn-scraper](https://github.com/ismaelaguayob/bcn-scraper). El procedimiento utiliza los documentos estructurados en Akoma Ntoso (AKN)[^2] y, cuando ese formato no es utilizable, recupera el discurso desde el XML de la Historia de la Ley.[^3] La identificación de hablantes se basó en las referencias a personas de la BCN contenidas en los documentos, complementadas con correcciones manuales documentadas de nombres y actores externos. Cada intervención conserva su identificador, documento de origen, fecha, hablante y posición en la secuencia del debate.
 
@@ -196,29 +198,35 @@ La investigación utiliza la metodología de análisis de redes discursivas (DNA
 
 ### **4.3 Estrategia de análisis** {#4.3-estrategia-de-análisis}
 
-**Figura 1:**
+**Figura 1**
 
 *Resumen de la estrategia de análisis* 
 
 ![][image2]
 
-*Nota: los tics indican las fases ya completadas y la flecha indica la etapa de avance actual de la investigación.*
+*Nota.* Los tics indican las fases ya completadas y la flecha indica la etapa de avance actual de la investigación.
 
 #### *4.3.1 Estrategia de codificación y validación* {#4.3.1-estrategia-de-codificación-y-validación}
 
-Debido al volumen del corpus, se empleó un LLM para la aplicación del libro de códigos, manteniendo la interpretación sustantiva a cargo del investigador. En cada fragmento se identificarán y codificarán las declaraciones que expresan posiciones sobre los conceptos presentes en el libro. El modelo deberá aportar una cita literal y una justificación breve de la asignación del concepto y de su orientación, indicando el criterio aplicado. El libro de códigos y el prompt utilizados están disponibles en el material suplementario (Anexo 1 y Anexo 2).
+Debido al volumen del corpus, la aplicación del libro de códigos se realizó con modelos de lenguaje de gran escala (LLM), manteniendo la interpretación sustantiva a cargo del investigador. Los 3.609 fragmentos se codificaron con dos modelos, GPT-6 Luna (OpenAI) como modelo principal y Claude Haiku 5.5 (Anthropic), con el mismo libro, el mismo prompt y el mismo esquema de salida. En cada fragmento, el modelo identificó las declaraciones que expresan posiciones sobre los conceptos del libro y aportó, para cada una, una cita literal, una justificación breve de la asignación del concepto y de su orientación, y un nivel de confianza. El libro de códigos y el prompt utilizados están disponibles en el material suplementario (Anexo 1 y Anexo 2).
 
 Dos antecedentes orientan especialmente este procedimiento. Randerson et al. (2025) emplearon GPT-4 para apoyar la construcción inductiva de un libro de códigos para DNA: recuperaron más de dos tercios de los conceptos identificados por los investigadores, pero el modelo también generó un gran número de categorías irrelevantes que requirieron revisión humana. Angst et al. (2025) automatizaron la extracción de redes actor-creencia mediante tareas separadas de identificación y vinculación de entidades, clasificación supervisada y detección de postura con un LLM y la evaluaron usando datos codificados manualmente. En este estudio, esas lecciones se traducen en el uso de un libro de códigos deductivo elaborado por el investigador, la evaluación independiente de cada tarea y la validación mediante datos codificados manualmente.
 
-El procedimiento de validación se organiza en tres etapas iterativas. En primer lugar, el libro de códigos fue evaluado en múltiples rondas de codificación manual por el investigador, utilizando muestras estratificadas por sesión y por longitud. En segundo lugar, se realizaron iteraciones piloto con el LLM, revisando manualmente las anotaciones realizadas por el modelo, en particular, las marcadas como ambiguas. Para finalizar, con el libro de códigos cerrado, se codificará a ciegas una muestra estratificada por concepto asignado por el modelo, con sobrerrepresentación de los conceptos infrecuentes, y por ley, cámara, género y alineación política (Bosley, 2025). La muestra incluye bloques sin anotaciones para estimar las omisiones del modelo. Se reportarán precisión, sensibilidad, F0,5, F1 y kappa de Cohen para conceptos y posturas. El umbral definido previamente es un F0,5 de 0,7 agregado y por concepto. Los casos discrepantes se adjudicarán manualmente, conservando su estado de revisión, y se examinará si los errores se concentran por ley, género o alineación política. Los conceptos que no alcancen el umbral se informarán e interpretarán con cautela. Un desempeño insuficiente en los conceptos centrales de las hipótesis justificaría la revisión del instrumento (Crupi et al., 2025; Dunivin, 2025).
+El procedimiento de validación se organizó en tres etapas iterativas. En primer lugar, el libro de códigos fue evaluado en múltiples rondas de codificación manual por el investigador, utilizando muestras estratificadas por sesión y por longitud. En segundo lugar, se realizaron tres iteraciones piloto con el LLM, en las que se revisaron manualmente las anotaciones del modelo, en particular las marcadas como ambiguas por su confianza media o baja; estas revisiones orientaron los ajustes finales del libro y del prompt. Por último, con el libro de códigos cerrado, el investigador codificó a ciegas una muestra de 360 fragmentos, estratificada por el concepto asignado por el modelo, con sobrerrepresentación de los conceptos infrecuentes, y por ley, cámara, género y alineación política. La muestra incluye fragmentos sin anotaciones del modelo para estimar sus omisiones. Al tratarse de una sola persona y de un instrumento en pilotaje, esta codificación constituye una referencia humana ciega y no un estándar de oro: las métricas expresan acuerdo con ella y no exactitud. La ausencia de una segunda persona codificadora impide, además, contar con una línea de base de concordancia entre personas.
 
-Al finalizar esta etapa, se dispondrá de una base analítica de declaraciones normativas procedentes de las nueve discusiones en Sala. Cada anotación conservará su ley, boletín, documento, actor, intervención y fragmento de origen, junto con el concepto, su orientación, la evidencia textual, la justificación del modelo, el grado de confianza y las revisiones manuales.
+La concordancia se midió por fragmento, comparando los conjuntos de conceptos asignados por la referencia y por cada modelo, con y sin postura. Las métricas principales son el alfa de Krippendorff y *F*1, calculadas sin ponderar. El alfa corrige el acuerdo esperado por azar y admite más de dos codificadores; *F*1 expresa el acuerdo sobre lo efectivamente codificado (Bosley, 2025; Dunivin, 2025; Krippendorff, 2019). Ambas se informan para la referencia con cada modelo y entre los dos modelos, comparación que indica la estabilidad del instrumento; precisión, sensibilidad y kappa de Cohen se reportan en el Anexo 3. Siguiendo las convenciones de Krippendorff (2019), un alfa de 0,80 permite conclusiones confiables y uno de 0,667, conclusiones tentativas. La incertidumbre del alfa de cada concepto se estimó mediante remuestreo: el cálculo se repitió sobre 10.000 muestras de fragmentos extraídas con reposición de la muestra de validación, y el intervalo de confianza del 95 % corresponde a los percentiles 2,5 y 97,5 de esos valores. Un concepto se excluye del análisis solo si todo su intervalo queda bajo 0,667; los conceptos incluidos bajo ese valor se interpretan con cautela, en especial cuando tienen pocos casos.
+
+Se utilizó un único modelo para todo el corpus, en lugar de escoger el de mejor desempeño en cada concepto, porque emplear la misma muestra para seleccionar y para evaluar sobreestimaría el desempeño. Cuando ambos modelos concuerdan de forma similar con la referencia en el agregado, se prioriza el de mejor concordancia en los conceptos centrales de las hipótesis; el otro modelo reproduce los análisis principales como análisis de sensibilidad. Finalmente, se examinó si la concordancia varía por ley, género o alineación política, y se ilustran los errores en los conceptos centrales de las hipótesis, distinguiendo los de frontera, en que el concepto se menciona sin justificar un arreglo previsional, de las codificaciones equivocadas.
+
+Al finalizar esta etapa, se dispone de una base analítica de declaraciones normativas procedentes de las nueve discusiones en Sala, codificadas por el modelo principal. Cada anotación conserva su ley, boletín, documento, actor, intervención y fragmento de origen, junto con el concepto, su orientación, la evidencia textual, la justificación del modelo y su grado de confianza.
 
 #### *4.3.2 Análisis descriptivo y modelamiento de patrones discursivos* {#4.3.2-análisis-descriptivo-y-modelamiento-de-patrones-discursivos}
 
 El análisis seguirá la secuencia resumida en la Tabla 2\. Las fórmulas de las redes, las reglas de conteo y las especificaciones estadísticas se describen en el Anexo 3\.
 
-**Tabla 2\.** *Hipótesis y estrategia de contrastación*
+**Tabla 2**
+
+*Hipótesis y estrategia de contrastación*
 
 | Hipótesis | Comparación | Medidas y evidencia |
 | :---- | :---- | :---- |
@@ -244,6 +252,32 @@ Finalmente, se interpretará la estructuración del debate a partir de las redes
 ## **5\. Resultados** {#5.-resultados}
 
 ### **5.1 Validación codificación asistida por LLM** {#5.1-validación-codificación-asistida-por-llm}
+
+La concordancia con la referencia humana fue similar para ambos modelos en la presencia de conceptos (GPT-6 Luna: α = 0,68; *F*1 = 0,71; Claude Haiku 5.5: α = 0,69; *F*1 = 0,72). Al considerar también la postura, el alfa se mantuvo prácticamente igual (Luna: α = 0,68; Haiku: α = 0,69): cuando la referencia y el modelo coincidieron en el concepto, coincidieron en su postura en el 98 % de los casos. El desacuerdo, por tanto, se refiere a qué concepto se asigna y no a su orientación. Los modelos concordaron más entre sí (α = 0,82) que con la referencia.
+
+Los desacuerdos se concentran en algunos conceptos y no tienen siempre la misma dirección. En algunos casos, el modelo asigna conceptos de más: Luna identificó necesidad material en 70 fragmentos, frente a 47 de la referencia (precisión = 0,60; sensibilidad = 0,89). La mayoría de estos casos son diagnósticos generales sobre el nivel de las pensiones, que el modelo interpreta como un criterio de asignación por necesidad. Por ejemplo, en una intervención que critica el acuerdo de la reforma, Luna codificó necesidad material a partir de una concesión inicial: "Sin duda, las pensiones hoy son bajas y hay que mejorarlas, pero este acuerdo entre una izquierda que quiere destruir las AFP, pero les regala 1.800 millones de dólares, y una derecha que dice defender la Constitución [...] es algo realmente digno de Ripley". Un patrón similar aparece en igualdad y universalismo, donde el modelo codificó descripciones de políticas, como la compensación económica a las mujeres por su mayor expectativa de vida, sin que el fragmento formulara una razón normativa.
+
+En otros casos, el modelo omite: en solidaridad como deber colectivo, Luna dejó sin codificar cerca de la mitad de los casos identificados por la referencia (precisión = 0,70; sensibilidad = 0,54). Este desacuerdo no siempre corresponde a un error del modelo. La referencia tendió a codificar solidaridad cuando aparecía la palabra, aunque designara un mecanismo ("incorporar la solidaridad como elemento para la seguridad social"), mientras que Luna la codificó cuando el fragmento expresaba un deber de apoyo mutuo sin nombrarlo ("la sociedad no puede seguir solo con la ley de la selva, con el «ráscate con tus propias uñas». Por eso se crea un seguro social"). Como el libro de códigos excluye las menciones retóricas de la solidaridad, en estos casos el modelo aplicó la definición con mayor literalidad que la referencia. Parte de los desacuerdos se ubica, así, en la frontera entre descripción y justificación normativa: en 31 de los 77 fragmentos que la referencia consideró sin justificaciones (40 %), el modelo identificó alguna.
+
+En el agregado, los modelos no difieren (diferencia en α = 0,01; IC 95 % [−0,02; 0,04]). Por ello, la elección del modelo se basó en los conceptos centrales de las hipótesis (Figura 2). La diferencia entre modelos fue clara solo en tres de los 15 conceptos evaluables: Luna concordó mejor en necesidad material (Luna: α = 0,66; Haiku: α = 0,55) y en conciencia de costos (Luna: α = 0,64; Haiku: α = 0,52), y Haiku en igualdad y universalismo (Haiku: α = 0,70; Luna: α = 0,54). Con Haiku, la regla de inclusión excluiría necesidad material, concepto central de H1b (IC 95 % [0,43; 0,66]). Con Luna se excluyen identidad y pertenencia grupal (α = 0,48; IC 95 % [0,28; 0,66]; *n* = 18) y control y responsabilidad individual (α = 0,44; IC 95 % [0,17; 0,66]; *n* = 14), que no sostienen hipótesis. Ambos conceptos tienen una concordancia igualmente baja en Haiku (α = 0,49 y 0,48), donde se mantienen solo porque sus intervalos, más amplios, alcanzan el umbral. Igualdad y universalismo se mantiene con Luna cerca del umbral (α = 0,54; IC 95 % [0,38; 0,67]). Por estas razones, GPT-6 Luna se utiliza como modelo principal y Claude Haiku 5.5 reproduce los análisis principales como análisis de sensibilidad. En el corpus completo, Haiku asignó un 19 % más conceptos que Luna (3.237 y 2.717 asignaciones). La Tabla S1 del Anexo 3 presenta, por concepto, la precisión, la sensibilidad y los coeficientes de concordancia de cada combinación de codificadores.
+
+**Figura 2**
+
+*Concordancia entre la referencia humana y cada modelo por concepto*
+
+[Insertar output/figures/validation/concordancia_por_concepto.png]
+
+*Nota.* Alfa de Krippendorff con intervalos de confianza del 95 % (10.000 remuestreos de fragmentos). Entre paréntesis, el número de fragmentos con el concepto en la referencia. La línea discontinua marca 0,667.
+
+La concordancia de Luna con la referencia fue similar entre izquierda y derecha (α = 0,69 y 0,70) y entre hombres y mujeres (α = 0,70 y 0,66; Figura 3). Fue menor en el centro político (α = 0,57; IC 95 % [0,46; 0,70]; *n* = 38) y en la Ley N.º 21.419 (α = 0,60; IC 95 % [0,49; 0,71]; *n* = 72) que en la Ley N.º 21.735 (α = 0,70), pero sus intervalos se solapan con los de los demás grupos. Los grupos con muy pocos fragmentos (Ley N.º 21.538, hablantes sin registro de género y no partidistas) presentan intervalos demasiado amplios para interpretarlos. En suma, no se observa que los errores del modelo se concentren en algún grupo.
+
+**Figura 3**
+
+*Concordancia entre la referencia humana y GPT-6 Luna por ley, género y alineación política*
+
+[Insertar output/figures/validation/concordancia_por_grupo.png]
+
+*Nota.* Alfa de Krippendorff con intervalos de confianza del 95 % (1.000 remuestreos de fragmentos dentro de cada grupo). Entre paréntesis, el número de fragmentos. La línea discontinua marca 0,667.
 
 ## **Referencias** {#referencias}
 
@@ -328,6 +362,8 @@ Knotz, C. M., Gandenberger, M. K., Fossati, F., & Bonoli, G. (2022). A Recast Fr
 Kohli, M. (1987). Retirement and the moral economy: An historical interpretation of the German case. *Journal of Aging Studies*, *1*(2), 125–144. https\://doi.org/10.1016/0890-4065(87)90003-X 
 
 Koos, S., & Sachweh, P. (2019). The moral economies of market societies: Popular attitudes towards market competition, redistribution and reciprocity in comparative perspective. *Socio-Economic Review*, *17*(4), 793–821. https\://doi.org/10.1093/ser/mwx045 
+
+Krippendorff, K. (2019). *Content Analysis: An Introduction to Its Methodology* (4.ª ed.). SAGE Publications. https://doi.org/10.4135/9781071878781
 
 Kuhlmann, J., & Blum, S. (2022). Sozialpolitische Erzählungen – Ein Vergleich narrativer Strategien in der Finanzkrise und der Corona-Krise. *Zeitschrift für Politikwissenschaft*, *32*(1), 117–140. https\://doi.org/10.1007/s41358-022-00311-9 
 

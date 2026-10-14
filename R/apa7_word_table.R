@@ -8,7 +8,10 @@ export_apa7_word_table <- function(data, path, title, note = NULL,
                                    body_font_size = 12, cell_padding = 3) {
   ft <- flextable::flextable(data)
   if (!is.null(note)) {
-    ft <- flextable::add_footer_lines(ft, values = paste0("Nota. ", note))
+    # APA 7: only the label "Nota." is italic; the note text is regular.
+    ft <- flextable::add_footer_lines(
+      ft, values = flextable::as_paragraph(flextable::as_i("Nota."), paste0(" ", note))
+    )
   }
 
   ft <- flextable::border_remove(ft) |>
@@ -44,9 +47,6 @@ export_apa7_word_table <- function(data, path, title, note = NULL,
                            width = column_widths)
   }
 
-  if (!is.null(note)) {
-    ft <- flextable::italic(ft, part = "footer")
-  }
 
   if (!is.null(rich_cells)) {
     for (k in seq_len(nrow(rich_cells))) {

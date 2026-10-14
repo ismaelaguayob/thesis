@@ -199,7 +199,7 @@ tabla <- function(data, file, number, title, note, landscape = FALSE) {
   flextable(data) |>
     theme_apa() |>
     set_caption(paste0("Tabla ", number, ". ", title)) |>
-    add_footer_lines(paste0("Nota. ", note)) |>
+    add_footer_lines(as_paragraph(as_i("Nota."), paste0(" ", note))) |>
     autofit() |>
     htmltools_value()
 }
@@ -279,7 +279,7 @@ solo concepto (`r num(frontera$conceptos[frontera$par == "luna"], 1)` en promedi
 
 ## Elección del modelo
 
-Estimamos, con 2.000 remuestreos de bloques, el α humano–Luna y el α
+Estimamos, con 10.000 remuestreos de bloques, el α humano–Luna y el α
 humano–Haiku en el agregado y por concepto, junto con la diferencia entre ambos.
 La regla de inclusión excluye un concepto solo si todo su intervalo con el
 modelo principal queda bajo 0,667. Contamos además las anotaciones de cada modelo
@@ -289,11 +289,11 @@ en el censo de 3.609 bloques.
 #| label: bootstrap-modelos
 #| cache: true
 set.seed(SEED)
-boot_agregado <- bootstrap(concept_grid, reps = 2000)
+boot_agregado <- bootstrap(concept_grid, reps = 10000)
 boot_conceptos <- concept_grid |>
   filter(concept_id %in% human$concept_id) |>
   nest(.by = concept_id) |>
-  mutate(boot = map(data, \(g) bootstrap(g, reps = 2000))) |>
+  mutate(boot = map(data, \(g) bootstrap(g, reps = 10000))) |>
   select(concept_id, boot)
 ```
 
@@ -338,13 +338,48 @@ conceptos_hipotesis <- c("propiedad_individual_fondos", "capitalizacion_individu
 excluidos <- por_concepto |> filter(!incluido_luna) |> left_join(concepts, by = "concept_id")
 stopifnot(!any(excluidos$concept_id %in% conceptos_hipotesis))
 fronterizos <- por_concepto |>
-  filter(abs(luna_sup - ALPHA_MINIMO) < 0.02) |>
+  filter(incluido_luna, abs(luna_sup - ALPHA_MINIMO) < 0.02) |>
   left_join(concepts, by = "concept_id")
 
 censo <- coders |>
   filter(codificador != "humano") |>
   group_by(codificador) |>
   summarise(bloques = n_distinct(unit_id), asignaciones = n_distinct(paste(unit_id, concept_id)))
+```
+
+La figura compara, para los 15 conceptos evaluables, el α de la referencia con
+cada modelo y su intervalo del 95 %. Los conceptos se separan entre los que
+sostienen hipótesis y los demás, y se ordenan por el α con Luna; la etiqueta
+indica el número de fragmentos con el concepto en la referencia.
+
+```{r}
+#| label: fig-conceptos
+#| fig-cap: "Concordancia entre la referencia humana y cada modelo (α de Krippendorff) por concepto, con intervalos de confianza del 95 % (10.000 remuestreos). La línea discontinua marca 0,667."
+#| fig-alt: "Puntos con intervalos del alfa humano–Luna y humano–Haiku para cada concepto, separados en conceptos de hipótesis y otros conceptos."
+#| fig-width: 6.3
+#| fig-height: 6
+conceptos_figura <- por_concepto |>
+  mutate(grupo = factor(if_else(concept_id %in% conceptos_hipotesis, "Conceptos de hipótesis", "Otros conceptos")),
+         etiqueta = reorder(paste0(abreviatura, " (", n, ")"), alfa_luna))
+figura_conceptos <- bind_rows(
+  Luna = transmute(conceptos_figura, grupo, etiqueta, alfa = alfa_luna, inf = luna_inf, sup = luna_sup),
+  Haiku = transmute(conceptos_figura, grupo, etiqueta, alfa = alfa_haiku, inf = haiku_inf, sup = haiku_sup),
+  .id = "modelo"
+) |>
+  mutate(modelo = factor(modelo, levels = c("Luna", "Haiku"))) |>
+  ggplot(aes(x = alfa, xmin = inf, xmax = sup, y = etiqueta, colour = modelo)) +
+  geom_vline(xintercept = ALPHA_MINIMO, linetype = "dashed", colour = "grey55") +
+  geom_pointrange(position = position_dodge(width = 0.6), size = 0.3) +
+  facet_grid(grupo ~ ., scales = "free_y", space = "free_y") +
+  scale_colour_manual(values = c(Luna = "#1b6ca8", Haiku = "#c0632b")) +
+  scale_x_continuous(limits = c(0, 1), labels = \(x) format(x, decimal.mark = ",")) +
+  labs(x = "α de Krippendorff con la referencia humana", y = NULL, colour = NULL) +
+  theme_minimal(base_size = 10) +
+  theme(legend.position = "bottom", panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank(), strip.text.y = element_text(face = "bold"))
+ggsave(file.path(FIGURE_DIR, "concordancia_por_concepto.png"), figura_conceptos,
+       width = 6.3, height = 6, dpi = 300, bg = "white")
+figura_conceptos
 ```
 
 En el agregado, los modelos no difieren: el α de Haiku supera al de Luna en
@@ -367,11 +402,10 @@ principal para todo el corpus.
 Luna-6 es el modelo principal. Necesidad material es el concepto central de H1b,
 y con Haiku la regla de inclusión lo excluiría (su intervalo termina en
 `r val(por_concepto, concept_id == "necesidad_material", col = "haiku_sup")`). Con
-Luna, la regla excluye `r lista(tolower(excluidos$concepto))` (intervalo hasta
-`r lista(num(excluidos$luna_sup))`), que no sostiene ninguna hipótesis.
-Los intervalos de `r lista(tolower(fronterizos$concepto))` terminan muy cerca del
-umbral (`r lista(num(fronterizos$luna_sup, 3))`), así que su clasificación puede
-cambiar con otra serie de remuestreos. `actitud` no es evaluable, porque la referencia no
+Luna, la regla excluye `r lista(tolower(excluidos$abreviatura))`
+(`r if (nrow(excluidos) == 1) "intervalo" else "intervalos"` hasta
+`r lista(num(excluidos$luna_sup, 3))`), `r if (nrow(excluidos) == 1) "que no sostiene" else "que no sostienen"`
+ninguna hipótesis. `r if (nrow(fronterizos) > 0) paste0("Entre los conceptos incluidos, ", lista(tolower(fronterizos$abreviatura)), if (nrow(fronterizos) == 1) " queda" else " quedan", " cerca del umbral (", lista(num(fronterizos$luna_sup, 3)), ").") else ""` `actitud` no es evaluable, porque la referencia no
 lo asigna. En el censo, Haiku anota más:
 `r miles(censo$asignaciones[censo$codificador == "haiku"])`
 asignaciones bloque × concepto frente a
@@ -412,24 +446,25 @@ write_csv(grupos, file.path(TABLE_DIR, "concordancia_por_grupo.csv"))
 ```{r}
 #| label: fig-grupos
 #| fig-cap: "Concordancia entre la referencia humana y Luna-6 (α de Krippendorff) por ley, género y alineación política, con intervalos de confianza del 95 %. La línea discontinua marca 0,667."
-#| fig-alt: "Tres paneles con puntos e intervalos del alfa humano–Luna por ley, por género y por alineación política."
-#| fig-width: 9
-#| fig-height: 3.8
+#| fig-alt: "Tres paneles con puntos e intervalos del alfa humano–Luna para cada grupo de ley, de género y de alineación política."
+#| fig-width: 6.3
+#| fig-height: 4.6
+# Exported at the usable page width (6.3 in), so Word inserts it at true size.
 figura_grupos <- grupos |>
-  arrange(variable, grupo) |>
-  mutate(etiqueta = factor(paste0(grupo, "\n(n = ", bloques, ")"),
-                           levels = unique(paste0(grupo, "\n(n = ", bloques, ")")))) |>
-  ggplot(aes(x = etiqueta, y = alfa, ymin = inf, ymax = sup)) +
-  geom_hline(yintercept = ALPHA_MINIMO, linetype = "dashed", colour = "grey55") +
-  geom_pointrange(colour = "#1b6ca8", size = 0.35) +
-  facet_grid(~ variable, scales = "free_x", space = "free_x") +
-  scale_y_continuous(limits = c(0, 1), labels = \(x) format(x, decimal.mark = ",")) +
-  labs(x = NULL, y = "α humano–Luna") +
-  theme_minimal(base_size = 11) +
-  theme(panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(),
-        strip.text = element_text(face = "bold"))
+  arrange(variable, desc(grupo)) |>
+  mutate(etiqueta = factor(paste0(grupo, " (", bloques, ")"),
+                           levels = unique(paste0(grupo, " (", bloques, ")")))) |>
+  ggplot(aes(x = alfa, xmin = inf, xmax = sup, y = etiqueta)) +
+  geom_vline(xintercept = ALPHA_MINIMO, linetype = "dashed", colour = "grey55") +
+  geom_pointrange(colour = "#1b6ca8", size = 0.3) +
+  facet_grid(variable ~ ., scales = "free_y", space = "free_y") +
+  scale_x_continuous(limits = c(0, 1), labels = \(x) format(x, decimal.mark = ",")) +
+  labs(x = "α de Krippendorff entre la referencia humana y Luna", y = NULL) +
+  theme_minimal(base_size = 10) +
+  theme(panel.grid.minor = element_blank(), panel.grid.major.y = element_blank(),
+        strip.text.y = element_text(face = "bold"))
 ggsave(file.path(FIGURE_DIR, "concordancia_por_grupo.png"), figura_grupos,
-       width = 9, height = 3.8, dpi = 300, bg = "white")
+       width = 6.3, height = 4.6, dpi = 300, bg = "white")
 figura_grupos
 ```
 
@@ -468,7 +503,7 @@ por_concepto |>
         "Concordancia entre la referencia humana y los modelos por concepto",
         paste("n: bloques con el concepto en la referencia (359 evaluados). P, S, F1 y κ (Cohen):",
               "par humano–Luna. H: humano; L: Luna-6; Hk: Haiku 5.5; tres: los tres codificadores.",
-              "IC 95 %: remuestreo de bloques (2.000). * Excluido: todo su intervalo con Luna queda",
+              "IC 95 %: remuestreo de bloques (10.000). * Excluido: todo su intervalo con Luna queda",
               "bajo 0,667. Actitud no aparece porque la referencia no lo asigna. Nombres abreviados."),
         landscape = TRUE)
 ```

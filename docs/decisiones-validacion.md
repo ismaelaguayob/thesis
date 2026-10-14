@@ -123,14 +123,17 @@ presenta un código por prompt. Además dispone de una línea de base humano–h
   reproducción.
 - **Regla de inclusión de conceptos: se excluye un concepto solo si todo su
   intervalo de confianza de α (remuestreo de bloques, 95 %) queda bajo 0,667.**
-  En `validation.qmd`, con remuestreo conjunto de ambos modelos y semilla fija,
-  Luna excluye solo identidad (IC hasta 0,66), que no sostiene hipótesis. Tres
-  conceptos quedan muy cerca del umbral y su clasificación cambia entre series de
-  remuestreo: identidad (0,659), igualdad y universalismo (0,673) y control y
-  responsabilidad individual (en distintas ejecuciones, entre 0,66 y 0,68). El
-  reporte lo declara y verifica que la regla no excluya un concepto de hipótesis.
-  La regla es indulgente con los conceptos con pocos casos, porque tienen
-  intervalos más anchos, y así se declara.
+  En `validation.qmd`, con 10.000 remuestreos conjuntos de ambos modelos y semilla
+  fija, Luna excluye identidad (IC hasta 0,659) y control y responsabilidad
+  individual (0,664), que no sostienen hipótesis. Igualdad y universalismo, de
+  hipótesis, queda incluido cerca del umbral (0,673). Se pasó de 2.000 a 10.000
+  remuestreos (14 oct) porque con 2.000 el límite de los conceptos fronterizos
+  variaba alrededor de una centésima entre ejecuciones y control cambiaba de
+  clasificación; con 10.000 la decisión sobre igualdad ya no depende del azar de
+  la simulación. El ancho de los intervalos no cambia, porque depende del número
+  de fragmentos codificados. El reporte verifica que la regla no excluya un
+  concepto de hipótesis. La regla es indulgente con los conceptos con pocos casos,
+  porque tienen intervalos más anchos, y así se declara.
 - **Las convenciones de Krippendorff (0,80 y 0,667) orientan la interpretación,
   pero no son una regla vinculante.** La cautela se acentúa en los conceptos con
   pocos casos y α bajo (por ejemplo, control y responsabilidad individual, n = 14,
