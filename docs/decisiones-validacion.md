@@ -123,13 +123,14 @@ presenta un código por prompt. Además dispone de una línea de base humano–h
   reproducción.
 - **Regla de inclusión de conceptos: se excluye un concepto solo si todo su
   intervalo de confianza de α (remuestreo de bloques, 95 %) queda bajo 0,667.**
-  Con Luna se excluyen identidad y control y responsabilidad individual (ambos con
-  IC hasta 0,66 en `validation.qmd`), que no sostienen hipótesis. Control es un
-  caso fronterizo: en un remuestreo exploratorio previo su límite superior fue
-  0,67, así que su resultado depende del ruido del remuestreo; se adopta el del
-  reporte, que es reproducible con semilla fija. La regla es indulgente con los
-  conceptos con pocos casos, porque tienen intervalos más anchos, y así se
-  declara.
+  En `validation.qmd`, con remuestreo conjunto de ambos modelos y semilla fija,
+  Luna excluye solo identidad (IC hasta 0,66), que no sostiene hipótesis. Tres
+  conceptos quedan muy cerca del umbral y su clasificación cambia entre series de
+  remuestreo: identidad (0,659), igualdad y universalismo (0,673) y control y
+  responsabilidad individual (en distintas ejecuciones, entre 0,66 y 0,68). El
+  reporte lo declara y verifica que la regla no excluya un concepto de hipótesis.
+  La regla es indulgente con los conceptos con pocos casos, porque tienen
+  intervalos más anchos, y así se declara.
 - **Las convenciones de Krippendorff (0,80 y 0,667) orientan la interpretación,
   pero no son una regla vinculante.** La cautela se acentúa en los conceptos con
   pocos casos y α bajo (por ejemplo, control y responsabilidad individual, n = 14,
@@ -164,3 +165,40 @@ presenta un código por prompt. Además dispone de una línea de base humano–h
   ejemplo, de líneas o de puntos con errores estándar), probando varias formas. La
   comparación es dentro de cada modelo entre grupos, no entre modelos, y los
   gráficos deben destacarlo.
+
+## 4. Estructura final de la validación — decidido (10 oct 2026)
+
+Prioridad: que la sección de validación del manuscrito sea breve, clara y
+convincente, y que permita pasar rápido a los resultados. Estas decisiones
+reemplazan las anteriores donde se contradicen.
+
+- **Texto principal en tres partes.**
+  1. **Métricas generales, en un párrafo y sin tabla:** α de concepto con cada
+     modelo, α de concepto y postura, F1, la estabilidad entre modelos y la
+     asimetría. El α de detección no se reporta como cifra, porque depende de la
+     prevalencia de la muestra (80 % de bloques con declaraciones, frente a cerca
+     de la mitad en el corpus, por el diseño estratificado con las predicciones de
+     Luna).
+  2. **Elección del modelo, en un párrafo:** empate en el agregado, diferencias
+     reales en tres conceptos, necesidad material a favor de Luna, conceptos
+     excluidos por la regla y la mayor cantidad de anotaciones de Haiku en el
+     censo.
+  3. **Un gráfico de concordancia por grupo:** α humano–Luna con IC 95 % en tres
+     paneles (ley, género y alineación política), solo con el modelo principal.
+     Reemplaza la decisión de llevar los grupos al suplemento con una frase.
+- **La asimetría se precisa a nivel de celda y de bloque.** Por celda, los
+  modelos casi no asignan conceptos ausentes en la referencia (acuerdo específico
+  negativo 0,97 frente a 0,71 del positivo). Por bloque, el desacuerdo se
+  concentra en la frontera entre descripción y justificación normativa: en
+  alrededor del 40 % de los bloques sin justificaciones para la referencia, el
+  modelo identifica una, casi siempre un solo concepto.
+- **Material suplementario: una sola tabla por concepto,** con nombres
+  abreviados: n, precisión, sensibilidad, F1 y κ de Cohen de Luna; α
+  humano–Luna e α humano–Haiku con su IC 95 % en la misma celda; α Luna–Haiku y
+  α de los tres codificadores. Muestra a la vez la sensibilidad de α a la
+  combinación de codificadores, la razón para elegir Luna y el detalle por
+  concepto.
+- **Se eliminan el AC1 de Gwet, el kappa de Fleiss, la tabla de reproducción con
+  Haiku, la de concordancia en el censo y los gráficos con F1.** La asimetría se
+  sostiene con el acuerdo específico negativo, sin Gwet. Del censo se conserva
+  una frase en la elección del modelo.

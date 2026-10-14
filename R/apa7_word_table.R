@@ -3,7 +3,7 @@
 # This helper only exports a Word table.
 export_apa7_word_table <- function(data, path, title, note = NULL,
                                    table_number = 1L, left_columns = 1L,
-                                   max_width = 7.5, rich_cells = NULL,
+                                   max_width = NULL, rich_cells = NULL,
                                    landscape = FALSE, column_widths = NULL,
                                    body_font_size = 12, cell_padding = 3) {
   ft <- flextable::flextable(data)
@@ -25,10 +25,18 @@ export_apa7_word_table <- function(data, path, title, note = NULL,
     flextable::align(j = seq.int(left_columns + 1L, ncol(data)),
                      align = "center", part = "body") |>
     flextable::autofit() |>
-    flextable::fit_to_width(max_width = max_width) |>
     flextable::set_table_properties(
       opts_word = list(split = FALSE, repeat_headers = TRUE)
     )
+
+  # Scale column widths instead of fit_to_width(), which shrinks the font.
+  # Text keeps body_font_size and wraps inside the narrower columns. Default
+  # widths are the usable width of an A4 page with the margins set below.
+  if (is.null(max_width)) max_width <- if (landscape) 10.2 else 6.3
+  # Measure header and body only: the long footer note would widen column 1.
+  widths <- pmax(flextable::dim_pretty(ft, part = "header")$widths,
+                 flextable::dim_pretty(ft, part = "body")$widths)
+  ft <- flextable::width(ft, width = widths * min(1, max_width / sum(widths)))
 
   if (!is.null(column_widths)) {
     stopifnot(length(column_widths) == ncol(data))
