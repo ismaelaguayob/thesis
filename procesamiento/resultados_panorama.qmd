@@ -1,5 +1,5 @@
 ---
-title: "Panorama de las justificaciones normativas"
+title: "El repertorio normativo del debate previsional"
 subtitle: "Sección 5.2: conceptos y posturas en los tres debates previsionales"
 lang: es
 format:
@@ -112,27 +112,33 @@ denominators <- bind_rows(by_law[1:2], by_law[3], by_phase,
 stopifnot(sum(denominators$intervenciones[1:3]) == 1096L,
           sum(denominators$sustantivas[4:6]) == denominators$sustantivas[3])
 
-denominators |>
-  mutate(pct_con = percent(con_declaraciones / sustantivas, accuracy = 1),
-         .after = con_declaraciones) |>
-  knitr::kable(col.names = c("Ley y fase", "Intervenciones", "Descartadas",
-                             "Sustantivas", "Con declaraciones", "% con decl.",
-                             "Actores con perfil", "Declaraciones"),
-               format.args = list(big.mark = ".", decimal.mark = ","))
+# Los porcentajes acompañan a su recuento en la misma celda: descartadas sobre
+# el total de intervenciones; con declaraciones sobre las sustantivas.
+n_pct <- function(n, total) {
+  sprintf("%s (%s %%)", format(n, big.mark = "."), round(100 * n / total))
+}
+denominators_display <- denominators |>
+  transmute(`Ley y fase` = ventana,
+            Intervenciones = format(intervenciones, big.mark = "."),
+            `Descartadas (%)` = n_pct(descartadas, intervenciones),
+            Sustantivas = format(sustantivas, big.mark = "."),
+            `Con declaraciones (%)` = n_pct(con_declaraciones, sustantivas),
+            `Actores con perfil` = format(actores_perfil, big.mark = "."),
+            Declaraciones = format(declaraciones, big.mark = "."))
+knitr::kable(denominators_display, align = c("l", rep("r", 6)))
 ```
 
 ```{r}
 #| label: tabla-denominadores-word
 #| include: false
 export_apa7_word_table(
-  denominators |>
-    mutate(ventana = str_trim(ventana)) |>
-    setNames(c("Ley y fase", "Intervenciones", "Descartadas", "Sustantivas",
-               "Con declaraciones", "Actores con perfil", "Declaraciones")),
+  denominators_display |>
+    mutate(`Ley y fase` = str_trim(`Ley y fase`)),
   path = file.path(TABLE_DIR, "tabla3_denominadores.docx"),
   title = "Intervenciones, actores con perfil y declaraciones por ley y fase legislativa",
   note = paste("Descartadas = intervenciones compuestas solo por votaciones o",
-               "procedimiento. Sustantivas = con al menos un fragmento",
+               "procedimiento; % sobre el total de intervenciones. Con",
+               "declaraciones: % sobre las sustantivas. Sustantivas = con al menos un fragmento",
                "sustantivo. Declaraciones = pares intervención–concepto–postura,",
                "sin identidad ni control individual. Las fases desagregan",
                "la Ley 21.735; en el total, cada actor se cuenta una vez."),
@@ -295,8 +301,8 @@ La proporción minoritaria de un concepto es la parte de sus declaraciones con
 postura que está en la postura menos frecuente,
 $m_{cL} = \min(n^+, n^-)/(n^+ + n^-)$. Vale 0 cuando el concepto recibe una
 sola postura y 50 % cuando se divide por mitades. Se calcula por ley; con
-menos de 10 declaraciones la proporción se muestra entre paréntesis porque es
-inestable.
+menos de 10 declaraciones la proporción se marca con † porque es inestable.
+Actitud se omite, como en la figura.
 
 ```{r}
 #| label: tbl-disputa
@@ -310,12 +316,11 @@ dispute <- prevalence |>
 write_parquet(dispute, file.path(TABLE_DIR, "disputa_concepto_ley.parquet"))
 
 dispute_cells <- dispute |>
+  filter(concept_id != "actitud") |>
   mutate(cell = case_when(
     total == 0 ~ "—",
-    total < 10 ~ sprintf("%d / %d (%s)", support, oppose,
-                         percent(minoritaria, accuracy = 1)),
-    TRUE ~ sprintf("%d / %d  %s", support, oppose,
-                   percent(minoritaria, accuracy = 1)))) |>
+    TRUE ~ sprintf("%d / %d (%s %%)%s", support, oppose,
+                   round(100 * minoritaria), if_else(total < 10, "†", "")))) |>
   select(concept_id, concept, law, cell) |>
   pivot_wider(names_from = law, values_from = cell) |>
   left_join(dispute |>
@@ -323,10 +328,26 @@ dispute_cells <- dispute |>
               select(concept_id, orden = minoritaria, n_reforma = total),
             by = "concept_id") |>
   arrange(desc(orden), desc(n_reforma)) |>
-  select(-concept_id, -orden, -n_reforma)
-knitr::kable(dispute_cells,
-             col.names = c("Concepto", levels(interventions$law)),
-             align = c("l", "c", "c", "c"))
+  select(-concept_id, -orden, -n_reforma) |>
+  rename(Concepto = concept)
+knitr::kable(dispute_cells, align = c("l", "c", "c", "c"))
+```
+
+```{r}
+#| label: tabla-disputa-word
+#| include: false
+export_apa7_word_table(
+  dispute_cells,
+  path = file.path(TABLE_DIR, "tabla4_disputa.docx"),
+  title = "Declaraciones de apoyo y rechazo y proporción minoritaria por concepto y ley",
+  note = paste("Cada celda indica apoyos / rechazos (proporción minoritaria).",
+               "La proporción minoritaria es la parte de las declaraciones del",
+               "concepto en su postura menos frecuente: 0 % indica una sola",
+               "postura y 50 %, una división por mitades. † = menos de 10",
+               "declaraciones. Conceptos ordenados por su proporción minoritaria",
+               "en la Ley 21.735. Se omite actitud (una declaración)."),
+  table_number = 4L, left_columns = 1L
+)
 ```
 
 La tabla separa dos grupos de conceptos. Los disputados se concentran en la

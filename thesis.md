@@ -291,25 +291,31 @@ Ya que los modelos no difieren en su concordancia general con la referencia (dif
 
 *Nota.* Alfa de Krippendorff con intervalos de confianza del 95 % (1.000 remuestreos de fragmentos dentro de cada grupo). La línea punteada marca la concordancia global (α = 0,68).
 
-Como se ve en la Figura 3, la concordancia de Luna con la referencia fue similar entre izquierda y derecha (α = 0,69 y 0,70) y entre hombres y mujeres (α = 0,70 y 0,66). El acuerdo fue menor en el centro político (α = 0,57; IC 95 % \[0,46; 0,70\]; n = 38) y en la Ley N.º 21.419 (α = 0,60; IC 95 % \[0,49; 0,71\]; n = 72) que en la Ley N.º 21.735 (α = 0,70), pero sus intervalos se solapan con los de los demás grupos. Los grupos con muy pocos fragmentos (Ley N.º 21.538, hablantes sin registro de género y no partidistas) presentan intervalos demasiado amplios para interpretarlos. En suma, no se observa que los errores del modelo se encuentren sesgados hacia algún grupo en particular.
+Como se ve en la Figura 3, la concordancia de Luna con la referencia fue similar entre izquierda y derecha (α = 0,69 y 0,70) y entre hombres y mujeres (α = 0,70 y 0,66). El acuerdo fue menor en el centro político (α = 0,57; IC 95 % \[0,45; 0,70\]; n = 38) y en la Ley N.º 21.419 (α = 0,60; IC 95 % \[0,49; 0,70\]; n = 72) que en la Ley N.º 21.735 (α = 0,70), pero sus intervalos se solapan con los de los demás grupos. Los grupos con muy pocos fragmentos (Ley N.º 21.538 y no partidistas) presentan intervalos demasiado amplios para interpretarlos. En suma, no se observa que los errores del modelo se encuentren sesgados hacia algún grupo en particular.
 
 <!-- ESQUELETO 5.2–5.8 (15-10-2026). Los corchetes son instrucciones de redacción y se eliminan al escribir. Cada subsección: expectativa y qué la contradiría → evidencia → veredicto → hallazgos no anticipados (marcados como exploratorios) → pasajes breves. Todos los análisis se replican con Claude Haiku 5.5 en el anexo. Identidad y control individual quedan fuera por la regla de inclusión. -->
 
 ### **5.2 El repertorio normativo del debate previsional**
 
-*[Párrafo 1: denominadores. Intervenciones sustantivas, descartadas por votación o procedimiento, actores con perfil y declaraciones por ley y fase. Exclusión de identidad y control.]*
+De las 1.096 intervenciones del corpus, 589 (54 %) se componen solo de votaciones o de procedimiento, en su mayoría a cargo de la mesa, y se excluyen de los análisis. Las 507 intervenciones sustantivas restantes son el denominador de las proporciones de esta sección, y el 86 % contiene al menos una declaración (Tabla 3). La reforma concentra 181 de los 213 actores con perfil y 1.069 de las 1.385 declaraciones; la Ley N.º 21.538 reúne solo 56 intervenciones sustantivas, por lo que sus proporciones deben leerse con cautela.
 
-**Tabla 3.** *Intervenciones sustantivas, actores con perfil y declaraciones por ley y fase legislativa*
+**Tabla 3.** *Intervenciones, actores con perfil y declaraciones por ley y fase legislativa*
 
-*[Ley 21.735 desagregada en Cámara 2024, Senado 2025 y Cámara 2025.]*
+*[Insertar desde output/tables/resultados/tabla3_denominadores.docx.]*
 
-*[Párrafo 2: conceptos más presentes en cada ley.]*
+La necesidad material es el concepto con más apoyo en las leyes N.º 21.419 y 21.735 (48 % y 39 % de las intervenciones sustantivas) y el segundo en la Ley N.º 21.538 (45 %), donde la supera la igualdad y el universalismo (48 %) (Figura 4). La reforma amplía el repertorio: los conceptos distributivos e institucionales del caso, escasos en los debates de la PGU, alcanzan en la Ley N.º 21.735 entre un 5 % (solidaridad intergeneracional) y un 26 % (previsión como mercado) de apoyo, y acuerdos y moderación aparece con apoyo en el 31 % de sus intervenciones. Actitud no aparece en las leyes de la PGU y registra una sola declaración en la reforma: los criterios de merecimiento se invocan para justificar el apoyo a las personas mayores, no para condicionarlo.
 
 **Figura 4.** *Apoyo y rechazo a cada concepto por ley*
 
-*[Barras divergentes: apoyo a la derecha, rechazo a la izquierda; porcentaje de intervenciones sustantivas. Reemplaza el gráfico de líneas. La tabla de recuentos por postura pasa al anexo.]*
+![](output/figures/resultados/figura4_prevalencia_postura.png)
 
-*[Párrafo 3: conceptos consensuales (sin rechazo: necesidad material, reciprocidad contributiva) frente a disputados (capitalización, previsión como mercado, ineficiencia estatal, solidaridad intergeneracional, conciencia de costos). Este contraste ordena el resto de la sección.]*
+*Nota.* Proporción de intervenciones sustantivas que apoyan (derecha) o rechazan (izquierda) cada concepto. Se omite actitud, con una sola declaración en el corpus.
+
+La proporción minoritaria, es decir, la parte de las declaraciones de un concepto que está en su postura menos frecuente, separa dos grupos de conceptos (Tabla 4). Previsión como mercado, capitalización individual, solidaridad intergeneracional e ineficiencia y riesgo estatal se dividen casi por mitades en la reforma (entre 42 % y 49 %), y conciencia de costos se disputa en las tres leyes. Necesidad material y reciprocidad contributiva no registran ningún rechazo, e igualdad y universalismo y la ilegitimidad del origen dictatorial apenas lo registran. Incluso propiedad de los fondos y libertad de elección, justificaciones del arreglo vigente, reciben pocos rechazos (9 % y 5 %). El conflicto de la reforma se libra sobre la organización institucional de la previsión más que sobre los criterios de merecimiento, que los actores comparten.
+
+**Tabla 4.** *Declaraciones de apoyo y rechazo y proporción minoritaria por concepto y ley*
+
+*[Insertar desde output/tables/resultados/tabla4_disputa.docx.]*
 
 ### **5.3 H1: Bloques políticos y criterios de justicia**
 
@@ -333,7 +339,7 @@ Como se ve en la Figura 3, la concordancia de Luna con la referencia fue similar
 
 *[Conceptos en filas, coaliciones en columnas; proporción de miembros que apoya y que rechaza cada concepto. El grafo de actores va al anexo o en tamaño reducido.]*
 
-**Tabla 4.** *Composición y estabilidad de las coaliciones*
+**Tabla 5.** *Composición y estabilidad de las coaliciones*
 
 *[Por coalición: bloque político, partidos, tipo de actor. Estabilidad: coasignación entre semillas; concordancia con las particiones por fase y sin acuerdos y moderación; información mutua normalizada entre coaliciones y bloque político.]*
 

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Panorama de las justificaciones normativas</title>
+<title>El repertorio normativo del debate previsional</title>
 <style>
 
 code{white-space: pre-wrap;}
@@ -2258,7 +2258,7 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Panorama de las justificaciones normativas</h1>
+<h1 class="title">El repertorio normativo del debate previsional</h1>
 <p class="subtitle lead">Sección 5.2: conceptos y posturas en los tres debates previsionales</p>
 </div>
 
@@ -2356,13 +2356,31 @@ window.Quarto = {
 <span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">sum</span>(denominators<span class="sc">$</span>intervenciones[<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>]) <span class="sc">==</span> <span class="dv">1096</span>L,</span>
 <span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>          <span class="fu">sum</span>(denominators<span class="sc">$</span>sustantivas[<span class="dv">4</span><span class="sc">:</span><span class="dv">6</span>]) <span class="sc">==</span> denominators<span class="sc">$</span>sustantivas[<span class="dv">3</span>])</span>
 <span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>denominators <span class="sc">|&gt;</span></span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">pct_con =</span> <span class="fu">percent</span>(con_declaraciones <span class="sc">/</span> sustantivas, <span class="at">accuracy =</span> <span class="dv">1</span>),</span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>         <span class="at">.after =</span> con_declaraciones) <span class="sc">|&gt;</span></span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">&quot;Ley y fase&quot;</span>, <span class="st">&quot;Intervenciones&quot;</span>, <span class="st">&quot;Descartadas&quot;</span>,</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>                             <span class="st">&quot;Sustantivas&quot;</span>, <span class="st">&quot;Con declaraciones&quot;</span>, <span class="st">&quot;% con decl.&quot;</span>,</span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>                             <span class="st">&quot;Actores con perfil&quot;</span>, <span class="st">&quot;Declaraciones&quot;</span>),</span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>               <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;.&quot;</span>, <span class="at">decimal.mark =</span> <span class="st">&quot;,&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Los porcentajes acompañan a su recuento en la misma celda: descartadas sobre</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="co"># el total de intervenciones; con declaraciones sobre las sustantivas.</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>n_pct <span class="ot">&lt;-</span> <span class="cf">function</span>(n, total) {</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sprintf</span>(<span class="st">&quot;%s (%s %%)&quot;</span>, <span class="fu">format</span>(n, <span class="at">big.mark =</span> <span class="st">&quot;.&quot;</span>), <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> n <span class="sc">/</span> total))</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>denominators_display <span class="ot">&lt;-</span> denominators <span class="sc">|&gt;</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="st">`</span><span class="at">Ley y fase</span><span class="st">`</span> <span class="ot">=</span> ventana,</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>            <span class="at">Intervenciones =</span> <span class="fu">format</span>(intervenciones, <span class="at">big.mark =</span> <span class="st">&quot;.&quot;</span>),</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>            <span class="st">`</span><span class="at">Descartadas (%)</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">n_pct</span>(descartadas, intervenciones),</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>            <span class="at">Sustantivas =</span> <span class="fu">format</span>(sustantivas, <span class="at">big.mark =</span> <span class="st">&quot;.&quot;</span>),</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>            <span class="st">`</span><span class="at">Con declaraciones (%)</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">n_pct</span>(con_declaraciones, sustantivas),</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>            <span class="st">`</span><span class="at">Actores con perfil</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">format</span>(actores_perfil, <span class="at">big.mark =</span> <span class="st">&quot;.&quot;</span>),</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>            <span class="at">Declaraciones =</span> <span class="fu">format</span>(declaraciones, <span class="at">big.mark =</span> <span class="st">&quot;.&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: There were 6 warnings in `transmute()`.
+The first warning was:
+ℹ In argument: `Intervenciones = format(intervenciones, big.mark = &quot;.&quot;)`.
+Caused by warning in `prettyNum()`:
+! &#39;big.mark&#39; and &#39;decimal.mark&#39; are both &#39;.&#39;, which could be confusing
+ℹ Run `dplyr::last_dplyr_warnings()` to see the 5 remaining warnings.</code></pre>
+</div>
+<details class="code-fold">
+<summary>Código</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(denominators_display, <span class="at">align =</span> <span class="fu">c</span>(<span class="st">&quot;l&quot;</span>, <span class="fu">rep</span>(<span class="st">&quot;r&quot;</span>, <span class="dv">6</span>)))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div id="tbl-denominadores" class="cell quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
@@ -2375,21 +2393,19 @@ Tabla 1: Intervenciones, actores con perfil y declaraciones por ley y fase legi
 <colgroup>
 <col style="width: 10%">
 <col style="width: 13%">
+<col style="width: 14%">
 <col style="width: 10%">
-<col style="width: 10%">
-<col style="width: 15%">
-<col style="width: 10%">
-<col style="width: 16%">
+<col style="width: 20%">
+<col style="width: 17%">
 <col style="width: 12%">
 </colgroup>
 <thead>
 <tr class="header">
 <th style="text-align: left;">Ley y fase</th>
 <th style="text-align: right;">Intervenciones</th>
-<th style="text-align: right;">Descartadas</th>
+<th style="text-align: right;">Descartadas (%)</th>
 <th style="text-align: right;">Sustantivas</th>
-<th style="text-align: right;">Con declaraciones</th>
-<th style="text-align: left;">% con decl.</th>
+<th style="text-align: right;">Con declaraciones (%)</th>
 <th style="text-align: right;">Actores con perfil</th>
 <th style="text-align: right;">Declaraciones</th>
 </tr>
@@ -2398,70 +2414,63 @@ Tabla 1: Intervenciones, actores con perfil y declaraciones por ley y fase legi
 <tr class="odd">
 <td style="text-align: left;">Ley 21.419</td>
 <td style="text-align: right;">262</td>
-<td style="text-align: right;">142</td>
+<td style="text-align: right;">142 (54 %)</td>
 <td style="text-align: right;">120</td>
-<td style="text-align: right;">95</td>
-<td style="text-align: left;">79%</td>
+<td style="text-align: right;">95 (79 %)</td>
 <td style="text-align: right;">71</td>
 <td style="text-align: right;">227</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Ley 21.538</td>
 <td style="text-align: right;">111</td>
-<td style="text-align: right;">55</td>
+<td style="text-align: right;">55 (50 %)</td>
 <td style="text-align: right;">56</td>
-<td style="text-align: right;">45</td>
-<td style="text-align: left;">80%</td>
+<td style="text-align: right;">45 (80 %)</td>
 <td style="text-align: right;">41</td>
 <td style="text-align: right;">89</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Ley 21.735</td>
 <td style="text-align: right;">723</td>
-<td style="text-align: right;">392</td>
+<td style="text-align: right;">392 (54 %)</td>
 <td style="text-align: right;">331</td>
-<td style="text-align: right;">297</td>
-<td style="text-align: left;">90%</td>
+<td style="text-align: right;">297 (90 %)</td>
 <td style="text-align: right;">181</td>
 <td style="text-align: right;">1.069</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Cámara 2024</td>
 <td style="text-align: right;">320</td>
-<td style="text-align: right;">194</td>
+<td style="text-align: right;">194 (61 %)</td>
 <td style="text-align: right;">126</td>
-<td style="text-align: right;">106</td>
-<td style="text-align: left;">84%</td>
+<td style="text-align: right;">106 (84 %)</td>
 <td style="text-align: right;">94</td>
 <td style="text-align: right;">340</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Senado 2025</td>
 <td style="text-align: right;">209</td>
-<td style="text-align: right;">143</td>
+<td style="text-align: right;">143 (68 %)</td>
 <td style="text-align: right;">66</td>
-<td style="text-align: right;">57</td>
-<td style="text-align: left;">86%</td>
+<td style="text-align: right;">57 (86 %)</td>
 <td style="text-align: right;">44</td>
 <td style="text-align: right;">272</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Cámara 2025</td>
 <td style="text-align: right;">194</td>
-<td style="text-align: right;">55</td>
+<td style="text-align: right;">55 (28 %)</td>
 <td style="text-align: right;">139</td>
-<td style="text-align: right;">134</td>
-<td style="text-align: left;">96%</td>
+<td style="text-align: right;">134 (96 %)</td>
 <td style="text-align: right;">123</td>
 <td style="text-align: right;">457</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Total</td>
 <td style="text-align: right;">1.096</td>
-<td style="text-align: right;">589</td>
+<td style="text-align: right;">589 (54 %)</td>
 <td style="text-align: right;">507</td>
-<td style="text-align: right;">437</td>
-<td style="text-align: left;">86%</td>
+<td style="text-align: right;">437 (86 %)</td>
 <td style="text-align: right;">213</td>
 <td style="text-align: right;">1.385</td>
 </tr>
@@ -2481,65 +2490,65 @@ Tabla 1: Intervenciones, actores con perfil y declaraciones por ley y fase legi
 <div class="cell">
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>law_sizes <span class="ot">&lt;-</span> interventions <span class="sc">|&gt;</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(substantive) <span class="sc">|&gt;</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(law, <span class="at">name =</span> <span class="st">&quot;sustantivas&quot;</span>)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>prevalence <span class="ot">&lt;-</span> claims <span class="sc">|&gt;</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(law, concept_id, stance) <span class="sc">|&gt;</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">complete</span>(law, <span class="at">concept_id =</span> concepts<span class="sc">$</span>concept_id,</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">stance =</span> <span class="fu">c</span>(<span class="st">&quot;support&quot;</span>, <span class="st">&quot;oppose&quot;</span>), <span class="at">fill =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">0</span>L)) <span class="sc">|&gt;</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(law_sizes, <span class="at">by =</span> <span class="st">&quot;law&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">proporcion =</span> n <span class="sc">/</span> sustantivas) <span class="sc">|&gt;</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(concepts, <span class="at">by =</span> <span class="st">&quot;concept_id&quot;</span>)</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">all</span>(prevalence<span class="sc">$</span>proporcion <span class="sc">&lt;=</span> <span class="dv">1</span>))</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="fu">write_parquet</span>(prevalence, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;prevalencia_postura_ley.parquet&quot;</span>))</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Para citar proporciones en el texto.</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>pct <span class="ot">&lt;-</span> <span class="cf">function</span>(l, c, <span class="at">s =</span> <span class="st">&quot;support&quot;</span>) {</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">percent</span>(prevalence<span class="sc">$</span>proporcion[prevalence<span class="sc">$</span>law <span class="sc">==</span> l <span class="sc">&amp;</span> prevalence<span class="sc">$</span>concept_id <span class="sc">==</span> c <span class="sc">&amp;</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>                                  prevalence<span class="sc">$</span>stance <span class="sc">==</span> s], <span class="at">accuracy =</span> <span class="dv">1</span>)</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>law_sizes <span class="ot">&lt;-</span> interventions <span class="sc">|&gt;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(substantive) <span class="sc">|&gt;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(law, <span class="at">name =</span> <span class="st">&quot;sustantivas&quot;</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>prevalence <span class="ot">&lt;-</span> claims <span class="sc">|&gt;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(law, concept_id, stance) <span class="sc">|&gt;</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">complete</span>(law, <span class="at">concept_id =</span> concepts<span class="sc">$</span>concept_id,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">stance =</span> <span class="fu">c</span>(<span class="st">&quot;support&quot;</span>, <span class="st">&quot;oppose&quot;</span>), <span class="at">fill =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">0</span>L)) <span class="sc">|&gt;</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(law_sizes, <span class="at">by =</span> <span class="st">&quot;law&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">proporcion =</span> n <span class="sc">/</span> sustantivas) <span class="sc">|&gt;</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(concepts, <span class="at">by =</span> <span class="st">&quot;concept_id&quot;</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">all</span>(prevalence<span class="sc">$</span>proporcion <span class="sc">&lt;=</span> <span class="dv">1</span>))</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="fu">write_parquet</span>(prevalence, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;prevalencia_postura_ley.parquet&quot;</span>))</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Para citar proporciones en el texto.</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>pct <span class="ot">&lt;-</span> <span class="cf">function</span>(l, c, <span class="at">s =</span> <span class="st">&quot;support&quot;</span>) {</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">percent</span>(prevalence<span class="sc">$</span>proporcion[prevalence<span class="sc">$</span>law <span class="sc">==</span> l <span class="sc">&amp;</span> prevalence<span class="sc">$</span>concept_id <span class="sc">==</span> c <span class="sc">&amp;</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>                                  prevalence<span class="sc">$</span>stance <span class="sc">==</span> s], <span class="at">accuracy =</span> <span class="dv">1</span>)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 <p>La figura ordena los conceptos por familia del libro de códigos y, dentro de cada familia, por su presencia en la reforma. El apoyo se dibuja a la derecha del cero y el rechazo a la izquierda; la posición y el color codifican la postura. Actitud se omite de la figura porque prácticamente no se registra; su ausencia se comenta en la interpretación.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>family_short <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;CARIN&quot;</span> <span class="ot">=</span> <span class="st">&quot;CARIN&quot;</span>, <span class="st">&quot;Criterio contextual&quot;</span> <span class="ot">=</span> <span class="st">&quot;Contextual&quot;</span>,</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Justificación distributiva del caso&quot;</span> <span class="ot">=</span> <span class="st">&quot;Distributiva</span><span class="sc">\n</span><span class="st">del caso&quot;</span>,</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Justificación institucional del caso&quot;</span> <span class="ot">=</span> <span class="st">&quot;Institucional</span><span class="sc">\n</span><span class="st">del caso&quot;</span>,</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Justificación procedimental del caso&quot;</span> <span class="ot">=</span> <span class="st">&quot;Procedimental&quot;</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>concept_order <span class="ot">&lt;-</span> prevalence <span class="sc">|&gt;</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(law <span class="sc">==</span> <span class="st">&quot;Ley 21.735&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(concept) <span class="sc">|&gt;</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">total =</span> <span class="fu">sum</span>(proporcion)) <span class="sc">|&gt;</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(total) <span class="sc">|&gt;</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(concept)</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>plot_data <span class="ot">&lt;-</span> prevalence <span class="sc">|&gt;</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(concept_id <span class="sc">!=</span> <span class="st">&quot;actitud&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">valor =</span> <span class="fu">if_else</span>(stance <span class="sc">==</span> <span class="st">&quot;support&quot;</span>, proporcion, <span class="sc">-</span>proporcion),</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>         <span class="at">postura =</span> <span class="fu">if_else</span>(stance <span class="sc">==</span> <span class="st">&quot;support&quot;</span>, <span class="st">&quot;Apoyo&quot;</span>, <span class="st">&quot;Rechazo&quot;</span>),</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>         <span class="at">concept =</span> <span class="fu">factor</span>(concept, <span class="at">levels =</span> concept_order),</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>         <span class="at">familia =</span> <span class="fu">factor</span>(family_short[family], <span class="at">levels =</span> family_short))</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>fig_prevalencia <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(plot_data, <span class="fu">aes</span>(<span class="at">x =</span> valor, <span class="at">y =</span> concept, <span class="at">fill =</span> postura)) <span class="sc">+</span></span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">width =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">0</span>, <span class="at">linewidth =</span> <span class="fl">0.3</span>, <span class="at">color =</span> <span class="st">&quot;grey40&quot;</span>) <span class="sc">+</span></span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_grid</span>(familia <span class="sc">~</span> law, <span class="at">scales =</span> <span class="st">&quot;free_y&quot;</span>, <span class="at">space =</span> <span class="st">&quot;free_y&quot;</span>, <span class="at">switch =</span> <span class="st">&quot;y&quot;</span>) <span class="sc">+</span></span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> \(x) <span class="fu">percent</span>(<span class="fu">abs</span>(x), <span class="at">accuracy =</span> <span class="dv">1</span>),</span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>                     <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="fl">0.2</span>, <span class="fl">0.4</span>, <span class="fl">0.2</span>)) <span class="sc">+</span></span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> STANCE_COLORS) <span class="sc">+</span></span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;Proporción de intervenciones sustantivas&quot;</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">fill =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">&quot;top&quot;</span>,</span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.placement =</span> <span class="st">&quot;outside&quot;</span>,</span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.text.y.left =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">0</span>, <span class="at">hjust =</span> <span class="dv">1</span>, <span class="at">size =</span> <span class="fl">8.5</span>),</span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.text.x =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">&quot;bold&quot;</span>),</span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.spacing.x =</span> <span class="fu">unit</span>(<span class="fl">1.2</span>, <span class="st">&quot;lines&quot;</span>))</span>
-<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fig_prevalencia)</span>
-<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">file.path</span>(FIGURE_DIR, <span class="st">&quot;figura4_prevalencia_postura.png&quot;</span>), fig_prevalencia,</span>
-<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>       <span class="at">width =</span> <span class="dv">10</span>, <span class="at">height =</span> <span class="fl">6.5</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">bg =</span> <span class="st">&quot;white&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>family_short <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;CARIN&quot;</span> <span class="ot">=</span> <span class="st">&quot;CARIN&quot;</span>, <span class="st">&quot;Criterio contextual&quot;</span> <span class="ot">=</span> <span class="st">&quot;Contextual&quot;</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Justificación distributiva del caso&quot;</span> <span class="ot">=</span> <span class="st">&quot;Distributiva</span><span class="sc">\n</span><span class="st">del caso&quot;</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Justificación institucional del caso&quot;</span> <span class="ot">=</span> <span class="st">&quot;Institucional</span><span class="sc">\n</span><span class="st">del caso&quot;</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Justificación procedimental del caso&quot;</span> <span class="ot">=</span> <span class="st">&quot;Procedimental&quot;</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>concept_order <span class="ot">&lt;-</span> prevalence <span class="sc">|&gt;</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(law <span class="sc">==</span> <span class="st">&quot;Ley 21.735&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(concept) <span class="sc">|&gt;</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">total =</span> <span class="fu">sum</span>(proporcion)) <span class="sc">|&gt;</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(total) <span class="sc">|&gt;</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(concept)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>plot_data <span class="ot">&lt;-</span> prevalence <span class="sc">|&gt;</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(concept_id <span class="sc">!=</span> <span class="st">&quot;actitud&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">valor =</span> <span class="fu">if_else</span>(stance <span class="sc">==</span> <span class="st">&quot;support&quot;</span>, proporcion, <span class="sc">-</span>proporcion),</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>         <span class="at">postura =</span> <span class="fu">if_else</span>(stance <span class="sc">==</span> <span class="st">&quot;support&quot;</span>, <span class="st">&quot;Apoyo&quot;</span>, <span class="st">&quot;Rechazo&quot;</span>),</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>         <span class="at">concept =</span> <span class="fu">factor</span>(concept, <span class="at">levels =</span> concept_order),</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>         <span class="at">familia =</span> <span class="fu">factor</span>(family_short[family], <span class="at">levels =</span> family_short))</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>fig_prevalencia <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(plot_data, <span class="fu">aes</span>(<span class="at">x =</span> valor, <span class="at">y =</span> concept, <span class="at">fill =</span> postura)) <span class="sc">+</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">width =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">0</span>, <span class="at">linewidth =</span> <span class="fl">0.3</span>, <span class="at">color =</span> <span class="st">&quot;grey40&quot;</span>) <span class="sc">+</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_grid</span>(familia <span class="sc">~</span> law, <span class="at">scales =</span> <span class="st">&quot;free_y&quot;</span>, <span class="at">space =</span> <span class="st">&quot;free_y&quot;</span>, <span class="at">switch =</span> <span class="st">&quot;y&quot;</span>) <span class="sc">+</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> \(x) <span class="fu">percent</span>(<span class="fu">abs</span>(x), <span class="at">accuracy =</span> <span class="dv">1</span>),</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>                     <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="fl">0.2</span>, <span class="fl">0.4</span>, <span class="fl">0.2</span>)) <span class="sc">+</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> STANCE_COLORS) <span class="sc">+</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;Proporción de intervenciones sustantivas&quot;</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">fill =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">&quot;top&quot;</span>,</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.placement =</span> <span class="st">&quot;outside&quot;</span>,</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.text.y.left =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">0</span>, <span class="at">hjust =</span> <span class="dv">1</span>, <span class="at">size =</span> <span class="fl">8.5</span>),</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.text.x =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">&quot;bold&quot;</span>),</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.spacing.x =</span> <span class="fu">unit</span>(<span class="fl">1.2</span>, <span class="st">&quot;lines&quot;</span>))</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fig_prevalencia)</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">file.path</span>(FIGURE_DIR, <span class="st">&quot;figura4_prevalencia_postura.png&quot;</span>), fig_prevalencia,</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>       <span class="at">width =</span> <span class="dv">10</span>, <span class="at">height =</span> <span class="fl">6.5</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">bg =</span> <span class="st">&quot;white&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div id="fig-prevalencia" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Barras divergentes para 13 conceptos agrupados por familia en tres paneles, uno por ley; el apoyo hacia la derecha y el rechazo hacia la izquierda.">
@@ -2560,36 +2569,34 @@ Figura 1: Proporción de intervenciones sustantivas que apoyan o rechazan cada 
 </section>
 <section id="conceptos-consensuales-y-disputados" class="level2">
 <h2 class="anchored" data-anchor-id="conceptos-consensuales-y-disputados">Conceptos consensuales y disputados</h2>
-<p>La proporción minoritaria de un concepto es la parte de sus declaraciones con postura que está en la postura menos frecuente, <span class="math inline">\(m_{cL} = \min(n^+, n^-)/(n^+ + n^-)\)</span>. Vale 0 cuando el concepto recibe una sola postura y 50 % cuando se divide por mitades. Se calcula por ley; con menos de 10 declaraciones la proporción se muestra entre paréntesis porque es inestable.</p>
+<p>La proporción minoritaria de un concepto es la parte de sus declaraciones con postura que está en la postura menos frecuente, <span class="math inline">\(m_{cL} = \min(n^+, n^-)/(n^+ + n^-)\)</span>. Vale 0 cuando el concepto recibe una sola postura y 50 % cuando se divide por mitades. Se calcula por ley; con menos de 10 declaraciones la proporción se marca con † porque es inestable. Actitud se omite, como en la figura.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>dispute <span class="ot">&lt;-</span> prevalence <span class="sc">|&gt;</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(law, concept_id, concept, family, stance, n) <span class="sc">|&gt;</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> stance, <span class="at">values_from =</span> n) <span class="sc">|&gt;</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">total =</span> support <span class="sc">+</span> oppose,</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">minoritaria =</span> <span class="fu">if_else</span>(total <span class="sc">&gt;</span> <span class="dv">0</span>, <span class="fu">pmin</span>(support, oppose) <span class="sc">/</span> total,</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                               <span class="cn">NA_real_</span>))</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="fu">write_parquet</span>(dispute, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;disputa_concepto_ley.parquet&quot;</span>))</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>dispute_cells <span class="ot">&lt;-</span> dispute <span class="sc">|&gt;</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">cell =</span> <span class="fu">case_when</span>(</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    total <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="st">&quot;—&quot;</span>,</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    total <span class="sc">&lt;</span> <span class="dv">10</span> <span class="sc">~</span> <span class="fu">sprintf</span>(<span class="st">&quot;%d / %d (%s)&quot;</span>, support, oppose,</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>                         <span class="fu">percent</span>(minoritaria, <span class="at">accuracy =</span> <span class="dv">1</span>)),</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="fu">sprintf</span>(<span class="st">&quot;%d / %d  %s&quot;</span>, support, oppose,</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">percent</span>(minoritaria, <span class="at">accuracy =</span> <span class="dv">1</span>)))) <span class="sc">|&gt;</span></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(concept_id, concept, law, cell) <span class="sc">|&gt;</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> law, <span class="at">values_from =</span> cell) <span class="sc">|&gt;</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(dispute <span class="sc">|&gt;</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>              <span class="fu">filter</span>(law <span class="sc">==</span> <span class="st">&quot;Ley 21.735&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>              <span class="fu">select</span>(concept_id, <span class="at">orden =</span> minoritaria, <span class="at">n_reforma =</span> total),</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="st">&quot;concept_id&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(orden), <span class="fu">desc</span>(n_reforma)) <span class="sc">|&gt;</span></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>concept_id, <span class="sc">-</span>orden, <span class="sc">-</span>n_reforma)</span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(dispute_cells,</span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>             <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">&quot;Concepto&quot;</span>, <span class="fu">levels</span>(interventions<span class="sc">$</span>law)),</span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>             <span class="at">align =</span> <span class="fu">c</span>(<span class="st">&quot;l&quot;</span>, <span class="st">&quot;c&quot;</span>, <span class="st">&quot;c&quot;</span>, <span class="st">&quot;c&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>dispute <span class="ot">&lt;-</span> prevalence <span class="sc">|&gt;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(law, concept_id, concept, family, stance, n) <span class="sc">|&gt;</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> stance, <span class="at">values_from =</span> n) <span class="sc">|&gt;</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">total =</span> support <span class="sc">+</span> oppose,</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">minoritaria =</span> <span class="fu">if_else</span>(total <span class="sc">&gt;</span> <span class="dv">0</span>, <span class="fu">pmin</span>(support, oppose) <span class="sc">/</span> total,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                               <span class="cn">NA_real_</span>))</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="fu">write_parquet</span>(dispute, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;disputa_concepto_ley.parquet&quot;</span>))</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>dispute_cells <span class="ot">&lt;-</span> dispute <span class="sc">|&gt;</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(concept_id <span class="sc">!=</span> <span class="st">&quot;actitud&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">cell =</span> <span class="fu">case_when</span>(</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    total <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> <span class="st">&quot;—&quot;</span>,</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    <span class="cn">TRUE</span> <span class="sc">~</span> <span class="fu">sprintf</span>(<span class="st">&quot;%d / %d (%s %%)%s&quot;</span>, support, oppose,</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> minoritaria), <span class="fu">if_else</span>(total <span class="sc">&lt;</span> <span class="dv">10</span>, <span class="st">&quot;†&quot;</span>, <span class="st">&quot;&quot;</span>)))) <span class="sc">|&gt;</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(concept_id, concept, law, cell) <span class="sc">|&gt;</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> law, <span class="at">values_from =</span> cell) <span class="sc">|&gt;</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(dispute <span class="sc">|&gt;</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>              <span class="fu">filter</span>(law <span class="sc">==</span> <span class="st">&quot;Ley 21.735&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>              <span class="fu">select</span>(concept_id, <span class="at">orden =</span> minoritaria, <span class="at">n_reforma =</span> total),</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="st">&quot;concept_id&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(orden), <span class="fu">desc</span>(n_reforma)) <span class="sc">|&gt;</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>concept_id, <span class="sc">-</span>orden, <span class="sc">-</span>n_reforma) <span class="sc">|&gt;</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">Concepto =</span> concept)</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(dispute_cells, <span class="at">align =</span> <span class="fu">c</span>(<span class="st">&quot;l&quot;</span>, <span class="st">&quot;c&quot;</span>, <span class="st">&quot;c&quot;</span>, <span class="st">&quot;c&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div id="tbl-disputa" class="cell quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-tbl figure">
@@ -2600,10 +2607,10 @@ Tabla 2: Declaraciones de apoyo y rechazo y proporción minoritaria por concept
 <div class="cell-output-display">
 <table class="cell caption-top table table-sm table-striped small">
 <colgroup>
-<col style="width: 41%">
-<col style="width: 19%">
-<col style="width: 18%">
+<col style="width: 38%">
 <col style="width: 20%">
+<col style="width: 19%">
+<col style="width: 21%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -2616,87 +2623,81 @@ Tabla 2: Declaraciones de apoyo y rechazo y proporción minoritaria por concept
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">Previsión como mercado</td>
-<td style="text-align: center;">13 / 7 35%</td>
-<td style="text-align: center;">3 / 5 (38%)</td>
-<td style="text-align: center;">86 / 90 49%</td>
+<td style="text-align: center;">13 / 7 (35 %)</td>
+<td style="text-align: center;">3 / 5 (38 %)†</td>
+<td style="text-align: center;">86 / 90 (49 %)</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Capitalización individual</td>
-<td style="text-align: center;">3 / 8 27%</td>
+<td style="text-align: center;">3 / 8 (27 %)</td>
 <td style="text-align: center;">—</td>
-<td style="text-align: center;">44 / 41 48%</td>
+<td style="text-align: center;">44 / 41 (48 %)</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Solidaridad intergeneracional</td>
-<td style="text-align: center;">1 / 0 (0%)</td>
+<td style="text-align: center;">1 / 0 (0 %)†</td>
 <td style="text-align: center;">—</td>
-<td style="text-align: center;">15 / 13 46%</td>
+<td style="text-align: center;">15 / 13 (46 %)</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Ineficiencia y riesgo estatal</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
-<td style="text-align: center;">45 / 33 42%</td>
+<td style="text-align: center;">45 / 33 (42 %)</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Conciencia de costos</td>
-<td style="text-align: center;">14 / 18 44%</td>
-<td style="text-align: center;">3 / 3 (50%)</td>
-<td style="text-align: center;">50 / 23 32%</td>
+<td style="text-align: center;">14 / 18 (44 %)</td>
+<td style="text-align: center;">3 / 3 (50 %)†</td>
+<td style="text-align: center;">50 / 23 (32 %)</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Acuerdos y moderación</td>
-<td style="text-align: center;">26 / 1 4%</td>
-<td style="text-align: center;">6 / 0 (0%)</td>
-<td style="text-align: center;">103 / 13 11%</td>
+<td style="text-align: center;">26 / 1 (4 %)</td>
+<td style="text-align: center;">6 / 0 (0 %)†</td>
+<td style="text-align: center;">103 / 13 (11 %)</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Solidaridad colectiva</td>
-<td style="text-align: center;">14 / 0 0%</td>
-<td style="text-align: center;">2 / 0 (0%)</td>
-<td style="text-align: center;">24 / 3 11%</td>
+<td style="text-align: center;">14 / 0 (0 %)</td>
+<td style="text-align: center;">2 / 0 (0 %)†</td>
+<td style="text-align: center;">24 / 3 (11 %)</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Propiedad de los fondos</td>
-<td style="text-align: center;">3 / 0 (0%)</td>
+<td style="text-align: center;">3 / 0 (0 %)†</td>
 <td style="text-align: center;">—</td>
-<td style="text-align: center;">81 / 8 9%</td>
+<td style="text-align: center;">81 / 8 (9 %)</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Libertad de elección</td>
-<td style="text-align: center;">2 / 0 (0%)</td>
-<td style="text-align: center;">2 / 0 (0%)</td>
-<td style="text-align: center;">41 / 2 5%</td>
+<td style="text-align: center;">2 / 0 (0 %)†</td>
+<td style="text-align: center;">2 / 0 (0 %)†</td>
+<td style="text-align: center;">41 / 2 (5 %)</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Origen dictatorial</td>
-<td style="text-align: center;">1 / 1 (50%)</td>
-<td style="text-align: center;">1 / 0 (0%)</td>
-<td style="text-align: center;">44 / 1 2%</td>
+<td style="text-align: center;">1 / 1 (50 %)†</td>
+<td style="text-align: center;">1 / 0 (0 %)†</td>
+<td style="text-align: center;">44 / 1 (2 %)</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Igualdad y universalismo</td>
-<td style="text-align: center;">36 / 2 5%</td>
-<td style="text-align: center;">27 / 1 4%</td>
-<td style="text-align: center;">84 / 1 1%</td>
+<td style="text-align: center;">36 / 2 (5 %)</td>
+<td style="text-align: center;">27 / 1 (4 %)</td>
+<td style="text-align: center;">84 / 1 (1 %)</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Necesidad material</td>
-<td style="text-align: center;">57 / 0 0%</td>
-<td style="text-align: center;">25 / 0 0%</td>
-<td style="text-align: center;">128 / 0 0%</td>
+<td style="text-align: center;">57 / 0 (0 %)</td>
+<td style="text-align: center;">25 / 0 (0 %)</td>
+<td style="text-align: center;">128 / 0 (0 %)</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Reciprocidad contributiva</td>
-<td style="text-align: center;">20 / 0 0%</td>
-<td style="text-align: center;">11 / 0 0%</td>
-<td style="text-align: center;">95 / 0 0%</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Actitud</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">—</td>
-<td style="text-align: center;">0 / 1 (0%)</td>
+<td style="text-align: center;">20 / 0 (0 %)</td>
+<td style="text-align: center;">11 / 0 (0 %)</td>
+<td style="text-align: center;">95 / 0 (0 %)</td>
 </tr>
 </tbody>
 </table>
@@ -2714,39 +2715,39 @@ Tabla 2: Declaraciones de apoyo y rechazo y proporción minoritaria por concept
 <div class="cell">
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>base_haiku <span class="ot">&lt;-</span> <span class="fu">load_analysis_base</span>(HAIKU_RUN_DIR)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>haiku_sizes <span class="ot">&lt;-</span> base_haiku<span class="sc">$</span>interventions <span class="sc">|&gt;</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(substantive) <span class="sc">|&gt;</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(law, <span class="at">name =</span> <span class="st">&quot;sustantivas&quot;</span>)</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>prevalence_haiku <span class="ot">&lt;-</span> base_haiku<span class="sc">$</span>claims <span class="sc">|&gt;</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(base_haiku<span class="sc">$</span>interventions <span class="sc">|&gt;</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>              <span class="fu">select</span>(law_number, document_uri, utterance_id, law),</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;law_number&quot;</span>, <span class="st">&quot;document_uri&quot;</span>, <span class="st">&quot;utterance_id&quot;</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(law, concept_id, stance) <span class="sc">|&gt;</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">complete</span>(law, <span class="at">concept_id =</span> concepts<span class="sc">$</span>concept_id,</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>           <span class="at">stance =</span> <span class="fu">c</span>(<span class="st">&quot;support&quot;</span>, <span class="st">&quot;oppose&quot;</span>), <span class="at">fill =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">0</span>L)) <span class="sc">|&gt;</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(haiku_sizes, <span class="at">by =</span> <span class="st">&quot;law&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">proporcion =</span> n <span class="sc">/</span> sustantivas)</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> prevalence <span class="sc">|&gt;</span></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(law, concept_id, concept, stance, <span class="at">luna_n =</span> n, <span class="at">luna =</span> proporcion) <span class="sc">|&gt;</span></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">inner_join</span>(prevalence_haiku <span class="sc">|&gt;</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>               <span class="fu">select</span>(law, concept_id, stance, <span class="at">haiku_n =</span> n, <span class="at">haiku =</span> proporcion),</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>             <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;law&quot;</span>, <span class="st">&quot;concept_id&quot;</span>, <span class="st">&quot;stance&quot;</span>))</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="fu">write_parquet</span>(comparison, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;prevalencia_luna_haiku.parquet&quot;</span>))</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>reform <span class="ot">&lt;-</span> <span class="fu">filter</span>(comparison, law <span class="sc">==</span> <span class="st">&quot;Ley 21.735&quot;</span>)</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>replica <span class="ot">&lt;-</span> reform <span class="sc">|&gt;</span></span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(<span class="at">postura =</span> <span class="fu">if_else</span>(stance <span class="sc">==</span> <span class="st">&quot;support&quot;</span>, <span class="st">&quot;Apoyo&quot;</span>, <span class="st">&quot;Rechazo&quot;</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">correlacion =</span> <span class="fu">cor</span>(luna, haiku),</span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>            <span class="at">media_luna =</span> <span class="fu">mean</span>(luna), <span class="at">media_haiku =</span> <span class="fu">mean</span>(haiku),</span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>            <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>)</span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>sin_rechazo <span class="ot">&lt;-</span> reform <span class="sc">|&gt;</span></span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(stance <span class="sc">==</span> <span class="st">&quot;oppose&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(concept, luna_n, haiku_n)</span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(replica, <span class="at">digits =</span> <span class="dv">3</span>,</span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>             <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">&quot;Postura&quot;</span>, <span class="st">&quot;Correlación Luna–Haiku&quot;</span>,</span>
-<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&quot;Media Luna&quot;</span>, <span class="st">&quot;Media Haiku&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>base_haiku <span class="ot">&lt;-</span> <span class="fu">load_analysis_base</span>(HAIKU_RUN_DIR)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>haiku_sizes <span class="ot">&lt;-</span> base_haiku<span class="sc">$</span>interventions <span class="sc">|&gt;</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(substantive) <span class="sc">|&gt;</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(law, <span class="at">name =</span> <span class="st">&quot;sustantivas&quot;</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>prevalence_haiku <span class="ot">&lt;-</span> base_haiku<span class="sc">$</span>claims <span class="sc">|&gt;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(base_haiku<span class="sc">$</span>interventions <span class="sc">|&gt;</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>              <span class="fu">select</span>(law_number, document_uri, utterance_id, law),</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;law_number&quot;</span>, <span class="st">&quot;document_uri&quot;</span>, <span class="st">&quot;utterance_id&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(law, concept_id, stance) <span class="sc">|&gt;</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">complete</span>(law, <span class="at">concept_id =</span> concepts<span class="sc">$</span>concept_id,</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>           <span class="at">stance =</span> <span class="fu">c</span>(<span class="st">&quot;support&quot;</span>, <span class="st">&quot;oppose&quot;</span>), <span class="at">fill =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">0</span>L)) <span class="sc">|&gt;</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(haiku_sizes, <span class="at">by =</span> <span class="st">&quot;law&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">proporcion =</span> n <span class="sc">/</span> sustantivas)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> prevalence <span class="sc">|&gt;</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(law, concept_id, concept, stance, <span class="at">luna_n =</span> n, <span class="at">luna =</span> proporcion) <span class="sc">|&gt;</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">inner_join</span>(prevalence_haiku <span class="sc">|&gt;</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>               <span class="fu">select</span>(law, concept_id, stance, <span class="at">haiku_n =</span> n, <span class="at">haiku =</span> proporcion),</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>             <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;law&quot;</span>, <span class="st">&quot;concept_id&quot;</span>, <span class="st">&quot;stance&quot;</span>))</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="fu">write_parquet</span>(comparison, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;prevalencia_luna_haiku.parquet&quot;</span>))</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>reform <span class="ot">&lt;-</span> <span class="fu">filter</span>(comparison, law <span class="sc">==</span> <span class="st">&quot;Ley 21.735&quot;</span>)</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>replica <span class="ot">&lt;-</span> reform <span class="sc">|&gt;</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(<span class="at">postura =</span> <span class="fu">if_else</span>(stance <span class="sc">==</span> <span class="st">&quot;support&quot;</span>, <span class="st">&quot;Apoyo&quot;</span>, <span class="st">&quot;Rechazo&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">correlacion =</span> <span class="fu">cor</span>(luna, haiku),</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>            <span class="at">media_luna =</span> <span class="fu">mean</span>(luna), <span class="at">media_haiku =</span> <span class="fu">mean</span>(haiku),</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>            <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>)</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>sin_rechazo <span class="ot">&lt;-</span> reform <span class="sc">|&gt;</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(stance <span class="sc">==</span> <span class="st">&quot;oppose&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(concept, luna_n, haiku_n)</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(replica, <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>             <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">&quot;Postura&quot;</span>, <span class="st">&quot;Correlación Luna–Haiku&quot;</span>,</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>                           <span class="st">&quot;Media Luna&quot;</span>, <span class="st">&quot;Media Haiku&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
@@ -2776,8 +2777,8 @@ Tabla 2: Declaraciones de apoyo y rechazo y proporción minoritaria por concept
 </div>
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(sin_rechazo <span class="sc">|&gt;</span> <span class="fu">filter</span>(luna_n <span class="sc">==</span> <span class="dv">0</span> <span class="sc">|</span> haiku_n <span class="sc">==</span> <span class="dv">0</span>),</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">&quot;Concepto&quot;</span>, <span class="st">&quot;Rechazos Luna&quot;</span>, <span class="st">&quot;Rechazos Haiku&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(sin_rechazo <span class="sc">|&gt;</span> <span class="fu">filter</span>(luna_n <span class="sc">==</span> <span class="dv">0</span> <span class="sc">|</span> haiku_n <span class="sc">==</span> <span class="dv">0</span>),</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">&quot;Concepto&quot;</span>, <span class="st">&quot;Rechazos Luna&quot;</span>, <span class="st">&quot;Rechazos Haiku&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">

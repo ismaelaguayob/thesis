@@ -102,8 +102,8 @@ stopifnot(nrow(blocks) == 359,
 ```
 
 Los metadatos del hablante proceden del corpus procesado y se unen por
-`unit_id`; la ley se toma de la sesión. El género faltante queda como «Sin dato»;
-la alineación usa `political_alignment`, derivada del grupo político en la fecha
+`unit_id`; la ley se toma de la sesión. Todos los hablantes tienen género
+registrado, incluidos los actores externos (ministros y secretarios); la alineación usa `political_alignment`, derivada del grupo político en la fecha
 del debate.
 
 ```{r}
@@ -116,12 +116,11 @@ meta <- map_dfr(c("21419", "21538", "21735"), \(law) read_parquet(
   transmute(
     unit_id,
     ley = factor(paste0("Ley ", substr(law_number, 1, 2), ".", substr(law_number, 3, 5))),
-    genero = factor(coalesce(gender, "Sin dato"), levels = c("hombre", "mujer", "Sin dato"),
-                    labels = c("Hombre", "Mujer", "Sin dato")),
+    genero = factor(gender, levels = c("hombre", "mujer"), labels = c("Hombre", "Mujer")),
     alineacion = factor(political_alignment, levels = c("izquierda", "centro", "derecha", "nonpartisan"),
                         labels = c("Izquierda", "Centro", "Derecha", "No partidista"))
   )
-stopifnot(nrow(meta) == nrow(blocks))
+stopifnot(nrow(meta) == nrow(blocks), !anyNA(meta$genero))
 ```
 
 Construimos las rejillas de comparación. En **detección**, la unidad es el
@@ -484,8 +483,8 @@ La concordancia es similar entre izquierda y derecha
 centro político (`r val(grupos, grupo == "Centro", col = "alfa")`), pero sus
 intervalos se solapan con los de los demás grupos. No hay evidencia de que los
 errores se concentren de forma sistemática en un grupo político. Los grupos
-pequeños (Ley 21.538, hablantes sin dato de género y no partidistas) tienen
-intervalos demasiado amplios para interpretarlos.
+pequeños (Ley 21.538 y no partidistas) tienen intervalos demasiado amplios
+para interpretarlos.
 
 ## Material suplementario
 

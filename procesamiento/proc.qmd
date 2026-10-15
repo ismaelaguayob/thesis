@@ -103,7 +103,8 @@ if LAW_NUMBER not in BILL_NUMBERS:
         f"LAW_NUMBER debe ser uno de {sorted(BILL_NUMBERS)}; se recibió {LAW_NUMBER!r}"
     )
 BILL_NUMBER = BILL_NUMBERS[LAW_NUMBER]
-PROC_DATA_DIR = Path("data/proc_data") / f"ley_{LAW_NUMBER}"
+# `PROC_DATA_ROOT` permite ensayar el procesamiento en un directorio temporal.
+PROC_DATA_DIR = Path(os.environ.get("PROC_DATA_ROOT", "data/proc_data")) / f"ley_{LAW_NUMBER}"
 PARTY_ALIGNMENT = load_party_alignment(Path(".env"))
 AFFILIATION_OVERRIDES_PATH = Path("data/curation/party_at_date_overrides.csv")
 INDEPENDENT_BLOCS_PATH = Path("data/curation/independent_bloc_assignments.csv")
@@ -201,12 +202,14 @@ def bcn_person(person_id, **metadata):
 
 
 # Los actores externos y los apellidos ambiguos se configuran por ley y por
-# documento. Esto impide que una inferencia de una cámara contamine otra sesión.
+# documento. Un mismo actor externo conserva su `speaker_id` en todas las leyes.
+# Los IDs llevan nombre porque el scraper asigna `PersonaExt1`, `PersonaExt2`...
+# a hablantes no resueltos de cada ley y un ID numérico podría coincidir. Esto impide que una inferencia de una cámara contamine otra sesión.
 EXTERNAL_SPEAKERS_BY_LAW = {
     "21735": {
         "JARA": {
             "speaker": "Jeannette Jara",
-            "speaker_id": "PersonaExt1",
+            "speaker_id": "PersonaExtJara",
             "speaker_href": "https://es.wikipedia.org/wiki/Jeannette_Jara",
             "role": "Ministra del Trabajo y Previsión Social",
         },
@@ -232,7 +235,7 @@ EXTERNAL_SPEAKERS_BY_LAW = {
         },
         "GUZMAN": {
             "speaker": "Raúl Guzmán Uribe",
-            "speaker_id": "PersonaExt21419Guzman",
+            "speaker_id": "PersonaExtGuzman",
             "speaker_href": "https://www.senado.cl/comunicaciones/noticias/sesion-155a-ordinaria-miercoles-3-de-marzo-de-2021",
             "role": "Secretario General del Senado",
         },
@@ -264,7 +267,7 @@ EXTERNAL_SPEAKERS_BY_LAW = {
         },
         "JARA": {
             "speaker": "Jeannette Jara",
-            "speaker_id": "PersonaExt1",
+            "speaker_id": "PersonaExtJara",
             "speaker_href": "https://es.wikipedia.org/wiki/Jeannette_Jara",
             "role": "Ministra del Trabajo y Previsión Social",
         },
@@ -305,7 +308,7 @@ DOCUMENT_SPEAKER_OVERRIDES_BY_LAW = {
             "PROVOSTE": bcn_person("4323"), "WALKER": bcn_person("3735"),
             "PASCUAL": bcn_person("5193"),
             "GUZMAN": {
-                "speaker": "Raúl Guzmán Uribe", "speaker_id": "PersonaExt3",
+                "speaker": "Raúl Guzmán Uribe", "speaker_id": "PersonaExtGuzman",
                 "speaker_href": "NA", "role": "Secretario General del Senado",
             },
         },
@@ -357,7 +360,7 @@ DOCUMENT_SPEAKER_OVERRIDES_BY_LAW = {
             "ELIZALDE": bcn_person("4584"), "GAHONA": bcn_person("4504"),
             "GALILEA": bcn_person("4633"), "GARCIA": bcn_person("279"),
             "GUZMAN": {
-                "speaker": "Raúl Guzmán Uribe", "speaker_id": "PersonaExt21538Guzman",
+                "speaker": "Raúl Guzmán Uribe", "speaker_id": "PersonaExtGuzman",
                 "speaker_href": "https://www.senado.cl/comunicaciones/noticias/sesion-155a-ordinaria-miercoles-3-de-marzo-de-2021",
                 "role": "Secretario General del Senado",
             },
@@ -503,6 +506,31 @@ speech_df_full = speech_df_full.loc[
 speech_df_full["utterance_order"] = (
     speech_df_full.groupby("document_uri", sort=False).cumcount() + 1
 )
+
+# Los actores externos no tienen ficha de parlamentario en la BCN, de modo que
+# su nombre y género no llegan por el cruce con `parliamentarians`. Se registran
+# aquí con el mismo `speaker_id` de `EXTERNAL_SPEAKERS_BY_LAW` y
+# `DOCUMENT_SPEAKER_OVERRIDES_BY_LAW`.
+EXTERNAL_SPEAKER_GENDER = {
+    "PersonaExtJara": "mujer",
+    "PersonaExt21419Cerda": "hombre",
+    "PersonaExt21419Galli": "hombre",
+    "PersonaExtGuzman": "hombre",  # Raúl Guzmán Uribe
+    "PersonaExt21419Silva": "mujer",
+    "PersonaExt21419Weber": "hombre",
+    "PersonaExt21538Aguilera": "mujer",
+    "PersonaExt21538Rojas": "hombre",
+    "PersonaExt21419Ossa": "hombre",
+}
+external_rows = speech_df_full["speaker_id"].isin(EXTERNAL_SPEAKER_GENDER) & speech_df_full[
+    "speaker_source"
+].eq("manual")
+speech_df_full.loc[external_rows, "gender"] = speech_df_full.loc[
+    external_rows, "speaker_id"
+].map(EXTERNAL_SPEAKER_GENDER)
+speech_df_full.loc[external_rows, "name"] = speech_df_full.loc[
+    external_rows, "name"
+].fillna(speech_df_full.loc[external_rows, "speaker"])
 
 affiliation_columns = [
     *affiliation_key,
@@ -936,6 +964,15 @@ remaining_columns = [
     column for column in coding_chunks_long.columns if column not in leading_columns
 ]
 coding_chunks_long = coding_chunks_long[leading_columns + remaining_columns]
+
+missing_gender = coding_chunks_long.loc[
+    coding_chunks_long["gender"].isna(), ["speaker_id", "speaker"]
+].drop_duplicates()
+if not missing_gender.empty:
+    raise ValueError(
+        "Hablantes sin género en los bloques; regístralos en "
+        "EXTERNAL_SPEAKER_GENDER o en las biografías:\n" + missing_gender.to_string()
+    )
 
 chunks_path = PROC_DATA_DIR / "coding_chunks_long.parquet"
 if chunks_path.exists():
