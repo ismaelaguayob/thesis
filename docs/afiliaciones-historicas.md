@@ -17,7 +17,7 @@ una decisión respaldada, use una de estas alternativas:
 - `unresolved`: documenta que se revisó pero que aún no hay evidencia suficiente;
   no cambia la tabla analítica.
 
-Al renderizar `proc.qmd`, solo las dos primeras alternativas se aplican a filas
+Al renderizar `procesamiento/proc.qmd`, solo las dos primeras alternativas se aplican a filas
 automáticas `unknown` o `not_applicable`. La salida conserva `manual_documented`, el método de
 resolución y la URL de evidencia; no sustituye una afiliación histórica hallada
 por la BCN.

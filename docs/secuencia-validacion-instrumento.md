@@ -169,7 +169,7 @@ definitivos y sus outputs completos.
 La referencia es la sesión ciega `validation_20261004T182304711670Z_1c31732c`
 (360 bloques, estratificados por el concepto predicho por Luna). Entran en la
 validación 359: todos los bloques con decisión humana, incluidos los de votación
-o procedimiento; queda fuera un bloque irresoluble. `validation.qmd` compara con
+o procedimiento; queda fuera un bloque irresoluble. `procesamiento/validation.qmd` compara con
 ella los censos de Luna-6 (modelo principal) y Haiku 5.5. El texto principal usa
 el alfa de Krippendorff y F1, sin ponderar, por pares de codificadores, y aplica
 por concepto la regla de inclusión por intervalo de confianza. El material

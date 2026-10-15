@@ -16,16 +16,16 @@ cp .env.example .env      # y completar las variables
 | `OPENAI_API_KEY` | Llamadas a OpenAI (censo Luna-6) | Sí |
 | `AWS_BEDROCK_API_KEY` | Llamadas a Amazon Bedrock (réplica Haiku y lote Bedrock) | Sí |
 | `AWS_BEDROCK_REGION` | Región de Bedrock para lotes nuevos (`us-west-2` por defecto) | No |
-| `PARTY_ALIGNMENT`, `CENTER_LEFT_PARTIES` | Clasificación partidaria usada por `proc.qmd`, el muestreo y el análisis | No |
+| `PARTY_ALIGNMENT`, `CENTER_LEFT_PARTIES` | Clasificación partidaria usada por `procesamiento/proc.qmd`, el muestreo y el análisis | No |
 | `ANNOTATIONS_PROVIDER`, `ANNOTATIONS_MODEL`, `ANNOTATIONS_BEDROCK_MODEL_ID`, `REASONING_LEVEL`, `ANNOTATIONS_MAX_RETRIES`, `ANNOTATIONS_INCOMPLETE_MAX_OUTPUT_TOKENS` | Configuración de lotes **nuevos**; no afectan lotes ya congelados | No |
 
 Las claves se leen solo desde `.env` o el entorno del proceso. No se guardan en
 requests, manifiestos, HTML ni en el navegador. Preparar inputs, renderizar
-`analysis.qmd` y abrir la app no usan ninguna clave.
+`procesamiento/analysis.qmd` y abrir la app no usan ninguna clave.
 
 ## Etapas
 
-1. **Corpus.** `proc.qmd` escribe `data/proc_data/ley_*/coding_chunks_long.parquet`.
+1. **Corpus.** `procesamiento/proc.qmd` escribe `data/proc_data/ley_*/coding_chunks_long.parquet`.
 2. **Instrumento.** El libro editable es `features/codebook/codebook_v5.xlsx`; su
    JSON se genera con `uv run python -m features.manual_validation.generate_codebook_json`.
    El prompt es `prompts/annotations_prompt_final.md`.
@@ -98,7 +98,7 @@ copiadas en el output definitivo, marcadas con `reused_from_run`.
 ## Replicación
 
 - **Sin llamadas.** Los resultados guardados bastan para el análisis y la
-  validación: `analysis.qmd` solo lee `output/annotations/`.
+  validación: `procesamiento/analysis.qmd` solo lee `output/annotations/`.
 - **Repetir una ejecución.** Usar el input congelado, no regenerarlo: los
   `coding_chunks_long.parquet` cambiaron después del censo y `prepare_all`
   produciría otros requests. Se ejecuta `run_annotations` sobre la carpeta de

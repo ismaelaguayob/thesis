@@ -1,6 +1,6 @@
 """Segmentación de intervenciones con procedencia de cada fragmento.
 
-Las reglas de selección y los límites de longitud se definen en proc.qmd.
+Las reglas de selección y los límites de longitud se definen en procesamiento/proc.qmd.
 Estas funciones conservan los offsets y hashes del texto original.
 """
 

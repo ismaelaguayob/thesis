@@ -1,7 +1,7 @@
 # Decisiones sobre la validación de las anotaciones LLM
 
 Registro de las decisiones sobre métricas, selección de modelo y reporte de la
-validación (`validation.qmd`), tomadas después de completar los censos de
+validación (`procesamiento/validation.qmd`), tomadas después de completar los censos de
 Luna-6 y Haiku 5.5. Restricciones de partida (9 oct 2026): no se modifica el
 libro de códigos ni se ejecuta otra iteración de anotación, por tiempo y costo.
 La metodología del material suplementario puede ajustarse, porque no contempla
@@ -123,7 +123,7 @@ presenta un código por prompt. Además dispone de una línea de base humano–h
   reproducción.
 - **Regla de inclusión de conceptos: se excluye un concepto solo si todo su
   intervalo de confianza de α (remuestreo de bloques, 95 %) queda bajo 0,667.**
-  En `validation.qmd`, con 10.000 remuestreos conjuntos de ambos modelos y semilla
+  En `procesamiento/validation.qmd`, con 10.000 remuestreos conjuntos de ambos modelos y semilla
   fija, Luna excluye identidad (IC hasta 0,659) y control y responsabilidad
   individual (0,664), que no sostienen hipótesis. Igualdad y universalismo, de
   hipótesis, queda incluido cerca del umbral (0,673). Se pasó de 2.000 a 10.000

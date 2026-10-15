@@ -4,12 +4,34 @@
 - `data/proc_data/`: datos transformados que alimentan los análisis y aplicaciones.
 - `features/codebook/`: versiones editables XLSX del libro de códigos y sus JSON derivados.
 - `features/manual_validation/`: backend, conversor del libro, comando y frontend de la validación manual.
-- `features/discourse_network/`: generación de productos ilustrativos de redes discursivas.
+- `features/llm_annotations/`: preparación, ejecución y auditoría de las anotaciones LLM.
+- `procesamiento/`: reportes Quarto del procesamiento del corpus, la validación y el análisis.
+- `R/`: funciones compartidas por los reportes (tablas Word APA 7).
 - `output/annotations/`: los dos censos LLM definitivos (Luna-6 y Haiku 5.5).
 - `output/validation/`: sesiones de codificación manual; la del 4 de octubre es la referencia ciega.
-- `output/analysis/`, `output/figures/` y `output/tables/`: resultados de `analysis.qmd` y `validation.qmd` (Parquet, figuras PNG y tablas Word APA).
+- `output/analysis/`, `output/figures/` y `output/tables/`: resultados de `procesamiento/analysis.qmd` y `procesamiento/validation.qmd` (Parquet, figuras PNG y tablas Word APA).
 - `_output/`: sitio HTML generado por Quarto; replica únicamente los recursos necesarios para publicar el reporte.
 - `review-workspace/`: revisión bibliográfica local; no se versiona.
+
+## Procesamiento y reportes
+
+Los reportes están en `procesamiento/` y se ejecutan desde la raíz del proyecto
+(`execute-dir: project` en `_quarto.yml`), así que sus rutas son relativas a la
+raíz. Se renderizan en este orden:
+
+```bash
+# 1. Corpus de una ley por ejecución (21735 por defecto): data/proc_data/ley_<número>/
+for law in 21419 21538 21735; do LAW_NUMBER=$law quarto render procesamiento/proc.qmd; done
+# 2. Validación de los censos LLM frente a la referencia humana
+quarto render procesamiento/validation.qmd
+# 3. Análisis de conceptos y redes
+quarto render procesamiento/analysis.qmd
+```
+
+Los HTML quedan en `_output/procesamiento/`. Las tablas y figuras se escriben en
+`output/` en Parquet, PNG y Word. `validation.qmd` guarda en caché los
+remuestreos (`procesamiento/validation_cache/`); bórrala si cambian los datos de
+entrada.
 
 ## Anotación LLM
 

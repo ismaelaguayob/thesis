@@ -322,7 +322,7 @@ def _context_record(record: dict[str, Any], target: dict[str, Any]) -> dict[str,
 def load_corpus_records(
     source_path: Path,
 ) -> list[dict[str, Any]]:
-    """Load the finalized long-form chunk corpus produced by ``proc.qmd``."""
+    """Load the finalized long-form chunk corpus produced by ``procesamiento/proc.qmd``."""
     if not source_path.exists():
         raise FileNotFoundError(f"No existe el corpus: {source_path}")
     dataframe = pd.read_parquet(source_path)
@@ -562,7 +562,7 @@ def load_corpus_records(
             else _sampling_value(row["party_at_date"])
         )
         # La alineación de los independientes se deriva del grupo asignado en
-        # proc.qmd; ``party`` conserva la afiliación registrada. Los corpus
+        # procesamiento/proc.qmd; ``party`` conserva la afiliación registrada. Los corpus
         # anteriores a esa asignación usan party_at_date.
         group_party = row.get("political_group_party")
         group_party = party if party_status == "not_applicable" or not _text(group_party) else _text(group_party)

@@ -42,7 +42,7 @@ El enlace [comenzar con la ley 21.419](http://127.0.0.1:8765/?law=21419) deja es
 
 El procesamiento que consume la aplicación queda dividido en dos capas explícitas:
 
-1. `proc.qmd` construye el corpus analítico y escribe `data/proc_data/ley_<número>/coding_chunks_long.parquet`.
+1. `procesamiento/proc.qmd` construye el corpus analítico y escribe `data/proc_data/ley_<número>/coding_chunks_long.parquet`.
 2. `features/manual_validation/run.py` genera el JSON del libro desde el XLSX y crea el servicio local.
 3. `features/manual_validation/service.py` lee los bloques definitivos, deriva la alineación desde `party_at_date`, adjunta el contexto, filtra la ley seleccionada y realiza el muestreo.
 4. En la codificación manual, el navegador recibe únicamente los bloques muestreados y el snapshot del libro. Los nombres, partidos, identificadores y género permanecen fuera del payload. La revisión LLM puede mostrar la alineación y las demás categorías de estrato para filtrar diagnósticos, pero no recibe el partido ni el nombre del hablante.
@@ -79,7 +79,7 @@ El valor predeterminado es `ley × cámara × alineación × género`, con una m
 
 La semilla hace que el sorteo sea reproducible para un corpus idéntico. `random` implementa muestreo aleatorio simple y registra una probabilidad común. Los valores ausentes forman la categoría explícita `Sin dato`. La cámara se determina a nivel de documento a partir de las funciones parlamentarias; cuando esas funciones faltan en un tercer trámite, se hereda la cámara del primer trámite del mismo proyecto.
 
-La aplicación consume los bloques ya finalizados por `proc.qmd`; no vuelve a filtrar ni segmentar durante el muestreo. Las votaciones presentes en ese corpus se clasifican manualmente con las flags `Voto` o `Procedimental` y se registran con `evaluation_included=false`.
+La aplicación consume los bloques ya finalizados por `procesamiento/proc.qmd`; no vuelve a filtrar ni segmentar durante el muestreo. Las votaciones presentes en ese corpus se clasifican manualmente con las flags `Voto` o `Procedimental` y se registran con `evaluation_included=false`.
 
 El procesamiento usa 100 palabras como objetivo y 150 como límite inicial. Al absorber restos breves de ambos lados, un bloque puede superar ese límite hasta el margen permitido por el esquema `coding-chunks-2.1.0`; el corpus actual llega a 194 palabras. Las intervenciones completas desde cinco palabras pueden conservarse. La versión 2.1 añade afiliación histórica sin modificar estas reglas textuales. Los bloques adyacentes sirven como contexto y nunca cruzan de un documento o sesión a otro.
 
