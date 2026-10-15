@@ -6,6 +6,10 @@ census instead: it reuses the 2,813 validated OpenAI responses and sends only th
 796 never-attempted blocks to OpenAI, with the census' own frozen requests. The
 original run folders are not modified.
 
+Historical record: the original 22-09 output and the Bedrock input it reads were
+deleted on 2026-10-15, so the script no longer runs. The final folder keeps the
+2,813 reused responses, flagged with ``reused_from_run``.
+
 Usage:
     python -m features.llm_annotations.complete_openai_census            # dry run
     python -m features.llm_annotations.complete_openai_census --execute --limit 2

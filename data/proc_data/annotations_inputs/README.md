@@ -6,7 +6,8 @@ resultados correspondientes se escriben en
 `output/annotations/<run_id>/`; el `run_id` común mantiene la trazabilidad sin
 duplicar archivos.
 
-Los intentos preparatorios, canaries y ejecuciones sustituidas no se conservan
-aquí. Las decisiones de validación humana siguen escribiéndose en
-`output/annotation_reviews/` y los artefactos del piloto histórico permanecen en
-`output/annotations/` y `output/annotations_checks/`.
+Solo se conservan los inputs de los dos censos definitivos: `pilot_d4e0291b…`
+(Luna-6) y `pilot_cc90579…` (réplica Haiku). Los intentos preparatorios, pilotos
+y ejecuciones sustituidas se eliminaron; su registro está en
+`data/proc_data/llm_pilots/`, `output/annotation_reviews/` y
+`docs/secuencia-validacion-instrumento.md`.

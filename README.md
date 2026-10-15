@@ -5,7 +5,9 @@
 - `features/codebook/`: versiones editables XLSX del libro de códigos y sus JSON derivados.
 - `features/manual_validation/`: backend, conversor del libro, comando y frontend de la validación manual.
 - `features/discourse_network/`: generación de productos ilustrativos de redes discursivas.
-- `output/figures/`, `output/tables/` y `output/validation/`: resultados producidos por el proyecto.
+- `output/annotations/`: los dos censos LLM definitivos (Luna-6 y Haiku 5.5).
+- `output/validation/`: sesiones de codificación manual; la del 4 de octubre es la referencia ciega.
+- `output/analysis/`, `output/figures/` y `output/tables/`: resultados de `analysis.qmd` y `validation.qmd` (Parquet, figuras PNG y tablas Word APA).
 - `_output/`: sitio HTML generado por Quarto; replica únicamente los recursos necesarios para publicar el reporte.
 - `review-workspace/`: revisión bibliográfica local; no se versiona.
 

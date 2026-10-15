@@ -53,3 +53,8 @@ aparecen.
   uñas»). En igualdad y en necesidad material, en cambio, el modelo tomó
   descripciones de políticas o diagnósticos por justificaciones. Ver
   `docs/examples.md`.
+- **La frontera entre descripción y justificación, en cifras.** En 31 de los 77
+  fragmentos que la referencia consideró sin justificaciones (40 %), Luna
+  identificó alguna. Sacado de resultados (5.1) porque cerraba mal el párrafo de
+  solidaridad, que trata de omisiones; puede servir para dimensionar la
+  sobreasignación en la discusión.

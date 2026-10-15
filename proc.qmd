@@ -80,7 +80,7 @@ from features.independent_blocs import (
     apply_independent_blocs,
     load_independent_blocs,
 )
-from features.atomic_io import atomic_write_bytes, atomic_write_csv, atomic_write_parquet
+from features.atomic_io import atomic_write_bytes, atomic_write_parquet
 from features.manual_validation.service import atomic_write_json
 from features.political_alignment import load_party_alignment
 ```
@@ -104,13 +104,11 @@ if LAW_NUMBER not in BILL_NUMBERS:
     )
 BILL_NUMBER = BILL_NUMBERS[LAW_NUMBER]
 PROC_DATA_DIR = Path("data/proc_data") / f"ley_{LAW_NUMBER}"
-TABLE_OUTPUT_DIR = Path("output/tables") / f"ley_{LAW_NUMBER}"
 PARTY_ALIGNMENT = load_party_alignment(Path(".env"))
 AFFILIATION_OVERRIDES_PATH = Path("data/curation/party_at_date_overrides.csv")
 INDEPENDENT_BLOCS_PATH = Path("data/curation/independent_bloc_assignments.csv")
 
 PROC_DATA_DIR.mkdir(parents=True, exist_ok=True)
-TABLE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 atomic_write_json(PROC_DATA_DIR / "party_alignment.json", PARTY_ALIGNMENT.snapshot())
 ```
 
@@ -172,7 +170,6 @@ speaker_identity_audit = collect_akn_person_identities(data_speech)
 corpus_person_registry = build_corpus_person_registry(data_speech)
 
 atomic_write_parquet(speaker_identity_audit, PROC_DATA_DIR / "speaker_identity_audit.parquet")
-atomic_write_csv(speaker_identity_audit, TABLE_OUTPUT_DIR / "speaker_identity_audit.csv")
 ```
 
 El manifiesto señala los debates cuyo AKN no es utilizable, como el trámite 3.1 de
@@ -410,7 +407,7 @@ candidate_progress = (
 
 atomic_write_parquet(candidates_full, PROC_DATA_DIR / "speaker_candidates.parquet")
 atomic_write_parquet(candidates_pending, PROC_DATA_DIR / "speaker_candidates_pending.parquet")
-atomic_write_csv(candidate_progress, TABLE_OUTPUT_DIR / "speaker_candidate_progress.csv")
+atomic_write_parquet(candidate_progress, PROC_DATA_DIR / "speaker_candidate_progress.parquet")
 candidate_progress
 ```
 
@@ -439,7 +436,6 @@ missing_speaker_refs = speaker_refs.loc[
     ~speaker_refs["person_href"].isin(parliamentarians["person_href"])
 ].copy()
 atomic_write_parquet(missing_speaker_refs, PROC_DATA_DIR / "parliamentarian_identity_gaps.parquet")
-atomic_write_csv(missing_speaker_refs, TABLE_OUTPUT_DIR / "parliamentarian_identity_gaps.csv")
 
 identity_only = missing_speaker_refs[["person_href", "person_id"]].copy()
 identity_only["name"] = missing_speaker_refs["speaker_names_seen"].map(
@@ -617,10 +613,9 @@ affiliation_gaps = (
     .sort_values(["document_uri", "person_href"], kind="stable")
 )
 atomic_write_parquet(affiliation_gaps, PROC_DATA_DIR / "parliamentarian_affiliation_gaps.parquet")
-atomic_write_csv(affiliation_gaps, TABLE_OUTPUT_DIR / "parliamentarian_affiliation_gaps.csv")
-atomic_write_csv(affiliation_overrides, TABLE_OUTPUT_DIR / "party_at_date_overrides_status.csv")
-atomic_write_csv(applied_affiliation_overrides, TABLE_OUTPUT_DIR / "party_at_date_overrides_applied.csv")
-atomic_write_csv(applied_independent_blocs, TABLE_OUTPUT_DIR / "independent_blocs_applied.csv")
+atomic_write_parquet(affiliation_overrides, PROC_DATA_DIR / "party_at_date_overrides_status.parquet")
+atomic_write_parquet(applied_affiliation_overrides, PROC_DATA_DIR / "party_at_date_overrides_applied.parquet")
+atomic_write_parquet(applied_independent_blocs, PROC_DATA_DIR / "independent_blocs_applied.parquet")
 affiliation_summary = (
     speech_df_full.loc[
         speech_df_full["person_href"].notna(),
@@ -704,7 +699,6 @@ speech_quality_report = build_speech_quality_report(
     corpus_manifest, data, speech_df, speech_df_full
 )
 atomic_write_parquet(speech_quality_report, PROC_DATA_DIR / "speech_quality_report.parquet")
-atomic_write_csv(speech_quality_report, TABLE_OUTPUT_DIR / "speech_quality_report.csv")
 speech_quality_report[[
     "expected_title", "speech_source", "quality_status", "speech_rows",
     "unresolved_identity_rows", "issues", "warnings",

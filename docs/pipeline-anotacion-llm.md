@@ -90,6 +90,11 @@ completo. Cada output cierra con un manifiesto (`openai_census_manifest.json`,
 `haiku_census_manifest.json`) que solo se escribe cuando los 3.609 bloques están
 completos.
 
+`complete_openai_census` documenta cómo se armó el censo Luna, pero ya no puede
+volver a ejecutarse: lee la carpeta original del 22-09 y el input del lote
+Bedrock, eliminados el 2026-10-15. Las 2.813 respuestas reutilizadas están
+copiadas en el output definitivo, marcadas con `reused_from_run`.
+
 ## Replicación
 
 - **Sin llamadas.** Los resultados guardados bastan para el análisis y la

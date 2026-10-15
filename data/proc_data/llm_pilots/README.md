@@ -9,8 +9,8 @@ No forma parte de los corpus `ley_*` que consume la app manual.
 - Los demás Parquet de esa carpeta contienen cobertura, diagnósticos de longitud y conteos por concepto.
 
 Los generó sin API el reporte `annotations.qmd`, eliminado el 2026-10-09 porque
-ya no se usaba; su última versión renderizada sigue en `_output/annotations.html`
-y sus hallazgos están en `docs/secuencia-validacion-instrumento.md`.
+ya no se usaba; sus hallazgos están en `docs/secuencia-validacion-instrumento.md`.
 El manifiesto distingue consumo registrado de consumo facturado desconocido y
-validez estructural de exactitud sustantiva. Los resultados originales permanecen
-en `output/annotations/` y la prueba inicial en `output/annotations_checks/`.
+validez estructural de exactitud sustantiva. Las respuestas originales de los
+pilotos y la prueba inicial de tokens se eliminaron el 2026-10-15; esta carpeta y
+`output/annotation_reviews/` son su registro.

@@ -46,6 +46,16 @@ palabras se unen al anterior o se acumulan hacia 100; los que exceden 150 se
 dividen por oraciones y, en último caso, por palabras. Contexto: bloque anterior
 y siguiente de la misma sesión.
 
+Una auditoría de las sesiones del 3 de septiembre (4 sep, commit `7fb3ce30`)
+encontró demasiados bloques cortos: 141 de 881 bajo 50 palabras en la ley 21.419,
+36 de 333 en la 21.538 y 354 de 2.553 en la 21.735. El esquema
+`coding-chunks-2.0.0` absorbe los restos breves en el bloque vecino aunque supere
+las 150 palabras (máximo 194). Así los bloques bajaron a 844, 326 y 2.439
+(−4,2 %, −2,1 % y −4,5 %). En las leyes 21.419 y 21.538, los bloques bajo 50
+palabras que quedan son todos intervenciones completas. La carpeta de la auditoría y las versiones 1.0.0 y
+2.0.0 del corpus se eliminaron el 2026-10-15; las sesiones de esa fecha conservan
+el texto de sus bloques.
+
 ## 2. Pilotos con LLM y revisión diagnóstica (8–22 sep 2026)
 
 Todos los pilotos usan Responses API, esfuerzo `max`, `store=false` y esquema
@@ -89,8 +99,7 @@ JSON estricto. Cada ejecución congela prompt, libro, esquema y requests.
   | 390 | Referencia a `include:4` en un concepto con tres inclusiones | Restringir referencias válidas; mantener el rechazo local |
 
   Estos casos pasaron a formar parte del conjunto de desarrollo del prompt. Los
-  detalles están en `_output/annotations.html`, la última versión del reporte
-  del piloto, y en `data/proc_data/llm_pilots/audits/pilot_f3a69c2f81c587271ef5/`.
+  detalles están en `data/proc_data/llm_pilots/audits/pilot_f3a69c2f81c587271ef5/`.
 - Cambios: tope a 32.768 (con reintento a 65.536 ante `max_output_tokens`);
   bloque como unidad primaria y estratos ley × cámara × alineamiento × género;
   prompt `annotations_pilot_v1_confidence.md` con sección de confianza
@@ -150,7 +159,10 @@ JSON estricto. Cada ejecución congela prompt, libro, esquema y requests.
   `output/annotations/bedrock_haiku55_20261008`), con los mismos requests
   congelados y topes de 65.536 y 128.000 tokens.
 
-El instrumento no se modificó después del censo.
+El instrumento no se modificó después del censo. Las respuestas de los pilotos
+1 a 3, de la carpeta original del censo, del lote Bedrock y de la corrida
+combinada se eliminaron el 2026-10-15; se conservan los inputs de los dos censos
+definitivos y sus outputs completos.
 
 ## 4. Validación ciega (pendiente de métricas)
 

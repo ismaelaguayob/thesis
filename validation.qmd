@@ -33,7 +33,7 @@ estiman remuestreando bloques con una semilla fija.
 
 ```{r}
 #| label: paquetes
-pacman::p_load(arrow, dplyr, tidyr, purrr, readr, jsonlite, ggplot2,
+pacman::p_load(arrow, dplyr, tidyr, purrr, jsonlite, ggplot2,
                yardstick, irr, flextable, officer)
 source("R/apa7_word_table.R")
 
@@ -328,7 +328,7 @@ por_concepto <- concept_grid |>
          abreviatura = abreviaturas[concept_id]) |>
   select(-boot) |>
   arrange(desc(n))
-write_csv(por_concepto, file.path(TABLE_DIR, "concordancia_por_concepto.csv"))
+arrow::write_parquet(por_concepto, file.path(TABLE_DIR, "concordancia_por_concepto.parquet"))
 
 # Conceptos de los repertorios de H1a, H1b y H3: la regla no debe excluirlos sin advertirlo.
 conceptos_hipotesis <- c("propiedad_individual_fondos", "capitalizacion_individual",
@@ -440,22 +440,28 @@ grupos <- concept_grid |>
   transmute(variable = factor(variable, levels = c("ley", "genero", "alineacion"),
                               labels = c("Ley", "Género", "Alineación política")),
             grupo = factor(grupo, levels = group_levels), bloques, alfa, inf, sup)
-write_csv(grupos, file.path(TABLE_DIR, "concordancia_por_grupo.csv"))
+arrow::write_parquet(grupos, file.path(TABLE_DIR, "concordancia_por_grupo.parquet"))
 ```
 
 ```{r}
 #| label: fig-grupos
-#| fig-cap: "Concordancia entre la referencia humana y Luna-6 (α de Krippendorff) por ley, género y alineación política, con intervalos de confianza del 95 %. La línea discontinua marca 0,667."
+#| fig-cap: "Concordancia entre la referencia humana y Luna-6 (α de Krippendorff) por ley, género y alineación política, con intervalos de confianza del 95 %. La línea punteada marca la concordancia global."
 #| fig-alt: "Tres paneles con puntos e intervalos del alfa humano–Luna para cada grupo de ley, de género y de alineación política."
 #| fig-width: 6.3
 #| fig-height: 4.6
 # Exported at the usable page width (6.3 in), so Word inserts it at true size.
+alfa_global <- generales$alfa_concepto[generales$par == "luna"]
 figura_grupos <- grupos |>
   arrange(variable, desc(grupo)) |>
   mutate(etiqueta = factor(paste0(grupo, " (", bloques, ")"),
                            levels = unique(paste0(grupo, " (", bloques, ")")))) |>
   ggplot(aes(x = alfa, xmin = inf, xmax = sup, y = etiqueta)) +
-  geom_vline(xintercept = ALPHA_MINIMO, linetype = "dashed", colour = "grey55") +
+  geom_vline(xintercept = alfa_global, linetype = "dotted", colour = "#1b6ca8") +
+  # Label the overall line once, in the top panel only.
+  geom_text(data = tibble(variable = factor("Ley", levels = levels(grupos$variable))),
+            aes(x = alfa_global, y = Inf,
+                label = paste("Global:", format(round(alfa_global, 2), nsmall = 2, decimal.mark = ","))),
+            inherit.aes = FALSE, hjust = -0.08, vjust = 1.4, size = 3, colour = "#1b6ca8") +
   geom_pointrange(colour = "#1b6ca8", size = 0.3) +
   facet_grid(variable ~ ., scales = "free_y", space = "free_y") +
   scale_x_continuous(limits = c(0, 1), labels = \(x) format(x, decimal.mark = ",")) +
