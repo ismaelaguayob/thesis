@@ -1,0 +1,407 @@
+---
+title: "Panorama de las justificaciones normativas"
+subtitle: "Sección 5.2: conceptos y posturas en los tres debates previsionales"
+lang: es
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: true
+  message: false
+---
+
+Este reporte respalda la sección 5.2 del manuscrito. Describe qué conceptos
+del libro de códigos aparecen en cada ley, con qué postura y cuáles concentran
+la disputa. Usa las anotaciones de GPT-6 Luna, el modelo principal; la réplica
+con Claude Haiku 5.5 se reporta al final.
+
+La unidad de los porcentajes es la **intervención sustantiva**. Una
+intervención cuenta una vez por concepto y postura aunque lo exprese en varios
+fragmentos (sección 4.1 del material suplementario). Una intervención puede
+apoyar y rechazar el mismo concepto en pasajes distintos.
+
+## Seteo de la sesión
+
+Cargamos los paquetes, la base analítica compartida por los reportes de
+resultados y el helper de tablas APA 7. `R/analysis_base.R` lee el censo, une
+los metadatos de actores por `unit_id`, marca las intervenciones sustantivas y
+excluye identidad y control individual según la regla de inclusión de la
+sección 5.1.
+
+```{r}
+#| label: paquetes
+pacman::p_load(arrow, dplyr, tidyr, purrr, stringr, forcats, readr,
+               jsonlite, ggplot2, scales, flextable, officer)
+source("R/analysis_base.R")
+source("R/apa7_word_table.R")
+
+TABLE_DIR <- "output/tables/resultados"
+FIGURE_DIR <- "output/figures/resultados"
+dir.create(TABLE_DIR, recursive = TRUE, showWarnings = FALSE)
+dir.create(FIGURE_DIR, recursive = TRUE, showWarnings = FALSE)
+
+# Par divergente validado (apoyo / rechazo) con el validador de paletas.
+STANCE_COLORS <- c(Apoyo = "#2a78d6", Rechazo = "#e34948")
+theme_set(theme_minimal(base_size = 11) +
+            theme(panel.grid.minor = element_blank(),
+                  panel.grid.major.y = element_blank()))
+```
+
+## Base analítica
+
+La base reúne una fila por intervención y una fila por declaración, es decir,
+por combinación intervención sustantiva × concepto × postura. Una intervención
+es sustantiva si tiene al menos un fragmento que el modelo no marcó como
+votación o procedimiento. Los totales de intervenciones deben coincidir con la
+Tabla 1 del manuscrito.
+
+```{r}
+#| label: base
+base <- load_analysis_base(LUNA_RUN_DIR)
+interventions <- base$interventions
+claims <- base$claims |>
+  left_join(interventions |>
+              select(law_number, document_uri, utterance_id, law, phase,
+                     speaker_id),
+            by = c("law_number", "document_uri", "utterance_id"))
+concepts <- read_codebook_concepts() |> filter(analyzed)
+
+stopifnot(
+  identical(as.integer(table(interventions$law)), c(262L, 111L, 723L)),
+  !anyNA(claims$law), !anyNA(claims$speaker_id),
+  setequal(unique(claims$concept_id), concepts$concept_id)
+)
+```
+
+## Denominadores
+
+Para cada ley, y para cada fase de la reforma, contamos las intervenciones
+totales, las descartadas por estar compuestas solo de votaciones o
+procedimiento, las sustantivas y las que contienen al menos una declaración.
+Los actores con perfil son quienes formularon al menos una declaración. En la
+fila total, los actores se cuentan una vez aunque intervengan en varias leyes.
+
+```{r}
+#| label: tbl-denominadores
+#| tbl-cap: "Intervenciones, actores con perfil y declaraciones por ley y fase legislativa"
+summarise_window <- function(intv, clm) {
+  tibble(
+    intervenciones = nrow(intv),
+    descartadas = sum(!intv$substantive),
+    sustantivas = sum(intv$substantive),
+    con_declaraciones = n_distinct(clm$document_uri, clm$utterance_id),
+    actores_perfil = n_distinct(clm$speaker_id),
+    declaraciones = nrow(clm)
+  )
+}
+by_law <- map(levels(interventions$law), \(l) {
+  summarise_window(filter(interventions, law == l), filter(claims, law == l)) |>
+    mutate(ventana = l, .before = 1)
+})
+by_phase <- map(levels(interventions$phase), \(p) {
+  summarise_window(filter(interventions, phase == p),
+                   filter(claims, phase == p)) |>
+    mutate(ventana = paste0("   ", p), .before = 1)
+})
+denominators <- bind_rows(by_law[1:2], by_law[3], by_phase,
+                          summarise_window(interventions, claims) |>
+                            mutate(ventana = "Total", .before = 1))
+stopifnot(sum(denominators$intervenciones[1:3]) == 1096L,
+          sum(denominators$sustantivas[4:6]) == denominators$sustantivas[3])
+
+denominators |>
+  mutate(pct_con = percent(con_declaraciones / sustantivas, accuracy = 1),
+         .after = con_declaraciones) |>
+  knitr::kable(col.names = c("Ley y fase", "Intervenciones", "Descartadas",
+                             "Sustantivas", "Con declaraciones", "% con decl.",
+                             "Actores con perfil", "Declaraciones"),
+               format.args = list(big.mark = ".", decimal.mark = ","))
+```
+
+```{r}
+#| label: tabla-denominadores-word
+#| include: false
+export_apa7_word_table(
+  denominators |>
+    mutate(ventana = str_trim(ventana)) |>
+    setNames(c("Ley y fase", "Intervenciones", "Descartadas", "Sustantivas",
+               "Con declaraciones", "Actores con perfil", "Declaraciones")),
+  path = file.path(TABLE_DIR, "tabla3_denominadores.docx"),
+  title = "Intervenciones, actores con perfil y declaraciones por ley y fase legislativa",
+  note = paste("Descartadas = intervenciones compuestas solo por votaciones o",
+               "procedimiento. Sustantivas = con al menos un fragmento",
+               "sustantivo. Declaraciones = pares intervención–concepto–postura,",
+               "sin identidad ni control individual. Las fases desagregan",
+               "la Ley 21.735; en el total, cada actor se cuenta una vez."),
+  table_number = 3L, left_columns = 1L
+)
+write_parquet(denominators, file.path(TABLE_DIR, "denominadores.parquet"))
+```
+
+```{r}
+#| label: valores-denominadores
+#| include: false
+tot <- denominators |> filter(ventana == "Total")
+ref <- denominators |> filter(ventana == "Ley 21.735")
+cam24 <- denominators |> filter(str_trim(ventana) == "Cámara 2024")
+cam25 <- denominators |> filter(str_trim(ventana) == "Cámara 2025")
+discarded <- interventions |> filter(!substantive)
+n_mesa <- sum(str_detect(coalesce(discarded$role, ""),
+                         "^(Presidente|Presidenta|Vicepresidente|Vicepresidenta|Secretari)"))
+```
+
+De las `r format(tot$intervenciones, big.mark = ".")` intervenciones, `r tot$descartadas`
+(`r percent(tot$descartadas / tot$intervenciones, accuracy = 1)`) se
+descartan por estar compuestas solo de votaciones o procedimiento. En su mayoría
+son intervenciones de la mesa (presidencia, vicepresidencia y secretaría:
+`r n_mesa` de `r nrow(discarded)`) y son breves (mediana de
+`r median(discarded$utterance_words)` palabras, frente a
+`r median(interventions$utterance_words[interventions$substantive])` en las
+sustantivas). Por ello, el corpus analítico se reduce a
+`r tot$sustantivas` intervenciones sustantivas. De ellas,
+`r percent(tot$con_declaraciones / tot$sustantivas, accuracy = 1)` contiene al
+menos una declaración: casi toda intervención sustantiva justifica su
+posición con algún concepto del libro. La proporción es mayor en la Cámara
+2025 (`r percent(cam25$con_declaraciones / cam25$sustantivas, accuracy = 1)`)
+que en la Cámara 2024
+(`r percent(cam24$con_declaraciones / cam24$sustantivas, accuracy = 1)`).
+
+El diseño es asimétrico: la reforma reúne `r ref$actores_perfil` actores con
+perfil y `r format(ref$declaraciones, big.mark = ".")` declaraciones, frente a
+`r denominators$actores_perfil[1]` y `r denominators$actores_perfil[2]`
+actores en las leyes de la PGU. Las proporciones de la Ley 21.538 descansan en
+`r denominators$sustantivas[2]` intervenciones y deben leerse con cautela.
+Las fases de la reforma también difieren: el Senado aporta solo
+`r denominators$actores_perfil[5]` actores con perfil.
+
+## Apoyo y rechazo por concepto y ley
+
+Para cada ley calculamos la proporción de intervenciones sustantivas que
+apoyan cada concepto y la proporción que lo rechaza ($f_{cts}$ en el material
+suplementario). El denominador incluye las intervenciones sustantivas sin
+declaraciones, de modo que las proporciones son comparables entre conceptos y
+leyes aunque estas difieran en tamaño.
+
+```{r}
+#| label: prevalencia
+law_sizes <- interventions |>
+  filter(substantive) |>
+  count(law, name = "sustantivas")
+prevalence <- claims |>
+  count(law, concept_id, stance) |>
+  complete(law, concept_id = concepts$concept_id,
+           stance = c("support", "oppose"), fill = list(n = 0L)) |>
+  left_join(law_sizes, by = "law") |>
+  mutate(proporcion = n / sustantivas) |>
+  left_join(concepts, by = "concept_id")
+stopifnot(all(prevalence$proporcion <= 1))
+write_parquet(prevalence, file.path(TABLE_DIR, "prevalencia_postura_ley.parquet"))
+
+# Para citar proporciones en el texto.
+pct <- function(l, c, s = "support") {
+  percent(prevalence$proporcion[prevalence$law == l & prevalence$concept_id == c &
+                                  prevalence$stance == s], accuracy = 1)
+}
+```
+
+La figura ordena los conceptos por familia del libro de códigos y, dentro de
+cada familia, por su presencia en la reforma. El apoyo se dibuja a la derecha
+del cero y el rechazo a la izquierda; la posición y el color codifican la
+postura. Actitud se omite de la figura porque prácticamente no se registra; su
+ausencia se comenta en la interpretación.
+
+```{r}
+#| label: fig-prevalencia
+#| fig-cap: "Proporción de intervenciones sustantivas que apoyan o rechazan cada concepto, por ley"
+#| fig-alt: "Barras divergentes para 13 conceptos agrupados por familia en tres paneles, uno por ley; el apoyo hacia la derecha y el rechazo hacia la izquierda."
+#| fig-width: 10
+#| fig-height: 6.5
+family_short <- c(
+  "CARIN" = "CARIN", "Criterio contextual" = "Contextual",
+  "Justificación distributiva del caso" = "Distributiva\ndel caso",
+  "Justificación institucional del caso" = "Institucional\ndel caso",
+  "Justificación procedimental del caso" = "Procedimental"
+)
+concept_order <- prevalence |>
+  filter(law == "Ley 21.735") |>
+  group_by(concept) |>
+  summarise(total = sum(proporcion)) |>
+  arrange(total) |>
+  pull(concept)
+plot_data <- prevalence |>
+  filter(concept_id != "actitud") |>
+  mutate(valor = if_else(stance == "support", proporcion, -proporcion),
+         postura = if_else(stance == "support", "Apoyo", "Rechazo"),
+         concept = factor(concept, levels = concept_order),
+         familia = factor(family_short[family], levels = family_short))
+
+fig_prevalencia <- ggplot(plot_data, aes(x = valor, y = concept, fill = postura)) +
+  geom_col(width = 0.7) +
+  geom_vline(xintercept = 0, linewidth = 0.3, color = "grey40") +
+  facet_grid(familia ~ law, scales = "free_y", space = "free_y", switch = "y") +
+  scale_x_continuous(labels = \(x) percent(abs(x), accuracy = 1),
+                     breaks = seq(-0.2, 0.4, 0.2)) +
+  scale_fill_manual(values = STANCE_COLORS) +
+  labs(x = "Proporción de intervenciones sustantivas", y = NULL, fill = NULL) +
+  theme(legend.position = "top",
+        strip.placement = "outside",
+        strip.text.y.left = element_text(angle = 0, hjust = 1, size = 8.5),
+        strip.text.x = element_text(face = "bold"),
+        panel.spacing.x = unit(1.2, "lines"))
+print(fig_prevalencia)
+ggsave(file.path(FIGURE_DIR, "figura4_prevalencia_postura.png"), fig_prevalencia,
+       width = 10, height = 6.5, dpi = 300, bg = "white")
+```
+
+La necesidad material es el concepto con más apoyo en las leyes 21.419 y
+21.735 (`r pct("Ley 21.419", "necesidad_material")` y
+`r pct("Ley 21.735", "necesidad_material")` de las intervenciones
+sustantivas), el segundo en la 21.538
+(`r pct("Ley 21.538", "necesidad_material")`) y nunca recibe rechazo. La reciprocidad contributiva sigue el mismo patrón:
+apoyo en todas las leyes, mayor en la reforma
+(`r pct("Ley 21.735", "reciprocidad_contributiva")`), y ningún rechazo. En los
+debates de la PGU destaca la igualdad y el universalismo
+(`r pct("Ley 21.419", "igualdad_universalismo")` en la Ley 21.419 y
+`r pct("Ley 21.538", "igualdad_universalismo")` en la 21.538, donde es el
+concepto más apoyado), en coherencia con una discusión centrada en el acceso a
+una pensión no contributiva.
+
+La reforma amplía el repertorio. Los conceptos distributivos e institucionales
+del caso son escasos en los debates de la PGU, salvo solidaridad colectiva y
+previsión como mercado en la Ley 21.419, y alcanzan en la Ley 21.735
+proporciones de apoyo de entre 5 % (solidaridad intergeneracional) y 26 %
+(previsión como mercado); previsión como mercado es el más presente de
+ellos y el único cuyo rechazo
+(`r pct("Ley 21.735", "prevision_como_mercado", "oppose")`) supera a su
+apoyo. Esta diferencia responde en parte a la materia de cada proyecto: la PGU
+no alteraba la cuenta individual. Acuerdos y moderación, la justificación
+procedimental, aparece en `r pct("Ley 21.735", "acuerdos_moderacion")` de las
+intervenciones de la reforma con apoyo, una presencia comparable a la de los
+criterios de justicia más frecuentes.
+
+Actitud, el criterio CARIN que condiciona el apoyo al comportamiento o la
+gratitud de quien lo recibe, no aparece en las leyes de la PGU y registra
+`r sum(prevalence$n[prevalence$concept_id == "actitud"])` declaración en
+toda la reforma. Su ausencia es en sí un resultado: los criterios de
+merecimiento presentes (necesidad y reciprocidad) se invocan para justificar
+el apoyo a las personas mayores, no para condicionarlo.
+
+## Conceptos consensuales y disputados
+
+La proporción minoritaria de un concepto es la parte de sus declaraciones con
+postura que está en la postura menos frecuente,
+$m_{cL} = \min(n^+, n^-)/(n^+ + n^-)$. Vale 0 cuando el concepto recibe una
+sola postura y 50 % cuando se divide por mitades. Se calcula por ley; con
+menos de 10 declaraciones la proporción se muestra entre paréntesis porque es
+inestable.
+
+```{r}
+#| label: tbl-disputa
+#| tbl-cap: "Declaraciones de apoyo y rechazo y proporción minoritaria por concepto y ley"
+dispute <- prevalence |>
+  select(law, concept_id, concept, family, stance, n) |>
+  pivot_wider(names_from = stance, values_from = n) |>
+  mutate(total = support + oppose,
+         minoritaria = if_else(total > 0, pmin(support, oppose) / total,
+                               NA_real_))
+write_parquet(dispute, file.path(TABLE_DIR, "disputa_concepto_ley.parquet"))
+
+dispute_cells <- dispute |>
+  mutate(cell = case_when(
+    total == 0 ~ "—",
+    total < 10 ~ sprintf("%d / %d (%s)", support, oppose,
+                         percent(minoritaria, accuracy = 1)),
+    TRUE ~ sprintf("%d / %d  %s", support, oppose,
+                   percent(minoritaria, accuracy = 1)))) |>
+  select(concept_id, concept, law, cell) |>
+  pivot_wider(names_from = law, values_from = cell) |>
+  left_join(dispute |>
+              filter(law == "Ley 21.735") |>
+              select(concept_id, orden = minoritaria, n_reforma = total),
+            by = "concept_id") |>
+  arrange(desc(orden), desc(n_reforma)) |>
+  select(-concept_id, -orden, -n_reforma)
+knitr::kable(dispute_cells,
+             col.names = c("Concepto", levels(interventions$law)),
+             align = c("l", "c", "c", "c"))
+```
+
+La tabla separa dos grupos de conceptos. Los disputados se concentran en la
+dimensión institucional y distributiva propia de la reforma: previsión como
+mercado, capitalización individual, solidaridad intergeneracional e
+ineficiencia y riesgo estatal se dividen casi por mitades en la Ley 21.735
+(proporción minoritaria entre 42 % y 49 %), y conciencia de costos se
+disputa en las tres leyes. Los consensuales son, sobre todo, criterios de
+merecimiento y justicia: necesidad material y reciprocidad contributiva no
+registran ningún rechazo, e igualdad y universalismo y el origen dictatorial
+apenas los registran. Propiedad de los fondos y libertad de elección, pese a
+ser justificaciones del arreglo vigente, reciben muy pocos rechazos en la
+reforma (proporción minoritaria de 9 % y 5 %).
+
+El patrón sugiere que el conflicto de la reforma se libra sobre la
+organización institucional de la previsión más que sobre los criterios de
+merecimiento, que se comparten. Este resultado es descriptivo: no muestra
+quiénes sostienen cada postura, lo que examinan H1 y H2a, ni si el consenso
+sobre un criterio encubre desacuerdos sobre el arreglo que justifica. La
+ausencia de rechazo también tiene una lectura metodológica: el libro registra
+justificaciones normativas, y negar que la necesidad de los pensionados
+importe es poco probable en un debate parlamentario, de modo que el desacuerdo
+puede expresarse por otros conceptos.
+
+## Réplica con Claude Haiku 5.5
+
+Repetimos la proporción de apoyo y rechazo y la proporción minoritaria con las
+anotaciones de Haiku. Comparamos la Ley 21.735, donde se concentran los
+análisis posteriores, mediante la correlación entre modelos de las
+proporciones por concepto y la coincidencia en qué conceptos no reciben
+ningún rechazo.
+
+```{r}
+#| label: replica-haiku
+base_haiku <- load_analysis_base(HAIKU_RUN_DIR)
+haiku_sizes <- base_haiku$interventions |>
+  filter(substantive) |>
+  count(law, name = "sustantivas")
+prevalence_haiku <- base_haiku$claims |>
+  left_join(base_haiku$interventions |>
+              select(law_number, document_uri, utterance_id, law),
+            by = c("law_number", "document_uri", "utterance_id")) |>
+  count(law, concept_id, stance) |>
+  complete(law, concept_id = concepts$concept_id,
+           stance = c("support", "oppose"), fill = list(n = 0L)) |>
+  left_join(haiku_sizes, by = "law") |>
+  mutate(proporcion = n / sustantivas)
+
+comparison <- prevalence |>
+  select(law, concept_id, concept, stance, luna_n = n, luna = proporcion) |>
+  inner_join(prevalence_haiku |>
+               select(law, concept_id, stance, haiku_n = n, haiku = proporcion),
+             by = c("law", "concept_id", "stance"))
+write_parquet(comparison, file.path(TABLE_DIR, "prevalencia_luna_haiku.parquet"))
+
+reform <- filter(comparison, law == "Ley 21.735")
+replica <- reform |>
+  group_by(postura = if_else(stance == "support", "Apoyo", "Rechazo")) |>
+  summarise(correlacion = cor(luna, haiku),
+            media_luna = mean(luna), media_haiku = mean(haiku),
+            .groups = "drop")
+sin_rechazo <- reform |>
+  filter(stance == "oppose") |>
+  transmute(concept, luna_n, haiku_n)
+knitr::kable(replica, digits = 3,
+             col.names = c("Postura", "Correlación Luna–Haiku",
+                           "Media Luna", "Media Haiku"))
+knitr::kable(sin_rechazo |> filter(luna_n == 0 | haiku_n == 0),
+             col.names = c("Concepto", "Rechazos Luna", "Rechazos Haiku"))
+```
+
+Las proporciones por concepto de Haiku están muy correlacionadas con las de
+Luna en la reforma (r = `r number(replica$correlacion[1], accuracy = 0.01, decimal.mark = ",")`
+para el apoyo y `r number(replica$correlacion[2], accuracy = 0.01, decimal.mark = ",")`
+para el rechazo), aunque Haiku asigna más declaraciones en promedio, como se
+observó en la validación. Con ambos modelos, necesidad material y reciprocidad
+contributiva no reciben ningún rechazo en la Ley 21.735. El panorama
+descriptivo no depende, por tanto, del modelo elegido.

@@ -3,6 +3,25 @@
 Ideas que pertenecen a la discusión y no a resultados. Se agregan a medida que
 aparecen.
 
+## Criterios de merecimiento en el debate legislativo
+
+- **CARIN como justificación positiva, no como condicionalidad.** En el debate
+  legislativo los criterios CARIN no se usan para restringir el acceso a las
+  pensiones, sino para legitimar el apoyo a las personas mayores. Necesidad
+  material y reciprocidad contributiva no registran ningún rechazo en las tres
+  leyes, y actitud, el criterio más asociado a la condicionalidad, casi no
+  aparece (una declaración en todo el corpus). Es muy coherente con la
+  literatura actitudinal citada en la sección 1.2: «Tradicionalmente, los
+  adultos mayores son categorizados como un grupo altamente merecedor, ya que
+  no controlan su situación de necesidad (el envejecimiento biológico) y se
+  asume que ya han contribuido a la sociedad a lo largo de su vida» (Meuleman
+  et al., 2020; van Oorschot, 2006). Los criterios que se invocan son
+  justamente los que fundan ese merecimiento (necesidad y contribución), sea
+  cual sea el arreglo que se defienda. Contrasta con la literatura sobre
+  austeridad y condicionalidad (Gaffney, 2025; Wiggan, 2012), donde el
+  merecimiento separa beneficiarios legítimos de ilegítimos. Base:
+  `procesamiento/resultados_panorama.qmd`.
+
 ## Validación de la codificación asistida por LLM
 
 - **Comparación con la literatura.** La concordancia con la referencia (α 0,68

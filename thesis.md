@@ -139,7 +139,7 @@ Durante las primeras décadas de la posdictadura, los gobiernos de la Concertaci
 
 Desde su creación, la capitalización individual se justificó como una extensión de la libertad económica: la cuenta propia permitiría a cada trabajador elegir su administradora y vincular su pensión a su propio esfuerzo, en lugar de depender de decisiones políticas sobre un fondo común (Borzutzky, 2005). La defensa del modelo articuló la propiedad de los fondos, el mérito contributivo, la rentabilidad y la sostenibilidad financiera, presentando las alternativas solidarias como técnicamente inviables o como una expropiación de los cotizantes (Campos-Rojas & González-Arias, 2022; Rozas & Maillet, 2019). Tras el estallido social de 2019, el bloque promercado aceptó parcialmente la solidaridad y un sistema mixto, mientras los retiros de fondos durante la pandemia reforzaron el sentido de propiedad individual sobre el ahorro (Barozet, 2025; Kay & Borzutzky, 2022; Rozas-Bugueño & Maillet, 2024). La Ley N.º 21.735 incorporó componentes solidarios sin desplazar la capitalización individual como base del sistema (Vela, 2025).
 
-En términos históricos, el panorama discursivo sugiere dos polos principales. Un polo de preservación vincula la propiedad individual, la reciprocidad contributiva entre cotización y beneficio, la capitalización y la administración privada. Un polo de transformación articula la igualdad o el universalismo, la solidaridad intergeneracional y una mayor responsabilidad colectiva en la protección previsional. La necesidad material puede ser invocada por ambos polos para justificar respuestas distributivas distintas. La trayectoria de la centroizquierda permite esperar que algunos de sus actores conecten ambos polos al combinar solidaridad con contribución, focalización y restricciones de viabilidad.
+    En términos históricos, el panorama discursivo sugiere dos polos principales. Un polo de preservación vincula la propiedad individual, la reciprocidad contributiva entre cotización y beneficio, la capitalización, la libertad de elección y la administración privada, y presenta las alternativas como inviables por sus costos o por los riesgos de la administración estatal. Un polo de transformación articula la igualdad o el universalismo, la solidaridad intergeneracional, una mayor responsabilidad colectiva en la protección previsional y la impugnación del origen dictatorial del sistema. Dada la relación entre el eje ideológico y los criterios de merecimiento descrita en la sección 1.2, cabe esperar que la derecha se aproxime al primer polo y la izquierda al segundo. Si actores de izquierda sostienen premisas del polo de preservación, como la reciprocidad contributiva o la propiedad de los fondos, ello indicaría que esas premisas son reconocidas fuera del polo que las originó, una de las condiciones de la estructuración discursiva (Hajer, 1997). La necesidad material puede ser invocada por ambos polos para justificar respuestas distributivas distintas. La trayectoria de la centroizquierda permite esperar que algunos de sus actores conecten ambos polos al combinar solidaridad con contribución, focalización y restricciones de viabilidad.
 
 El libro de códigos, descrito brevemente a continuación y disponible en el material complementario, operacionaliza criterios de merecimiento, criterios contextuales y justificaciones específicas del caso. Junto con CARIN[^1], se incorporan la *igualdad o el universalismo* y la *conciencia de costos* identificados por Laenen et al. (2019). La primera recoge las razones que fundamentan una protección igualitaria o universal; la segunda se restringe en este estudio a los argumentos que afirman o refutan restricciones de gasto y financiamiento de una reforma. La *solidaridad intergeneracional* se refiere específicamente a la defensa de la transferencia de recursos o a la distribución de riesgos entre generaciones. La *propiedad individual de los fondos* y la *capitalización individual* son criterios específicos del caso chileno derivados de los fundamentos del arreglo previsional chileno (Alemparte, 2025). La dimensión institucional se recoge mediante *previsión como mercado*, que incluye justificaciones y críticas de la competencia, la administración privada, los incentivos y las comisiones, e *ineficiencia y riesgo estatal*, que registra razones para excluir o limitar la administración estatal y sus refutaciones. La *libertad de elección* previsional recoge la autonomía para elegir administradora o alternativa institucional, un fundamento de la privatización que presentaba la cuenta individual como ámbito de decisión del trabajador (Borzutzky, 2005). La *solidaridad como deber colectivo* se distingue de la intergeneracional porque formula un deber de apoyo mutuo dentro de la comunidad sin especificar una relación entre cohortes (Rozas-Bugueño & Maillet, 2024). La ilegitimidad del origen dictatorial registra el argumento, central en la impugnación de NO+AFP, de que la imposición autoritaria del sistema debilita su legitimidad presente (Matus, 2020; Rozas & Maillet, 2019). Estas distinciones permiten analizar las combinaciones de justificaciones que sustentan cada posición.
 
@@ -149,13 +149,15 @@ Finalmente, *acuerdos y moderación democrática* emergió de forma inductiva du
 
 La comparación entre proyectos permite examinar cómo cambia la relevancia de estos principios según el objeto de la deliberación. La creación de la PGU y la ampliación de su focalización concentran la discusión en el acceso a una prestación no contributiva que no altera la cuenta individual; la reforma de la Ley N.º 21.735, en cambio, disputa el destino de las cotizaciones y la organización de la previsión. Cabe esperar que esta reforma presente un debate más polarizado y una justificación más intensa del arreglo vigente. Sobre esta base se formulan las siguientes hipótesis:
 
-- *H1a. Coaliciones:* En el debate de la Ley N.º 21.735 se identificarán dos polos discursivos principales, vinculados con la justicia de mercado y la justicia política. El polo de preservación empleará argumentos a favor de la propiedad y capitalización individual, la reciprocidad contributiva, la conciencia de costos y justificaciones de la organización privada y mercantil de la previsión. El polo de transformación se distinguirá por su apoyo a la igualdad o el universalismo y a la solidaridad intergeneracional.
+- *H1. Bloques políticos:* En el debate de la Ley N.º 21.735, los actores de derecha apoyarán con mayor probabilidad que los de izquierda la propiedad y la capitalización individual, la reciprocidad contributiva, la libertad de elección, la conciencia de costos, la ineficiencia y riesgo estatal y la previsión como mercado. Los actores de izquierda apoyarán con mayor probabilidad la necesidad material, la igualdad o el universalismo, la solidaridad intergeneracional, la solidaridad como deber colectivo y la ilegitimidad del origen dictatorial. Cada bloque rechazará con mayor probabilidad los conceptos asociados al bloque contrario.
 
-- *H1b. Intermediación:* Los actores de centroizquierda ocuparán posiciones de mayor intermediación entre los polos al combinar justificaciones de ambos repertorios. El criterio de necesidad material actuará como puente entre los repertorios conceptuales de ambas coaliciones.
+- *H2a. Coaliciones:* En el debate de la Ley N.º 21.735 se identificarán dos polos discursivos principales, vinculados con la justicia de mercado y la justicia política. El polo de preservación empleará argumentos a favor de la propiedad y capitalización individual, la reciprocidad contributiva, la conciencia de costos y justificaciones de la organización privada y mercantil de la previsión. El polo de transformación se distinguirá por su apoyo a la igualdad o el universalismo y a la solidaridad intergeneracional.
 
-- *H2. Comparación entre proyectos:* El debate de la Ley N.º 21.735 será más polarizado que los debates de la PGU: presentará más declaraciones contrarias a la postura mayoritaria sobre cada concepto, mayor conflicto entre actores y una mayor densidad de justificaciones normativas en la defensa de la capitalización individual.
+- *H2b. Intermediación:* Los actores de la centroizquierda ex concertacionista ocuparán posiciones de mayor intermediación entre los polos al combinar justificaciones de ambos repertorios. El criterio de necesidad material actuará como puente entre los repertorios conceptuales de ambas coaliciones.
 
-- *H3. Persistencia:* Durante las fases observadas de la Ley N.º 21.735, el repertorio asociado a la capitalización individual mantendrá su cobertura de apoyo entre actores y su centralidad relativa en la red de conceptos. Se examinarán por separado propiedad individual, capitalización individual, reciprocidad contributiva, conciencia de costos, ineficiencia y riesgo estatal, y previsión como mercado, así como las relaciones que los articulan.
+- *H3. Comparación entre proyectos:* El debate de la Ley N.º 21.735 será más polarizado que los debates de la PGU: las coaliciones discursivas se diferenciarán más en su apoyo y rechazo a los conceptos, y las intervenciones de la derecha contendrán con mayor probabilidad justificaciones normativas.
+
+- *H4. Persistencia:* Durante las fases observadas de la Ley N.º 21.735, el repertorio asociado a la capitalización individual mantendrá su cobertura de apoyo entre actores y su centralidad relativa en la red de conceptos. Se examinarán por separado propiedad individual, capitalización individual, reciprocidad contributiva, conciencia de costos, ineficiencia y riesgo estatal, y previsión como mercado, así como las relaciones que los articulan.
 
 ## 
 
@@ -290,6 +292,92 @@ Ya que los modelos no difieren en su concordancia general con la referencia (dif
 *Nota.* Alfa de Krippendorff con intervalos de confianza del 95 % (1.000 remuestreos de fragmentos dentro de cada grupo). La línea punteada marca la concordancia global (α = 0,68).
 
 Como se ve en la Figura 3, la concordancia de Luna con la referencia fue similar entre izquierda y derecha (α = 0,69 y 0,70) y entre hombres y mujeres (α = 0,70 y 0,66). El acuerdo fue menor en el centro político (α = 0,57; IC 95 % \[0,46; 0,70\]; n = 38) y en la Ley N.º 21.419 (α = 0,60; IC 95 % \[0,49; 0,71\]; n = 72) que en la Ley N.º 21.735 (α = 0,70), pero sus intervalos se solapan con los de los demás grupos. Los grupos con muy pocos fragmentos (Ley N.º 21.538, hablantes sin registro de género y no partidistas) presentan intervalos demasiado amplios para interpretarlos. En suma, no se observa que los errores del modelo se encuentren sesgados hacia algún grupo en particular.
+
+<!-- ESQUELETO 5.2–5.8 (15-10-2026). Los corchetes son instrucciones de redacción y se eliminan al escribir. Cada subsección: expectativa y qué la contradiría → evidencia → veredicto → hallazgos no anticipados (marcados como exploratorios) → pasajes breves. Todos los análisis se replican con Claude Haiku 5.5 en el anexo. Identidad y control individual quedan fuera por la regla de inclusión. -->
+
+### **5.2 El repertorio normativo del debate previsional**
+
+*[Párrafo 1: denominadores. Intervenciones sustantivas, descartadas por votación o procedimiento, actores con perfil y declaraciones por ley y fase. Exclusión de identidad y control.]*
+
+**Tabla 3.** *Intervenciones sustantivas, actores con perfil y declaraciones por ley y fase legislativa*
+
+*[Ley 21.735 desagregada en Cámara 2024, Senado 2025 y Cámara 2025.]*
+
+*[Párrafo 2: conceptos más presentes en cada ley.]*
+
+**Figura 4.** *Apoyo y rechazo a cada concepto por ley*
+
+*[Barras divergentes: apoyo a la derecha, rechazo a la izquierda; porcentaje de intervenciones sustantivas. Reemplaza el gráfico de líneas. La tabla de recuentos por postura pasa al anexo.]*
+
+*[Párrafo 3: conceptos consensuales (sin rechazo: necesidad material, reciprocidad contributiva) frente a disputados (capitalización, previsión como mercado, ineficiencia estatal, solidaridad intergeneracional, conciencia de costos). Este contraste ordena el resto de la sección.]*
+
+### **5.3 H1: Bloques políticos y criterios de justicia**
+
+*[Modelo: logit multinivel (`lme4::glmer`). Unidad: intervención sustantiva × concepto, Ley 21.735. Dos variables dependientes por separado: la intervención apoya el concepto (sí/no) y lo rechaza (sí/no). Predictores: concepto × bloque (izquierda, centro, derecha), género, tipo de actor y logaritmo de palabras de la intervención; intercepto aleatorio por actor. Los conceptos sin rechazos se describen sin modelar en el logit de rechazo. Coeficientes en el anexo.]*
+
+*[Párrafo 1: expectativa de H1 y qué la contradiría.]*
+
+**Figura 5.** *Probabilidad predicha de apoyo y rechazo de cada concepto por bloque político, Ley 21.735*
+
+*[Puntos con IC 95 %; un panel para apoyo y otro para rechazo.]*
+
+*[Párrafos 2–3: veredicto por concepto, contrastando los doce conceptos de H1 (derecha: propiedad, capitalización, reciprocidad, libertad de elección, conciencia de costos, ineficiencia estatal, previsión como mercado; izquierda: necesidad, igualdad, solidaridad intergeneracional, solidaridad colectiva, origen dictatorial). Apoyos de la izquierda a premisas del repertorio de capitalización individual (reciprocidad, propiedad) se señalan aquí y se desarrollan en 5.8.]*
+
+### **5.4 H2a: Coaliciones discursivas**
+
+*[Afiliación binaria: cada actor apoya o rechaza un concepto (1) o no (0), con independencia del número de intervenciones; la versión por frecuencias va al anexo como sensibilidad. Redes de congruencia y conflicto entre actores normalizadas por coseno; red con signo; signed spin-glass con repeticiones por semilla. Número de comunidades no fijado.]*
+
+*[Párrafo 1: número de comunidades y estabilidad.]*
+
+**Figura 6.** *Perfil de apoyo y rechazo de cada coalición, Ley 21.735*
+
+*[Conceptos en filas, coaliciones en columnas; proporción de miembros que apoya y que rechaza cada concepto. El grafo de actores va al anexo o en tamaño reducido.]*
+
+**Tabla 4.** *Composición y estabilidad de las coaliciones*
+
+*[Por coalición: bloque político, partidos, tipo de actor. Estabilidad: coasignación entre semillas; concordancia con las particiones por fase y sin acuerdos y moderación; información mutua normalizada entre coaliciones y bloque político.]*
+
+*[Párrafos 2–3: correspondencia de las coaliciones con los polos esperados y veredicto. ¿Las coaliciones reproducen los bloques de H1 o los cruzan?]*
+
+*[Párrafo 4, exploratorio: coalición no anticipada (acuerdos y moderación), composición y repertorio.]*
+
+### **5.5 H2b: Intermediación**
+
+*[Actores: proporción de congruencia hacia otras coaliciones (E) y coeficiente de participación (P) de la centroizquierda ex concertacionista (PS, PPD, PR, DC, PL e independientes asignados; incluye a Marcel) frente al resto. Prueba de permutación de la etiqueta manteniendo fijas las comunidades.]*
+
+**Figura 7.** *Distribución de la congruencia entre coaliciones por grupo de actores*
+
+*[Conceptos: coeficiente de participación del apoyo y caída de la congruencia entre coaliciones al quitar cada concepto, comparados entre sí. Que reciprocidad también actúe como puente se reporta como hallazgo, no como falsación.]*
+
+**Figura 8.** *Participación y aporte a la congruencia entre coaliciones por concepto*
+
+**Figura 9.** *Red de congruencia de concepto–postura en torno a necesidad material, por coalición*
+
+*[Paneles por coalición. Puede pasar al anexo si el texto principal se extiende.]*
+
+*[Párrafos: veredicto para actores; veredicto para necesidad; pasajes en que necesidad se vincula con arreglos distintos en cada coalición.]*
+
+### **5.6 H3: Comparación entre proyectos**
+
+*[Leyes 21.419 y 21.538 agrupadas como debates de la PGU; sensibilidad por separado en el anexo. Densidad normativa: logit multinivel de que una intervención de derecha contenga al menos una justificación normativa (todos los conceptos salvo acuerdos y moderación), PGU frente a reforma, intercepto por actor. Polarización entre coaliciones: a los actores que intervienen en la PGU y en la reforma se les asigna la coalición que tuvieron en la Ley 21.735, y el mismo logit de H1 con coalición × debate estima si su distancia en apoyo y rechazo es mayor en la reforma. Se informa cuántos actores de la PGU quedan fuera por no intervenir en la reforma.]*
+
+**Figura 10.** *Polarización y densidad normativa en los debates de la PGU y de la reforma*
+
+*[Párrafos: expectativa; resultado de cada componente; veredicto. La presencia de propiedad y capitalización se describe como contraste dependiente de la materia de cada proyecto.]*
+
+### **5.7 H4: Persistencia**
+
+*[Seis conceptos del repertorio en Cámara 2024, Senado 2025 y Cámara 2025. Logit multinivel concepto × fase con intercepto por actor; contraste principal entre las dos fases de la Cámara (78 diputados intervienen en ambas). Senado descrito aparte. Fuerza y rango de cada concepto en la red de presencia por fase.]*
+
+**Figura 11.** *Apoyo, rechazo y centralidad del repertorio de capitalización individual por fase*
+
+*[Párrafos: continuidad del apoyo; continuidad de la centralidad; relaciones entre los seis conceptos; veredicto por componente.]*
+
+### **5.8 Alcance del repertorio de capitalización individual**
+
+*[Proporción de actores de cada bloque y coalición que apoya los conceptos del repertorio. Reúne los resultados no anticipados de H1–H4 como evidencia de estructuración: premisas del repertorio reconocidas por actores reformistas. Pasajes que muestran ese reconocimiento y casos discrepantes.]*
+
+**Figura 12.** *Apoyo a los conceptos del repertorio de capitalización individual por bloque y coalición*
 
 ## **Referencias** {#referencias}
 
