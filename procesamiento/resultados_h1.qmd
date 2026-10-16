@@ -1,0 +1,547 @@
+---
+title: "H1: Bloques políticos y criterios de justicia"
+subtitle: "Sección 5.3: apoyo y rechazo de los conceptos por bloque político en la Ley 21.735"
+lang: es
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: true
+  message: false
+---
+
+Este reporte respalda la sección 5.3 del manuscrito. H1 sostiene que, en el
+debate de la Ley 21.735, la derecha apoyará con mayor probabilidad que la
+izquierda la propiedad y la capitalización individual, la reciprocidad
+contributiva, la libertad de elección, la conciencia de costos, la ineficiencia
+y riesgo estatal y la previsión como mercado; que la izquierda apoyará con
+mayor probabilidad la necesidad material, la igualdad o el universalismo, las
+dos formas de solidaridad y la ilegitimidad del origen dictatorial; y que cada
+bloque rechazará con mayor probabilidad los conceptos del bloque contrario.
+
+La hipótesis se contradice, concepto por concepto, cuando la diferencia entre
+derecha e izquierda es nula o tiene el signo contrario al esperado. Bajo el
+argumento de estructuración, el apoyo de la izquierda a premisas del polo de
+preservación se interpreta como reconocimiento de esas premisas (sección 3).
+
+## Seteo de la sesión
+
+Usamos `lme4` para los modelos logísticos multinivel y `blme`, que estima los
+mismos modelos con un prior débil sobre los efectos fijos (ver más abajo).
+`marginaleffects` calcula probabilidades predichas y contrastes; `sjPlot`
+genera la tabla de modelos del anexo.
+
+```{r}
+#| label: paquetes
+pacman::p_load(arrow, dplyr, tidyr, purrr, stringr, forcats, ggplot2,
+               scales, lme4, blme, marginaleffects, sjPlot)
+source("R/analysis_base.R")
+
+TABLE_DIR <- "output/tables/resultados"
+FIGURE_DIR <- "output/figures/resultados"
+dir.create(TABLE_DIR, recursive = TRUE, showWarnings = FALSE)
+dir.create(FIGURE_DIR, recursive = TRUE, showWarnings = FALSE)
+# La caché de los modelos se invalida si cambian las anotaciones o los metadatos.
+knitr::opts_chunk$set(cache.extra = tools::md5sum(c(
+  file.path(c(LUNA_RUN_DIR, HAIKU_RUN_DIR), "annotations.parquet"),
+  file.path(c(LUNA_RUN_DIR, HAIKU_RUN_DIR), "results.parquet"),
+  sprintf("data/proc_data/ley_%s/coding_chunks_long.parquet", names(LAW_LABELS)))))
+SEED <- 20261016
+N_SIM <- 1000L
+# Mínimo de rechazos en la reforma para incluir un concepto en el modelo de rechazo.
+MIN_RECHAZOS <- 10L
+# `marginaleffects` no reconoce `re.form` en `bglmerMod`, aunque se transmite a
+# `predict.merMod`; se verifica abajo que el argumento cambia las predicciones,
+# y se silencia solo ese aviso.
+quiet_re_form <- function(expr) {
+  withCallingHandlers(expr, warning = \(w) {
+    if (str_detect(conditionMessage(w), "re.form")) invokeRestart("muffleWarning")
+  })
+}
+
+BLOC_COLORS <- c(Izquierda = "#b03a7a", Derecha = "#12866f")
+theme_set(theme_minimal(base_size = 11) +
+            theme(panel.grid.minor = element_blank(),
+                  panel.grid.major.y = element_blank()))
+
+H1_DERECHA <- c("propiedad_individual_fondos", "capitalizacion_individual",
+                "reciprocidad_contributiva", "libertad_eleccion_previsional",
+                "conciencia_costos", "ineficiencia_estado",
+                "prevision_como_mercado")
+H1_IZQUIERDA <- c("necesidad_material", "igualdad_universalismo",
+                  "solidaridad_intergeneracional",
+                  "solidaridad_previsional_colectiva",
+                  "ilegitimidad_origen_dictatorial")
+H1_CONCEPTS <- c(H1_DERECHA, H1_IZQUIERDA)
+```
+
+## Datos del modelo
+
+La unidad es la combinación intervención sustantiva × concepto de H1 en la
+Ley 21.735. Cada fila registra si la intervención apoya el concepto y si lo
+rechaza; una intervención sin declaraciones aporta ceros a todos sus
+conceptos. Se incluyen los actores con bloque izquierda, centro o derecha; los
+no partidistas quedan fuera por su número reducido.
+
+Los controles son el género, si el actor integra el Ejecutivo y el logaritmo
+estandarizado de las palabras de la intervención, porque las intervenciones
+más largas tienen más oportunidades de contener declaraciones.
+
+```{r}
+#| label: datos
+key <- c("law_number", "document_uri", "utterance_id")
+# Se aplica igual a los censos de Luna y de Haiku.
+prepare_h1 <- function(base) {
+  interventions <- base$interventions |>
+    filter(substantive, law_number == "21735",
+           alignment %in% c("izquierda", "centro", "derecha")) |>
+    mutate(bloque = factor(alignment, levels = c("izquierda", "centro", "derecha")),
+           genero = factor(gender, levels = c("hombre", "mujer")),
+           ejecutivo = as.integer(str_detect(coalesce(role, ""),
+                                             "(?i)ministr|subsecret")),
+           log_palabras = as.numeric(scale(log(utterance_words))))
+  claims_wide <- base$claims |>
+    filter(concept_id %in% H1_CONCEPTS) |>
+    mutate(valor = 1L) |>
+    pivot_wider(names_from = stance, values_from = valor, values_fill = 0L)
+  data <- interventions |>
+    select(all_of(key), speaker_id, bloque, genero, ejecutivo, log_palabras) |>
+    crossing(concept_id = H1_CONCEPTS) |>
+    left_join(claims_wide, by = c(key, "concept_id")) |>
+    mutate(across(c(support, oppose), \(x) coalesce(x, 0L)),
+           concepto = factor(concept_id, levels = H1_CONCEPTS))
+  list(interventions = interventions, data = data)
+}
+
+base <- load_analysis_base(LUNA_RUN_DIR)
+reform <- base$interventions |> filter(substantive, law_number == "21735")
+h1_luna <- prepare_h1(base)
+model_interventions <- h1_luna$interventions
+model_data <- h1_luna$data
+
+stopifnot(!anyNA(model_data$genero), !anyNA(model_data$log_palabras),
+          nrow(model_data) == nrow(model_interventions) * length(H1_CONCEPTS))
+excluded <- reform |> filter(!alignment %in% c("izquierda", "centro", "derecha"))
+model_data |>
+  distinct(speaker_id, bloque) |>
+  count(bloque, name = "actores") |>
+  left_join(model_interventions |> count(bloque, name = "intervenciones"),
+            by = "bloque") |>
+  knitr::kable(col.names = c("Bloque", "Actores", "Intervenciones"))
+```
+
+El modelo reúne `r n_distinct(model_data$speaker_id)` actores y
+`r nrow(model_interventions)` intervenciones sustantivas, es decir,
+`r format(nrow(model_data), big.mark = ".")` filas intervención × concepto.
+Quedan fuera `r nrow(excluded)` intervenciones de actores no partidistas o sin
+alineación. El centro aporta solo `r sum(model_interventions$bloque == "centro")`
+intervenciones, por lo que sus estimaciones serán imprecisas. Los integrantes
+del Ejecutivo con declaraciones en la reforma pertenecen todos a la izquierda
+(`r sum(model_interventions$ejecutivo)` intervenciones), de modo que el
+control `ejecutivo` distingue al gobierno de los parlamentarios de su bloque y
+el contraste entre bloques se refiere, en la práctica, a parlamentarios.
+
+## Separación y prior débil
+
+En algunas celdas un bloque nunca apoya o nunca rechaza un concepto: por
+ejemplo, ninguna intervención de izquierda apoya la capitalización individual.
+Con esa *separación*, la máxima verosimilitud de `glmer` empuja los
+coeficientes hacia infinito. Lo mostramos con el modelo de apoyo estimado por
+`glmer`.
+
+```{r}
+#| label: separacion
+#| cache: true
+formula_h1 <- ~ concepto * bloque + genero + ejecutivo + log_palabras +
+  (1 | speaker_id)
+control_h1 <- glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 1e5))
+m_glmer <- glmer(update(formula_h1, support ~ .), data = model_data,
+                 family = binomial, control = control_h1)
+coef_glmer <- summary(m_glmer)$coefficients
+coef_glmer[str_detect(rownames(coef_glmer), "capitalizacion"), 1:2] |>
+  knitr::kable(digits = 2, col.names = c("Estimación", "Error estándar"))
+```
+
+El coeficiente de capitalización individual y sus interacciones alcanzan
+valores de 17 a 36 en escala logit con errores estándar de miles: es la firma
+de la separación. Estas estimaciones no son interpretables, y los intervalos
+de los contrastes que dependen de ellas tampoco.
+
+`blme::bglmer` estima el mismo modelo con un prior normal sobre los efectos
+fijos: desviación estándar 10 para el intercepto y 2,5 para los demás
+coeficientes. Es un prior débil en escala logit: admite diferencias grandes
+entre grupos, pero impide que los coeficientes de las celdas separadas se
+vuelvan infinitos (Chung et al., 2013). Los efectos aleatorios y la
+interpretación son los de `glmer`.
+
+```{r}
+#| label: modelo-apoyo
+#| cache: true
+m_apoyo <- bglmer(update(formula_h1, support ~ .), data = model_data,
+                  family = binomial, fixef.prior = normal(sd = c(10, 2.5)),
+                  control = control_h1)
+diagnose <- function(m) {
+  tibble(observaciones = nobs(m),
+         actores = ngrps(m)[["speaker_id"]],
+         de_intercepto_actor = attr(VarCorr(m)$speaker_id, "stddev"),
+         singular = isSingular(m),
+         convergencia = m@optinfo$conv$opt,
+         avisos = length(m@optinfo$conv$lme4$messages))
+}
+diagnose(m_apoyo) |> knitr::kable(digits = 3)
+```
+
+El modelo converge sin avisos y no es singular. La desviación estándar del
+intercepto por actor es `r round(diagnose(m_apoyo)$de_intercepto_actor, 2)` en
+escala logit: una vez considerados el concepto y el bloque, los actores
+difieren moderadamente en su propensión general a apoyar conceptos.
+
+## Modelo de rechazo
+
+El rechazo es raro en varios conceptos de H1: necesidad material y
+reciprocidad contributiva no tienen ninguno. El modelo de rechazo incluye solo
+los conceptos con al menos `r MIN_RECHAZOS` rechazos en la reforma; los demás
+se describen sin modelar.
+
+```{r}
+#| label: conceptos-rechazo
+rejections <- model_data |>
+  group_by(concepto) |>
+  summarise(rechazos = sum(oppose), .groups = "drop")
+reject_concepts <- rejections |>
+  filter(rechazos >= MIN_RECHAZOS) |>
+  pull(concepto) |>
+  as.character()
+rejections |>
+  mutate(concepto = CONCEPT_SHORT[as.character(concepto)],
+         modelado = if_else(rechazos >= MIN_RECHAZOS, "Sí", "No")) |>
+  arrange(desc(rechazos)) |>
+  knitr::kable(col.names = c("Concepto", "Rechazos", "Modelado"))
+```
+
+```{r}
+#| label: modelo-rechazo
+#| cache: true
+reject_data <- model_data |>
+  filter(concept_id %in% reject_concepts) |>
+  mutate(concepto = droplevels(concepto))
+m_rechazo <- bglmer(update(formula_h1, oppose ~ .), data = reject_data,
+                    family = binomial, fixef.prior = normal(sd = c(10, 2.5)),
+                    control = control_h1)
+diagnose(m_rechazo) |> knitr::kable(digits = 3)
+```
+
+Cinco conceptos superan el umbral: previsión como mercado, capitalización
+individual, ineficiencia y riesgo estatal, conciencia de costos y solidaridad
+intergeneracional. Solo este último pertenece al grupo esperado en la
+izquierda, de modo que el rechazo de la derecha a los conceptos de la izquierda
+puede contrastarse en un solo concepto. El modelo converge sin avisos y no es
+singular.
+
+## Probabilidades predichas
+
+Calculamos la probabilidad predicha de que una intervención apoye o rechace
+cada concepto según el bloque, promediando sobre las intervenciones
+observadas y fijando el intercepto del actor en cero (`re.form = NA`), es
+decir, para un actor típico. Los intervalos del 95 % proceden de
+`r N_SIM` simulaciones de los efectos fijos, de modo que quedan dentro de
+[0, 1]. Primero verificamos que `re.form` modifica las predicciones.
+
+```{r}
+#| label: verificar-re-form
+check_re <- tibble(
+  re_form = c("NA (actor típico)", "NULL (actores observados)"),
+  prob_media = c(
+    mean(predict(m_apoyo, type = "response", re.form = NA)),
+    mean(predict(m_apoyo, type = "response", re.form = NULL)))
+)
+stopifnot(diff(check_re$prob_media) != 0)
+knitr::kable(check_re, digits = 4)
+```
+
+```{r}
+#| label: predicciones
+#| cache: true
+set.seed(SEED)
+predict_bloc <- function(m) {
+  quiet_re_form(
+    avg_predictions(m, by = c("concepto", "bloque"), re.form = NA) |>
+      inferences(method = "simulation", R = N_SIM)
+  ) |>
+    as_tibble() |>
+    select(concepto, bloque, estimate, conf.low, conf.high)
+}
+contrast_bloc <- function(m) {
+  quiet_re_form(
+    avg_comparisons(m, variables = list(bloque = c("izquierda", "derecha")),
+                    by = "concepto", re.form = NA) |>
+      inferences(method = "simulation", R = N_SIM)
+  ) |>
+    as_tibble() |>
+    select(concepto, estimate, conf.low, conf.high)
+}
+predictions_h1 <- bind_rows(
+  predict_bloc(m_apoyo) |> mutate(postura = "Apoyo"),
+  predict_bloc(m_rechazo) |> mutate(postura = "Rechazo")
+)
+contrasts_h1 <- bind_rows(
+  contrast_bloc(m_apoyo) |> mutate(postura = "Apoyo"),
+  contrast_bloc(m_rechazo) |> mutate(postura = "Rechazo")
+)
+label_concepts <- function(d) {
+  d |>
+    mutate(concept_id = as.character(concepto),
+           concepto = unname(CONCEPT_SHORT[concept_id]),
+           esperado = if_else(concept_id %in% H1_DERECHA,
+                              "Esperado: derecha",
+                              "Esperado: izquierda"))
+}
+predictions_h1 <- label_concepts(predictions_h1)
+contrasts_h1 <- label_concepts(contrasts_h1)
+write_parquet(predictions_h1, file.path(TABLE_DIR, "h1_predicciones.parquet"))
+write_parquet(contrasts_h1, file.path(TABLE_DIR, "h1_contrastes.parquet"))
+
+# Para citar valores en el texto: probabilidad (%) y contraste (pp) con su IC.
+prob <- function(c, b, p = "Apoyo") {
+  r <- filter(predictions_h1, concept_id == c, bloque == b, postura == p)
+  sprintf("%.0f %%", 100 * r$estimate)
+}
+dif <- function(c, p = "Apoyo") {
+  r <- filter(contrasts_h1, concept_id == c, postura == p)
+  sprintf("%+.0f pp; IC 95 %% [%.0f; %.0f]", 100 * r$estimate,
+          100 * r$conf.low, 100 * r$conf.high) |>
+    str_replace_all("-", "−")
+}
+```
+
+La figura muestra, para cada concepto, la probabilidad predicha de apoyo en
+la izquierda y en la derecha, con su intervalo. Los conceptos se agrupan
+según el bloque que, de acuerdo con H1, debería apoyarlos más. El centro se
+estima en el modelo, pero se omite de la figura porque H1 contrasta izquierda
+y derecha y sus intervalos, con 29 intervenciones, son muy amplios.
+
+```{r}
+#| label: fig-h1-apoyo
+#| fig-cap: "Probabilidad predicha de que una intervención apoye cada concepto, por bloque político, Ley 21.735"
+#| fig-alt: "Gráfico de puntos unidos por segmentos para 12 conceptos agrupados según el bloque esperado; cada punto es la probabilidad predicha de apoyo en la izquierda o en la derecha, con su intervalo."
+#| fig-width: 8
+#| fig-height: 5.5
+concept_order <- predictions_h1 |>
+  filter(postura == "Apoyo", bloque == "derecha") |>
+  arrange(estimate) |>
+  pull(concepto)
+plot_support <- predictions_h1 |>
+  filter(postura == "Apoyo", bloque != "centro") |>
+  mutate(bloque = factor(str_to_title(bloque), levels = names(BLOC_COLORS)),
+         concepto = factor(concepto, levels = concept_order))
+fig_h1_apoyo <- ggplot(plot_support, aes(x = estimate, y = concepto)) +
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high, color = bloque),
+                orientation = "y", width = 0, linewidth = 0.5, alpha = 0.7,
+                position = position_dodge(width = 0.5)) +
+  geom_point(aes(color = bloque, shape = bloque), size = 2.6,
+             position = position_dodge(width = 0.5)) +
+  facet_grid(esperado ~ ., scales = "free_y", space = "free_y",
+             switch = "y") +
+  scale_x_continuous(labels = \(x) paste0(round(100 * x), " %"),
+                     limits = c(0, NA), expand = expansion(mult = c(0, 0.08))) +
+  scale_color_manual(values = BLOC_COLORS) +
+  scale_shape_manual(values = c(Izquierda = 16, Derecha = 17)) +
+  labs(x = "Probabilidad predicha de apoyo", y = NULL, color = NULL,
+       shape = NULL) +
+  theme(legend.position = "top",
+        strip.placement = "outside",
+        strip.text.y.left = element_text(angle = 90, face = "bold"))
+print(fig_h1_apoyo)
+ggsave(file.path(FIGURE_DIR, "figura5_h1_apoyo.png"), fig_h1_apoyo,
+       width = 8, height = 5.5, dpi = 300, bg = "white")
+```
+
+En cinco de los siete conceptos esperados en la derecha, la diferencia va en
+la dirección de H1 y es amplia. La derecha apoya la propiedad de los fondos en
+`r prob("propiedad_individual_fondos", "derecha")` de sus intervenciones,
+frente a `r prob("propiedad_individual_fondos", "izquierda")` en la izquierda;
+la capitalización individual y la ineficiencia y riesgo estatal casi no tienen
+apoyo de izquierda (`r prob("capitalizacion_individual", "izquierda")` y
+`r prob("ineficiencia_estado", "izquierda")`). Las excepciones son la
+reciprocidad contributiva, que la izquierda apoya tanto o más que la derecha
+(`r prob("reciprocidad_contributiva", "izquierda")` y
+`r prob("reciprocidad_contributiva", "derecha")`), y la libertad de elección,
+con probabilidades similares en ambos bloques.
+
+Entre los conceptos esperados en la izquierda, la necesidad material
+(`r prob("necesidad_material", "izquierda")` frente a
+`r prob("necesidad_material", "derecha")`) y el origen dictatorial
+(`r prob("ilegitimidad_origen_dictatorial", "izquierda")` frente a
+`r prob("ilegitimidad_origen_dictatorial", "derecha")`) se ajustan a H1. La
+igualdad y el universalismo no distingue a los bloques, y las dos solidaridades
+son poco frecuentes en ambos.
+
+Que la izquierda apoye la reciprocidad contributiva y la libertad de elección
+como la derecha, y la propiedad de los fondos en una de cada diez
+intervenciones, es lo que H1 anticipó como evidencia de estructuración: son
+premisas del polo de preservación reconocidas fuera de él. El patrón es
+asimétrico: la derecha apoya la necesidad y la igualdad con frecuencia, pero
+casi nunca la ilegitimidad del origen dictatorial ni las solidaridades.
+
+## Diferencias entre derecha e izquierda
+
+La segunda figura resume el contraste de H1: la diferencia en la probabilidad
+de apoyo y de rechazo entre derecha e izquierda, en puntos porcentuales. La
+zona sombreada marca la dirección que predice H1 para cada grupo de
+conceptos: en los esperados en la derecha, más apoyo y menos rechazo de la
+derecha; en los esperados en la izquierda, lo inverso. Los conceptos con menos
+de `r MIN_RECHAZOS` rechazos aparecen sin estimación en el panel de rechazo.
+
+```{r}
+#| label: fig-h1-contrastes
+#| fig-cap: "Diferencia entre derecha e izquierda en la probabilidad de apoyar y rechazar cada concepto, Ley 21.735"
+#| fig-alt: "Dos paneles, apoyo y rechazo, con la diferencia derecha menos izquierda en puntos porcentuales y su intervalo para cada concepto; una zona sombreada indica la dirección esperada por H1."
+#| fig-width: 9
+#| fig-height: 5.5
+plot_contrasts <- contrasts_h1 |>
+  complete(nesting(concepto, esperado), postura) |>
+  mutate(concepto = factor(concepto, levels = concept_order),
+         across(c(estimate, conf.low, conf.high), \(x) 100 * x))
+x_limit <- max(abs(c(plot_contrasts$conf.low, plot_contrasts$conf.high)),
+               na.rm = TRUE) * 1.05
+expected_zone <- tibble(
+  postura = rep(c("Apoyo", "Rechazo"), each = 2),
+  esperado = rep(c("Esperado: derecha", "Esperado: izquierda"), 2),
+  xmin = c(0, -x_limit, -x_limit, 0),
+  xmax = c(x_limit, 0, 0, x_limit)
+)
+fig_h1_contrastes <- ggplot(plot_contrasts, aes(x = estimate, y = concepto)) +
+  geom_rect(data = expected_zone,
+            aes(xmin = xmin, xmax = xmax, ymin = -Inf, ymax = Inf),
+            inherit.aes = FALSE, fill = "grey92") +
+  geom_vline(xintercept = 0, linewidth = 0.3, color = "grey40") +
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), orientation = "y",
+                width = 0, linewidth = 0.5, na.rm = TRUE) +
+  geom_point(size = 2.2, na.rm = TRUE) +
+  geom_text(data = \(d) filter(d, is.na(estimate)),
+            aes(x = 0, label = paste0("menos de ", MIN_RECHAZOS, " rechazos")),
+            color = "grey50", size = 2.6, hjust = -0.05) +
+  facet_grid(esperado ~ postura, scales = "free_y", space = "free_y",
+             switch = "y") +
+  scale_x_continuous(limits = c(-x_limit, x_limit),
+                     labels = \(x) paste0(str_replace(round(x), "-", "−"), " pp")) +
+  labs(x = "Derecha − izquierda (puntos porcentuales)", y = NULL) +
+  theme(strip.placement = "outside",
+        strip.text.y.left = element_text(angle = 90, face = "bold"),
+        strip.text.x = element_text(face = "bold"),
+        panel.spacing.x = unit(1.2, "lines"))
+print(fig_h1_contrastes)
+ggsave(file.path(FIGURE_DIR, "figura6_h1_contrastes.png"), fig_h1_contrastes,
+       width = 9, height = 5.5, dpi = 300, bg = "white")
+```
+
+En apoyo, las diferencias confirman la lectura anterior: propiedad de los
+fondos (`r dif("propiedad_individual_fondos")`), ineficiencia y riesgo estatal
+(`r dif("ineficiencia_estado")`) y capitalización individual
+(`r dif("capitalizacion_individual")`) son las mayores a favor de la derecha;
+necesidad material (`r dif("necesidad_material")`) y origen dictatorial
+(`r dif("ilegitimidad_origen_dictatorial")`), las mayores a favor de la
+izquierda. Reciprocidad, libertad de elección e igualdad tienen intervalos que
+incluyen cero.
+
+En rechazo, la izquierda rechaza más que la derecha la previsión como mercado
+(`r dif("prevision_como_mercado", "Rechazo")`) y la capitalización individual
+(`r dif("capitalizacion_individual", "Rechazo")`), y la derecha rechaza más la
+solidaridad intergeneracional (`r dif("solidaridad_intergeneracional", "Rechazo")`),
+como predice H1. La conciencia de costos se rechaza en proporciones similares
+en ambos bloques.
+
+**El rechazo de la ineficiencia y riesgo estatal no es interpretable todavía.**
+Su diferencia aparente es nula
+(`r dif("ineficiencia_estado", "Rechazo")`), pero una revisión de los 23
+rechazos atribuidos a la derecha mostró que cerca de la mitad afirma la
+proposición del concepto («El Estado es el peor administrador»; «quieren usar
+los ahorros de los chilenos como un botín político»): Luna registró como
+rechazo el rechazo a la administración estatal, no a la proposición. El resto
+son rechazos genuinos, de parlamentarios que defienden la autonomía del fondo
+creado por el acuerdo. Haiku registra cerca de la mitad de esos rechazos de
+derecha, lo que sugiere un error de orientación propio de Luna en este
+concepto.
+
+## Tabla de modelos para el anexo
+
+`sjPlot::tab_model()` reúne ambos modelos en una tabla con razones de
+probabilidades (*odds ratios*), intervalos de confianza y la varianza del
+intercepto por actor. Se guarda en HTML, que Word abre directamente.
+
+```{r}
+#| label: tabla-anexo
+#| results: hide
+# Etiquetas legibles para todos los coeficientes de ambos modelos.
+term_label <- function(term) {
+  term |>
+    str_replace("^\\(Intercept\\)$", "Intercepto") |>
+    str_replace_all(setNames(paste0(CONCEPT_SHORT, " "),
+                             paste0("concepto", names(CONCEPT_SHORT), "(?=:|$)"))) |>
+    str_replace("bloquecentro", "Centro") |>
+    str_replace("bloquederecha", "Derecha") |>
+    str_replace("generomujer", "Mujer") |>
+    str_replace("^ejecutivo$", "Ejecutivo") |>
+    str_replace("^log_palabras$", "Palabras (log, estandarizado)") |>
+    str_replace(":", "× ") |>
+    str_squish()
+}
+terms_h1 <- unique(c(names(fixef(m_apoyo)), names(fixef(m_rechazo))))
+tabla_h1 <- tab_model(m_apoyo, m_rechazo,
+                      dv.labels = c("Apoyo", "Rechazo"),
+                      pred.labels = setNames(term_label(terms_h1), terms_h1),
+                      string.pred = "Predictor", string.est = "OR",
+                      string.ci = "IC 95 %", string.p = "p",
+                      show.reflvl = FALSE, show.icc = FALSE, wrap.labels = 80,
+                      title = paste(
+                        "Modelos logísticos multinivel de H1 (Ley 21.735).",
+                        "Referencias: izquierda, hombre y, como concepto,",
+                        "propiedad de los fondos (apoyo) y capitalización",
+                        "individual (rechazo)."))
+# `tab_model()` solo escribe `file` al imprimirse; se guarda la página directamente.
+writeLines(tabla_h1$page.complete, file.path(TABLE_DIR, "anexo_modelos_h1.html"))
+```
+
+## Réplica con Claude Haiku 5.5
+
+Estimamos el modelo de apoyo con las anotaciones de Haiku y comparamos los
+contrastes derecha − izquierda: su correlación con los de Luna y si coinciden
+en el signo de las diferencias cuyo intervalo excluye cero.
+
+```{r}
+#| label: replica-haiku
+#| cache: true
+base_haiku <- load_analysis_base(HAIKU_RUN_DIR)
+h1_haiku <- prepare_h1(base_haiku)
+haiku_data <- h1_haiku$data
+m_apoyo_haiku <- bglmer(update(formula_h1, support ~ .), data = haiku_data,
+                        family = binomial, fixef.prior = normal(sd = c(10, 2.5)),
+                        control = control_h1)
+set.seed(SEED)
+contrasts_haiku <- contrast_bloc(m_apoyo_haiku) |> label_concepts()
+# Signo de la diferencia cuando su intervalo excluye cero; 0 si lo incluye.
+ci_sign <- function(estimate, low, high) if_else(low > 0 | high < 0, sign(estimate), 0)
+replica_h1 <- contrasts_h1 |>
+  filter(postura == "Apoyo") |>
+  select(concepto, luna = estimate, luna_low = conf.low, luna_high = conf.high) |>
+  inner_join(contrasts_haiku |>
+               select(concepto, haiku = estimate, haiku_low = conf.low,
+                      haiku_high = conf.high), by = "concepto") |>
+  mutate(signo_luna = ci_sign(luna, luna_low, luna_high),
+         signo_haiku = ci_sign(haiku, haiku_low, haiku_high))
+tibble(intervenciones_haiku = nrow(h1_haiku$interventions),
+       correlacion = cor(replica_h1$luna, replica_h1$haiku),
+       mismo_signo = sum(replica_h1$signo_luna == replica_h1$signo_haiku),
+       conceptos = nrow(replica_h1)) |>
+  knitr::kable(digits = 3)
+```
+
+Con Haiku, los contrastes de apoyo correlacionan en
+`r number(cor(replica_h1$luna, replica_h1$haiku), accuracy = 0.01, decimal.mark = ",")`
+con los de Luna, y ambos modelos coinciden en el signo, o en que el intervalo
+incluye cero, en `r sum(replica_h1$signo_luna == replica_h1$signo_haiku)` de
+los `r nrow(replica_h1)` conceptos. Las conclusiones sobre el apoyo no dependen
+del modelo de anotación.
