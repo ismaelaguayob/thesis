@@ -21,6 +21,24 @@ aparecen.
   austeridad y condicionalidad (Gaffney, 2025; Wiggan, 2012), donde el
   merecimiento separa beneficiarios legítimos de ilegítimos. Base:
   `procesamiento/resultados_panorama.qmd`.
+- **Legitimar al grupo frente a fijar una regla de asignación.** La forma
+  típica es «los adultos mayores pasan hambre, hay que ayudarlos» (necesidad)
+  o «construyeron el país / trabajaron toda su vida, hay que apoyarlos»
+  (reciprocidad), y no «solo merecen apoyo quienes más lo necesitan o más han
+  aportado». Parece un rasgo del discurso político: es poco frecuente que los
+  parlamentarios digan quién no merece un beneficio o enuncien una regla de
+  asignación concreta, porque señalar perdedores tiene costos políticos.
+  Matiz: en una revisión de una muestra (16-10-2026) también aparecen reglas y
+  fronteras, sobre todo en reciprocidad, ligada al beneficio por años cotizados
+  de la reforma («de acuerdo a los años de la cotización, privilegiando a
+  aquellos que han cotizado»; «les van a entregar plata de quienes cotizan a
+  aquellos que no han cotizado») y, en necesidad, en la focalización de la PGU
+  («excluir a quienes, efectivamente, estén dentro del 10 por ciento más
+  rico»). Sin una codificación de la función de cada declaración no se puede
+  afirmar cuál forma predomina. Literatura posible (no está en el `.bib`):
+  evitación de culpas (Weaver, 1986) y construcción social de poblaciones
+  objetivo (Schneider & Ingram, 1993), donde los adultos mayores son el caso
+  típico de población «merecedora» y políticamente fuerte.
 
 ## Validación de la codificación asistida por LLM
 

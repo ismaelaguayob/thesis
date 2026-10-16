@@ -297,25 +297,17 @@ Como se ve en la Figura 3, la concordancia de Luna con la referencia fue similar
 
 ### **5.2 El repertorio normativo del debate previsional**
 
-De las 1.096 intervenciones del corpus, 589 (54 %) se componen solo de votaciones o de procedimiento, en su mayoría a cargo de la mesa, y se excluyen de los análisis. Las 507 intervenciones sustantivas restantes son el denominador de las proporciones de esta sección, y el 86 % contiene al menos una declaración (Tabla 3). La reforma concentra 181 de los 213 actores con perfil y 1.069 de las 1.385 declaraciones; la Ley N.º 21.538 reúne solo 56 intervenciones sustantivas, por lo que sus proporciones deben leerse con cautela.
+De las 1.096 intervenciones del corpus, 589 (54 %) se componen solo de votaciones o de procedimiento y se excluyen de los análisis. Las 507 restantes se utilizan como denominador en las proporciones de esta sección, y el 86 % tiene al menos una declaración codificada. La reforma concentra 181 de los 213 actores con perfil y 1.069 de las 1.385 declaraciones; la Ley N.º 21.538 reúne solo 56 intervenciones sustantivas, por lo que sus proporciones deben leerse con cautela.
 
-**Tabla 3.** *Intervenciones, actores con perfil y declaraciones por ley y fase legislativa*
-
-*[Insertar desde output/tables/resultados/tabla3_denominadores.docx.]*
-
-La necesidad material es el concepto con más apoyo en las leyes N.º 21.419 y 21.735 (48 % y 39 % de las intervenciones sustantivas) y el segundo en la Ley N.º 21.538 (45 %), donde la supera la igualdad y el universalismo (48 %) (Figura 4). La reforma amplía el repertorio: los conceptos distributivos e institucionales del caso, escasos en los debates de la PGU, alcanzan en la Ley N.º 21.735 entre un 5 % (solidaridad intergeneracional) y un 26 % (previsión como mercado) de apoyo, y acuerdos y moderación aparece con apoyo en el 31 % de sus intervenciones. Actitud no aparece en las leyes de la PGU y registra una sola declaración en la reforma: los criterios de merecimiento se invocan para justificar el apoyo a las personas mayores, no para condicionarlo.
+La necesidad material es el concepto con más apoyo en las leyes N.º 21.419 y 21.735 (48 % y 39 % de las intervenciones) y el segundo en la Ley N.º 21.538 (45 %), donde la supera la igualdad y el universalismo (48 %) (Figura 4). La reforma amplía el repertorio: los conceptos distributivos e institucionales del caso, escasos en los debates de la PGU, alcanzan en la Ley N.º 21.735 entre un 5 % (solidaridad intergeneracional) y un 26 % (previsión como mercado) de apoyo, y acuerdos y moderación aparece con apoyo en el 31 % de sus intervenciones. Actitud registra una sola declaración en todo el corpus.
 
 **Figura 4.** *Apoyo y rechazo a cada concepto por ley*
 
 ![](output/figures/resultados/figura4_prevalencia_postura.png)
 
-*Nota.* Proporción de intervenciones sustantivas que apoyan (derecha) o rechazan (izquierda) cada concepto. Se omite actitud, con una sola declaración en el corpus.
+*Nota.* Porcentaje de intervenciones sustantivas que apoyan (derecha) o rechazan (izquierda) cada concepto; se etiquetan los valores de al menos 3 %. Se omite actitud, con una sola declaración en el corpus.
 
-La proporción minoritaria, es decir, la parte de las declaraciones de un concepto que está en su postura menos frecuente, separa dos grupos de conceptos (Tabla 4). Previsión como mercado, capitalización individual, solidaridad intergeneracional e ineficiencia y riesgo estatal se dividen casi por mitades en la reforma (entre 42 % y 49 %), y conciencia de costos se disputa en las tres leyes. Necesidad material y reciprocidad contributiva no registran ningún rechazo, e igualdad y universalismo y la ilegitimidad del origen dictatorial apenas lo registran. Incluso propiedad de los fondos y libertad de elección, justificaciones del arreglo vigente, reciben pocos rechazos (9 % y 5 %). El conflicto de la reforma se libra sobre la organización institucional de la previsión más que sobre los criterios de merecimiento, que los actores comparten.
-
-**Tabla 4.** *Declaraciones de apoyo y rechazo y proporción minoritaria por concepto y ley*
-
-*[Insertar desde output/tables/resultados/tabla4_disputa.docx.]*
+La figura 4 también muestra qué conceptos son más disputados y cuáles son consensuales. En la última reforma, previsión como mercado (26 % de apoyo y 27 % de rechazo), capitalización individual (13 % y 12 %), ineficiencia y riesgo estatal (14 % y 10 %) y solidaridad intergeneracional (5 % y 4 %) reciben casi tantos rechazos como apoyos, y conciencia de costos se disputa en las tres leyes. En contraste, ningún actor rechaza la necesidad material ni la reciprocidad contributiva. Ambas se invocan con frecuencia para legitimar el apoyo a las personas mayores, ya sea por su precariedad («las personas mayores en Chile sufren riesgo de desnutrición») o por su trayectoria laboral («después de décadas de trabajo, merecen una vejez al menos un tanto más tranquila»). Igualdad y universalismo y la ilegitimidad del origen dictatorial apenas registran rechazos, e incluso propiedad de los fondos y libertad de elección, justificaciones del arreglo vigente, se rechazan en menos del 3 % de las intervenciones de la reforma. El conflicto de la reforma se libra en torno a la organización institucional de la previsión más que sobre los criterios de merecimiento, que los actores comparten.
 
 ### **5.3 H1: Bloques políticos y criterios de justicia**
 
@@ -339,7 +331,7 @@ La proporción minoritaria, es decir, la parte de las declaraciones de un concep
 
 *[Conceptos en filas, coaliciones en columnas; proporción de miembros que apoya y que rechaza cada concepto. El grafo de actores va al anexo o en tamaño reducido.]*
 
-**Tabla 5.** *Composición y estabilidad de las coaliciones*
+**Tabla 3.** *Composición y estabilidad de las coaliciones*
 
 *[Por coalición: bloque político, partidos, tipo de actor. Estabilidad: coasignación entre semillas; concordancia con las particiones por fase y sin acuerdos y moderación; información mutua normalizada entre coaliciones y bloque político.]*
 
@@ -373,7 +365,7 @@ La proporción minoritaria, es decir, la parte de las declaraciones de un concep
 
 ### **5.7 H4: Persistencia**
 
-*[Seis conceptos del repertorio en Cámara 2024, Senado 2025 y Cámara 2025. Logit multinivel concepto × fase con intercepto por actor; contraste principal entre las dos fases de la Cámara (78 diputados intervienen en ambas). Senado descrito aparte. Fuerza y rango de cada concepto en la red de presencia por fase.]*
+*[Seis conceptos del repertorio en Cámara 2024, Senado 2025 y Cámara 2025. Logit multinivel concepto × fase con intercepto por actor; contraste principal entre las dos fases de la Cámara (78 diputados intervienen en ambas). Senado descrito aparte. Indicar los actores con perfil por fase al presentar las ventanas: 94 en la Cámara 2024, 44 en el Senado 2025 y 123 en la Cámara 2025, porque el Senado limita la comparación. Fuerza y rango de cada concepto en la red de presencia por fase.]*
 
 **Figura 11.** *Apoyo, rechazo y centralidad del repertorio de capitalización individual por fase*
 
