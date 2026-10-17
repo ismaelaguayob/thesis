@@ -2079,7 +2079,10 @@ class ValidationRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def _send_static(self, filename: str) -> None:
-        allowed = {"index.html", "app.js", "styles.css", "llm.html", "llm.js", "llm.css"}
+        allowed = {
+            "index.html", "app.js", "styles.css", "llm.html", "llm.js", "llm.css",
+            "adjudicacion.html", "adjudicacion.js",
+        }
         if filename not in allowed:
             self.send_error(HTTPStatus.NOT_FOUND.value)
             return
@@ -2131,13 +2134,22 @@ class ValidationRequestHandler(BaseHTTPRequestHandler):
             self.log_error("Unexpected error: %r", exc)
             self._send_json({"error": "Error interno de la aplicación"}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
+    def _stance(self):
+        adjudication = getattr(self.service, "stance_adjudication", None)
+        if adjudication is None:
+            raise FileNotFoundError("La adjudicación de postura no está configurada")
+        return adjudication
+
     def do_GET(self) -> None:  # noqa: N802
         try:
             parts = self._route_parts()
             if not parts:
                 self._send_static("index.html")
                 return
-            if len(parts) == 1 and parts[0] in {"app.js", "styles.css", "llm.html", "llm.js", "llm.css"}:
+            if len(parts) == 1 and parts[0] in {
+                "app.js", "styles.css", "llm.html", "llm.js", "llm.css",
+                "adjudicacion.html", "adjudicacion.js",
+            }:
                 self._send_static(parts[0])
                 return
             if parts == ["api", "config"]:
@@ -2145,6 +2157,12 @@ class ValidationRequestHandler(BaseHTTPRequestHandler):
                 return
             if parts == ["api", "llm", "runs"]:
                 self._send_json(self.service.llm_review.list_runs())
+                return
+            if parts == ["api", "stance", "items"]:
+                self._send_json(self._stance().list_items())
+                return
+            if len(parts) == 4 and parts[:3] == ["api", "stance", "items"]:
+                self._send_json(self._stance().open_item(self._item_index(parts[3])))
                 return
             if len(parts) == 5 and parts[:3] == ["api", "llm", "runs"] and parts[4] == "items":
                 self._send_json(self.service.llm_review.list_items(parts[3]))
@@ -2206,6 +2224,10 @@ class ValidationRequestHandler(BaseHTTPRequestHandler):
     def do_PUT(self) -> None:  # noqa: N802
         try:
             parts = self._route_parts()
+            if len(parts) == 4 and parts[:3] == ["api", "stance", "items"]:
+                self._send_json(self._stance().save_decision(
+                    self._item_index(parts[3]), self._read_payload()))
+                return
             if len(parts) == 7 and parts[:3] == ["api", "llm", "runs"] and parts[4] == "items" and parts[6] == "review":
                 self._send_json(self.service.llm_review.save_review(
                     parts[3], self._item_index(parts[5]), self._read_payload()))

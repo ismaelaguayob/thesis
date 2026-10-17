@@ -14,6 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from features.manual_validation.codebook_workbook import write_codebook_json  # noqa: E402
 from features.llm_annotations.review import AnnotationReviewService  # noqa: E402
+from features.llm_annotations.stance_adjudication import StanceAdjudicationService  # noqa: E402
 from features.manual_validation.service import (  # noqa: E402
     ValidationService,
     create_server,
@@ -71,6 +72,24 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--reviews-dir", type=Path,
                         default=PROJECT_ROOT / "output" / "annotation_reviews")
+    parser.add_argument(
+        "--stance-primary-run", type=Path,
+        default=PROJECT_ROOT / "output" / "annotations" / "openai_gpt6luna_20261002",
+        help="Censo principal cuya postura se adjudica.",
+    )
+    parser.add_argument(
+        "--stance-secondary-run", type=Path,
+        default=PROJECT_ROOT / "output" / "annotations" / "bedrock_haiku55_20261008",
+        help="Censo de contraste que señala los casos a adjudicar.",
+    )
+    parser.add_argument(
+        "--stance-input-dir", type=Path,
+        default=PROJECT_ROOT / "data" / "proc_data" / "annotations_inputs"
+        / "pilot_d4e0291b4df3fc0f5343",
+        help="Inputs congelados del censo principal (texto, contexto y libro).",
+    )
+    parser.add_argument("--stance-dir", type=Path,
+                        default=PROJECT_ROOT / "output" / "stance_adjudication")
     return parser.parse_args()
 
 
@@ -94,6 +113,11 @@ def main() -> int:
         results_dir=args.annotations_results_dir,
         highlights_path=PROJECT_ROOT / "pasajes-destacados.md",
     )
+    if args.stance_primary_run.exists() and args.stance_secondary_run.exists():
+        service.stance_adjudication = StanceAdjudicationService(
+            args.stance_primary_run, args.stance_secondary_run,
+            args.stance_input_dir, args.stance_dir,
+        )
     static_dir = Path(__file__).resolve().parent / "web"
     server = create_server(service, static_dir, args.host, args.port)
     print(f"Corpus: {service.source_path}")

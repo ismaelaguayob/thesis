@@ -205,3 +205,56 @@ reemplazan las anteriores donde se contradicen.
   Haiku, la de concordancia en el censo y los gráficos con F1.** La asimetría se
   sostiene con el acuerdo específico negativo, sin Gwet. Del censo se conserva
   una frase en la elección del modelo.
+
+## 5. Adjudicación de postura — decidido (16 oct 2026)
+
+- **Problema.** Al estimar H1 apareció un error de orientación de Luna en
+  *ineficiencia y riesgo estatal*: cerca de la mitad de los 23 rechazos
+  atribuidos a la derecha en la Ley 21.735 afirman la proposición del concepto
+  («El Estado es el peor administrador»). Luna registró como rechazo el rechazo a
+  la administración estatal, no a la proposición de orientación, que en este
+  concepto es negativa («la administración estatal amenaza…»). La validación ya
+  lo mostraba (los dos desacuerdos de postura de ese concepto van en esa
+  dirección), pero la concordancia de postura global (98 %) lo ocultaba.
+- **Alcance revisado.** Se compararon las posturas por concepto con la
+  referencia ciega y entre Luna y Haiku en el censo, en los bloques × concepto
+  que ambos codificaron. El desacuerdo entre modelos se concentra en ineficiencia
+  estatal (12 de 121, casi todos Luna = rechazo y Haiku = apoyo), conciencia de
+  costos (14 de 166, en ambas direcciones; el anclaje es ambiguo cuando se
+  evalúa el sistema vigente y no la reforma) y previsión como mercado (13 de
+  350, sobre todo Haiku con ambas posturas). Los criterios CARIN, igualdad, las
+  solidaridades, capitalización y libertad de elección no tienen desacuerdos.
+- **Decisión: adjudicación humana con una regla fija, no corrección por
+  concepto.** Se corrige solo la *postura*, con una regla que no depende del
+  concepto ni del resultado:
+  1. Todos los bloques × concepto que ambos censos anotaron con posturas
+     distintas.
+  2. En los conceptos con más de 5 % de desacuerdo de postura entre censos
+     (ineficiencia estatal y conciencia de costos), los rechazos de Luna en
+     bloques × concepto que Haiku no codificó.
+  3. Se excluyen los conceptos fuera del análisis por la regla de inclusión
+     (identidad y control).
+  La cola resultante tiene 60 casos (`output/stance_adjudication/stance_202905653d5d/`)
+  y quedó congelada antes de adjudicar.
+- **Por qué no es equivalente a excluir identidad y control.** Esos conceptos
+  fallaron la *detección* en la validación (IC del α bajo 0,667) con una regla
+  fijada de antemano. Aquí el concepto se detecta con concordancia aceptable y
+  el problema es la orientación; Haiku funciona como segundo codificador que
+  señala casos, y la decisión es del investigador, como en la adjudicación de
+  discrepancias entre dos codificadores.
+- **Procedimiento.** La adjudicación se hace en la plataforma de validación
+  (pestaña *Adjudicación de postura*). Se muestran el bloque, su contexto, el
+  concepto con su proposición de orientación y las dos codificaciones como A y B,
+  sin indicar qué modelo es cada una. Opciones: apoyo, rechazo, ambas, el
+  concepto no corresponde o no es posible resolver (las dos últimas exigen
+  comentario).
+- **Aplicación.** Las anotaciones originales no se modifican.
+  `R/analysis_base.R` lee las decisiones y reemplaza la postura de Luna en los
+  bloques × concepto adjudicados; «no corresponde» elimina la anotación y «sin
+  resolver» conserva la original. `load_analysis_base(adjudicate = FALSE)`
+  reproduce los análisis sin la adjudicación, como sensibilidad.
+- **Consecuencias para el manuscrito.** El suplemento (§2.2) dice que no se
+  realiza adjudicación sistemática de discrepancias; debe reformularse como una
+  adjudicación acotada a la postura. La metodología y la sección 5.1 deben
+  mencionarla, y las cifras de 5.2 en adelante se regeneran con las posturas
+  adjudicadas.

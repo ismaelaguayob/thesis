@@ -157,10 +157,23 @@ Es una modalidad diagnóstica: el revisor ve la salida del modelo, por lo que no
 
 Con una sola codificadora no es posible estimar confiabilidad intercoder humana; sí estabilidad intracoder, recodificando sin consultar las respuestas previas un subconjunto aleatorio después de un intervalo.
 
+## Adjudicación de postura
+
+La pestaña **Adjudicación de postura** (<http://127.0.0.1:8765/adjudicacion.html>) resuelve los desacuerdos de orientación entre el censo principal (Luna-6) y el de contraste (Haiku 5.5). La razón y la regla están en [decisiones de validación, sección 5](decisiones-validacion.md#5-adjudicación-de-postura--decidido-16-oct-2026).
+
+**Cola de casos.** `features/llm_annotations/stance_adjudication.py` selecciona, sin mirar resultados sustantivos: (1) los bloques × concepto que ambos censos anotaron con posturas distintas; (2) en los conceptos con más de 5 % de desacuerdo de postura entre censos, los rechazos del censo principal que el de contraste no codificó. Se omiten los conceptos excluidos del análisis. La cola se congela en `output/stance_adjudication/<queue_id>/queue.json` la primera vez que se abre, con los hashes de ambos censos, de la muestra y del libro; si cambian, el identificador de la cola cambia y la anterior queda intacta.
+
+**Pantalla.** Muestra el bloque objetivo con la evidencia de cada codificación resaltada, los bloques adyacentes como contexto, el concepto con su definición, su proposición de orientación y sus criterios, y las dos codificaciones como **A** y **B**. Qué modelo corresponde a cada letra se fija por caso y no se envía al navegador. La identidad del hablante tampoco se muestra.
+
+**Decisiones.** Para cada caso se elige la postura que corresponde según la proposición de orientación: `Apoyo`, `Rechazo`, `Apoyo y rechazo` (pasajes distintos del mismo bloque), `El concepto no corresponde` o `No es posible resolver`; las dos últimas exigen comentario. Cada decisión se guarda en `output/stance_adjudication/<queue_id>/decisions/<índice>.json` con revisión, timestamps y la postura original de cada censo. Las anotaciones de los censos no se modifican.
+
+**Uso en el análisis.** `R/analysis_base.R` (`load_analysis_base()`) aplica las decisiones al censo principal: reemplaza su postura en los bloques × concepto adjudicados, elimina el concepto cuando no corresponde y conserva la anotación original cuando el caso no pudo resolverse. Con `adjudicate = FALSE` se reproducen los análisis sin la adjudicación. Las rutas de ambos censos y de la carpeta de decisiones se cambian con `--stance-primary-run`, `--stance-secondary-run`, `--stance-input-dir` y `--stance-dir`.
+
 ## Pruebas
 
 ```bash
 uv run python -m unittest discover -s tests -p 'test_manual_validation.py' -v
+uv run python -m unittest tests.test_stance_adjudication -v
 ```
 
 Las pruebas cubren filtros del corpus, retención de votaciones, formación de bloques, contextos adyacentes, sincronía XLSX→JSON, reproducibilidad del muestreo, ocultamiento de identidad, spans exactos, resaltado, múltiples declaraciones del libro cerrado, ausencia de declaraciones, flags, comentarios generales, timestamps, persistencia y endpoints HTTP.

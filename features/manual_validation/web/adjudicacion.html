@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adjudicación de postura</title><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/llm.css">
+</head>
+<body>
+<header class="topbar">
+<div class="topbar-brand">
+<p class="eyebrow">Tesis · Análisis de redes discursivas</p>
+<h1>Validación manual</h1>
+</div>
+<nav class="app-tabs" aria-label="Modos de evaluación">
+<a class="app-tab" href="/">Codificación manual</a>
+<a class="app-tab" href="/llm.html">Revisión LLM</a>
+<a class="app-tab active" href="/adjudicacion.html" aria-current="page">Adjudicación de postura</a>
+</nav>
+<div class="privacy-badge" title="No se muestra el hablante ni qué modelo produjo cada codificación">Identidad y modelo ocultos</div>
+</header>
+<main class="llm-main">
+<header class="llm-header"><div><p class="step-label">Censo · casos seleccionados por regla fija</p><h1>Adjudicación de postura</h1>
+<p>Dos codificaciones (A y B) del mismo concepto en el mismo bloque no coinciden en su postura, o una de ellas rechaza un concepto que la otra no codificó. Decide qué postura corresponde según la proposición de orientación. Las anotaciones originales no se modifican.</p></div></header>
+<section class="panel llm-controls" aria-label="Seleccionar caso">
+<label>Mostrar<select id="status-filter"><option value="pending">Pendientes</option><option value="all">Todos</option><option value="decided">Adjudicados</option></select></label>
+<label>Concepto<select id="concept-filter"><option value="all">Todos</option></select></label>
+<button id="refresh" type="button" class="secondary-button">Actualizar</button>
+<p id="queue-summary"></p>
+<label class="llm-block-select">Caso<select id="case-select"></select></label>
+</section>
+<p id="empty-state" class="summary-box hidden"></p>
+<section id="workspace" class="hidden">
+<div class="llm-navigation"><button id="previous" class="secondary-button">Anterior</button><p id="position"></p><button id="next" class="secondary-button">Siguiente</button></div>
+<div class="llm-grid"><section class="llm-texts">
+<article class="intervention-card context-card"><h3>Bloque anterior <small>· contexto</small></h3><div id="previous-text" class="intervention-text"></div></article>
+<article class="intervention-card target-card"><h2>Bloque objetivo</h2><p id="target-meta"></p>
+<p class="llm-help"><span class="adj-swatch a"></span> Evidencia de A · <span class="adj-swatch b"></span> Evidencia de B</p>
+<div id="target-text" class="intervention-text"></div></article>
+<article class="intervention-card context-card"><h3>Bloque siguiente <small>· contexto</small></h3><div id="next-text" class="intervention-text"></div></article>
+</section><aside class="llm-sidebar">
+<section class="panel"><p class="step-label">Concepto</p><h2 id="concept-label"></h2><p id="concept-definition"></p>
+<p class="adj-anchor"><strong>Apoyo</strong> = afirmar: <span id="concept-anchor"></span><br><strong>Rechazo</strong> = negarla, refutarla o declararla inaplicable.</p>
+<details><summary>Criterios de inclusión y exclusión</summary><div id="concept-criteria"></div></details></section>
+<section class="panel"><h2>Codificaciones</h2><div id="codings"></div></section>
+<form id="decision-form" class="panel">
+<h2>Decisión</h2>
+<fieldset><legend>Postura que corresponde al concepto en este bloque</legend><div class="adj-options">
+<label><input type="radio" name="decision" value="support"> Apoyo</label>
+<label><input type="radio" name="decision" value="oppose"> Rechazo</label>
+<label><input type="radio" name="decision" value="both"> Apoyo y rechazo (pasajes distintos)</label>
+<label><input type="radio" name="decision" value="concept_absent"> El concepto no corresponde</label>
+<label><input type="radio" name="decision" value="unresolved"> No es posible resolver</label>
+</div></fieldset>
+<label>Comentario <span class="optional">obligatorio si el concepto no corresponde o no se puede resolver</span><textarea id="note" rows="3" maxlength="3000"></textarea></label>
+<label>Identificador del revisor <span class="optional">opcional</span><input id="reviewer" maxlength="120"></label>
+<div class="llm-save"><button id="save" type="submit" class="primary-button">Guardar y seguir</button><span id="save-status" role="status" aria-live="polite"></span></div>
+</form></aside></div></section>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+</main><script src="/adjudicacion.js" defer></script></body></html>
