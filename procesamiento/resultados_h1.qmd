@@ -87,9 +87,11 @@ rechaza; una intervención sin declaraciones aporta ceros a todos sus
 conceptos. Se incluyen los actores con bloque izquierda, centro o derecha; los
 no partidistas quedan fuera por su número reducido.
 
-Los controles son el género, si el actor integra el Ejecutivo y el logaritmo
-estandarizado de las palabras de la intervención, porque las intervenciones
-más largas tienen más oportunidades de contener declaraciones.
+Los controles son el género y el logaritmo estandarizado de las palabras de
+la intervención, porque las intervenciones más largas tienen más oportunidades
+de contener declaraciones. Los integrantes del Ejecutivo se incluyen en su
+bloque sin un control propio: el intercepto por actor absorbe que intervengan
+más que el resto.
 
 ```{r}
 #| label: datos
@@ -101,15 +103,13 @@ prepare_h1 <- function(base) {
            alignment %in% c("izquierda", "centro", "derecha")) |>
     mutate(bloque = factor(alignment, levels = c("izquierda", "centro", "derecha")),
            genero = factor(gender, levels = c("hombre", "mujer")),
-           ejecutivo = as.integer(str_detect(coalesce(role, ""),
-                                             "(?i)ministr|subsecret")),
            log_palabras = as.numeric(scale(log(utterance_words))))
   claims_wide <- base$claims |>
     filter(concept_id %in% H1_CONCEPTS) |>
     mutate(valor = 1L) |>
     pivot_wider(names_from = stance, values_from = valor, values_fill = 0L)
   data <- interventions |>
-    select(all_of(key), speaker_id, bloque, genero, ejecutivo, log_palabras) |>
+    select(all_of(key), speaker_id, bloque, genero, log_palabras) |>
     crossing(concept_id = H1_CONCEPTS) |>
     left_join(claims_wide, by = c(key, "concept_id")) |>
     mutate(across(c(support, oppose), \(x) coalesce(x, 0L)),
@@ -141,9 +141,8 @@ Quedan fuera `r nrow(excluded)` intervenciones de actores no partidistas o sin
 alineación. El centro aporta solo `r sum(model_interventions$bloque == "centro")`
 intervenciones, por lo que sus estimaciones serán imprecisas. Los integrantes
 del Ejecutivo con declaraciones en la reforma pertenecen todos a la izquierda
-(`r sum(model_interventions$ejecutivo)` intervenciones), de modo que el
-control `ejecutivo` distingue al gobierno de los parlamentarios de su bloque y
-el contraste entre bloques se refiere, en la práctica, a parlamentarios.
+(`r sum(str_detect(coalesce(model_interventions$role, ""), "(?i)ministr|subsecret"))`
+intervenciones) y cuentan como parte de ese bloque.
 
 ## Separación y prior débil
 
@@ -156,8 +155,7 @@ coeficientes hacia infinito. Lo mostramos con el modelo de apoyo estimado por
 ```{r}
 #| label: separacion
 #| cache: true
-formula_h1 <- ~ concepto * bloque + genero + ejecutivo + log_palabras +
-  (1 | speaker_id)
+formula_h1 <- ~ concepto * bloque + genero + log_palabras + (1 | speaker_id)
 control_h1 <- glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 1e5))
 m_glmer <- glmer(update(formula_h1, support ~ .), data = model_data,
                  family = binomial, control = control_h1)
@@ -485,7 +483,6 @@ term_label <- function(term) {
     str_replace("bloquecentro", "Centro") |>
     str_replace("bloquederecha", "Derecha") |>
     str_replace("generomujer", "Mujer") |>
-    str_replace("^ejecutivo$", "Ejecutivo") |>
     str_replace("^log_palabras$", "Palabras (log, estandarizado)") |>
     str_replace(":", "× ") |>
     str_squish()

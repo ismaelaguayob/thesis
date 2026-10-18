@@ -90,6 +90,25 @@ aparecen.
   uñas»). En igualdad y en necesidad material, en cambio, el modelo tomó
   descripciones de políticas o diagnósticos por justificaciones. Ver
   `docs/examples.md`.
+- **El segundo modelo sirvió para detectar y corregir un error sistemático del
+  principal.** Al estimar H1 apareció una inversión de postura de Luna en
+  ineficiencia y riesgo estatal: registraba como rechazo el rechazo a la
+  administración estatal, no a la proposición del concepto («la administración
+  estatal amenaza…»). La concordancia de postura global con la referencia (98 %)
+  lo ocultaba; la validación solo tenía dos casos discordantes de ese concepto,
+  ambos en esa dirección. Los desacuerdos de postura entre Luna y Haiku en el
+  censo permitieron seleccionar con una regla fija 60 casos para adjudicación
+  humana (docs/decisiones-validacion.md, §5). En los 46 desacuerdos entre
+  modelos, Haiku acertó en 32 y Luna en 13 (en ineficiencia, 11 de 12 a favor de
+  Haiku); además, 6 de los 10 rechazos de conciencia de costos que solo Luna
+  había codificado no correspondían al concepto. Argumento para la discusión:
+  usar dos modelos no solo da una medida de estabilidad del instrumento, sino un
+  mecanismo para encontrar errores sistemáticos que las métricas agregadas no
+  muestran, y que importan porque se concentran en conceptos y bloques políticos
+  concretos (aquí, en la derecha). Que Haiku acierte más en estos casos no
+  contradice la elección de Luna, basada en la detección de conceptos; los casos
+  se seleccionaron precisamente porque había desacuerdo. Una sola persona
+  adjudicó, viendo ambas codificaciones sin saber qué modelo era cada una.
 - **La frontera entre descripción y justificación, en cifras.** En 31 de los 77
   fragmentos que la referencia consideró sin justificaciones (40 %), Luna
   identificó alguna. Sacado de resultados (5.1) porque cerraba mal el párrafo de

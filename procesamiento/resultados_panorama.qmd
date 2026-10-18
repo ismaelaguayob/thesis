@@ -53,7 +53,9 @@ theme_set(theme_minimal(base_size = 11) +
 ## Base analítica
 
 La base reúne una fila por intervención y una fila por declaración, es decir,
-por combinación intervención sustantiva × concepto × postura. Una intervención
+por combinación intervención sustantiva × concepto × postura. Las posturas
+incorporan la adjudicación humana de los desacuerdos entre censos
+(`docs/decisiones-validacion.md`, sección 5). Una intervención
 es sustantiva si tiene al menos un fragmento que el modelo no marcó como
 votación o procedimiento. Los totales de intervenciones deben coincidir con la
 Tabla 1 del manuscrito.
@@ -74,7 +76,17 @@ stopifnot(
   !anyNA(claims$law), !anyNA(claims$speaker_id),
   setequal(unique(claims$concept_id), concepts$concept_id)
 )
+# Decisiones de adjudicación aplicadas a las posturas de Luna.
+base$adjudication |>
+  count(decision) |>
+  knitr::kable(col.names = c("Decisión", "Bloques × concepto"))
 ```
+
+Se aplican `r nrow(base$adjudication)` decisiones de adjudicación, que
+reemplazan la postura de Luna en otros tantos bloques × concepto; cuando el
+concepto no corresponde, la anotación se elimina. Son menos del 3 % de las
+anotaciones del censo, concentradas en conciencia de costos, previsión como
+mercado e ineficiencia y riesgo estatal.
 
 ## Denominadores
 
@@ -115,16 +127,16 @@ stopifnot(sum(denominators$intervenciones[1:3]) == 1096L,
 # Los porcentajes acompañan a su recuento en la misma celda: descartadas sobre
 # el total de intervenciones; con declaraciones sobre las sustantivas.
 n_pct <- function(n, total) {
-  sprintf("%s (%s %%)", format(n, big.mark = "."), round(100 * n / total))
+  sprintf("%s (%s %%)", format(n, big.mark = ".", decimal.mark = ","), round(100 * n / total))
 }
 denominators_display <- denominators |>
   transmute(`Ley y fase` = ventana,
-            Intervenciones = format(intervenciones, big.mark = "."),
+            Intervenciones = format(intervenciones, big.mark = ".", decimal.mark = ","),
             `Descartadas (%)` = n_pct(descartadas, intervenciones),
-            Sustantivas = format(sustantivas, big.mark = "."),
+            Sustantivas = format(sustantivas, big.mark = ".", decimal.mark = ","),
             `Con declaraciones (%)` = n_pct(con_declaraciones, sustantivas),
-            `Actores con perfil` = format(actores_perfil, big.mark = "."),
-            Declaraciones = format(declaraciones, big.mark = "."))
+            `Actores con perfil` = format(actores_perfil, big.mark = ".", decimal.mark = ","),
+            Declaraciones = format(declaraciones, big.mark = ".", decimal.mark = ","))
 knitr::kable(denominators_display, align = c("l", rep("r", 6)))
 ```
 
@@ -335,17 +347,18 @@ knitr::kable(dispute_cells, align = c("l", "c", "c", "c"))
 ```
 
 
-La tabla, de respaldo para el texto, separa dos grupos de conceptos. Los disputados se concentran en la
-dimensión institucional y distributiva propia de la reforma: previsión como
-mercado, capitalización individual, solidaridad intergeneracional e
-ineficiencia y riesgo estatal se dividen casi por mitades en la Ley 21.735
-(proporción minoritaria entre 42 % y 49 %), y conciencia de costos se
-disputa en las tres leyes. Los consensuales son, sobre todo, criterios de
-merecimiento y justicia: necesidad material y reciprocidad contributiva no
-registran ningún rechazo, e igualdad y universalismo y el origen dictatorial
-apenas los registran. Propiedad de los fondos y libertad de elección, pese a
-ser justificaciones del arreglo vigente, reciben muy pocos rechazos en la
-reforma (proporción minoritaria de 9 % y 5 %).
+La tabla, de respaldo para el texto, separa dos grupos de conceptos. Los
+disputados se concentran en la dimensión institucional y distributiva propia de
+la reforma: capitalización individual, previsión como mercado y solidaridad
+intergeneracional se dividen casi por mitades en la Ley 21.735 (proporción
+minoritaria de 46 % a 48 %), e ineficiencia y riesgo estatal y conciencia de
+costos reciben cerca de un rechazo por cada dos apoyos (33 % y 30 %); costos
+se disputa además en las tres leyes. Los consensuales son, sobre todo,
+criterios de merecimiento y justicia: necesidad material y reciprocidad
+contributiva no registran ningún rechazo, igualdad y universalismo apenas uno,
+y el origen dictatorial ninguno en la reforma. Propiedad de los fondos y
+libertad de elección, pese a ser justificaciones del arreglo vigente, reciben
+muy pocos rechazos en la reforma (proporción minoritaria de 8 % y 5 %).
 
 El patrón sugiere que el conflicto de la reforma se libra sobre la
 organización institucional de la previsión más que sobre los criterios de
