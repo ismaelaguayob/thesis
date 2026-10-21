@@ -56,8 +56,9 @@ La base reúne una fila por intervención y una fila por declaración, es decir,
 por combinación intervención sustantiva × concepto × postura. Las posturas
 incorporan la adjudicación humana de los desacuerdos entre censos
 (`docs/decisiones-validacion.md`, sección 5). Una intervención
-es sustantiva si tiene al menos un fragmento que el modelo no marcó como
-votación o procedimiento. Los totales de intervenciones deben coincidir con la
+es sustantiva si tiene al menos un fragmento con declaraciones o que el modelo
+no marcó como votación o procedimiento: un fragmento que justifica un voto con
+razones normativas se conserva. Los totales de intervenciones deben coincidir con la
 Tabla 1 del manuscrito.
 
 ```{r}
@@ -159,7 +160,7 @@ n_mesa <- sum(str_detect(coalesce(discarded$role, ""),
                          "^(Presidente|Presidenta|Vicepresidente|Vicepresidenta|Secretari)"))
 ```
 
-De las `r format(tot$intervenciones, big.mark = ".")` intervenciones, `r tot$descartadas`
+De las `r format(tot$intervenciones, big.mark = ".", decimal.mark = ",")` intervenciones, `r tot$descartadas`
 (`r percent(tot$descartadas / tot$intervenciones, accuracy = 1)`) se
 descartan por estar compuestas solo de votaciones o procedimiento. En su mayoría
 son intervenciones de la mesa (presidencia, vicepresidencia y secretaría:
@@ -176,7 +177,7 @@ que en la Cámara 2024
 (`r percent(cam24$con_declaraciones / cam24$sustantivas, accuracy = 1)`).
 
 El diseño es asimétrico: la reforma reúne `r ref$actores_perfil` actores con
-perfil y `r format(ref$declaraciones, big.mark = ".")` declaraciones, frente a
+perfil y `r format(ref$declaraciones, big.mark = ".", decimal.mark = ",")` declaraciones, frente a
 `r denominators$actores_perfil[1]` y `r denominators$actores_perfil[2]`
 actores en las leyes de la PGU. Las proporciones de la Ley 21.538 descansan en
 `r denominators$sustantivas[2]` intervenciones y deben leerse con cautela.
@@ -275,25 +276,27 @@ ggsave(file.path(FIGURE_DIR, "figura4_prevalencia_postura.png"), fig_prevalencia
        width = 9, height = 6, dpi = 300, bg = "white")
 ```
 
-La necesidad material es el concepto con más apoyo en las leyes 21.419 y
-21.735 (`r pct("Ley 21.419", "necesidad_material")` y
+La necesidad material es el concepto con más apoyo en las tres leyes
+(`r pct("Ley 21.419", "necesidad_material")`,
+`r pct("Ley 21.538", "necesidad_material")` y
 `r pct("Ley 21.735", "necesidad_material")` de las intervenciones
-sustantivas), el segundo en la 21.538
-(`r pct("Ley 21.538", "necesidad_material")`) y nunca recibe rechazo. La reciprocidad contributiva sigue el mismo patrón:
+sustantivas) y nunca recibe rechazo. La reciprocidad contributiva sigue el mismo patrón:
 apoyo en todas las leyes, mayor en la reforma
 (`r pct("Ley 21.735", "reciprocidad_contributiva")`), y ningún rechazo. En los
 debates de la PGU destaca la igualdad y el universalismo
 (`r pct("Ley 21.419", "igualdad_universalismo")` en la Ley 21.419 y
 `r pct("Ley 21.538", "igualdad_universalismo")` en la 21.538, donde es el
-concepto más apoyado), en coherencia con una discusión centrada en el acceso a
+segundo concepto más apoyado), en coherencia con una discusión centrada en el acceso a
 una pensión no contributiva.
 
 La reforma amplía el repertorio. Los conceptos distributivos e institucionales
 del caso son escasos en los debates de la PGU, salvo solidaridad colectiva y
 previsión como mercado en la Ley 21.419, y alcanzan en la Ley 21.735
-proporciones de apoyo de entre 5 % (solidaridad intergeneracional) y 26 %
-(previsión como mercado); previsión como mercado es el más presente de
-ellos y el único cuyo rechazo
+proporciones de apoyo de entre
+`r pct("Ley 21.735", "solidaridad_intergeneracional")` (solidaridad
+intergeneracional) y `r pct("Ley 21.735", "prevision_como_mercado")`
+(previsión como mercado); previsión como mercado es el más presente de ellos y,
+junto con la solidaridad intergeneracional, el único cuyo rechazo
 (`r pct("Ley 21.735", "prevision_como_mercado", "oppose")`) supera a su
 apoyo. Esta diferencia responde en parte a la materia de cada proyecto: la PGU
 no alteraba la cuenta individual. Acuerdos y moderación, la justificación
@@ -303,7 +306,7 @@ criterios de justicia más frecuentes.
 
 Actitud, el criterio CARIN que condiciona el apoyo al comportamiento o la
 gratitud de quien lo recibe, no aparece en las leyes de la PGU y registra
-`r sum(prevalence$n[prevalence$concept_id == "actitud"])` declaración en
+`r sum(prevalence$n[prevalence$concept_id == "actitud"])` declaraciones en
 toda la reforma. Su ausencia es en sí un resultado: los criterios de
 merecimiento presentes (necesidad y reciprocidad) se invocan para justificar
 el apoyo a las personas mayores, no para condicionarlo.
@@ -351,14 +354,14 @@ La tabla, de respaldo para el texto, separa dos grupos de conceptos. Los
 disputados se concentran en la dimensión institucional y distributiva propia de
 la reforma: capitalización individual, previsión como mercado y solidaridad
 intergeneracional se dividen casi por mitades en la Ley 21.735 (proporción
-minoritaria de 46 % a 48 %), e ineficiencia y riesgo estatal y conciencia de
-costos reciben cerca de un rechazo por cada dos apoyos (33 % y 30 %); costos
+minoritaria de 44 % a 49 %), e ineficiencia y riesgo estatal y conciencia de
+costos reciben cerca de un rechazo por cada dos apoyos (31 % en ambos); costos
 se disputa además en las tres leyes. Los consensuales son, sobre todo,
 criterios de merecimiento y justicia: necesidad material y reciprocidad
 contributiva no registran ningún rechazo, igualdad y universalismo apenas uno,
 y el origen dictatorial ninguno en la reforma. Propiedad de los fondos y
 libertad de elección, pese a ser justificaciones del arreglo vigente, reciben
-muy pocos rechazos en la reforma (proporción minoritaria de 8 % y 5 %).
+muy pocos rechazos en la reforma (proporción minoritaria de 7 % y 3 %).
 
 El patrón sugiere que el conflicto de la reforma se libra sobre la
 organización institucional de la previsión más que sobre los criterios de

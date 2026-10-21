@@ -5,8 +5,27 @@ export_apa7_word_table <- function(data, path, title, note = NULL,
                                    table_number = 1L, left_columns = 1L,
                                    max_width = NULL, rich_cells = NULL,
                                    landscape = FALSE, column_widths = NULL,
-                                   body_font_size = 12, cell_padding = 3) {
+                                   body_font_size = 12, cell_padding = 3,
+                                   header_labels = NULL, header_groups = NULL,
+                                   section_rows = NULL, merge_cells = NULL) {
+  # header_labels: etiquetas visibles de las columnas (permite repetirlas).
+  # header_groups: fila superior que agrupa columnas, p. ej.
+  #   c(" " = 1, "Apoyo" = 3, "Rechazo" = 3).
+  # section_rows: filas del cuerpo que funcionan como títulos de panel o de
+  #   grupo; se combinan a lo ancho de la tabla y van en cursiva.
+  # merge_cells: lista de list(rows = , columns = ) para combinar celdas
+  #   horizontalmente; el valor debe estar en la primera columna del grupo.
   ft <- flextable::flextable(data)
+  if (!is.null(header_labels)) {
+    stopifnot(length(header_labels) == ncol(data))
+    ft <- flextable::set_header_labels(ft, values = stats::setNames(
+      as.list(header_labels), names(data)))
+  }
+  if (!is.null(header_groups)) {
+    stopifnot(sum(header_groups) == ncol(data))
+    ft <- flextable::add_header_row(ft, values = names(header_groups),
+                                    colwidths = unname(header_groups))
+  }
   if (!is.null(note)) {
     # APA 7: only the label "Nota." is italic; the note text is regular.
     ft <- flextable::add_footer_lines(
@@ -14,11 +33,12 @@ export_apa7_word_table <- function(data, path, title, note = NULL,
     )
   }
 
+  # APA 7: líneas sobre y bajo el encabezado y al final del cuerpo; la nota
+  # queda sin borde.
   ft <- flextable::border_remove(ft) |>
-    flextable::hline_top(border = officer::fp_border(width = 2), part = "all") |>
-    flextable::hline_bottom(border = officer::fp_border(width = 2), part = "all") |>
-    flextable::hline(i = 1, border = officer::fp_border(width = 1.5),
-                     part = "header") |>
+    flextable::hline_top(border = officer::fp_border(width = 2), part = "header") |>
+    flextable::hline_bottom(border = officer::fp_border(width = 1.5), part = "header") |>
+    flextable::hline_bottom(border = officer::fp_border(width = 2), part = "body") |>
     flextable::bold(part = "header") |>
     flextable::font(fontname = "Times New Roman", part = "all") |>
     flextable::fontsize(size = body_font_size, part = "all") |>
@@ -31,6 +51,26 @@ export_apa7_word_table <- function(data, path, title, note = NULL,
     flextable::set_table_properties(
       opts_word = list(split = FALSE, repeat_headers = TRUE)
     )
+
+  if (!is.null(header_groups)) {
+    # Línea corta bajo cada etiqueta de grupo con más de una columna.
+    ends <- cumsum(header_groups)
+    starts <- ends - header_groups + 1
+    for (k in which(header_groups > 1 & trimws(names(header_groups)) != "")) {
+      ft <- flextable::hline(ft, i = 1, j = starts[k]:ends[k],
+                             border = officer::fp_border(width = 1), part = "header")
+    }
+  }
+  for (cells in merge_cells) {
+    for (i in cells$rows) {
+      ft <- flextable::merge_at(ft, i = i, j = cells$columns, part = "body")
+    }
+  }
+  for (i in section_rows) {
+    ft <- flextable::merge_at(ft, i = i, j = seq_len(ncol(data)), part = "body") |>
+      flextable::italic(i = i, part = "body") |>
+      flextable::align(i = i, align = "left", part = "body")
+  }
 
   # Scale column widths instead of fit_to_width(), which shrinks the font.
   # Text keeps body_font_size and wraps inside the narrower columns. Default

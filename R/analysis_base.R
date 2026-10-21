@@ -105,7 +105,8 @@ apply_stance_adjudication <- function(annotations, adjudication) {
 }
 
 # Devuelve una lista con:
-# - blocks: un bloque por fila, con su estado y si es sustantivo;
+# - blocks: un bloque por fila, con su estado y si es sustantivo (tiene
+#   declaraciones o no está marcado como votación ni procedimiento);
 # - interventions: una intervención por fila, con su actor y si es sustantiva;
 # - claims: D_ucs, una fila por intervención sustantiva × concepto × postura,
 #   con la postura adjudicada cuando existe una decisión humana;
@@ -135,10 +136,13 @@ load_analysis_base <- function(run_dir = LUNA_RUN_DIR,
     dplyr::inner_join(
       results |>
         dplyr::transmute(unit_id,
+                         statements = decision == "statements",
                          vote = stringr::str_detect(flags, '"vote"'),
                          procedural = stringr::str_detect(flags, '"procedural"')),
       by = "unit_id") |>
-    dplyr::mutate(substantive = !(vote | procedural))
+    # `vote` también marca justificaciones de voto: un bloque con declaraciones
+    # es sustantivo aunque anuncie o justifique un voto.
+    dplyr::mutate(substantive = statements | !(vote | procedural))
 
   key <- c("law_number", "document_uri", "utterance_id")
   interventions <- blocks |>

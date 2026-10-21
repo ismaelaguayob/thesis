@@ -297,29 +297,37 @@ Como se ve en la Figura 3, la concordancia de Luna con la referencia fue similar
 
 ### **5.2 El repertorio normativo del debate previsional**
 
-De las 1.096 intervenciones del corpus, 589 (54 %) se componen solo de votaciones o de procedimiento y se excluyen de los análisis. Las 507 restantes se utilizan como denominador en las proporciones de esta sección, y el 86 % tiene al menos una declaración codificada. La reforma concentra 181 de los 213 actores con perfil y 1.067 de las 1.381 declaraciones; la Ley N.º 21.538 reúne solo 56 intervenciones sustantivas, por lo que sus proporciones deben leerse con cautela.
+De las 1.096 intervenciones del corpus, 556 (51 %) se componen solo de votaciones o de procedimiento, sin declaraciones codificadas, y se excluyen de los análisis. Las 540 restantes se utilizan como denominador en las proporciones de esta sección, y el 90 % tiene al menos una declaración codificada. La reforma concentra 186 de los 219 actores con perfil y 1.345 de las 1.719 declaraciones; la Ley N.º 21.538 reúne solo 59 intervenciones sustantivas, por lo que sus proporciones deben leerse con cautela.
 
-La necesidad material es el concepto con más apoyo en las leyes N.º 21.419 y 21.735 (48 % y 39 % de las intervenciones) y el segundo en la Ley N.º 21.538 (45 %), donde la supera la igualdad y el universalismo (48 %) (Figura 4). La reforma amplía el repertorio: los conceptos distributivos e institucionales del caso, escasos en los debates de la PGU, alcanzan en la Ley N.º 21.735 entre un 5 % (solidaridad intergeneracional) y un 26 % (previsión como mercado) de apoyo, y acuerdos y moderación aparece con apoyo en el 31 % de sus intervenciones. Actitud registra una sola declaración en todo el corpus.
+La necesidad material es el concepto con más apoyo en las tres leyes: 51 % de las intervenciones en la Ley N.º 21.419, 47 % en la Ley N.º 21.538 y 47 % en la Ley N.º 21.735 (Figura 4); en la Ley N.º 21.538 le sigue de cerca la igualdad y el universalismo (46 %). La reforma amplía el repertorio: los conceptos distributivos e institucionales del caso, escasos en los debates de la PGU, alcanzan en la Ley N.º 21.735 entre un 6 % (solidaridad intergeneracional) y un 29 % (previsión como mercado) de apoyo, y acuerdos y moderación aparece con apoyo en el 38 % de sus intervenciones. Actitud registra solo dos declaraciones en todo el corpus.
 
 **Figura 4.** *Apoyo y rechazo a cada concepto por ley*
 
 ![](output/figures/resultados/figura4_prevalencia_postura.png)
 
-*Nota.* Porcentaje de intervenciones sustantivas que apoyan (derecha) o rechazan (izquierda) cada concepto; se etiquetan los valores de al menos 3 %. Se omite actitud, con una sola declaración en el corpus.
+*Nota.* Porcentaje de intervenciones sustantivas que apoyan (derecha) o rechazan (izquierda) cada concepto; se etiquetan los valores de al menos 3 %. Se omite actitud, con dos declaraciones en el corpus.
 
-La figura 4 también muestra qué conceptos son más disputados y cuáles son consensuales. En la última reforma, previsión como mercado (26 % de apoyo y 28 % de rechazo), capitalización individual (13 % y 12 %) y solidaridad intergeneracional (5 % y 4 %) reciben casi tantos rechazos como apoyos; ineficiencia y riesgo estatal (15 % y 7 %) y conciencia de costos (15 % y 7 %) también se disputan, con cerca de un rechazo por cada dos apoyos, y costos se disputa además en las tres leyes. En contraste, ningún actor rechaza la necesidad material ni la reciprocidad contributiva. Ambas se invocan con frecuencia para legitimar el apoyo a las personas mayores, ya sea por su precariedad («las personas mayores en Chile sufren riesgo de desnutrición») o por su trayectoria laboral («después de décadas de trabajo, merecen una vejez al menos un tanto más tranquila»). Igualdad y universalismo registra un solo rechazo y la ilegitimidad del origen dictatorial ninguno en la reforma, e incluso propiedad de los fondos y libertad de elección, justificaciones del arreglo vigente, se rechazan en menos del 3 % de las intervenciones de la reforma. El conflicto de la reforma se libra en torno a la organización institucional de la previsión más que sobre los criterios de merecimiento, que los actores comparten.
+La figura 4 también muestra qué conceptos son más disputados y cuáles son consensuales. En la última reforma, previsión como mercado (29 % de apoyo y 32 % de rechazo), capitalización individual (16 % y 13 %) y solidaridad intergeneracional (6 % y 6 %) reciben casi tantos rechazos como apoyos; ineficiencia y riesgo estatal (17 % y 8 %) y conciencia de costos (15 % y 7 %) también se disputan, con cerca de un rechazo por cada dos apoyos, y costos se disputa además en las tres leyes. En contraste, ningún actor rechaza la necesidad material ni la reciprocidad contributiva. Ambas se invocan con frecuencia para legitimar el apoyo a las personas mayores, ya sea por su precariedad («las personas mayores en Chile sufren riesgo de desnutrición») o por su trayectoria laboral («después de décadas de trabajo, merecen una vejez al menos un tanto más tranquila»). Igualdad y universalismo registra un solo rechazo y la ilegitimidad del origen dictatorial ninguno en la reforma, e incluso propiedad de los fondos y libertad de elección, justificaciones del arreglo vigente, se rechazan en menos del 3 % de las intervenciones de la reforma. El conflicto de la reforma se libra en torno a la organización institucional de la previsión más que sobre los criterios de merecimiento, que los actores comparten.
 
 ### **5.3 H1: Bloques políticos y criterios de justicia**
 
-*[Modelo: logit multinivel (`lme4::glmer`). Unidad: intervención sustantiva × concepto, Ley 21.735. Dos variables dependientes por separado: la intervención apoya el concepto (sí/no) y lo rechaza (sí/no). Predictores: concepto × bloque (izquierda, centro, derecha), género, tipo de actor y logaritmo de palabras de la intervención; intercepto aleatorio por actor. Los conceptos sin rechazos se describen sin modelar en el logit de rechazo. Coeficientes en el anexo.]*
+En esta sección, los porcentajes se presentan en el orden derecha e izquierda, y las diferencias, como derecha menos izquierda. La derecha apoyó con mayor probabilidad que la izquierda cinco de los siete conceptos que H1 le atribuye (Figura 5): la propiedad de los fondos (57 % y 9 % de las intervenciones; +48 pp; IC 95 % \[38; 58\]), la ineficiencia y riesgo estatal (41 % y 2 %; +39 pp; IC 95 % \[30; 49\]), la capitalización individual (38 % y 1 %; +37 pp; IC 95 % \[29; 45\]), la previsión como mercado (43 % y 21 %; +22 pp; IC 95 % \[14; 31\]) y la conciencia de costos (29 % y 7 %; +22 pp; IC 95 % \[15; 30\]). La izquierda apoyó con mayor probabilidad cuatro de los cinco conceptos que se le atribuyen: la necesidad material (31 % y 61 %; −30 pp; IC 95 % \[−42; −19\]), la ilegitimidad del origen dictatorial (1 % y 28 %; −27 pp; IC 95 % \[−34; −20\]), la solidaridad como deber colectivo (4 % y 13 %; −10 pp; IC 95 % \[−16; −4\]) y la solidaridad intergeneracional (2 % y 9 %; −7 pp; IC 95 % \[−12; −4\]). En el rechazo, la izquierda rechazó con mayor probabilidad la previsión como mercado (10 % y 50 %; −41 pp; IC 95 % \[−51; −31\]), la capitalización individual (1 % y 23 %; −22 pp; IC 95 % \[−30; −15\]) y, en menor medida, la propiedad de los fondos (0,4 % y 3 %; −3 pp; IC 95 % \[−6; −0,2\]), y la derecha rechazó con mayor probabilidad la solidaridad intergeneracional (14 % y 1 %; +13 pp; IC 95 % \[7; 19\]).
 
-*[Párrafo 1: expectativa de H1 y qué la contradiría.]*
+**Figura 5.** *Probabilidad predicha de apoyo y rechazo de cada concepto por bloque político, Ley N.º 21.735*
 
-**Figura 5.** *Probabilidad predicha de apoyo y rechazo de cada concepto por bloque político, Ley 21.735*
+![](output/figures/resultados/figura5_h1_probabilidades.png)
 
-*[Puntos con IC 95 %; un panel para apoyo y otro para rechazo.]*
+*Nota.* Probabilidad predicha de que una intervención sustantiva apoye o rechace cada concepto, con intervalos de confianza del 95 %. Los conceptos se agrupan según el bloque que, de acuerdo con H1, los apoyaría más. La escala horizontal difiere entre paneles. La especificación de los modelos se presenta en el Anexo 4, y las estimaciones, en la Tabla S2 del Anexo 3.
 
-*[Párrafos 2–3: veredicto por concepto, contrastando los doce conceptos de H1 (derecha: propiedad, capitalización, reciprocidad, libertad de elección, conciencia de costos, ineficiencia estatal, previsión como mercado; izquierda: necesidad, igualdad, solidaridad intergeneracional, solidaridad colectiva, origen dictatorial). Apoyos de la izquierda a premisas del repertorio de capitalización individual (reciprocidad, propiedad) se señalan aquí y se desarrollan en 5.8.]*
+En las intervenciones, estos conceptos aparecen articulados entre sí. En la derecha, la propiedad de los fondos y el esfuerzo de los trabajadores fundamentan que la cotización adicional se destine a las cuentas individuales, y el reparto aparece como la alternativa rechazada:
+
+> \[...\] los millones de chilenos y chilenas que nos recuerdan día a día que los ahorros son fruto de su esfuerzo y que, por tanto, le pertenecen a cada uno de ellos. Los fondos de pensiones son propiedad de los trabajadores, por lo que cada punto de cotización adicional debe destinarse a sus cuentas individuales y no a un sistema de reparto administrado por el Estado. (diputada, UDI)
+
+En la izquierda, la necesidad material de los pensionados se vincula con el rechazo al sistema como negocio y con su origen en la dictadura: «Los pensionados de Chile deben sobrevivir hoy con las migajas que les da un sistema creado para beneficiar al gran empresariado, no a los pensionados; un sistema que fue instaurado a sangre durante la dictadura cívico-militar» (diputado, PC).
+
+Tres conceptos de H1 no distinguen a los bloques en el apoyo: la reciprocidad contributiva (36 % y 35 %; +0,5 pp; IC 95 % \[−11; 13\]), la libertad de elección (19 % y 15 %; +4 pp; IC 95 % \[−4; 12\]) y la igualdad y el universalismo (27 % y 32 %; −5 pp; IC 95 % \[−14; 5\]). En la izquierda, la reciprocidad se invoca para señalar que el sistema vigente no retribuye a quienes cotizaron («es inadmisible que el 72 por ciento de las mujeres que ha cotizado más de 35 años se encuentre viviendo por debajo de la línea de la pobreza»; diputada, Convergencia Social) y para extender esa retribución al trabajo de cuidados no remunerado («Esta reforma reconoce la enorme carga de trabajo no remunerado que experimentan las mujeres a lo largo de sus vidas»; diputada, PC). La libertad de elección aparece, en cambio, como respuesta a los argumentos de la derecha, de dos formas: para afirmar que la reforma la conserva («la capacidad de cada uno de los y las cotizantes del sistema previsional para escoger la gestión de la cotización individual se mantiene»; diputada, PS) o para sostener que el sistema vigente la restringe («Lo que promueve la derecha, que es la libertad de elección, en este modelo no lo tenemos. Nos quieren obligar a estar en las AFP»; diputado, Partido Radical). En ambos casos, la izquierda no discute el valor de elegir, sino cuál de los dos arreglos lo garantiza. La igualdad, por su parte, también recibe apoyo en la derecha, donde se asocia con la compensación a las mujeres y se separa del reparto: «Solidaridad, sí; bienvenida. Hay que igualar o compensar las tablas de mortalidad a las mujeres. \[...\] pero financiar las pensiones a través de un sistema de reparto que no ayuda a los que hoy están peor pensionados y que lesiona las pensiones futuras, eso sí que no» (diputado, UDI).
+
+En el rechazo, la ineficiencia y riesgo estatal no distingue a los bloques (7 % y 9 %; −3 pp; IC 95 % \[−8; 3\]). Los rechazos de derecha a este concepto sostienen que los fondos creados por la reforma quedan protegidos frente al Estado: «Los seis puntos adicionales son de propiedad de los trabajadores y trabajadoras, y no son susceptibles de ser capturados» (senador, Evópoli). La conciencia de costos, por su parte, se rechaza con mayor probabilidad en la derecha, en sentido contrario al esperado (11 % y 5 %; +6 pp; IC 95 % \[0,1; 12\]). En la Cámara, estos rechazos afirman que existen recursos para aumentar la Pensión Garantizada Universal («la señal que da el gobierno no es que no hay plata, ya que gastan y despilfarran en muchas cosas»; diputada, Partido Republicano); en el Senado, que el acuerdo resguarda la sostenibilidad fiscal. Los demás conceptos de H1 casi no reciben rechazos, y ninguno la necesidad material, la reciprocidad contributiva ni el origen dictatorial, por lo que en ellos la parte de H1 referida al rechazo no puede evaluarse.
 
 ### **5.4 H2a: Coaliciones discursivas**
 
@@ -658,7 +666,7 @@ Entrega únicamente un objeto JSON válido, sin Markdown, comentarios, preámbul
 - Si `decision="no_statements"`, `annotations` debe ser exactamente `[]`.\
 - No incluyas offsets, IDs de anotación, conceptos propuestos, notas generales, campos de revisión humana, probabilidades ni cadenas de pensamiento. El programa calcula offsets, asigna IDs y decide qué casos remitir a revisión.
 
-### **8.3 Anexo 3: Concordancia por concepto**
+### **8.3 Anexo 3: Tablas complementarias**
 
 **Tabla 2**\
 *Concordancia entre la referencia humana y los modelos por concepto*
@@ -681,3 +689,39 @@ Entrega únicamente un objeto JSON válido, sin Markdown, comentarios, preámbul
 | Control\* | 14 | 0,50 | 0,43 | 0,46 | 0,44 | 0,44 \[0,17–0,66\] | 0,48 \[0,19–0,71\] | 0,91 | 0,60 |
 | Solidaridad intergeneracional | 12 | 0,53 | 0,75 | 0,62 | 0,61 | 0,61 \[0,36–0,80\] | 0,61 \[0,36–0,80\] | 0,82 | 0,68 |
 | *Nota.* *n*: bloques con el concepto en la referencia (359 evaluados). Precisión, Sensibilidad, *F*1 y κ (Cohen): par humano–Luna. H: humano; L: Luna-6; Hk: Haiku 5.5; tres: los tres codificadores. IC 95 %: remuestreo de bloques (10.000). \* Excluido: todo su intervalo con Luna queda bajo 0,667. Actitud no aparece porque la referencia no lo asigna. Nombres abreviados. |  |  |  |  |  |  |  |  |  |
+
+**Tabla S2.** *Apoyo y rechazo de los conceptos de H1 por bloque político: probabilidades predichas y modelos logísticos multinivel, Ley N.º 21.735*
+
+*[Insertar `output/tables/resultados/anexo_h1.docx`.]*
+
+### **8.4 Anexo 4: Suplemento metodológico**
+
+#### *4.1 Validación de la codificación*
+
+*[Pendiente: unidad de comparación (bloque, bloque × concepto y bloque × concepto × postura), alfa de Krippendorff y F1, remuestreo de fragmentos (10.000 réplicas) y regla de inclusión de conceptos.]*
+
+#### *4.2 Base de análisis y reglas de conteo*
+
+Un bloque se considera sustantivo si contiene al menos una declaración codificada o si el modelo no lo marcó como votación o contenido procedimental; una intervención es sustantiva si tiene al menos un bloque sustantivo. Así, un bloque que justifica un voto con razones normativas se conserva. Las menciones repetidas de un concepto dentro de una intervención cuentan una sola vez por postura. *[Pendiente: adjudicación de postura (regla de selección de casos y procedimiento).]*
+
+#### *4.3 H1: Modelos logísticos multinivel*
+
+La unidad es la combinación de intervención sustantiva y concepto en la Ley N.º 21.735: 351 intervenciones de 183 actores de izquierda, centro y derecha, cada una observada en los doce conceptos de H1 (4.212 observaciones). Las proporciones se calculan por intervención y no por actor, porque un mismo actor puede ampliar su repertorio o insistir en un mismo criterio a lo largo del debate. El centro se incluye en la estimación, pero no en la comparación, porque aporta solo 32 intervenciones. Los integrantes del Ejecutivo se incluyen en su bloque. La probabilidad *p* de que una intervención apoye un concepto se modela como:
+
+logit(*p*) = β₀ + β(bloque) + β₁ · mujer + β₂ · log(palabras) + *u*(actor) + *v*(concepto) + *w*(concepto × bloque)
+
+donde β(bloque) es el efecto fijo del bloque (referencia: izquierda), mujer indica el género del actor y log(palabras) es el logaritmo estandarizado de la longitud de la intervención. Los tres términos finales son efectos aleatorios con distribución normal de media cero: *u* recoge la propensión propia de cada actor; *v*, la frecuencia general de cada concepto; y *w*, la desviación de cada bloque en cada concepto respecto de lo que predicen los términos anteriores. Este último término expresa el contraste de H1. Al estimarse como efecto aleatorio, las combinaciones sin casos reciben un valor finito, acercado a lo que predicen su bloque y su concepto, sin necesidad de fijar una distribución previa. El modelo de rechazo tiene la misma forma. Ambos se estimaron con `lme4::glmer` en R.
+
+Las probabilidades predichas de cada bloque promedian las predicciones sobre todas las intervenciones observadas, conservando su género y longitud, e incluyen los efectos de concepto y de concepto × bloque, pero no el del actor. Los intervalos de confianza del 95 % corresponden a los percentiles 2,5 y 97,5 de 1.000 réplicas en que se sortearon actores con reposición dentro de cada bloque, se reajustó el modelo y se recalcularon las predicciones. En las combinaciones sin casos, el intervalo de la probabilidad refleja solo la incertidumbre del resto del modelo. Las diferencias predichas entre bloques se apartan a lo más 2,5 puntos porcentuales de las diferencias observadas.
+
+#### *4.4 Redes de actores y de conceptos (H2a y H2b)*
+
+*[Pendiente: proyección de las redes, normalización por coseno, signed spin-glass y coeficiente de participación.]*
+
+#### *4.5 Comparación entre proyectos (H3)*
+
+*[Pendiente.]*
+
+#### *4.6 Persistencia (H4)*
+
+*[Pendiente.]*
