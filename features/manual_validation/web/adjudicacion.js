@@ -61,7 +61,8 @@ function renderCodings(codings) {
       section.append(node('p', 'No codificó este concepto en el bloque.'));
     }
     coding.annotations.forEach(a => {
-      section.append(node('p', stanceLabels[a.stance] || a.stance, 'adj-stance'));
+      // En la segunda ronda la postura de los modelos se oculta.
+      if (a.stance) section.append(node('p', stanceLabels[a.stance] || a.stance, 'adj-stance'));
       section.append(node('blockquote', a.text));
       if (a.justification) section.append(node('p', `Justificación: ${a.justification}`));
       if (a.confidence) section.append(node('p', `Confianza: ${a.confidence}`));

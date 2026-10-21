@@ -102,5 +102,39 @@ class StanceAdjudicationTests(unittest.TestCase):
         self.assertEqual(self.service.list_items()['items'][0]['decision'], 'oppose')
 
 
+    def test_second_round_selects_agreed_rejections_and_hides_their_stance(self):
+        primary = annotations([
+            {'unit_id': 'u1', 'concept_id': 'ineficiencia_estado', 'stance': 'oppose'},   # disagreement
+            {'unit_id': 'u2', 'concept_id': 'ineficiencia_estado', 'stance': 'oppose'},   # agreed rejection
+            {'unit_id': 'u3', 'concept_id': 'ineficiencia_estado', 'stance': 'support'},  # agreed support
+            {'unit_id': 'u4', 'concept_id': 'necesidad_material', 'stance': 'oppose'},    # unflagged concept
+        ])
+        secondary = annotations([
+            {'unit_id': 'u1', 'concept_id': 'ineficiencia_estado', 'stance': 'support'},
+            {'unit_id': 'u2', 'concept_id': 'ineficiencia_estado', 'stance': 'oppose'},
+            {'unit_id': 'u3', 'concept_id': 'ineficiencia_estado', 'stance': 'support'},
+            {'unit_id': 'u4', 'concept_id': 'necesidad_material', 'stance': 'oppose'},
+        ])
+        cases, _ = build_cases(primary, secondary, round_number=2)
+        self.assertEqual({(c['unit_id'], c['concept_id'], c['rule']) for c in cases},
+                         {('u2', 'ineficiencia_estado', 'agreed_rejection_flagged')})
+        primary.to_parquet(self.primary / 'annotations.parquet')
+        secondary.to_parquet(self.secondary / 'annotations.parquet')
+        first = StanceAdjudicationService(self.primary, self.secondary, self.inputs, self.service.root)
+        second = StanceAdjudicationService(self.primary, self.secondary, self.inputs,
+                                           self.service.root, round_number=2)
+        self.assertNotEqual(first.queue_id, second.queue_id)
+        item = second.open_item(0)
+        stances = [a['stance'] for c in item['codings'] for a in c['annotations']]
+        self.assertEqual(stances, [None, None])
+        self.assertEqual(second.save_decision(0, {'decision': 'support', 'revision': 0})
+                         ['decision']['round'], 2)
+
+    def test_first_round_identifier_does_not_depend_on_rounds(self):
+        explicit = StanceAdjudicationService(self.primary, self.secondary, self.inputs,
+                                             self.service.root, round_number=1)
+        self.assertEqual(explicit.queue_id, self.service.queue_id)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -12,6 +12,16 @@ Rule (docs/decisiones-validacion.md, section 5):
    the secondary run did not annotate.
 
 Concepts excluded from the analysis by the inclusion rule are left out.
+
+Second round (docs/decisiones-validacion.md, section 5, second round):
+
+3. For the same flagged concepts, every block × concept in which both runs
+   agree on a rejection (alone or together with support). Shared orientation
+   errors cannot appear as disagreements, so they are reviewed here. The
+   reviewer sees the cited passages but not the stance or the justification
+   the models gave, so the agreement does not anchor the decision.
+
+Each round is a separate frozen queue; the first round keeps its identifier.
 """
 from __future__ import annotations
 
@@ -30,6 +40,11 @@ DECISIONS = {'support', 'oppose', 'both', 'concept_absent', 'unresolved'}
 NOTE_REQUIRED = {'concept_absent', 'unresolved'}
 RULE_BOTH = 'stance_disagreement'
 RULE_PRIMARY_ONLY = 'primary_rejection_unmatched'
+RULE_AGREED_REJECTION = 'agreed_rejection_flagged'
+ROUND_RULES = {
+    1: 'Rule (1) and (2): stance disagreements and unmatched primary rejections.',
+    2: 'Rule (3): rejections both runs agree on, in the concepts flagged in round 1.',
+}
 DEFAULT_THRESHOLD = 0.05
 DEFAULT_EXCLUDED = ('identidad', 'control_responsabilidad_individual')
 
@@ -53,7 +68,8 @@ def _context_text(raw) -> str:
 
 def build_cases(primary: pd.DataFrame, secondary: pd.DataFrame, *,
                 threshold: float = DEFAULT_THRESHOLD,
-                excluded: tuple[str, ...] = DEFAULT_EXCLUDED) -> tuple[list[dict], dict[str, dict]]:
+                excluded: tuple[str, ...] = DEFAULT_EXCLUDED,
+                round_number: int = 1) -> tuple[list[dict], dict[str, dict]]:
     """Return the adjudication cases and the per-concept disagreement rates."""
     key = ['unit_id', 'concept_id']
     primary = primary.loc[~primary['concept_id'].isin(excluded)]
@@ -67,12 +83,23 @@ def build_cases(primary: pd.DataFrame, secondary: pd.DataFrame, *,
                   'rate': float(group['disagree'].mean())}
         for concept, group in both.groupby('concept_id')
     }
+    flagged = {concept for concept, rate in rates.items() if rate['rate'] > threshold}
+    if round_number == 2:
+        agreed = both.loc[~both['disagree'] & both['concept_id'].isin(flagged)
+                          & both['primary'].isin(['oppose', 'both'])]
+        cases = [
+            {'unit_id': row.unit_id, 'concept_id': row.concept_id, 'rule': RULE_AGREED_REJECTION,
+             'primary_stances': row.primary, 'secondary_stances': row.secondary}
+            for row in agreed.itertuples()
+        ]
+        return cases, rates
+    if round_number != 1:
+        raise ValueError(f'Unknown adjudication round: {round_number}')
     cases = [
         {'unit_id': row.unit_id, 'concept_id': row.concept_id, 'rule': RULE_BOTH,
          'primary_stances': row.primary, 'secondary_stances': row.secondary}
         for row in both.loc[both['disagree']].itertuples()
     ]
-    flagged = {concept for concept, rate in rates.items() if rate['rate'] > threshold}
     p_only = p_sets.reset_index().merge(s_sets.reset_index(), on=key, how='left')
     p_only = p_only.loc[p_only['secondary'].isna()
                         & p_only['concept_id'].isin(flagged)
@@ -88,13 +115,16 @@ def build_cases(primary: pd.DataFrame, secondary: pd.DataFrame, *,
 class StanceAdjudicationService:
     def __init__(self, primary_run_dir: Path, secondary_run_dir: Path, input_dir: Path,
                  adjudication_dir: Path, threshold: float = DEFAULT_THRESHOLD,
-                 excluded: tuple[str, ...] = DEFAULT_EXCLUDED):
+                 excluded: tuple[str, ...] = DEFAULT_EXCLUDED, round_number: int = 1):
+        if round_number not in ROUND_RULES:
+            raise ValueError(f'Unknown adjudication round: {round_number}')
         self.primary_run_dir = primary_run_dir.resolve()
         self.secondary_run_dir = secondary_run_dir.resolve()
         self.input_dir = input_dir.resolve()
         self.root = adjudication_dir.resolve()
         self.threshold = threshold
         self.excluded = tuple(excluded)
+        self.round_number = round_number
         self.lock = threading.RLock()
         self._queue = None
         self._records = None
@@ -113,9 +143,12 @@ class StanceAdjudicationService:
 
     @property
     def queue_id(self) -> str:
-        payload = json.dumps({**self._sources(), 'threshold': self.threshold,
-                              'excluded': sorted(self.excluded), 'schema': SCHEMA_VERSION},
-                             sort_keys=True)
+        fields = {**self._sources(), 'threshold': self.threshold,
+                  'excluded': sorted(self.excluded), 'schema': SCHEMA_VERSION}
+        # The first round predates rounds; adding the key would change its identifier.
+        if self.round_number != 1:
+            fields['round'] = self.round_number
+        payload = json.dumps(fields, sort_keys=True)
         return 'stance_' + hashlib.sha256(payload.encode()).hexdigest()[:12]
 
     @property
@@ -133,7 +166,7 @@ class StanceAdjudicationService:
             primary = pd.read_parquet(self.primary_run_dir / 'annotations.parquet')
             secondary = pd.read_parquet(self.secondary_run_dir / 'annotations.parquet')
             cases, rates = build_cases(primary, secondary, threshold=self.threshold,
-                                       excluded=self.excluded)
+                                       excluded=self.excluded, round_number=self.round_number)
             order = {unit: i for i, unit in enumerate(self.records().index)}
             cases.sort(key=lambda c: (order.get(c['unit_id'], len(order)), c['concept_id']))
             for index, case in enumerate(cases):
@@ -146,8 +179,9 @@ class StanceAdjudicationService:
             self._queue = {
                 'schema_version': SCHEMA_VERSION, 'queue_id': self.queue_id,
                 'created_at_utc': now, 'sources': self._sources(),
+                'round': self.round_number,
                 'rule': {'threshold': self.threshold, 'excluded_concepts': sorted(self.excluded),
-                         'description': __doc__.split('Rule')[1].strip()},
+                         'description': ROUND_RULES[self.round_number]},
                 'concept_disagreement': rates,
                 'flagged_concepts': sorted(c for c, r in rates.items() if r['rate'] > self.threshold),
                 'cases': cases,
@@ -191,7 +225,7 @@ class StanceAdjudicationService:
                           'concept_id': case['concept_id'],
                           'concept_label': labels.get(case['concept_id'], case['concept_id']),
                           'rule': case['rule'], 'decision': decision})
-        return {'queue_id': queue['queue_id'], 'rule': queue['rule'],
+        return {'queue_id': queue['queue_id'], 'round': queue.get('round', 1), 'rule': queue['rule'],
                 'flagged_concepts': queue['flagged_concepts'], 'items': items}
 
     def _codings(self, case: dict) -> list[dict]:
@@ -207,9 +241,12 @@ class StanceAdjudicationService:
             codings.append({
                 'label': label,
                 'annotations': [
+                    # In round 2 both runs agree on a rejection: hide what would anchor it.
                     {'start_char': int(r.start_char), 'end_char': int(r.end_char),
-                     'text': r.evidence_text, 'stance': r.stance,
-                     'justification': r.justification, 'confidence': r.confidence}
+                     'text': r.evidence_text,
+                     'stance': r.stance if self.round_number == 1 else None,
+                     'justification': r.justification if self.round_number == 1 else None,
+                     'confidence': r.confidence}
                     for r in frame.itertuples()
                 ],
             })
@@ -262,7 +299,10 @@ class StanceAdjudicationService:
                 'decision': decision, 'note': note.strip(), 'reviewer': reviewer.strip(),
                 'revision': old.get('revision', 0) + 1,
                 'created_at_utc': old.get('created_at_utc', now), 'updated_at_utc': now,
-                'validation_mode': 'adjudication_unblinded_to_text_blinded_to_model',
+                'round': self.round_number,
+                'validation_mode': ('adjudication_unblinded_to_text_blinded_to_model'
+                                    if self.round_number == 1 else
+                                    'adjudication_unblinded_to_text_blinded_to_model_stance'),
             }
             atomic_write_json(path, record)
             return {'decision': record}

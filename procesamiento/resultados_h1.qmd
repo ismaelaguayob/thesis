@@ -50,8 +50,8 @@ N_BOOT <- 1000L
 # o los parámetros del remuestreo.
 knitr::opts_chunk$set(cache.extra = list(tools::md5sum(c(
   "R/analysis_base.R",
-  file.path(c(LUNA_RUN_DIR, HAIKU_RUN_DIR), "annotations.parquet"),
-  file.path(c(LUNA_RUN_DIR, HAIKU_RUN_DIR), "results.parquet"),
+  file.path(LUNA_RUN_DIR, "annotations.parquet"),
+  file.path(LUNA_RUN_DIR, "results.parquet"),
   sprintf("data/proc_data/ley_%s/coding_chunks_long.parquet", names(LAW_LABELS)),
   Sys.glob(file.path(STANCE_ADJUDICATION_DIR, "*", "decisions", "*.json")))),
   SEED, N_BOOT))
@@ -86,7 +86,6 @@ centro o derecha; los no partidistas quedan fuera por su número reducido.
 ```{r}
 #| label: datos
 key <- c("law_number", "document_uri", "utterance_id")
-# Se aplica igual a los censos de Luna y de Haiku.
 prepare_h1 <- function(base) {
   interventions <- base$interventions |>
     filter(substantive, law_number == "21735",
@@ -575,8 +574,8 @@ export_apa7_word_table(
   tabla_h1, file.path(TABLE_DIR, "anexo_h1.docx"),
   "Apoyo y rechazo de los conceptos de H1 por bloque político: probabilidades predichas y modelos logísticos multinivel, Ley N.º 21.735",
   note = paste(
-    "Panel A: porcentaje predicho de intervenciones sustantivas que apoyan o",
-    "rechazan cada concepto e intervalos de confianza del 95 % entre corchetes,",
+    "Panel A: probabilidad predicha (%) de que una intervención sustantiva apoye",
+    "o rechace cada concepto e intervalos de confianza del 95 % entre corchetes,",
     "obtenidos con 1.000 remuestreos de actores dentro de cada bloque; la",
     "diferencia corresponde a derecha menos izquierda, en puntos porcentuales",
     "(pp). Panel B: razones de probabilidades (OR) con intervalos de",
@@ -600,62 +599,3 @@ knitr::kable(tabla_h1, col.names = c("Concepto", "Apoyo: izquierda", "Apoyo: der
                                      "Apoyo: diferencia", "Rechazo: izquierda",
                                      "Rechazo: derecha", "Rechazo: diferencia"))
 ```
-
-## Réplica con Claude Haiku 5.5
-
-Estimamos ambos modelos con las anotaciones de Haiku y comparamos los
-contrastes derecha − izquierda: su correlación con los de Luna y si coinciden
-en el signo de las diferencias cuyo intervalo excluye cero.
-
-```{r}
-#| label: replica-haiku
-#| cache: true
-#| dependson: modelos
-base_haiku <- load_analysis_base(HAIKU_RUN_DIR)
-h1_haiku <- prepare_h1(base_haiku)
-haiku_data <- h1_haiku$data
-m_apoyo_haiku <- fit_h1(haiku_data, "support")
-m_rechazo_haiku <- fit_h1(haiku_data, "oppose")
-res_apoyo_haiku <- summarise_h1(m_apoyo_haiku, haiku_data,
-                                boot_h1(haiku_data, "support"))
-res_rechazo_haiku <- summarise_h1(m_rechazo_haiku, haiku_data,
-                                  boot_h1(haiku_data, "oppose"))
-```
-
-```{r}
-#| label: comparacion-haiku
-contrasts_haiku <- bind_rows(
-  res_apoyo_haiku$contrasts |> mutate(postura = "Apoyo"),
-  res_rechazo_haiku$contrasts |> mutate(postura = "Rechazo")
-) |>
-  label_concepts()
-# Signo de la diferencia cuando su intervalo excluye cero; 0 si lo incluye.
-ci_sign <- function(estimate, low, high) if_else(low > 0 | high < 0, sign(estimate), 0)
-replica_h1 <- contrasts_h1 |>
-  select(postura, concepto, luna = estimate, luna_low = conf.low,
-         luna_high = conf.high) |>
-  inner_join(contrasts_haiku |>
-               select(postura, concepto, haiku = estimate, haiku_low = conf.low,
-                      haiku_high = conf.high), by = c("postura", "concepto")) |>
-  mutate(signo_luna = ci_sign(luna, luna_low, luna_high),
-         signo_haiku = ci_sign(haiku, haiku_low, haiku_high))
-replica_summary <- replica_h1 |>
-  group_by(postura) |>
-  summarise(correlacion = cor(luna, haiku),
-            mismo_signo = sum(signo_luna == signo_haiku),
-            conceptos = n())
-knitr::kable(replica_summary, digits = 3)
-replica_h1 |>
-  filter(signo_luna != signo_haiku) |>
-  transmute(postura, concepto, luna = 100 * luna, haiku = 100 * haiku,
-            haiku_low = 100 * haiku_low, haiku_high = 100 * haiku_high) |>
-  knitr::kable(digits = 1, caption = "Conceptos en que difiere la conclusión")
-```
-
-Con Haiku, los contrastes de apoyo correlacionan en
-`r number(replica_summary$correlacion[1], accuracy = 0.01, decimal.mark = ",")`
-con los de Luna, y los de rechazo en
-`r number(replica_summary$correlacion[2], accuracy = 0.01, decimal.mark = ",")`.
-La conclusión (signo, o intervalo que incluye cero) coincide en
-`r replica_summary$mismo_signo[1]` de los 12 conceptos en apoyo y en
-`r replica_summary$mismo_signo[2]` en rechazo.

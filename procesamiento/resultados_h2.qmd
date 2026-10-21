@@ -1,0 +1,527 @@
+---
+title: "H2: Coaliciones discursivas"
+subtitle: "Sección 5.4: detección de comunidades en la red de actores de la Ley 21.735"
+lang: es
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: true
+  message: false
+---
+
+Este reporte respalda la sección 5.4 del manuscrito. H2 sostiene que en el
+debate de la Ley 21.735 se identificarán dos polos discursivos principales,
+vinculados con la justicia de mercado y la justicia política. El polo de
+preservación empleará argumentos a favor de la propiedad y la capitalización
+individual, la reciprocidad contributiva, la conciencia de costos y la
+organización privada y mercantil de la previsión; el polo de transformación se
+distinguirá por su apoyo a la igualdad o el universalismo y a la solidaridad
+intergeneracional.
+
+El procedimiento sigue la sección 5 del suplemento metodológico: redes de
+congruencia y conflicto entre actores normalizadas por coseno, combinadas en
+una red con signo, y detección de comunidades mediante *signed spin-glass*
+repetida con distintas semillas. El número de comunidades no se fija. Las
+etiquetas de preservación y transformación se asignan después, según el
+repertorio de cada comunidad.
+
+## Seteo de la sesión
+
+```{r}
+#| label: paquetes
+pacman::p_load(arrow, dplyr, tidyr, purrr, stringr, ggplot2, scales, igraph,
+               ggforce, ggrepel, parallel)
+source("R/analysis_base.R")
+source("R/apa7_word_table.R")
+
+TABLE_DIR <- "output/tables/resultados"
+FIGURE_DIR <- "output/figures/resultados"
+dir.create(TABLE_DIR, recursive = TRUE, showWarnings = FALSE)
+dir.create(FIGURE_DIR, recursive = TRUE, showWarnings = FALSE)
+SEED <- 20261021
+N_RUNS <- 50L       # semillas de la partición principal
+N_RUNS_SENS <- 20L  # semillas de cada análisis de sensibilidad
+MAX_SPINS <- 10L    # máximo de comunidades posibles, no su número observado
+N_CORES <- max(1L, detectCores() - 1L)
+# La caché se invalida si cambian los datos, la base o los parámetros.
+knitr::opts_chunk$set(cache.extra = list(tools::md5sum(c(
+  "R/analysis_base.R",
+  file.path(LUNA_RUN_DIR, c("annotations.parquet", "results.parquet")),
+  sprintf("data/proc_data/ley_%s/coding_chunks_long.parquet", names(LAW_LABELS)),
+  Sys.glob(file.path(STANCE_ADJUDICATION_DIR, "*", "decisions", "*.json")))),
+  SEED, N_RUNS, N_RUNS_SENS, MAX_SPINS))
+
+BLOC_COLORS <- c(Izquierda = "#b03a7a", Centro = "#8c8c8c", Derecha = "#12866f",
+                 `No partidista` = "#d9b44a")
+COMMUNITY_COLORS <- c("#2f6fa3", "#d1792a", "#6a8f2a", "#7b4f9d", "#a33b3b",
+                      "#4d4d4d")
+theme_set(theme_minimal(base_size = 11) +
+            theme(panel.grid.minor = element_blank()))
+```
+
+## Datos
+
+La unidad es el actor con al menos una declaración en intervenciones
+sustantivas de la Ley 21.735. La afiliación es binaria: para cada concepto se
+registra si el actor lo apoyó al menos una vez y si lo rechazó al menos una
+vez. La versión con frecuencias (número de intervenciones con cada postura) se
+usa como sensibilidad, porque las repeticiones dependen sobre todo de en
+cuántas sesiones interviene un actor.
+
+```{r}
+#| label: datos
+key <- c("law_number", "document_uri", "utterance_id")
+base <- load_analysis_base(LUNA_RUN_DIR)
+reform <- base$interventions |> filter(substantive, law_number == "21735")
+claims <- base$claims |>
+  filter(law_number == "21735") |>
+  inner_join(reform |> select(all_of(key), speaker_id, phase), by = key)
+actors <- reform |>
+  group_by(speaker_id) |>
+  summarise(nombre = first(speaker_name), partido = first(party),
+            alineacion = first(alignment), genero = first(gender),
+            rol = first(role), intervenciones = n(), .groups = "drop") |>
+  mutate(bloque = recode(alineacion, izquierda = "Izquierda", centro = "Centro",
+                         derecha = "Derecha", nonpartisan = "No partidista",
+                         .default = "No partidista"),
+         bloque = factor(bloque, levels = names(BLOC_COLORS)))
+concept_ids <- sort(unique(claims$concept_id))
+# Conceptos de las figuras de redes: actitud se omite por su escasez.
+network_concepts <- setdiff(concept_ids, "actitud")
+tibble(actores_sustantivos = nrow(actors),
+       actores_con_perfil = n_distinct(claims$speaker_id),
+       conceptos = length(concept_ids),
+       declaraciones = nrow(claims)) |>
+  knitr::kable()
+```
+
+## Red con signo
+
+Para cada actor, $B^+_{ac}$ y $B^-_{ac}$ indican si apoyó o rechazó el concepto
+$c$. Con $n_a = \sqrt{\sum_c [(B^+_{ac})^2 + (B^-_{ac})^2]}$, la congruencia
+entre dos actores es
+$G_{ab} = \sum_c (B^+_{ac}B^+_{bc} + B^-_{ac}B^-_{bc}) / (n_a n_b)$, el
+conflicto es $C_{ab} = \sum_c (B^+_{ac}B^-_{bc} + B^-_{ac}B^+_{bc}) / (n_a n_b)$
+y la red con signo es $S = G - C$ (suplemento, sección 5.2).
+
+```{r}
+#| label: red-signo
+affiliation <- function(cl, ids, binary = TRUE) {
+  counts <- cl |>
+    count(speaker_id, concept_id, stance) |>
+    mutate(n = if (binary) 1 else n)
+  build <- function(s) {
+    m <- matrix(0, length(ids), length(concept_ids), dimnames = list(ids, concept_ids))
+    r <- filter(counts, stance == s)
+    m[cbind(match(r$speaker_id, ids), match(r$concept_id, concept_ids))] <- r$n
+    m
+  }
+  list(support = build("support"), oppose = build("oppose"))
+}
+signed_network <- function(cl, binary = TRUE) {
+  ids <- sort(unique(cl$speaker_id))
+  x <- affiliation(cl, ids, binary)
+  norm <- sqrt(rowSums(x$support^2 + x$oppose^2))
+  denom <- outer(norm, norm)
+  g <- (tcrossprod(x$support) + tcrossprod(x$oppose)) / denom
+  c <- (tcrossprod(x$support, x$oppose) + tcrossprod(x$oppose, x$support)) / denom
+  s <- g - c
+  diag(g) <- diag(c) <- diag(s) <- 0
+  list(ids = ids, G = g, C = c, S = s, affiliation = x)
+}
+main_net <- signed_network(claims)
+stopifnot(isSymmetric(main_net$S), all(abs(main_net$S) <= 1 + 1e-9))
+upper <- main_net$S[upper.tri(main_net$S)]
+tibble(actores = length(main_net$ids), pares = length(upper),
+       positivos = sum(upper > 0), negativos = sum(upper < 0),
+       nulos = sum(upper == 0)) |>
+  knitr::kable()
+```
+
+## Detección de comunidades
+
+`igraph::cluster_spinglass()` con `implementation = "neg"`, que admite pesos
+negativos, `spins = 10` como máximo de comunidades y los parámetros de
+resolución por defecto (`gamma = 1`, `gamma.minus = 1`). Se repite con
+`r N_RUNS` semillas. La partición principal es la de mayor modularidad entre
+las ejecuciones; la estabilidad se describe con la frecuencia de cada número
+de comunidades, la concordancia de cada ejecución con la principal y la
+proporción de ejecuciones en que cada par de actores queda junto.
+
+```{r}
+#| label: funciones-spinglass
+# Ajusta spin-glass con signo; la red debe ser conectada.
+run_spinglass <- function(s, seed) {
+  graph <- graph_from_adjacency_matrix(s, mode = "undirected", weighted = TRUE,
+                                       diag = FALSE)
+  set.seed(seed)
+  fit <- cluster_spinglass(graph, weights = E(graph)$weight,
+                           implementation = "neg", spins = MAX_SPINS)
+  list(seed = seed, membership = setNames(as.integer(membership(fit)), rownames(s)),
+       modularity = fit$modularity)
+}
+run_many <- function(s, n_runs, seed0) {
+  graph <- graph_from_adjacency_matrix(s, mode = "undirected", weighted = TRUE,
+                                       diag = FALSE)
+  # Spin-glass requiere una red conectada: si no lo es, se usa el componente
+  # mayor y los demás actores quedan sin comunidad (suplemento, sección 5.3).
+  parts <- components(graph)
+  if (parts$no > 1) {
+    keep <- parts$membership == which.max(parts$csize)
+    message(sum(!keep), " actores fuera del componente mayor")
+    s <- s[keep, keep]
+  }
+  mclapply(seed0 + seq_len(n_runs), \(seed) run_spinglass(s, seed),
+           mc.cores = N_CORES)
+}
+best_run <- function(runs) runs[[which.max(map_dbl(runs, "modularity"))]]
+nmi <- function(a, b) igraph::compare(a, b, method = "nmi")
+# Proporción de pares de actores que permanecen juntos o separados en ambas particiones.
+pair_agreement <- function(a, b) {
+  same_a <- outer(a, a, "==")
+  same_b <- outer(b, b, "==")
+  mean((same_a == same_b)[upper.tri(same_a)])
+}
+```
+
+```{r}
+#| label: spinglass-principal
+#| cache: true
+runs_main <- run_many(main_net$S, N_RUNS, SEED)
+```
+
+```{r}
+#| label: estabilidad
+best <- best_run(runs_main)
+# Las comunidades se numeran por su proporción de actores de derecha, de mayor a menor.
+right_share <- tapply(actors$bloque[match(names(best$membership), actors$speaker_id)] == "Derecha",
+                      best$membership, mean)
+relabel <- setNames(seq_along(right_share), names(sort(right_share, decreasing = TRUE)))
+membership_main <- setNames(relabel[as.character(best$membership)], names(best$membership))
+stability <- tibble(
+  semilla = map_int(runs_main, "seed"),
+  comunidades = map_int(runs_main, \(r) n_distinct(r$membership)),
+  modularidad = map_dbl(runs_main, "modularity"),
+  nmi_principal = map_dbl(runs_main, \(r) nmi(r$membership, best$membership))
+)
+stability |>
+  count(comunidades, name = "ejecuciones") |>
+  knitr::kable(col.names = c("Comunidades", "Ejecuciones"))
+summary(stability$nmi_principal)
+
+coassignment <- Reduce(`+`, map(runs_main, \(r) outer(r$membership, r$membership, "=="))) /
+  length(runs_main)
+diag(coassignment) <- NA
+community_stability <- map_dfr(sort(unique(membership_main)), \(k) {
+  members <- names(membership_main)[membership_main == k]
+  tibble(comunidad = k,
+         coasignacion_interna = mean(coassignment[members, members], na.rm = TRUE))
+})
+```
+
+La partición principal tiene `r n_distinct(membership_main)` comunidades y
+modularidad `r number(best$modularity, accuracy = 0.001, decimal.mark = ",")`.
+`r sum(stability$comunidades == n_distinct(membership_main))` de las
+`r N_RUNS` ejecuciones encuentran el mismo número de comunidades, y la
+información mutua normalizada mediana entre cada ejecución y la partición
+principal es
+`r number(median(stability$nmi_principal), accuracy = 0.01, decimal.mark = ",")`.
+
+## Composición de las comunidades
+
+```{r}
+#| label: composicion
+community_actors <- actors |>
+  inner_join(tibble(speaker_id = names(membership_main),
+                    comunidad = as.integer(membership_main)), by = "speaker_id")
+top_parties <- community_actors |>
+  count(comunidad, partido, sort = TRUE) |>
+  group_by(comunidad) |>
+  slice_head(n = 4) |>
+  summarise(partidos = paste0(partido, " (", n, ")", collapse = "; "), .groups = "drop")
+composition <- community_actors |>
+  count(comunidad, bloque) |>
+  complete(comunidad, bloque, fill = list(n = 0L)) |>
+  group_by(comunidad) |>
+  mutate(actores = sum(n), pct = n / actores) |>
+  ungroup() |>
+  select(-n) |>
+  pivot_wider(names_from = bloque, values_from = pct, values_fill = 0) |>
+  left_join(community_stability, by = "comunidad") |>
+  left_join(top_parties, by = "comunidad")
+knitr::kable(composition, digits = 2)
+
+bloc_nmi <- nmi(as.integer(factor(community_actors$bloque)), community_actors$comunidad)
+```
+
+La información mutua normalizada entre las comunidades y el bloque político
+es `r number(bloc_nmi, accuracy = 0.01, decimal.mark = ",")`: 1 indicaría que
+las comunidades reproducen exactamente los bloques, y 0, que son
+independientes.
+
+## Repertorio de cada comunidad
+
+Para cada comunidad se calcula la proporción de sus actores que apoyan y que
+rechazan cada concepto, y la diferencia con el resto de los actores. Los
+conceptos con mayor diferencia son los distintivos de la comunidad.
+
+```{r}
+#| label: repertorio
+positions <- claims |>
+  distinct(speaker_id, concept_id, stance) |>
+  inner_join(community_actors |> select(speaker_id, comunidad), by = "speaker_id")
+community_sizes <- count(community_actors, comunidad, name = "actores")
+repertoire <- positions |>
+  count(comunidad, concept_id, stance) |>
+  complete(comunidad, concept_id = concept_ids, stance = c("support", "oppose"),
+           fill = list(n = 0)) |>
+  left_join(community_sizes, by = "comunidad") |>
+  mutate(proporcion = n / actores) |>
+  group_by(concept_id, stance) |>
+  mutate(resto = (sum(n) - n) / (sum(actores) - actores),
+         diferencia = proporcion - resto) |>
+  ungroup() |>
+  mutate(postura = if_else(stance == "support", "Apoyo", "Rechazo"),
+         concepto = unname(CONCEPT_SHORT[concept_id]))
+write_parquet(repertoire, file.path(TABLE_DIR, "h2_repertorio_comunidades.parquet"))
+repertoire |>
+  group_by(comunidad) |>
+  slice_max(abs(diferencia), n = 8) |>
+  transmute(comunidad, concepto, postura, proporcion, resto, diferencia) |>
+  knitr::kable(digits = 2)
+```
+
+```{r}
+#| label: fig-h2-repertorio
+#| fig-cap: "Proporción de actores de cada comunidad que apoya y que rechaza cada concepto, Ley 21.735"
+#| fig-alt: "Dos paneles, apoyo y rechazo; cada concepto tiene un punto por comunidad con la proporción de sus actores que expresa esa postura."
+#| fig-width: 9
+#| fig-height: 5.5
+concept_order <- repertoire |>
+  filter(postura == "Apoyo", comunidad == 1, concept_id != "actitud") |>
+  arrange(proporcion) |>
+  pull(concepto)
+# Actitud se omite de las figuras: tiene dos declaraciones en todo el corpus.
+fig_repertoire <- repertoire |>
+  filter(concept_id != "actitud") |>
+  mutate(concepto = factor(concepto, levels = concept_order),
+         comunidad = factor(paste("Comunidad", comunidad))) |>
+  ggplot(aes(x = proporcion, y = concepto, color = comunidad)) +
+  geom_line(aes(group = concepto), color = "grey80", linewidth = 0.6) +
+  geom_point(size = 2.4) +
+  facet_wrap(~ postura) +
+  scale_x_continuous(labels = label_percent(accuracy = 1, suffix = " %"), limits = c(0, 1)) +
+  scale_color_manual(values = COMMUNITY_COLORS) +
+  labs(x = "Proporción de actores de la comunidad", y = NULL, color = NULL) +
+  theme(legend.position = "top", panel.grid.major.y = element_blank(),
+        strip.text = element_text(face = "bold"))
+print(fig_repertoire)
+ggsave(file.path(FIGURE_DIR, "figura6_h2_repertorio.png"), fig_repertoire,
+       width = 9, height = 5.5, dpi = 300, bg = "white")
+```
+
+## Red de actores
+
+La figura dibuja a los actores con una disposición de fuerzas calculada sobre
+los vínculos positivos de $S$. Para que la red sea legible, se muestran solo
+los tres vínculos positivos más fuertes de cada actor; la disposición usa
+todos. El color del nodo indica el bloque político, y el contorno, la
+comunidad de la partición principal. Las distancias no son una medida
+estadística.
+
+```{r}
+#| label: fig-h2-actores
+#| fig-cap: "Red de congruencia entre actores y comunidades detectadas, Ley 21.735"
+#| fig-alt: "Red de actores coloreados por bloque político, con contornos que delimitan las comunidades detectadas por spin-glass."
+#| fig-width: 9
+#| fig-height: 7.5
+positive <- pmax(main_net$S, 0)
+graph_pos <- graph_from_adjacency_matrix(positive, mode = "undirected", weighted = TRUE,
+                                         diag = FALSE)
+set.seed(SEED)
+layout <- layout_with_fr(graph_pos, weights = E(graph_pos)$weight, niter = 2000)
+nodes <- tibble(speaker_id = main_net$ids, x = layout[, 1], y = layout[, 2]) |>
+  left_join(community_actors |> select(speaker_id, bloque, comunidad, intervenciones),
+            by = "speaker_id")
+# Los tres vínculos positivos más fuertes de cada actor.
+backbone <- map_dfr(seq_along(main_net$ids), \(i) {
+  w <- positive[i, ]
+  j <- head(order(w, decreasing = TRUE), 3)
+  tibble(from = i, to = j[w[j] > 0], weight = w[j[w[j] > 0]])
+}) |>
+  mutate(a = pmin(from, to), b = pmax(from, to)) |>
+  distinct(a, b, .keep_all = TRUE) |>
+  mutate(x = layout[a, 1], y = layout[a, 2], xend = layout[b, 1], yend = layout[b, 2])
+hulls <- nodes |>
+  group_by(comunidad) |>
+  slice(chull(x, y)) |>
+  ungroup() |>
+  mutate(comunidad = factor(paste("Comunidad", comunidad)))
+fig_actors <- ggplot() +
+  geom_shape(data = hulls, aes(x = x, y = y, group = comunidad, fill = comunidad,
+                               color = comunidad),
+             expand = unit(4, "mm"), radius = unit(4, "mm"), alpha = 0.08,
+             linewidth = 0.6) +
+  geom_segment(data = backbone, aes(x = x, y = y, xend = xend, yend = yend),
+               color = "grey70", alpha = 0.5, linewidth = 0.25) +
+  geom_point(data = nodes, aes(x = x, y = y, fill = bloque), shape = 21,
+             color = "white", stroke = 0.3, size = 2.6) +
+  scale_fill_manual(values = c(BLOC_COLORS,
+                               setNames(COMMUNITY_COLORS[seq_len(n_distinct(nodes$comunidad))],
+                                        paste("Comunidad", sort(unique(nodes$comunidad))))),
+                    breaks = names(BLOC_COLORS), name = "Bloque",
+                    guide = guide_legend(override.aes = list(shape = 21, size = 3))) +
+  scale_color_manual(values = setNames(COMMUNITY_COLORS[seq_len(n_distinct(nodes$comunidad))],
+                                       paste("Comunidad", sort(unique(nodes$comunidad)))),
+                     name = "Contorno",
+                     guide = guide_legend(override.aes = list(fill = NA))) +
+  coord_equal() +
+  theme_void() +
+  theme(legend.position = "bottom",
+        plot.background = element_rect(fill = "white", color = NA))
+print(fig_actors)
+ggsave(file.path(FIGURE_DIR, "figura7_h2_red_actores.png"), fig_actors,
+       width = 9, height = 7.5, dpi = 300, bg = "white")
+```
+
+## Red de congruencia de conceptos
+
+Dos conceptos se vinculan cuando los mismos actores los apoyan o los rechazan
+conjuntamente: $W_{cd} = \sum_a (B^+_{ac}B^+_{ad} + B^-_{ac}B^-_{ad})$ dividido
+por las normas de ambos conceptos (suplemento, sección 6.2). El tamaño del
+nodo indica cuántos actores usan el concepto, y el color, la comunidad en que
+el concepto tiene mayor proporción de actores que lo apoyan. Se muestran los
+vínculos más fuertes, hasta que cada concepto tiene al menos uno.
+
+```{r}
+#| label: fig-h2-conceptos
+#| fig-cap: "Red de congruencia entre conceptos, Ley 21.735"
+#| fig-alt: "Red de conceptos unidos por su uso conjunto con la misma postura; el color indica la comunidad en que cada concepto recibe más apoyo."
+#| fig-width: 9
+#| fig-height: 7.5
+aff <- main_net$affiliation
+concept_norm <- sqrt(colSums(aff$support^2 + aff$oppose^2))
+w_concepts <- (crossprod(aff$support) + crossprod(aff$oppose)) / outer(concept_norm, concept_norm)
+w_concepts[!is.finite(w_concepts)] <- 0
+diag(w_concepts) <- 0
+concept_pairs <- as_tibble(t(combn(network_concepts, 2)), .name_repair = "minimal") |>
+  setNames(c("from", "to")) |>
+  mutate(weight = w_concepts[cbind(from, to)]) |>
+  filter(weight > 0) |>
+  arrange(desc(weight))
+shown <- slice_head(concept_pairs, n = 20)
+for (cid in setdiff(network_concepts, c(shown$from, shown$to))) {
+  shown <- bind_rows(shown, concept_pairs |> filter(from == cid | to == cid) |> slice_head(n = 1))
+}
+graph_concepts <- graph_from_data_frame(concept_pairs, directed = FALSE,
+                                        vertices = tibble(name = network_concepts))
+set.seed(SEED)
+concept_layout <- layout_with_fr(graph_concepts, weights = E(graph_concepts)$weight,
+                                 niter = 3000)
+dominant <- repertoire |>
+  filter(postura == "Apoyo") |>
+  group_by(concept_id) |>
+  slice_max(proporcion, n = 1, with_ties = FALSE) |>
+  ungroup() |>
+  select(concept_id, comunidad)
+concept_nodes <- tibble(concept_id = network_concepts, x = concept_layout[, 1],
+                        y = concept_layout[, 2],
+                        actores = colSums((aff$support + aff$oppose) > 0)[network_concepts]) |>
+  left_join(dominant, by = "concept_id") |>
+  mutate(concepto = unname(CONCEPT_SHORT[concept_id]),
+         comunidad = factor(paste("Comunidad", comunidad)))
+concept_edges <- shown |>
+  mutate(x = concept_nodes$x[match(from, network_concepts)],
+         y = concept_nodes$y[match(from, network_concepts)],
+         xend = concept_nodes$x[match(to, network_concepts)],
+         yend = concept_nodes$y[match(to, network_concepts)])
+fig_concepts <- ggplot() +
+  geom_segment(data = concept_edges,
+               aes(x = x, y = y, xend = xend, yend = yend, linewidth = weight),
+               color = "grey60", alpha = 0.7) +
+  geom_point(data = concept_nodes, aes(x = x, y = y, size = actores, color = comunidad)) +
+  geom_label_repel(data = concept_nodes, aes(x = x, y = y, label = concepto),
+                   size = 3, seed = SEED, box.padding = 0.5, point.padding = 0.4,
+                   label.size = 0.15, min.segment.length = 0, segment.color = "grey55",
+                   segment.size = 0.3, max.overlaps = Inf) +
+  scale_linewidth(range = c(0.3, 2), name = "Congruencia") +
+  scale_size(range = c(2, 9), name = "Actores") +
+  scale_color_manual(values = setNames(COMMUNITY_COLORS[seq_len(nlevels(concept_nodes$comunidad))],
+                                       levels(concept_nodes$comunidad)),
+                     name = "Mayor apoyo en") +
+  coord_equal(clip = "off") +
+  theme_void() +
+  guides(linewidth = guide_legend(nrow = 1), size = guide_legend(nrow = 1),
+         color = guide_legend(nrow = 1, override.aes = list(size = 4))) +
+  theme(legend.position = "bottom", legend.box = "vertical",
+        plot.background = element_rect(fill = "white", color = NA),
+        plot.margin = margin(10, 20, 10, 20))
+print(fig_concepts)
+ggsave(file.path(FIGURE_DIR, "figura8_h2_red_conceptos.png"), fig_concepts,
+       width = 9, height = 7.5, dpi = 300, bg = "white")
+```
+
+## Análisis de sensibilidad
+
+La partición principal se repite con `r N_RUNS_SENS` semillas en cuatro
+variantes (suplemento, sección 5.4): sin el concepto procedimental (acuerdos y
+moderación), con frecuencias en vez de afiliación binaria y por separado en
+cada fase de la reforma. Cada variante se compara con la principal sobre los
+actores presentes en ambas, mediante la información mutua normalizada y la
+proporción de pares que permanecen juntos o separados.
+
+```{r}
+#| label: sensibilidad
+#| cache: true
+#| dependson: spinglass-principal
+variants <- list(
+  `Sin acuerdos y moderación` = signed_network(filter(claims, concept_id != "acuerdos_moderacion")),
+  `Frecuencias` = signed_network(claims, binary = FALSE)
+)
+for (ph in levels(droplevels(claims$phase))) {
+  variants[[paste("Fase:", ph)]] <- signed_network(filter(claims, phase == ph))
+}
+runs_sens <- imap(variants, \(net, name) run_many(net$S, N_RUNS_SENS, SEED + 1000L))
+```
+
+```{r}
+#| label: tabla-sensibilidad
+sensitivity <- imap_dfr(runs_sens, \(runs, name) {
+  m <- best_run(runs)$membership
+  common <- intersect(names(m), names(membership_main))
+  tibble(variante = name, actores = length(m), comunes = length(common),
+         comunidades = n_distinct(m),
+         nmi = nmi(m[common], membership_main[common]),
+         pares_concordantes = pair_agreement(m[common], membership_main[common]))
+})
+write_parquet(sensitivity, file.path(TABLE_DIR, "h2_sensibilidad.parquet"))
+knitr::kable(sensitivity, digits = 2)
+```
+
+## Tabla para el manuscrito
+
+```{r}
+#| label: tabla-word
+pct <- \(x) paste0(round(100 * x), " %")
+tabla_h2 <- composition |>
+  transmute(Comunidad = paste("Comunidad", comunidad),
+            Actores = as.character(actores),
+            Izquierda = pct(Izquierda), Centro = pct(Centro), Derecha = pct(Derecha),
+            `No partidista` = pct(`No partidista`),
+            `Coasignación` = formatC(coasignacion_interna, format = "f", digits = 2,
+                                     decimal.mark = ","),
+            `Partidos principales` = partidos)
+export_apa7_word_table(
+  tabla_h2, file.path(TABLE_DIR, "tabla3_h2_comunidades.docx"),
+  "Composición y estabilidad de las comunidades detectadas, Ley N.º 21.735",
+  note = paste0(
+    "Partición de mayor modularidad entre ", N_RUNS, " ejecuciones de signed spin-glass. ",
+    "Coasignación: proporción media de ejecuciones en que dos actores de la comunidad ",
+    "quedan juntos. Entre paréntesis, número de actores de cada partido."),
+  table_number = 3L, landscape = TRUE, body_font_size = 11)
+write_parquet(community_actors, file.path(TABLE_DIR, "h2_comunidades_actores.parquet"))
+```

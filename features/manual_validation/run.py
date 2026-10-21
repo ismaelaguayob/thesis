@@ -90,6 +90,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--stance-dir", type=Path,
                         default=PROJECT_ROOT / "output" / "stance_adjudication")
+    parser.add_argument(
+        "--stance-round", type=int, default=2, choices=(1, 2),
+        help="Ronda de adjudicación de postura (docs/decisiones-validacion.md, sección 5).",
+    )
     return parser.parse_args()
 
 
@@ -116,7 +120,7 @@ def main() -> int:
     if args.stance_primary_run.exists() and args.stance_secondary_run.exists():
         service.stance_adjudication = StanceAdjudicationService(
             args.stance_primary_run, args.stance_secondary_run,
-            args.stance_input_dir, args.stance_dir,
+            args.stance_input_dir, args.stance_dir, round_number=args.stance_round,
         )
     static_dir = Path(__file__).resolve().parent / "web"
     server = create_server(service, static_dir, args.host, args.port)

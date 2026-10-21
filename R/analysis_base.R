@@ -74,15 +74,17 @@ read_stance_adjudication <- function(run_dir, root = STANCE_ADJUDICATION_DIR) {
   queues <- queues[purrr::map_lgl(queues, \(q)
     identical(jsonlite::fromJSON(q)$sources$primary_run, basename(run_dir)))]
   if (!length(queues)) return(empty)
-  if (length(queues) > 1) stop("Hay más de una cola de adjudicación para ", run_dir)
+  # Una cola por ronda (sección 5): sus casos no se superponen.
   files <- Sys.glob(file.path(dirname(queues), "decisions", "*.json"))
   if (!length(files)) return(empty)
-  purrr::map(files, \(f) {
+  decisions <- purrr::map(files, \(f) {
     d <- jsonlite::fromJSON(f)
     tibble::tibble(unit_id = d$unit_id, concept_id = d$concept_id,
                    decision = d$decision, rule = d$rule)
   }) |>
     purrr::list_rbind()
+  stopifnot(!anyDuplicated(decisions[c("unit_id", "concept_id")]))
+  decisions
 }
 
 # Reemplaza las posturas adjudicadas de cada bloque × concepto: «both» deja apoyo

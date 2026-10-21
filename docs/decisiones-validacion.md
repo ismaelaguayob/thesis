@@ -258,3 +258,18 @@ reemplazan las anteriores donde se contradicen.
   adjudicación acotada a la postura. La metodología y la sección 5.1 deben
   mencionarla, y las cifras de 5.2 en adelante se regeneran con las posturas
   adjudicadas.
+- **Segunda ronda (21 oct 2026).** Al redactar H1 apareció un rechazo de
+  ineficiencia estatal invertido («conocemos bien lo ineficiente que es el
+  Estado») que no entró a la cola porque ambos censos cometieron el mismo error.
+  La regla de la primera ronda solo capta desacuerdos, no errores de orientación
+  compartidos. Regla fija, sin filtrar por bloque ni por ley:
+  3. En los conceptos señalados en la primera ronda (ineficiencia estatal y
+     conciencia de costos), todos los bloques × concepto en que ambos censos
+     coinciden en un rechazo (solo o junto con apoyo).
+  La cola tiene 78 casos (`output/stance_adjudication/stance_c501a37a5aed/`) y
+  quedó congelada antes de adjudicar. Como ambos modelos coinciden, mostrar su
+  postura anclaría la decisión: la plataforma muestra los pasajes citados, pero
+  no la postura ni la justificación de los modelos. La primera ronda conserva su
+  cola y sus decisiones; `R/analysis_base.R` aplica las decisiones de ambas.
+  Por decisión del investigador, no se reporta en el manuscrito hasta revisar
+  la metodología y la discusión.

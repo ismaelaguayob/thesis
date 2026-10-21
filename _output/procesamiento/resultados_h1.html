@@ -2215,7 +2215,6 @@ vertical-align: -.125em;
   <li><a href="#figura-probabilidades-predichas-por-concepto-y-bloque" id="toc-figura-probabilidades-predichas-por-concepto-y-bloque" class="nav-link" data-scroll-target="#figura-probabilidades-predichas-por-concepto-y-bloque">Figura: probabilidades predichas por concepto y bloque</a></li>
   <li><a href="#diferencias-entre-derecha-e-izquierda" id="toc-diferencias-entre-derecha-e-izquierda" class="nav-link" data-scroll-target="#diferencias-entre-derecha-e-izquierda">Diferencias entre derecha e izquierda</a></li>
   <li><a href="#tabla-para-el-anexo" id="toc-tabla-para-el-anexo" class="nav-link" data-scroll-target="#tabla-para-el-anexo">Tabla para el anexo</a></li>
-  <li><a href="#réplica-con-claude-haiku-5.5" id="toc-réplica-con-claude-haiku-5.5" class="nav-link" data-scroll-target="#réplica-con-claude-haiku-5.5">Réplica con Claude Haiku 5.5</a></li>
   </ul>
 </nav>
 </div>
@@ -2264,8 +2263,8 @@ vertical-align: -.125em;
 <span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co"># o los parámetros del remuestreo.</span></span>
 <span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_chunk<span class="sc">$</span><span class="fu">set</span>(<span class="at">cache.extra =</span> <span class="fu">list</span>(tools<span class="sc">::</span><span class="fu">md5sum</span>(<span class="fu">c</span>(</span>
 <span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;R/analysis_base.R&quot;</span>,</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(<span class="fu">c</span>(LUNA_RUN_DIR, HAIKU_RUN_DIR), <span class="st">&quot;annotations.parquet&quot;</span>),</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(<span class="fu">c</span>(LUNA_RUN_DIR, HAIKU_RUN_DIR), <span class="st">&quot;results.parquet&quot;</span>),</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(LUNA_RUN_DIR, <span class="st">&quot;annotations.parquet&quot;</span>),</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(LUNA_RUN_DIR, <span class="st">&quot;results.parquet&quot;</span>),</span>
 <span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sprintf</span>(<span class="st">&quot;data/proc_data/ley_%s/coding_chunks_long.parquet&quot;</span>, <span class="fu">names</span>(LAW_LABELS)),</span>
 <span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">Sys.glob</span>(<span class="fu">file.path</span>(STANCE_ADJUDICATION_DIR, <span class="st">&quot;*&quot;</span>, <span class="st">&quot;decisions&quot;</span>, <span class="st">&quot;*.json&quot;</span>)))),</span>
 <span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  SEED, N_BOOT))</span>
@@ -2295,42 +2294,41 @@ vertical-align: -.125em;
 <details class="code-fold">
 <summary>Código</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>key <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;law_number&quot;</span>, <span class="st">&quot;document_uri&quot;</span>, <span class="st">&quot;utterance_id&quot;</span>)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Se aplica igual a los censos de Luna y de Haiku.</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>prepare_h1 <span class="ot">&lt;-</span> <span class="cf">function</span>(base) {</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  interventions <span class="ot">&lt;-</span> base<span class="sc">$</span>interventions <span class="sc">|&gt;</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(substantive, law_number <span class="sc">==</span> <span class="st">&quot;21735&quot;</span>,</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>           alignment <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;izquierda&quot;</span>, <span class="st">&quot;centro&quot;</span>, <span class="st">&quot;derecha&quot;</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">bloque =</span> <span class="fu">factor</span>(alignment, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;izquierda&quot;</span>, <span class="st">&quot;centro&quot;</span>, <span class="st">&quot;derecha&quot;</span>)),</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>           <span class="at">genero =</span> <span class="fu">factor</span>(gender, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;hombre&quot;</span>, <span class="st">&quot;mujer&quot;</span>)),</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">log_palabras =</span> <span class="fu">as.numeric</span>(<span class="fu">scale</span>(<span class="fu">log</span>(utterance_words))))</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  claims_wide <span class="ot">&lt;-</span> base<span class="sc">$</span>claims <span class="sc">|&gt;</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(concept_id <span class="sc">%in%</span> H1_CONCEPTS) <span class="sc">|&gt;</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">valor =</span> <span class="dv">1</span>L) <span class="sc">|&gt;</span></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> stance, <span class="at">values_from =</span> valor, <span class="at">values_fill =</span> <span class="dv">0</span>L)</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  data <span class="ot">&lt;-</span> interventions <span class="sc">|&gt;</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="fu">all_of</span>(key), speaker_id, bloque, genero, log_palabras) <span class="sc">|&gt;</span></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">crossing</span>(<span class="at">concept_id =</span> H1_CONCEPTS) <span class="sc">|&gt;</span></span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(claims_wide, <span class="at">by =</span> <span class="fu">c</span>(key, <span class="st">&quot;concept_id&quot;</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(support, oppose), \(x) <span class="fu">coalesce</span>(x, <span class="dv">0</span>L)),</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>           <span class="at">concepto =</span> <span class="fu">factor</span>(concept_id, <span class="at">levels =</span> H1_CONCEPTS))</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">interventions =</span> interventions, <span class="at">data =</span> data)</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>base <span class="ot">&lt;-</span> <span class="fu">load_analysis_base</span>(LUNA_RUN_DIR)</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>reform <span class="ot">&lt;-</span> base<span class="sc">$</span>interventions <span class="sc">|&gt;</span> <span class="fu">filter</span>(substantive, law_number <span class="sc">==</span> <span class="st">&quot;21735&quot;</span>)</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>h1_luna <span class="ot">&lt;-</span> <span class="fu">prepare_h1</span>(base)</span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>model_interventions <span class="ot">&lt;-</span> h1_luna<span class="sc">$</span>interventions</span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>model_data <span class="ot">&lt;-</span> h1_luna<span class="sc">$</span>data</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="sc">!</span><span class="fu">anyNA</span>(model_data<span class="sc">$</span>genero), <span class="sc">!</span><span class="fu">anyNA</span>(model_data<span class="sc">$</span>log_palabras),</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>          <span class="fu">nrow</span>(model_data) <span class="sc">==</span> <span class="fu">nrow</span>(model_interventions) <span class="sc">*</span> <span class="fu">length</span>(H1_CONCEPTS))</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>excluded <span class="ot">&lt;-</span> reform <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="sc">!</span>alignment <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;izquierda&quot;</span>, <span class="st">&quot;centro&quot;</span>, <span class="st">&quot;derecha&quot;</span>))</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>model_data <span class="sc">|&gt;</span></span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(speaker_id, bloque) <span class="sc">|&gt;</span></span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(bloque, <span class="at">name =</span> <span class="st">&quot;actores&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(model_interventions <span class="sc">|&gt;</span> <span class="fu">count</span>(bloque, <span class="at">name =</span> <span class="st">&quot;intervenciones&quot;</span>),</span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="st">&quot;bloque&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">&quot;Bloque&quot;</span>, <span class="st">&quot;Actores&quot;</span>, <span class="st">&quot;Intervenciones&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>prepare_h1 <span class="ot">&lt;-</span> <span class="cf">function</span>(base) {</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  interventions <span class="ot">&lt;-</span> base<span class="sc">$</span>interventions <span class="sc">|&gt;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(substantive, law_number <span class="sc">==</span> <span class="st">&quot;21735&quot;</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>           alignment <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;izquierda&quot;</span>, <span class="st">&quot;centro&quot;</span>, <span class="st">&quot;derecha&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">bloque =</span> <span class="fu">factor</span>(alignment, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;izquierda&quot;</span>, <span class="st">&quot;centro&quot;</span>, <span class="st">&quot;derecha&quot;</span>)),</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">genero =</span> <span class="fu">factor</span>(gender, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;hombre&quot;</span>, <span class="st">&quot;mujer&quot;</span>)),</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>           <span class="at">log_palabras =</span> <span class="fu">as.numeric</span>(<span class="fu">scale</span>(<span class="fu">log</span>(utterance_words))))</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  claims_wide <span class="ot">&lt;-</span> base<span class="sc">$</span>claims <span class="sc">|&gt;</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(concept_id <span class="sc">%in%</span> H1_CONCEPTS) <span class="sc">|&gt;</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">valor =</span> <span class="dv">1</span>L) <span class="sc">|&gt;</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> stance, <span class="at">values_from =</span> valor, <span class="at">values_fill =</span> <span class="dv">0</span>L)</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  data <span class="ot">&lt;-</span> interventions <span class="sc">|&gt;</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="fu">all_of</span>(key), speaker_id, bloque, genero, log_palabras) <span class="sc">|&gt;</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">crossing</span>(<span class="at">concept_id =</span> H1_CONCEPTS) <span class="sc">|&gt;</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(claims_wide, <span class="at">by =</span> <span class="fu">c</span>(key, <span class="st">&quot;concept_id&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(support, oppose), \(x) <span class="fu">coalesce</span>(x, <span class="dv">0</span>L)),</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>           <span class="at">concepto =</span> <span class="fu">factor</span>(concept_id, <span class="at">levels =</span> H1_CONCEPTS))</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">interventions =</span> interventions, <span class="at">data =</span> data)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>base <span class="ot">&lt;-</span> <span class="fu">load_analysis_base</span>(LUNA_RUN_DIR)</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>reform <span class="ot">&lt;-</span> base<span class="sc">$</span>interventions <span class="sc">|&gt;</span> <span class="fu">filter</span>(substantive, law_number <span class="sc">==</span> <span class="st">&quot;21735&quot;</span>)</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>h1_luna <span class="ot">&lt;-</span> <span class="fu">prepare_h1</span>(base)</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>model_interventions <span class="ot">&lt;-</span> h1_luna<span class="sc">$</span>interventions</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>model_data <span class="ot">&lt;-</span> h1_luna<span class="sc">$</span>data</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="sc">!</span><span class="fu">anyNA</span>(model_data<span class="sc">$</span>genero), <span class="sc">!</span><span class="fu">anyNA</span>(model_data<span class="sc">$</span>log_palabras),</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>          <span class="fu">nrow</span>(model_data) <span class="sc">==</span> <span class="fu">nrow</span>(model_interventions) <span class="sc">*</span> <span class="fu">length</span>(H1_CONCEPTS))</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>excluded <span class="ot">&lt;-</span> reform <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="sc">!</span>alignment <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;izquierda&quot;</span>, <span class="st">&quot;centro&quot;</span>, <span class="st">&quot;derecha&quot;</span>))</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>model_data <span class="sc">|&gt;</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(speaker_id, bloque) <span class="sc">|&gt;</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(bloque, <span class="at">name =</span> <span class="st">&quot;actores&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(model_interventions <span class="sc">|&gt;</span> <span class="fu">count</span>(bloque, <span class="at">name =</span> <span class="st">&quot;intervenciones&quot;</span>),</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="st">&quot;bloque&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">&quot;Bloque&quot;</span>, <span class="st">&quot;Actores&quot;</span>, <span class="st">&quot;Intervenciones&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
@@ -3263,8 +3261,8 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>  tabla_h1, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;anexo_h1.docx&quot;</span>),</span>
 <span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Apoyo y rechazo de los conceptos de H1 por bloque político: probabilidades predichas y modelos logísticos multinivel, Ley N.º 21.735&quot;</span>,</span>
 <span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">note =</span> <span class="fu">paste</span>(</span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Panel A: porcentaje predicho de intervenciones sustantivas que apoyan o&quot;</span>,</span>
-<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;rechazan cada concepto e intervalos de confianza del 95 % entre corchetes,&quot;</span>,</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Panel A: probabilidad predicha (%) de que una intervención sustantiva apoye&quot;</span>,</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;o rechace cada concepto e intervalos de confianza del 95 % entre corchetes,&quot;</span>,</span>
 <span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;obtenidos con 1.000 remuestreos de actores dentro de cada bloque; la&quot;</span>,</span>
 <span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;diferencia corresponde a derecha menos izquierda, en puntos porcentuales&quot;</span>,</span>
 <span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;(pp). Panel B: razones de probabilidades (OR) con intervalos de&quot;</span>,</span>
@@ -3515,166 +3513,6 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 </table>
 </div>
 </div>
-</section>
-<section id="réplica-con-claude-haiku-5.5" class="level2">
-<h2 class="anchored" data-anchor-id="réplica-con-claude-haiku-5.5">Réplica con Claude Haiku 5.5</h2>
-<p>Estimamos ambos modelos con las anotaciones de Haiku y comparamos los contrastes derecha − izquierda: su correlación con los de Luna y si coinciden en el signo de las diferencias cuyo intervalo excluye cero.</p>
-<div class="cell">
-<details class="code-fold">
-<summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>base_haiku <span class="ot">&lt;-</span> <span class="fu">load_analysis_base</span>(HAIKU_RUN_DIR)</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>h1_haiku <span class="ot">&lt;-</span> <span class="fu">prepare_h1</span>(base_haiku)</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>haiku_data <span class="ot">&lt;-</span> h1_haiku<span class="sc">$</span>data</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>m_apoyo_haiku <span class="ot">&lt;-</span> <span class="fu">fit_h1</span>(haiku_data, <span class="st">&quot;support&quot;</span>)</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>m_rechazo_haiku <span class="ot">&lt;-</span> <span class="fu">fit_h1</span>(haiku_data, <span class="st">&quot;oppose&quot;</span>)</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>res_apoyo_haiku <span class="ot">&lt;-</span> <span class="fu">summarise_h1</span>(m_apoyo_haiku, haiku_data,</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>                                <span class="fu">boot_h1</span>(haiku_data, <span class="st">&quot;support&quot;</span>))</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>res_rechazo_haiku <span class="ot">&lt;-</span> <span class="fu">summarise_h1</span>(m_rechazo_haiku, haiku_data,</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>                                  <span class="fu">boot_h1</span>(haiku_data, <span class="st">&quot;oppose&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
-</details>
-</div>
-<div class="cell">
-<details class="code-fold">
-<summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>contrasts_haiku <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  res_apoyo_haiku<span class="sc">$</span>contrasts <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">postura =</span> <span class="st">&quot;Apoyo&quot;</span>),</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  res_rechazo_haiku<span class="sc">$</span>contrasts <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">postura =</span> <span class="st">&quot;Rechazo&quot;</span>)</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">label_concepts</span>()</span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Signo de la diferencia cuando su intervalo excluye cero; 0 si lo incluye.</span></span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>ci_sign <span class="ot">&lt;-</span> <span class="cf">function</span>(estimate, low, high) <span class="fu">if_else</span>(low <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">|</span> high <span class="sc">&lt;</span> <span class="dv">0</span>, <span class="fu">sign</span>(estimate), <span class="dv">0</span>)</span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>replica_h1 <span class="ot">&lt;-</span> contrasts_h1 <span class="sc">|&gt;</span></span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(postura, concepto, <span class="at">luna =</span> estimate, <span class="at">luna_low =</span> conf.low,</span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">luna_high =</span> conf.high) <span class="sc">|&gt;</span></span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">inner_join</span>(contrasts_haiku <span class="sc">|&gt;</span></span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>               <span class="fu">select</span>(postura, concepto, <span class="at">haiku =</span> estimate, <span class="at">haiku_low =</span> conf.low,</span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>                      <span class="at">haiku_high =</span> conf.high), <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;postura&quot;</span>, <span class="st">&quot;concepto&quot;</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">signo_luna =</span> <span class="fu">ci_sign</span>(luna, luna_low, luna_high),</span>
-<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>         <span class="at">signo_haiku =</span> <span class="fu">ci_sign</span>(haiku, haiku_low, haiku_high))</span>
-<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>replica_summary <span class="ot">&lt;-</span> replica_h1 <span class="sc">|&gt;</span></span>
-<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(postura) <span class="sc">|&gt;</span></span>
-<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">correlacion =</span> <span class="fu">cor</span>(luna, haiku),</span>
-<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>            <span class="at">mismo_signo =</span> <span class="fu">sum</span>(signo_luna <span class="sc">==</span> signo_haiku),</span>
-<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>            <span class="at">conceptos =</span> <span class="fu">n</span>())</span>
-<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(replica_summary, <span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
-</details>
-<div class="cell-output-display">
-<table class="caption-top table table-sm table-striped small">
-<thead>
-<tr class="header">
-<th style="text-align: left;">postura</th>
-<th style="text-align: right;">correlacion</th>
-<th style="text-align: right;">mismo_signo</th>
-<th style="text-align: right;">conceptos</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td style="text-align: left;">Apoyo</td>
-<td style="text-align: right;">0.988</td>
-<td style="text-align: right;">11</td>
-<td style="text-align: right;">12</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Rechazo</td>
-<td style="text-align: right;">0.981</td>
-<td style="text-align: right;">6</td>
-<td style="text-align: right;">12</td>
-</tr>
-</tbody>
-</table>
-</div>
-<details class="code-fold">
-<summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>replica_h1 <span class="sc">|&gt;</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(signo_luna <span class="sc">!=</span> signo_haiku) <span class="sc">|&gt;</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(postura, concepto, <span class="at">luna =</span> <span class="dv">100</span> <span class="sc">*</span> luna, <span class="at">haiku =</span> <span class="dv">100</span> <span class="sc">*</span> haiku,</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">haiku_low =</span> <span class="dv">100</span> <span class="sc">*</span> haiku_low, <span class="at">haiku_high =</span> <span class="dv">100</span> <span class="sc">*</span> haiku_high) <span class="sc">|&gt;</span></span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">1</span>, <span class="at">caption =</span> <span class="st">&quot;Conceptos en que difiere la conclusión&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
-</details>
-<div class="cell-output-display">
-<table class="caption-top table table-sm table-striped small">
-<caption>Conceptos en que difiere la conclusión</caption>
-<colgroup>
-<col style="width: 11%">
-<col style="width: 42%">
-<col style="width: 7%">
-<col style="width: 8%">
-<col style="width: 14%">
-<col style="width: 15%">
-</colgroup>
-<thead>
-<tr class="header">
-<th style="text-align: left;">postura</th>
-<th style="text-align: left;">concepto</th>
-<th style="text-align: right;">luna</th>
-<th style="text-align: right;">haiku</th>
-<th style="text-align: right;">haiku_low</th>
-<th style="text-align: right;">haiku_high</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td style="text-align: left;">Apoyo</td>
-<td style="text-align: left;">Solidaridad intergeneracional</td>
-<td style="text-align: right;">-7.3</td>
-<td style="text-align: right;">-5.7</td>
-<td style="text-align: right;">-11.5</td>
-<td style="text-align: right;">0.7</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Rechazo</td>
-<td style="text-align: left;">Propiedad de los fondos</td>
-<td style="text-align: right;">-2.6</td>
-<td style="text-align: right;">-2.5</td>
-<td style="text-align: right;">-6.5</td>
-<td style="text-align: right;">1.0</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Rechazo</td>
-<td style="text-align: left;">Reciprocidad contributiva</td>
-<td style="text-align: right;">0.0</td>
-<td style="text-align: right;">-0.4</td>
-<td style="text-align: right;">-1.6</td>
-<td style="text-align: right;">0.0</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Rechazo</td>
-<td style="text-align: left;">Libertad de elección</td>
-<td style="text-align: right;">0.1</td>
-<td style="text-align: right;">-1.3</td>
-<td style="text-align: right;">-3.0</td>
-<td style="text-align: right;">0.0</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Rechazo</td>
-<td style="text-align: left;">Necesidad material</td>
-<td style="text-align: right;">0.0</td>
-<td style="text-align: right;">-0.1</td>
-<td style="text-align: right;">-0.1</td>
-<td style="text-align: right;">0.0</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Rechazo</td>
-<td style="text-align: left;">Igualdad y universalismo</td>
-<td style="text-align: right;">0.3</td>
-<td style="text-align: right;">-0.4</td>
-<td style="text-align: right;">-1.6</td>
-<td style="text-align: right;">0.0</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Rechazo</td>
-<td style="text-align: left;">Origen dictatorial</td>
-<td style="text-align: right;">0.0</td>
-<td style="text-align: right;">-0.1</td>
-<td style="text-align: right;">-0.1</td>
-<td style="text-align: right;">0.0</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<p>Con Haiku, los contrastes de apoyo correlacionan en 0,99 con los de Luna, y los de rechazo en 0,98. La conclusión (signo, o intervalo que incluye cero) coincide en 11 de los 12 conceptos en apoyo y en 6 en rechazo.</p>
 </section>
 
 </main>
