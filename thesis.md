@@ -333,21 +333,38 @@ En las declaraciones de rechazo, la ineficiencia y riesgo estatal no diferencia 
 
 ### **5.4 H2: Coaliciones discursivas**
 
-*[Afiliación binaria: cada actor apoya o rechaza un concepto (1) o no (0), con independencia del número de intervenciones; la versión por frecuencias va al anexo como sensibilidad. Redes de congruencia y conflicto entre actores normalizadas por coseno; red con signo; signed spin-glass con repeticiones por semilla. Número de comunidades no fijado.]*
+En segundo lugar, se contrasta la hipótesis de coaliciones (H2), según la cual en el debate de la Ley N.º 21.735 se identificarán dos polos discursivos, uno de preservación y otro de transformación. Para ello se construyó una red de actores en que dos actores se vinculan positivamente cuando apoyan o rechazan los mismos conceptos y negativamente cuando sostienen posturas opuestas sobre ellos. Sobre esa red se aplicó un algoritmo de detección de comunidades para redes con signo (*signed spin-glass*), sin fijar el número de comunidades (Figura 6). Cada comunidad se describe por la proporción de sus actores que apoya o rechaza cada concepto (Figura 7).
 
-*[Párrafo 1: número de comunidades y estabilidad.]*
+**Figura 6.** *Red de congruencia entre actores y comunidades detectadas, Ley N.º 21.735*
 
-**Figura 6.** *Perfil de apoyo y rechazo de cada coalición, Ley 21.735*
+![](output/figures/resultados/figura6_h2_red_actores.png)
 
-*[Conceptos en filas, coaliciones en columnas; proporción de miembros que apoya y que rechaza cada concepto. El grafo de actores va al anexo o en tamaño reducido.]*
+*Nota.* Cada nodo es un actor con al menos una declaración, coloreado según su bloque político; los contornos delimitan las comunidades. Se muestran los tres vínculos positivos más fuertes de cada actor. Las distancias entre nodos no son una medida estadística. La especificación de la red se presenta en el Anexo 4, y la composición de las comunidades, en la Tabla 5 del Anexo 3.
 
-**Tabla 3.** *Composición y estabilidad de las coaliciones*
+El algoritmo identifica dos comunidades en las 50 ejecuciones realizadas con distintas semillas, y las particiones son prácticamente idénticas entre sí. La comunidad 1 reúne 85 actores, 73 de ellos de derecha, y la comunidad 2 reúne 101 actores, 79 de izquierda y 13 de centro. Las comunidades se aproximan a los bloques políticos, pero no los reproducen: siete actores de izquierda quedan en la comunidad 1 y seis de derecha, en la comunidad 2. 
+De estos 13 actores, doce intervienen en la última discusión de la reforma, y su presencia es mayor en el Senado.
 
-*[Por coalición: bloque político, partidos, tipo de actor. Estabilidad: coasignación entre semillas; concordancia con las particiones por fase y sin acuerdos y moderación; información mutua normalizada entre coaliciones y bloque político.]*
+**Figura 7.** *Proporción de actores de cada comunidad que apoya y que rechaza cada concepto, Ley N.º 21.735*
 
-*[Párrafos 2–3: correspondencia de las coaliciones con los polos esperados y veredicto. ¿Las coaliciones reproducen los bloques de H1 o los cruzan?]*
+![](output/figures/resultados/figura7_h2_repertorio.png)
 
-*[Párrafo 4, exploratorio: coalición no anticipada (acuerdos y moderación), composición y repertorio.]*
+*Nota.* Proporción de los actores de cada comunidad que apoyó o rechazó cada concepto en al menos una intervención.
+
+Por su repertorio, la comunidad 1 corresponde al polo de preservación. El 76 % de sus actores apoya la propiedad de los fondos, frente al 13 % de los actores de la comunidad 2. Diferencias similares se observan en la previsión como mercado (71 % frente a 24 %), la capitalización individual (55 % frente a 1 %), la ineficiencia y riesgo estatal (52 % frente a 3 %) y la conciencia de costos (42 % frente a 9 %). La comunidad 1 se distingue también por sus rechazos: el 22 % de sus actores rechaza la solidaridad intergeneracional, frente al 1 % de la comunidad 2. La reciprocidad contributiva, en cambio, no la distingue: la apoya el 52 % de sus actores y el 54 % de los de la comunidad 2.
+
+La comunidad 2 corresponde al polo de transformación, aunque no por los conceptos que H2 anticipaba. La igualdad y el universalismo la distingue poco (52 % de sus actores, frente a 41 % en la comunidad 1), y la solidaridad intergeneracional, aunque casi exclusiva de ella, es apoyada solo por el 17 % de sus actores. Más bien, La comunidad 2 se caracteriza por el apoyo a la necesidad material (85 % frente a 47 %) y a la ilegitimidad del origen dictatorial (44 % frente a 2 %), y por el rechazo a la previsión como mercado (67 % frente a 16 %) y a la capitalización individual (36 % frente a 0 %). Los acuerdos y la moderación reciben apoyo en ambas comunidades (61 % y 52 %), pero su rechazo se concentra en la comunidad 1 (22 % frente a 4 %).
+
+Los actores que quedan en la comunidad del bloque contrario combinan conceptos de ambos repertorios. Los de izquierda en la comunidad 1 apoyan la competencia en la administración de los fondos: «vamos a lograr que entren nuevos actores para una mayor competencia, como pueden ser las cooperativas, las cajas de compensación, y además lograr una disminución de las comisiones y el aumento de las rentabilidades» (senador, PS). Los de derecha en la comunidad 2 justifican el acuerdo por la necesidad material y relativizan la defensa de las cuentas individuales: «Cuando se habla de "Con mi plata NO", ¿quién tiene más de 100 millones de pesos en sus cuentas de capitalización? Apenas el 1,5 por ciento de los cotizantes» (senador, UDI).
+
+**Figura 8.** *Redes de congruencia y de conflicto entre conceptos, Ley N.º 21.735*
+
+![](output/figures/resultados/figura8_h2_red_conceptos.png)
+
+*Nota.* En la red de congruencia, dos conceptos se vinculan cuando los mismos actores los apoyan o los rechazan conjuntamente; en la red de conflicto, cuando los mismos actores apoyan uno y rechazan el otro. El grosor indica la intensidad del vínculo, y se muestran los vínculos con peso de al menos 0,30, la mediana de la red de congruencia. Ambas redes usan la misma disposición. El tamaño del nodo indica el número de actores que usan el concepto, y el color, la comunidad en que el concepto recibe apoyo de una mayor proporción de actores.
+
+Las redes de conceptos muestran cómo se articulan ambos repertorios (Figura 8). En la red de congruencia, los conceptos de cada comunidad forman grupos densos, pero los vínculos entre ellos son numerosos. El más fuerte une la propiedad de los fondos con la reciprocidad contributiva, y la propiedad también se vincula con la igualdad y con la necesidad material: actores de ambas comunidades la invocan junto con criterios distributivos. En la izquierda, esa articulación aparece cuando se defiende la Ley N.º 21.735 como un arreglo que conserva la propiedad de los fondos y, a la vez, corrige desigualdades: «Con este proyecto mejoramos las pensiones y la PGU, se nivela la situación de las mujeres, se aumenta la competencia; se mantiene la propiedad de los fondos, que seguirán siendo heredables y, lo más importante, por fin tendremos un sistema de pensiones medianamente solidario» (diputado, Partido Liberal). La previsión como mercado se vincula, del mismo modo, con los acuerdos y la moderación, la igualdad y la reciprocidad.
+
+Los conceptos más característicos de la comunidad 2 son, en cambio, los menos integrados en la red de congruencia. La ilegitimidad del origen dictatorial y las dos formas de solidaridad tienen los vínculos de congruencia más débiles, y la solidaridad intergeneracional no alcanza el umbral con ningún otro concepto. Estos conceptos aparecen, sobre todo, en la red de conflicto, donde se oponen a la previsión como mercado y a la capitalización individual: los actores que apoyan la ilegitimidad del origen dictatorial o la solidaridad intergeneracional tienden a rechazar estos conceptos, y viceversa. La previsión como mercado es el concepto con más vínculos de conflicto, opuesto a la necesidad material, al origen dictatorial, a la igualdad y a la solidaridad intergeneracional.
 
 ### **5.5 H3: Comparación entre proyectos**
 
@@ -676,9 +693,13 @@ Entrega únicamente un objeto JSON válido, sin Markdown, comentarios, preámbul
 | Solidaridad intergeneracional | 12 | 0,53 | 0,75 | 0,62 | 0,61 | 0,61 \[0,36–0,80\] | 0,61 \[0,36–0,80\] | 0,82 | 0,68 |
 | *Nota.* *n*: bloques con el concepto en la referencia (359 evaluados). Precisión, Sensibilidad, *F*1 y κ (Cohen): par humano–Luna. H: humano; L: Luna-6; Hk: Haiku 5.5; tres: los tres codificadores. IC 95 %: remuestreo de bloques (10.000). \* Excluido: todo su intervalo con Luna queda bajo 0,667. Actitud no aparece porque la referencia no lo asigna. Nombres abreviados. |  |  |  |  |  |  |  |  |  |
 
-**Tabla 5.** *Apoyo y rechazo de los conceptos de H1 por bloque político: probabilidades predichas y modelos logísticos multinivel, Ley N.º 21.735*
+**Tabla 4.** *Apoyo y rechazo de los conceptos de H1 por bloque político: probabilidades predichas y modelos logísticos multinivel, Ley N.º 21.735*
 
 *[Insertar `output/tables/resultados/anexo_h1.docx`.]*
+
+**Tabla 5.** *Composición y estabilidad de las comunidades detectadas, Ley N.º 21.735*
+
+*[Insertar `output/tables/resultados/anexo_h2_comunidades.docx`.]*
 
 ### **8.4 Anexo 4: Suplemento metodológico**
 

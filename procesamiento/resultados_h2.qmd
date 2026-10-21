@@ -298,7 +298,7 @@ repertoire |>
 ```{r}
 #| label: fig-h2-repertorio
 #| fig-cap: "Proporción de actores de cada comunidad que apoya y que rechaza cada concepto, Ley 21.735"
-#| fig-alt: "Dos paneles, apoyo y rechazo; cada concepto tiene un punto por comunidad con la proporción de sus actores que expresa esa postura."
+#| fig-alt: "Dos paneles, apoyo y rechazo; cada concepto tiene un punto por comunidad, unidos por una línea, con la proporción de sus actores que expresa esa postura."
 #| fig-width: 9
 #| fig-height: 5.5
 concept_order <- repertoire |>
@@ -306,21 +306,30 @@ concept_order <- repertoire |>
   arrange(proporcion) |>
   pull(concepto)
 # Actitud se omite de las figuras: tiene dos declaraciones en todo el corpus.
-fig_repertoire <- repertoire |>
+# Cuando ambas comunidades tienen casi la misma proporción, sus puntos se
+# separan levemente en vertical para que no se tapen.
+plot_repertoire <- repertoire |>
   filter(concept_id != "actitud") |>
   mutate(concepto = factor(concepto, levels = concept_order),
          comunidad = factor(paste("Comunidad", comunidad))) |>
-  ggplot(aes(x = proporcion, y = concepto, color = comunidad)) +
+  group_by(concepto, postura) |>
+  mutate(solapa = diff(range(proporcion)) < 0.015,
+         y = as.numeric(concepto) +
+           if_else(solapa, if_else(comunidad == levels(comunidad)[1], 0.13, -0.13), 0)) |>
+  ungroup()
+fig_repertoire <- ggplot(plot_repertoire, aes(x = proporcion, y = y, color = comunidad)) +
   geom_line(aes(group = concepto), color = "grey80", linewidth = 0.6) +
   geom_point(size = 2.4) +
   facet_wrap(~ postura) +
+  scale_y_continuous(breaks = seq_along(concept_order), labels = concept_order,
+                     expand = expansion(add = 0.6)) +
   scale_x_continuous(labels = label_percent(accuracy = 1, suffix = " %"), limits = c(0, 1)) +
   scale_color_manual(values = COMMUNITY_COLORS) +
   labs(x = "Proporción de actores de la comunidad", y = NULL, color = NULL) +
   theme(legend.position = "top", panel.grid.major.y = element_blank(),
-        strip.text = element_text(face = "bold"))
+        strip.text = element_text(face = "bold"), panel.spacing.x = unit(1.5, "lines"))
 print(fig_repertoire)
-ggsave(file.path(FIGURE_DIR, "figura6_h2_repertorio.png"), fig_repertoire,
+ggsave(file.path(FIGURE_DIR, "figura7_h2_repertorio.png"), fig_repertoire,
        width = 9, height = 5.5, dpi = 300, bg = "white")
 ```
 
@@ -334,7 +343,7 @@ comunidad de la partición principal. Las distancias no son una medida
 estadística.
 
 ```{r}
-#| label: fig-h2-actores
+#| label: red-actores
 #| fig-cap: "Red de congruencia entre actores y comunidades detectadas, Ley 21.735"
 #| fig-alt: "Red de actores coloreados por bloque político, con contornos que delimitan las comunidades detectadas por spin-glass."
 #| fig-width: 9
@@ -345,8 +354,7 @@ graph_pos <- graph_from_adjacency_matrix(positive, mode = "undirected", weighted
 set.seed(SEED)
 layout <- layout_with_fr(graph_pos, weights = E(graph_pos)$weight, niter = 2000)
 nodes <- tibble(speaker_id = main_net$ids, x = layout[, 1], y = layout[, 2]) |>
-  left_join(community_actors |> select(speaker_id, bloque, comunidad, intervenciones),
-            by = "speaker_id")
+  left_join(community_actors |> select(speaker_id, bloque, comunidad), by = "speaker_id")
 # Los tres vínculos positivos más fuertes de cada actor.
 backbone <- map_dfr(seq_along(main_net$ids), \(i) {
   w <- positive[i, ]
@@ -361,6 +369,8 @@ hulls <- nodes |>
   slice(chull(x, y)) |>
   ungroup() |>
   mutate(comunidad = factor(paste("Comunidad", comunidad)))
+community_levels <- paste("Comunidad", sort(unique(nodes$comunidad)))
+community_palette <- setNames(COMMUNITY_COLORS[seq_along(community_levels)], community_levels)
 fig_actors <- ggplot() +
   geom_shape(data = hulls, aes(x = x, y = y, group = comunidad, fill = comunidad,
                                color = comunidad),
@@ -370,54 +380,69 @@ fig_actors <- ggplot() +
                color = "grey70", alpha = 0.5, linewidth = 0.25) +
   geom_point(data = nodes, aes(x = x, y = y, fill = bloque), shape = 21,
              color = "white", stroke = 0.3, size = 2.6) +
-  scale_fill_manual(values = c(BLOC_COLORS,
-                               setNames(COMMUNITY_COLORS[seq_len(n_distinct(nodes$comunidad))],
-                                        paste("Comunidad", sort(unique(nodes$comunidad))))),
+  scale_fill_manual(values = c(BLOC_COLORS, community_palette),
                     breaks = names(BLOC_COLORS), name = "Bloque",
                     guide = guide_legend(override.aes = list(shape = 21, size = 3))) +
-  scale_color_manual(values = setNames(COMMUNITY_COLORS[seq_len(n_distinct(nodes$comunidad))],
-                                       paste("Comunidad", sort(unique(nodes$comunidad)))),
-                     name = "Contorno",
+  scale_color_manual(values = community_palette, name = "Contorno",
                      guide = guide_legend(override.aes = list(fill = NA))) +
   coord_equal() +
   theme_void() +
   theme(legend.position = "bottom",
         plot.background = element_rect(fill = "white", color = NA))
 print(fig_actors)
-ggsave(file.path(FIGURE_DIR, "figura7_h2_red_actores.png"), fig_actors,
+ggsave(file.path(FIGURE_DIR, "figura6_h2_red_actores.png"), fig_actors,
        width = 9, height = 7.5, dpi = 300, bg = "white")
 ```
 
-## Red de congruencia de conceptos
+## Redes de congruencia y de conflicto entre conceptos
 
-Dos conceptos se vinculan cuando los mismos actores los apoyan o los rechazan
-conjuntamente: $W_{cd} = \sum_a (B^+_{ac}B^+_{ad} + B^-_{ac}B^-_{ad})$ dividido
-por las normas de ambos conceptos (suplemento, sección 6.2). El tamaño del
-nodo indica cuántos actores usan el concepto, y el color, la comunidad en que
-el concepto tiene mayor proporción de actores que lo apoyan. Se muestran los
-vínculos más fuertes, hasta que cada concepto tiene al menos uno.
+En la red de congruencia, dos conceptos se vinculan cuando los mismos actores
+los apoyan o los rechazan conjuntamente:
+$W^G_{cd} = \sum_a (B^+_{ac}B^+_{ad} + B^-_{ac}B^-_{ad})$, dividido por las
+normas de ambos conceptos (suplemento, sección 6.2). En la red de conflicto,
+dos conceptos se vinculan cuando los mismos actores apoyan uno y rechazan el
+otro: $W^C_{cd} = \sum_a (B^+_{ac}B^-_{ad} + B^-_{ac}B^+_{ad})$, con el mismo
+denominador. Ambas redes se dibujan con la misma disposición, calculada sobre la
+congruencia, y muestran los vínculos con peso de al menos 0,30, la mediana de la red de
+congruencia. El tamaño
+del nodo indica cuántos actores usan el concepto, y el color, la comunidad en
+que el concepto recibe apoyo de una mayor proporción de actores.
 
 ```{r}
-#| label: fig-h2-conceptos
-#| fig-cap: "Red de congruencia entre conceptos, Ley 21.735"
-#| fig-alt: "Red de conceptos unidos por su uso conjunto con la misma postura; el color indica la comunidad en que cada concepto recibe más apoyo."
-#| fig-width: 9
-#| fig-height: 7.5
+#| label: redes-conceptos
+#| fig-cap: "Redes de congruencia y de conflicto entre conceptos, Ley 21.735"
+#| fig-alt: "Dos paneles con los mismos conceptos en la misma posición: a la izquierda, los vínculos de congruencia; a la derecha, los de conflicto."
+#| fig-width: 12
+#| fig-height: 6.5
+EDGE_MIN <- 0.30
 aff <- main_net$affiliation
 concept_norm <- sqrt(colSums(aff$support^2 + aff$oppose^2))
-w_concepts <- (crossprod(aff$support) + crossprod(aff$oppose)) / outer(concept_norm, concept_norm)
-w_concepts[!is.finite(w_concepts)] <- 0
-diag(w_concepts) <- 0
-concept_pairs <- as_tibble(t(combn(network_concepts, 2)), .name_repair = "minimal") |>
-  setNames(c("from", "to")) |>
-  mutate(weight = w_concepts[cbind(from, to)]) |>
-  filter(weight > 0) |>
-  arrange(desc(weight))
-shown <- slice_head(concept_pairs, n = 20)
-for (cid in setdiff(network_concepts, c(shown$from, shown$to))) {
-  shown <- bind_rows(shown, concept_pairs |> filter(from == cid | to == cid) |> slice_head(n = 1))
+concept_weights <- function(numerator) {
+  w <- numerator / outer(concept_norm, concept_norm)
+  w[!is.finite(w)] <- 0
+  diag(w) <- 0
+  w[network_concepts, network_concepts]
 }
-graph_concepts <- graph_from_data_frame(concept_pairs, directed = FALSE,
+w_congruence <- concept_weights(crossprod(aff$support) + crossprod(aff$oppose))
+w_conflict <- concept_weights(crossprod(aff$support, aff$oppose) +
+                                crossprod(aff$oppose, aff$support))
+pairs_of <- function(w, red) {
+  as_tibble(t(combn(network_concepts, 2)), .name_repair = "minimal") |>
+    setNames(c("from", "to")) |>
+    mutate(weight = w[cbind(from, to)], red = red)
+}
+concept_pairs <- bind_rows(pairs_of(w_congruence, "Congruencia"),
+                           pairs_of(w_conflict, "Conflicto"))
+write_parquet(concept_pairs, file.path(TABLE_DIR, "h2_redes_conceptos.parquet"))
+concept_pairs |>
+  filter(weight >= EDGE_MIN) |>
+  group_by(red) |>
+  slice_max(weight, n = 10) |>
+  mutate(from = CONCEPT_SHORT[from], to = CONCEPT_SHORT[to]) |>
+  knitr::kable(digits = 2)
+
+graph_concepts <- graph_from_data_frame(filter(concept_pairs, red == "Congruencia", weight > 0),
+                                        directed = FALSE,
                                         vertices = tibble(name = network_concepts))
 set.seed(SEED)
 concept_layout <- layout_with_fr(graph_concepts, weights = E(graph_concepts)$weight,
@@ -433,23 +458,26 @@ concept_nodes <- tibble(concept_id = network_concepts, x = concept_layout[, 1],
                         actores = colSums((aff$support + aff$oppose) > 0)[network_concepts]) |>
   left_join(dominant, by = "concept_id") |>
   mutate(concepto = unname(CONCEPT_SHORT[concept_id]),
-         comunidad = factor(paste("Comunidad", comunidad)))
-concept_edges <- shown |>
-  mutate(x = concept_nodes$x[match(from, network_concepts)],
-         y = concept_nodes$y[match(from, network_concepts)],
-         xend = concept_nodes$x[match(to, network_concepts)],
-         yend = concept_nodes$y[match(to, network_concepts)])
+         comunidad = factor(paste("Comunidad", comunidad))) |>
+  tidyr::crossing(red = c("Congruencia", "Conflicto"))
+concept_edges <- concept_pairs |>
+  filter(weight >= EDGE_MIN) |>
+  mutate(x = concept_layout[match(from, network_concepts), 1],
+         y = concept_layout[match(from, network_concepts), 2],
+         xend = concept_layout[match(to, network_concepts), 1],
+         yend = concept_layout[match(to, network_concepts), 2])
 fig_concepts <- ggplot() +
   geom_segment(data = concept_edges,
                aes(x = x, y = y, xend = xend, yend = yend, linewidth = weight),
-               color = "grey60", alpha = 0.7) +
+               color = "grey55", alpha = 0.6) +
   geom_point(data = concept_nodes, aes(x = x, y = y, size = actores, color = comunidad)) +
   geom_label_repel(data = concept_nodes, aes(x = x, y = y, label = concepto),
-                   size = 3, seed = SEED, box.padding = 0.5, point.padding = 0.4,
+                   size = 2.8, seed = SEED, box.padding = 0.5, point.padding = 0.4,
                    label.size = 0.15, min.segment.length = 0, segment.color = "grey55",
                    segment.size = 0.3, max.overlaps = Inf) +
-  scale_linewidth(range = c(0.3, 2), name = "Congruencia") +
-  scale_size(range = c(2, 9), name = "Actores") +
+  facet_wrap(~ factor(red, levels = c("Congruencia", "Conflicto"))) +
+  scale_linewidth(range = c(0.3, 2.2), limits = c(EDGE_MIN, NA), name = "Peso del vínculo") +
+  scale_size(range = c(2, 8), name = "Actores") +
   scale_color_manual(values = setNames(COMMUNITY_COLORS[seq_len(nlevels(concept_nodes$comunidad))],
                                        levels(concept_nodes$comunidad)),
                      name = "Mayor apoyo en") +
@@ -457,12 +485,14 @@ fig_concepts <- ggplot() +
   theme_void() +
   guides(linewidth = guide_legend(nrow = 1), size = guide_legend(nrow = 1),
          color = guide_legend(nrow = 1, override.aes = list(size = 4))) +
-  theme(legend.position = "bottom", legend.box = "vertical",
+  theme(legend.position = "bottom", legend.box = "horizontal",
+        strip.text = element_text(face = "bold", size = 12),
+        panel.spacing = unit(2, "lines"),
         plot.background = element_rect(fill = "white", color = NA),
         plot.margin = margin(10, 20, 10, 20))
 print(fig_concepts)
 ggsave(file.path(FIGURE_DIR, "figura8_h2_red_conceptos.png"), fig_concepts,
-       width = 9, height = 7.5, dpi = 300, bg = "white")
+       width = 12, height = 6.5, dpi = 300, bg = "white")
 ```
 
 ## Análisis de sensibilidad
@@ -516,12 +546,12 @@ tabla_h2 <- composition |>
                                      decimal.mark = ","),
             `Partidos principales` = partidos)
 export_apa7_word_table(
-  tabla_h2, file.path(TABLE_DIR, "tabla3_h2_comunidades.docx"),
+  tabla_h2, file.path(TABLE_DIR, "anexo_h2_comunidades.docx"),
   "Composición y estabilidad de las comunidades detectadas, Ley N.º 21.735",
   note = paste0(
     "Partición de mayor modularidad entre ", N_RUNS, " ejecuciones de signed spin-glass. ",
     "Coasignación: proporción media de ejecuciones en que dos actores de la comunidad ",
     "quedan juntos. Entre paréntesis, número de actores de cada partido."),
-  table_number = 3L, landscape = TRUE, body_font_size = 11)
+  table_number = 5L, landscape = TRUE, body_font_size = 11)
 write_parquet(community_actors, file.path(TABLE_DIR, "h2_comunidades_actores.parquet"))
 ```
