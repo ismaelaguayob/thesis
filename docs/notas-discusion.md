@@ -3,6 +3,8 @@
 Ideas que pertenecen a la discusión y no a resultados. Se agregan a medida que
 aparecen.
 
+- La coalición transformadora se organiza más en torno al rechazo que la de continuidad. Esta, en vez de articular de forma fuerte la igualdad y la solidaridad como principios, se ve obligada a utilizar criterios de condicionalidad basados en la contribución y la vulnerabilidad, en vez de articular el apoyo cómo un derecho.
+
 ## Criterios de merecimiento en el debate legislativo
 
 - **CARIN como justificación positiva, no como condicionalidad.** En el debate
