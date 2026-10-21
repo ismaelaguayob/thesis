@@ -339,7 +339,7 @@ En segundo lugar, se contrasta la hipótesis de coaliciones (H2), según la cual
 
 ![](output/figures/resultados/figura6_h2_red_actores.png)
 
-*Nota.* Cada nodo es un actor con al menos una declaración, coloreado según su bloque político; los contornos delimitan las comunidades. Se muestran los tres vínculos positivos más fuertes de cada actor. Las distancias entre nodos no son una medida estadística. La especificación de la red se presenta en el Anexo 4, y la composición de las comunidades, en la Tabla 5 del Anexo 3.
+*Nota.* Cada nodo es un actor con al menos una declaración, coloreado según su bloque político; los contornos delimitan las comunidades. Se muestran los tres vínculos positivos más fuertes de cada actor. Cada actor pertenece a una sola comunidad: la superposición de los contornos se debe a que algunos actores, por sus vínculos con miembros de la otra comunidad, quedan dibujados entre ellos. La especificación de la red se presenta en el Anexo 4, y la composición de las comunidades, en la Tabla 5 del Anexo 3.
 
 El algoritmo identifica dos comunidades en las 50 ejecuciones realizadas con distintas semillas, y las particiones son prácticamente idénticas entre sí. La comunidad 1 reúne 85 actores, 73 de ellos de derecha, y la comunidad 2 reúne 101 actores, 79 de izquierda y 13 de centro. Las comunidades se aproximan a los bloques políticos, pero no los reproducen: siete actores de izquierda quedan en la comunidad 1 y seis de derecha, en la comunidad 2. 
 De estos 13 actores, doce intervienen en la última discusión de la reforma, y su presencia es mayor en el Senado.
@@ -352,7 +352,7 @@ De estos 13 actores, doce intervienen en la última discusión de la reforma, y 
 
 Por su repertorio, la comunidad 1 corresponde al polo de preservación. El 76 % de sus actores apoya la propiedad de los fondos, frente al 13 % de los actores de la comunidad 2. Diferencias similares se observan en la previsión como mercado (71 % frente a 24 %), la capitalización individual (55 % frente a 1 %), la ineficiencia y riesgo estatal (52 % frente a 3 %) y la conciencia de costos (42 % frente a 9 %). La comunidad 1 se distingue también por sus rechazos: el 22 % de sus actores rechaza la solidaridad intergeneracional, frente al 1 % de la comunidad 2. La reciprocidad contributiva, en cambio, no la distingue: la apoya el 52 % de sus actores y el 54 % de los de la comunidad 2.
 
-La comunidad 2 corresponde al polo de transformación, aunque no por los conceptos que H2 anticipaba. La igualdad y el universalismo la distingue poco (52 % de sus actores, frente a 41 % en la comunidad 1), y la solidaridad intergeneracional, aunque casi exclusiva de ella, es apoyada solo por el 17 % de sus actores. Más bien, La comunidad 2 se caracteriza por el apoyo a la necesidad material (85 % frente a 47 %) y a la ilegitimidad del origen dictatorial (44 % frente a 2 %), y por el rechazo a la previsión como mercado (67 % frente a 16 %) y a la capitalización individual (36 % frente a 0 %). Los acuerdos y la moderación reciben apoyo en ambas comunidades (61 % y 52 %), pero su rechazo se concentra en la comunidad 1 (22 % frente a 4 %).
+La comunidad 2 corresponde al polo de transformación, aunque no por los conceptos que H2 anticipaba. La igualdad y el universalismo la distingue poco (52 % de sus actores, frente a 41 % en la comunidad 1), y la solidaridad intergeneracional, aunque casi exclusiva de ella, es apoyada solo por el 17 % de sus actores. Más bien, la comunidad 2 se caracteriza por el apoyo a la necesidad material (85 % frente a 47 %) y a la ilegitimidad del origen dictatorial (44 % frente a 2 %), y por el rechazo a la previsión como mercado (67 % frente a 16 %) y a la capitalización individual (36 % frente a 0 %). Los acuerdos y la moderación reciben apoyo en ambas comunidades (61 % y 52 %), pero su rechazo se concentra en la comunidad 1 (22 % frente a 4 %).
 
 Los actores que quedan en la comunidad del bloque contrario combinan conceptos de ambos repertorios. Los de izquierda en la comunidad 1 apoyan la competencia en la administración de los fondos: «vamos a lograr que entren nuevos actores para una mayor competencia, como pueden ser las cooperativas, las cajas de compensación, y además lograr una disminución de las comisiones y el aumento de las rentabilidades» (senador, PS). Los de derecha en la comunidad 2 justifican el acuerdo por la necesidad material y relativizan la defensa de las cuentas individuales: «Cuando se habla de "Con mi plata NO", ¿quién tiene más de 100 millones de pesos en sus cuentas de capitalización? Apenas el 1,5 por ciento de los cotizantes» (senador, UDI).
 
@@ -442,6 +442,8 @@ Ferre, J. C. (2023). Welfare regimes in twenty-first-century Latin America. *Jou
 
 Fourcade, M., & Healy, K. (2007). Moral Views of Market Society. *Annual Review of Sociology*, *33*(Volume 33, 2007), 285–311. https://doi.org/10.1146/annurev.soc.33.040406.131642
 
+Fruchterman, T. M. J., & Reingold, E. M. (1991). Graph drawing by force-directed placement. *Software: Practice and Experience*, *21*(11), 1129–1164. https://doi.org/10.1002/spe.4380211102
+
 Funke, N., Huitema, D., & Petersen, A. (2023). Impending doom or unnecessary panic? The struggle for discursive hegemony in South Africa’s acid mine drainage policy problem. *Critical Policy Studies*, *17*(2), 276–296. https://doi.org/10.1080/19460171.2022.2092523
 
 Gaffney, S. (2025). The ‘pathologically state dependent’ versus ‘middle-aged ministers on mammoth salaries’: The legitimation contest over a 2013 austerity measure in the Republic of Ireland. *Discourse & Society*, *36*(2), 180–195. https://doi.org/10.1177/09579265241266020
@@ -514,6 +516,8 @@ Randerson, S., Graydon-Guy, T., Lin, E.-Y., & Casswell, S. (2025). Exploring the
 
 Reeskens, T., & van Oorschot, W. (2013). Equity, equality, or need? A study of popular preferences for welfare redistribution principles across 24 European countries. *Journal of European Public Policy*, *20*(8), 1174–1195. https://doi.org/10.1080/13501763.2012.752064
 
+Reichardt, J., & Bornholdt, S. (2006). Statistical mechanics of community detection. *Physical Review E*, *74*(1), 016110. https://doi.org/10.1103/PhysRevE.74.016110
+
 Ring, P., Ervik, R., & Lindén, T. S. (2020). Justifying pension reforms: Comparing policy discourses in Norway and the UK. *European Journal of Social Security*, *22*(3), 306–326. https://doi.org/10.1177/1388262720950736
 
 Román Brugnoli, J. A., & Osorio Gonnet, C. (2015). Solidaridad y políticas públicas en el discurso de los gobiernos de la Concertación en Chile. *Revista Electrónica de Psicología Política*, *13*(35), 39.
@@ -539,6 +543,8 @@ Summers, K., Edmiston, D., Geiger, B. B., Ingold, J., Scullion, L., de Vries, R.
 Taylor-Gooby, P., Hvinden, B., Mau, S., Leruth, B., Schoyen, M. A., & Gyory, A. (2019). Moral economies of the welfare state: A qualitative comparative study. *Acta Sociologica*, *62*(2), 119–134. https://doi.org/10.1177/0001699318774835
 
 Theiss, M. (2023). How Does the Content of Deservingness Criteria Differ for More and Less Deserving Target Groups? An Analysis of Polish Online Debates on Refugees and Families with Children. *Journal of Social Policy*, *52*(4), 962–980. https://doi.org/10.1017/S0047279422000058
+
+Traag, V. A., & Bruggeman, J. (2009). Community detection in networks with positive and negative links. *Physical Review E*, *80*(3), 036115. https://doi.org/10.1103/PhysRevE.80.036115
 
 Väänänen, N., & Liukko, J. (2022). Justifying a financially and socially sustainable pension reform: A comparative study of Finland and France. *International Journal of Sociology and Social Policy*, *43*(5–6), 507–520. https://doi.org/10.1108/IJSSP-04-2022-0091
 
@@ -721,9 +727,29 @@ donde β(bloque) es el efecto fijo del bloque (referencia: izquierda), mujer ind
 
 Las probabilidades predichas de cada bloque promedian las predicciones sobre todas las intervenciones observadas, conservando su género y longitud, e incluyen los efectos de concepto y de concepto × bloque, pero no el del actor. Los intervalos de confianza del 95 % corresponden a los percentiles 2,5 y 97,5 de 1.000 réplicas en que se sortearon actores con reposición dentro de cada bloque, se reajustó el modelo y se recalcularon las predicciones. En las combinaciones sin casos, el intervalo de la probabilidad refleja solo la incertidumbre del resto del modelo. Las diferencias predichas entre bloques se apartan a lo más 2,5 puntos porcentuales de las diferencias observadas.
 
-#### *4.4 Redes de actores y de conceptos (H2a y H2b)*
+#### *4.4 H2: Redes de actores y de conceptos*
 
-*[Pendiente: proyección de las redes, normalización por coseno, signed spin-glass y coeficiente de participación.]*
+La unidad es el actor con al menos una declaración en intervenciones sustantivas de la Ley N.º 21.735 (186 actores). La afiliación es binaria: *B*⁺(*a*, *c*) vale 1 si el actor *a* apoyó el concepto *c* en al menos una intervención, y *B*⁻(*a*, *c*), si lo rechazó. Un actor puede apoyar y rechazar un mismo concepto en intervenciones distintas. Se usa la afiliación binaria y no la frecuencia porque las repeticiones dependen, sobre todo, de en cuántas sesiones interviene cada actor.
+
+La congruencia entre dos actores *a* y *b* suma los conceptos en que coinciden en la postura, y el conflicto, los conceptos en que sostienen posturas opuestas:
+
+*G*(*a*, *b*) = Σ*c* [*B*⁺(*a*, *c*) · *B*⁺(*b*, *c*) + *B*⁻(*a*, *c*) · *B*⁻(*b*, *c*)] / (*n*(*a*) · *n*(*b*))
+
+*C*(*a*, *b*) = Σ*c* [*B*⁺(*a*, *c*) · *B*⁻(*b*, *c*) + *B*⁻(*a*, *c*) · *B*⁺(*b*, *c*)] / (*n*(*a*) · *n*(*b*))
+
+donde *n*(*a*) es la raíz cuadrada del número de posiciones del actor *a*, es decir, de la suma de sus *B*⁺ y *B*⁻. Ambas medidas son semejanzas coseno y reducen el peso del volumen de participación de cada actor (Leifeld, 2017). La red con signo es *S* = *G* − *C*: un vínculo positivo indica que dos actores coinciden más de lo que se oponen, y uno negativo, lo contrario.
+
+Las comunidades se identificaron con *signed spin-glass* (Reichardt y Bornholdt, 2006; Traag y Bruggeman, 2009), en la implementación de `igraph` (versión 2.3.3, R 4.6.1) que admite pesos negativos (`implementation = "neg"`). El algoritmo agrupa a los actores de modo que los vínculos positivos queden dentro de las comunidades y los negativos entre ellas, sin fijar de antemano el número de comunidades; el parámetro `spins = 10` es solo un máximo. Se usaron los parámetros de resolución por defecto (γ = 1 para los vínculos positivos y para los negativos). Cada actor se asigna a una sola comunidad: el método produce una partición estricta y no admite pertenencias superpuestas. Como el algoritmo es estocástico, se repitió con 50 semillas, y la partición principal es la de mayor modularidad. La estabilidad se evaluó con el número de comunidades de cada ejecución, la información mutua normalizada entre cada ejecución y la partición principal, y la proporción de ejecuciones en que cada par de actores queda en la misma comunidad (coasignación). Las comunidades se describen por la proporción de sus actores que apoya o rechaza cada concepto, y las etiquetas de preservación y transformación se asignaron después, según ese repertorio.
+
+En la Figura 6, la posición de los actores proviene de un algoritmo de fuerzas (Fruchterman y Reingold, 1991) aplicado a los vínculos positivos de *S*, y los contornos son las envolventes convexas de cada comunidad. La posición no depende de la comunidad asignada, por lo que un actor con vínculos en ambas comunidades puede quedar dibujado junto a la otra, y los contornos pueden superponerse.
+
+Las redes de conceptos usan la misma afiliación. En la red de congruencia, el vínculo entre dos conceptos *c* y *d* suma los actores que los apoyan o los rechazan conjuntamente; en la de conflicto, los que apoyan uno y rechazan el otro:
+
+*W*ᴳ(*c*, *d*) = Σ*a* [*B*⁺(*a*, *c*) · *B*⁺(*a*, *d*) + *B*⁻(*a*, *c*) · *B*⁻(*a*, *d*)] / (*m*(*c*) · *m*(*d*))
+
+*W*ᶜ(*c*, *d*) = Σ*a* [*B*⁺(*a*, *c*) · *B*⁻(*a*, *d*) + *B*⁻(*a*, *c*) · *B*⁺(*a*, *d*)] / (*m*(*c*) · *m*(*d*))
+
+donde *m*(*c*) es la raíz cuadrada del número de posiciones registradas sobre el concepto *c*. Ambas redes se dibujan con la misma disposición, calculada sobre la congruencia, y muestran los vínculos con peso de al menos 0,30, la mediana de la red de congruencia. Actitud se omite de las figuras por tener solo dos declaraciones.
 
 #### *4.5 Comparación entre proyectos (H3)*
 
