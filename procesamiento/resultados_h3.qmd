@@ -1,0 +1,412 @@
+---
+title: "H3: Comparación entre proyectos"
+subtitle: "Sección 5.5: presencia y centralidad del repertorio de mercado y transversalidad de la necesidad y la igualdad, PGU frente al sistema mixto"
+lang: es
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: true
+  message: false
+---
+
+Este reporte respalda la sección 5.5 del manuscrito. H3 sostiene que los
+conceptos relacionados con la justicia de mercado y la capitalización
+individual tendrán mayor presencia y centralidad relativa en el debate de la
+Ley 21.735 que en los debates de la PGU, y que en estos últimos la necesidad
+material y la igualdad o el universalismo alcanzarán un apoyo más transversal
+entre grupos políticos.
+
+Las leyes 21.419 y 21.538 se agrupan como debates de la PGU. El repertorio de
+mercado son los siete conceptos que H1 atribuye a la derecha: propiedad de los
+fondos, capitalización individual, reciprocidad contributiva, libertad de
+elección, conciencia de costos, ineficiencia y riesgo estatal y previsión como
+mercado.
+
+## Seteo de la sesión
+
+```{r}
+#| label: paquetes
+pacman::p_load(arrow, dplyr, tidyr, purrr, stringr, ggplot2, scales, lme4,
+               parallel)
+source("R/analysis_base.R")
+
+TABLE_DIR <- "output/tables/resultados"
+FIGURE_DIR <- "output/figures/resultados"
+dir.create(TABLE_DIR, recursive = TRUE, showWarnings = FALSE)
+dir.create(FIGURE_DIR, recursive = TRUE, showWarnings = FALSE)
+SEED <- 20261022
+N_BOOT <- 1000L
+N_CORES <- max(1L, detectCores() - 1L)
+knitr::opts_chunk$set(cache.extra = list(tools::md5sum(c(
+  "R/analysis_base.R",
+  file.path(LUNA_RUN_DIR, c("annotations.parquet", "results.parquet")),
+  sprintf("data/proc_data/ley_%s/coding_chunks_long.parquet", names(LAW_LABELS)),
+  Sys.glob(file.path(STANCE_ADJUDICATION_DIR, "*", "decisions", "*.json")))),
+  SEED, N_BOOT))
+
+MARKET <- c("propiedad_individual_fondos", "capitalizacion_individual",
+            "reciprocidad_contributiva", "libertad_eleccion_previsional",
+            "conciencia_costos", "ineficiencia_estado", "prevision_como_mercado")
+TRANSVERSAL <- c("necesidad_material", "igualdad_universalismo")
+DEBATE_COLORS <- c(PGU = "#8c8c8c", `Sistema mixto` = "#2f6fa3")
+BLOC_COLORS <- c(Izquierda = "#b03a7a", Derecha = "#12866f")
+theme_set(theme_minimal(base_size = 11) +
+            theme(panel.grid.minor = element_blank(),
+                  panel.grid.major.y = element_blank()))
+pct <- \(x) label_percent(accuracy = 1, suffix = " %")(x)
+```
+
+## Datos
+
+La unidad es la intervención sustantiva. Actitud se omite del universo de
+conceptos por tener solo dos declaraciones en el corpus.
+
+```{r}
+#| label: datos
+key <- c("law_number", "document_uri", "utterance_id")
+base <- load_analysis_base(LUNA_RUN_DIR)
+interventions <- base$interventions |>
+  filter(substantive) |>
+  mutate(debate = factor(if_else(debate == "PGU", "PGU", "Sistema mixto"),
+                         levels = names(DEBATE_COLORS)),
+         row = row_number())
+concepts <- setdiff(sort(unique(base$claims$concept_id)), "actitud")
+stopifnot(all(c(MARKET, TRANSVERSAL) %in% concepts))
+claims <- base$claims |>
+  filter(concept_id %in% concepts) |>
+  inner_join(interventions |> select(all_of(key), row), by = key)
+# Matrices intervención × concepto: apoyo, rechazo y presencia (cualquier postura).
+indicator <- function(s) {
+  m <- matrix(0L, nrow(interventions), length(concepts), dimnames = list(NULL, concepts))
+  r <- if (is.null(s)) distinct(claims, row, concept_id) else filter(claims, stance == s)
+  m[cbind(r$row, match(r$concept_id, concepts))] <- 1L
+  m
+}
+SUP <- indicator("support")
+OPP <- indicator("oppose")
+PRES <- indicator(NULL)
+stopifnot(all(PRES == pmax(SUP, OPP)))
+interventions |>
+  group_by(debate) |>
+  summarise(intervenciones = n(), actores = n_distinct(speaker_id)) |>
+  knitr::kable()
+```
+
+## (a) Presencia y centralidad del repertorio de mercado
+
+La presencia de un concepto es la proporción de intervenciones que lo
+mencionan, con apoyo o con rechazo (suplemento, sección 4.2). Para mostrar de
+dónde viene cada cambio, la presencia se descompone en intervenciones que solo
+lo apoyan, que solo lo rechazan o que hacen ambas cosas.
+
+La centralidad relativa proviene de la red de presencia de cada debate
+(suplemento, sección 6.1). Dos conceptos se vinculan cuando los usan los mismos
+actores, con cualquier postura; el vínculo es la semejanza coseno entre sus
+perfiles de actores, con afiliación binaria como en H2. La fuerza de un
+concepto es la suma de sus vínculos, y su centralidad relativa, la proporción
+de la fuerza total de la red que concentra. Esta proporción permite comparar
+redes de distinto tamaño.
+
+Los intervalos del 95 % provienen de `r N_BOOT` remuestreos de actores dentro de
+cada debate: se sortean actores con reposición, se conservan todas sus
+intervenciones y se recalculan las medidas.
+
+```{r}
+#| label: funciones-presencia
+# Medidas de un conjunto de intervenciones; `actor` identifica a quién pertenece
+# cada fila (en el remuestreo, cada copia de un actor cuenta como un actor).
+presence_measures <- function(rows, actor = interventions$speaker_id[rows]) {
+  pres <- PRES[rows, , drop = FALSE]
+  sup <- SUP[rows, , drop = FALSE]
+  opp <- OPP[rows, , drop = FALSE]
+  aff <- rowsum(pres, actor) > 0
+  norm <- sqrt(colSums(aff))
+  w <- crossprod(aff) / outer(norm, norm)
+  w[!is.finite(w)] <- 0
+  diag(w) <- 0
+  strength <- rowSums(w)
+  tibble(concept_id = concepts,
+         presencia = colMeans(pres),
+         solo_apoyo = colMeans(sup * (1 - opp)),
+         solo_rechazo = colMeans(opp * (1 - sup)),
+         ambas = colMeans(sup * opp),
+         centralidad = strength / sum(strength))
+}
+# Remuestrea actores dentro del debate y conserva todas sus intervenciones.
+presence_boot <- function(rows, seed) {
+  set.seed(seed)
+  by_actor <- split(rows, interventions$speaker_id[rows])
+  map_dfr(seq_len(N_BOOT), \(i) {
+    sampled <- sample(length(by_actor), replace = TRUE)
+    presence_measures(unlist(by_actor[sampled], use.names = FALSE),
+                      actor = rep(seq_along(sampled), lengths(by_actor[sampled]))) |>
+      select(concept_id, presencia, centralidad) |>
+      mutate(replica = i)
+  })
+}
+```
+
+```{r}
+#| label: presencia
+#| cache: true
+debate_rows <- split(seq_len(nrow(interventions)), interventions$debate)
+presence_point <- imap_dfr(debate_rows, \(rows, d) presence_measures(rows) |> mutate(debate = d))
+presence_reps <- imap_dfr(debate_rows, \(rows, d)
+                          presence_boot(rows, SEED + match(d, names(debate_rows))) |>
+                            mutate(debate = d))
+```
+
+```{r}
+#| label: presencia-resumen
+ci <- \(x) tibble(conf.low = quantile(x, 0.025), conf.high = quantile(x, 0.975))
+presence_ci <- presence_reps |>
+  pivot_longer(c(presencia, centralidad), names_to = "medida") |>
+  group_by(debate, concept_id, medida) |>
+  reframe(ci(value))
+presence_diff <- presence_reps |>
+  pivot_longer(c(presencia, centralidad), names_to = "medida") |>
+  pivot_wider(names_from = debate, values_from = value) |>
+  mutate(diferencia = `Sistema mixto` - PGU) |>
+  group_by(concept_id, medida) |>
+  reframe(ci(diferencia)) |>
+  left_join(presence_point |>
+              pivot_longer(c(presencia, centralidad), names_to = "medida") |>
+              select(debate, concept_id, medida, value) |>
+              pivot_wider(names_from = debate, values_from = value) |>
+              mutate(estimate = `Sistema mixto` - PGU),
+            by = c("concept_id", "medida")) |>
+  mutate(concepto = unname(CONCEPT_SHORT[concept_id]),
+         mercado = concept_id %in% MARKET)
+presence_table <- presence_point |>
+  pivot_longer(c(presencia, centralidad), names_to = "medida", values_to = "estimate") |>
+  left_join(presence_ci, by = c("debate", "concept_id", "medida")) |>
+  mutate(concepto = unname(CONCEPT_SHORT[concept_id]), mercado = concept_id %in% MARKET)
+write_parquet(presence_table, file.path(TABLE_DIR, "h3_presencia_centralidad.parquet"))
+write_parquet(presence_diff, file.path(TABLE_DIR, "h3_presencia_diferencias.parquet"))
+
+presence_diff |>
+  filter(mercado) |>
+  transmute(concepto, medida, PGU = 100 * PGU, `Sistema mixto` = 100 * `Sistema mixto`,
+            diferencia = 100 * estimate, ic_inf = 100 * conf.low, ic_sup = 100 * conf.high) |>
+  arrange(medida, desc(diferencia)) |>
+  knitr::kable(digits = 1, caption = "Repertorio de mercado: presencia y centralidad (%) y diferencia sistema mixto − PGU (pp)")
+
+# Rango de centralidad entre los 13 conceptos de cada debate.
+presence_point |>
+  group_by(debate) |>
+  mutate(rango = rank(-centralidad, ties.method = "min")) |>
+  ungroup() |>
+  filter(concept_id %in% MARKET) |>
+  transmute(concepto = CONCEPT_SHORT[concept_id], debate, rango) |>
+  pivot_wider(names_from = debate, values_from = rango) |>
+  knitr::kable(caption = "Posición en el ranking de centralidad (1 = más central)")
+
+presence_point |>
+  filter(concept_id %in% MARKET) |>
+  transmute(concepto = CONCEPT_SHORT[concept_id], debate,
+            across(c(presencia, solo_apoyo, solo_rechazo, ambas), \(x) 100 * x)) |>
+  knitr::kable(digits = 1, caption = "Descomposición de la presencia por postura (%)")
+```
+
+```{r}
+#| label: fig-h3-mercado
+#| fig-cap: "Presencia de los conceptos del repertorio de mercado por postura, PGU y sistema mixto"
+#| fig-alt: "Barras apiladas con la proporción de intervenciones que solo apoyan, solo rechazan o hacen ambas cosas con cada concepto, en la PGU y en el sistema mixto."
+#| fig-width: 7.5
+#| fig-height: 5.5
+market_order <- presence_point |>
+  filter(debate == "Sistema mixto", concept_id %in% MARKET) |>
+  arrange(presencia) |>
+  pull(concept_id)
+bars <- presence_point |>
+  filter(concept_id %in% MARKET) |>
+  pivot_longer(c(solo_apoyo, ambas, solo_rechazo), names_to = "postura", values_to = "valor") |>
+  mutate(postura = factor(recode(postura, solo_apoyo = "Solo apoyo", ambas = "Apoyo y rechazo",
+                                 solo_rechazo = "Solo rechazo"),
+                          levels = c("Solo rechazo", "Apoyo y rechazo", "Solo apoyo")),
+         concepto = factor(CONCEPT_SHORT[concept_id], levels = CONCEPT_SHORT[market_order]),
+         debate = factor(debate, levels = rev(names(DEBATE_COLORS))))
+panel_presence <- ggplot(bars, aes(x = valor, y = debate, fill = postura)) +
+  geom_col(width = 0.75) +
+  facet_grid(concepto ~ ., switch = "y") +
+  scale_x_continuous(labels = pct, expand = expansion(mult = c(0, 0.05))) +
+  scale_fill_manual(values = c(`Solo apoyo` = "#2f6fa3", `Apoyo y rechazo` = "#9fb7cf",
+                               `Solo rechazo` = "#c9772f"),
+                    breaks = c("Solo apoyo", "Apoyo y rechazo", "Solo rechazo")) +
+  labs(x = "Proporción de intervenciones", y = NULL, fill = NULL) +
+  theme(strip.placement = "outside", strip.text.y.left = element_text(angle = 0, hjust = 1),
+        legend.position = "bottom", panel.spacing.y = unit(0.3, "lines"))
+fig_market <- panel_presence
+print(fig_market)
+ggsave(file.path(FIGURE_DIR, "figura9_h3_mercado.png"), fig_market,
+       width = 7.5, height = 5.5, dpi = 300, bg = "white")
+```
+
+La centralidad relativa se reporta solo en las tablas: casi no cambia entre
+debates, salvo en la propiedad de los fondos.
+
+## (b) Transversalidad de la necesidad material y la igualdad
+
+Para cada concepto se estima un logit multinivel de que una intervención lo
+apoye, con el bloque (izquierda o derecha), el debate y su interacción,
+el género y el logaritmo estandarizado de las palabras, e intercepto aleatorio
+por actor. Las probabilidades predichas de cada bloque y debate promedian sobre
+todas las intervenciones observadas, con el intercepto del actor en cero. La
+transversalidad se mide como la diferencia entre la probabilidad de apoyo de
+la izquierda y la de la derecha en cada debate, con signo: un valor cercano a
+cero indica un apoyo transversal. El contraste de H3 es el cambio de esa
+diferencia entre la PGU y el sistema mixto. Se usa la diferencia con signo y no
+su valor absoluto porque el valor absoluto de una diferencia remuestreada nunca
+es negativo: cuando la diferencia real es cercana a cero, sus intervalos se
+alejan artificialmente del cero. El centro se excluye por su tamaño (26
+intervenciones en la PGU), que hacía depender de él la brecha. El rechazo no se modela: la
+necesidad material no tiene rechazos y la igualdad casi ninguno.
+
+```{r}
+#| label: datos-transversalidad
+model_data <- interventions |>
+  filter(alignment %in% c("izquierda", "derecha")) |>
+  mutate(bloque = factor(str_to_title(alignment), levels = names(BLOC_COLORS)),
+         genero = factor(gender, levels = c("hombre", "mujer")),
+         log_palabras = as.numeric(scale(log(utterance_words))),
+         necesidad_material = SUP[row, "necesidad_material"],
+         igualdad_universalismo = SUP[row, "igualdad_universalismo"])
+model_data |>
+  count(debate, bloque) |>
+  pivot_wider(names_from = bloque, values_from = n) |>
+  knitr::kable(caption = "Intervenciones por debate y bloque")
+model_data |>
+  group_by(debate, bloque) |>
+  summarise(across(all_of(TRANSVERSAL), mean), .groups = "drop") |>
+  knitr::kable(digits = 2, caption = "Proporción observada de intervenciones que apoyan cada concepto")
+```
+
+```{r}
+#| label: funciones-transversalidad
+control <- glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 1e5))
+fit_transversal <- function(data, y) {
+  glmer(as.formula(paste(y, "~ bloque * debate + genero + log_palabras + (1 | speaker_id)")),
+        data = data, family = binomial, control = control)
+}
+predict_transversal <- function(m, data) {
+  grid <- tidyr::crossing(bloque = levels(data$bloque), debate = levels(data$debate))
+  pmap_dfr(grid, \(bloque, debate) {
+    b <- bloque
+    d <- debate
+    nd <- mutate(data, bloque = factor(b, levels = levels(data$bloque)),
+                 debate = factor(d, levels = levels(data$debate)))
+    tibble(bloque = b, debate = d,
+           p = mean(predict(m, nd, type = "response", re.form = NA)))
+  })
+}
+gaps <- function(pred) {
+  pred |>
+    group_by(debate) |>
+    summarise(# Con signo para no inflar la brecha con el ruido del remuestreo.
+              izq_menos_der = p[bloque == "Izquierda"] - p[bloque == "Derecha"],
+              .groups = "drop")
+}
+# Remuestrea actores dentro de cada bloque, con todas sus intervenciones en ambos debates.
+boot_transversal <- function(data, y) {
+  actors <- distinct(data, speaker_id, bloque)
+  mclapply(seq_len(N_BOOT), \(i) {
+    set.seed(SEED + i)
+    boot_data <- actors |>
+      slice_sample(prop = 1, replace = TRUE, by = bloque) |>
+      mutate(boot_id = paste0("a", row_number())) |>
+      select(speaker_id, boot_id) |>
+      inner_join(data, by = "speaker_id", relationship = "many-to-many") |>
+      mutate(speaker_id = boot_id)
+    m <- tryCatch(suppressMessages(suppressWarnings(fit_transversal(boot_data, y))),
+                  error = \(e) NULL)
+    if (is.null(m)) return(NULL)
+    predict_transversal(m, boot_data) |> mutate(replica = i)
+  }, mc.cores = N_CORES) |>
+    list_rbind()
+}
+```
+
+```{r}
+#| label: modelos-transversalidad
+#| cache: true
+models_transversal <- map(set_names(TRANSVERSAL), \(y) fit_transversal(model_data, y))
+boot_reps <- map(set_names(TRANSVERSAL), \(y) boot_transversal(model_data, y))
+```
+
+```{r}
+#| label: resumen-transversalidad
+map_dfr(models_transversal, \(m) tibble(singular = isSingular(m),
+                                        avisos = length(m@optinfo$conv$lme4$messages),
+                                        de_actor = attr(VarCorr(m)$speaker_id, "stddev")),
+        .id = "concepto") |>
+  knitr::kable(digits = 2)
+pred_transversal <- imap_dfr(models_transversal, \(m, y) {
+  point <- predict_transversal(m, model_data)
+  reps <- boot_reps[[y]]
+  point |>
+    left_join(reps |> group_by(bloque, debate) |> reframe(ci(p)), by = c("bloque", "debate")) |>
+    mutate(concept_id = y)
+})
+gap_transversal <- imap_dfr(models_transversal, \(m, y) {
+  point <- gaps(predict_transversal(m, model_data)) |>
+    pivot_longer(-debate, names_to = "medida", values_to = "estimate")
+  reps <- boot_reps[[y]] |>
+    group_by(replica) |>
+    group_modify(\(d, k) gaps(d)) |>
+    ungroup() |>
+    pivot_longer(izq_menos_der, names_to = "medida")
+  by_debate <- point |>
+    left_join(reps |> group_by(debate, medida) |> reframe(ci(value)),
+              by = c("debate", "medida"))
+  change <- reps |>
+    pivot_wider(names_from = debate, values_from = value) |>
+    mutate(diferencia = `Sistema mixto` - PGU) |>
+    group_by(medida) |>
+    reframe(ci(diferencia)) |>
+    left_join(point |> pivot_wider(names_from = debate, values_from = estimate) |>
+                transmute(medida, estimate = `Sistema mixto` - PGU), by = "medida") |>
+    mutate(debate = "Sistema mixto − PGU")
+  bind_rows(by_debate, change) |> mutate(concept_id = y)
+})
+write_parquet(pred_transversal, file.path(TABLE_DIR, "h3_transversalidad_predicciones.parquet"))
+write_parquet(gap_transversal, file.path(TABLE_DIR, "h3_transversalidad_brechas.parquet"))
+cat("Réplicas completadas:", map_int(boot_reps, \(r) n_distinct(r$replica)), "\n")
+pred_transversal |>
+  transmute(concepto = CONCEPT_SHORT[concept_id], debate, bloque,
+            p = 100 * p, ic_inf = 100 * conf.low, ic_sup = 100 * conf.high) |>
+  knitr::kable(digits = 1, caption = "Probabilidad predicha de apoyo (%)")
+gap_transversal |>
+  transmute(concepto = CONCEPT_SHORT[concept_id], medida, debate,
+            brecha = 100 * estimate, ic_inf = 100 * conf.low, ic_sup = 100 * conf.high) |>
+  knitr::kable(digits = 1, caption = "Diferencia izquierda − derecha en la probabilidad de apoyo (pp)")
+```
+
+```{r}
+#| label: fig-h3-transversalidad
+#| fig-cap: "Probabilidad predicha de apoyo a la necesidad material y a la igualdad por bloque político, PGU y sistema mixto"
+#| fig-alt: "Dos paneles, uno por concepto; para cada debate, dos puntos con la probabilidad predicha de apoyo de izquierda y derecha, con su intervalo."
+#| fig-width: 9
+#| fig-height: 4
+fig_transversal <- pred_transversal |>
+  mutate(concepto = factor(CONCEPT_SHORT[concept_id], levels = CONCEPT_SHORT[TRANSVERSAL]),
+         debate = factor(debate, levels = rev(names(DEBATE_COLORS))),
+         bloque = factor(bloque, levels = names(BLOC_COLORS))) |>
+  ggplot(aes(x = p, y = debate)) +
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high, color = bloque), width = 0,
+                orientation = "y", linewidth = 0.5, alpha = 0.6,
+                position = position_dodge(width = 0.45)) +
+  geom_point(aes(color = bloque), size = 2.6, position = position_dodge(width = 0.45)) +
+  facet_wrap(~ concepto) +
+  scale_x_continuous(labels = pct, limits = c(0, NA), expand = expansion(mult = c(0.02, 0.05))) +
+  scale_color_manual(values = BLOC_COLORS) +
+  labs(x = "Probabilidad predicha de apoyo", y = NULL, color = NULL) +
+  theme(legend.position = "top", strip.text = element_text(face = "bold"),
+        panel.spacing.x = unit(1.5, "lines"))
+print(fig_transversal)
+ggsave(file.path(FIGURE_DIR, "figura10_h3_transversalidad.png"), fig_transversal,
+       width = 9, height = 4, dpi = 300, bg = "white")
+```

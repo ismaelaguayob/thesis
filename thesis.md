@@ -153,11 +153,9 @@ La comparación entre proyectos permite examinar cómo cambia la relevancia de e
 
 - *H2. Coaliciones:* En el debate de la Ley N.º 21.735 se identificarán dos polos discursivos principales, vinculados con la justicia de mercado y la justicia política. El polo de preservación empleará argumentos a favor de la propiedad y capitalización individual, la reciprocidad contributiva, la conciencia de costos y justificaciones de la organización privada y mercantil de la previsión. El polo de transformación se distinguirá por su apoyo a la igualdad o el universalismo y a la solidaridad intergeneracional.
 
-- *H3. Comparación entre proyectos:* El debate de la Ley N.º 21.735 será más polarizado que los debates de la PGU: las coaliciones discursivas se diferenciarán más en su apoyo y rechazo a los conceptos, y las intervenciones de la derecha contendrán con mayor probabilidad justificaciones normativas.
+- *H3. Comparación entre proyectos:* Los conceptos relacionados con la justicia de mercado y la capitalización individual tendrán mayor presencia y centralidad relativa en el debate de la Ley N.º 21.735 que en los debates de PGU. En estos últimos, la necesidad material y la igualdad o el universalismo alcanzarán un apoyo más transversal entre grupos políticos.
 
-- *H4. Persistencia:* Durante las fases observadas de la Ley N.º 21.735, el repertorio asociado a la capitalización individual mantendrá su cobertura de apoyo entre actores y su centralidad relativa en la red de conceptos. Se examinarán por separado propiedad individual, capitalización individual, reciprocidad contributiva, conciencia de costos, ineficiencia y riesgo estatal, y previsión como mercado, así como las relaciones que los articulan.
-
-## 
+- *H4. Persistencia:* Durante las fases observadas de la Ley N.º 21.735, el repertorio asociado a la capitalización individual mantendrá su cobertura de apoyo entre actores y su centralidad relativa en la red de conceptos. Se examinarán por separado propiedad individual, capitalización individual, reciprocidad contributiva, conciencia de costos, ineficiencia y riesgo estatal, libertad de elección, libertad de elección, y previsión como mercado, así como las relaciones que los articulan.
 
 ## **4. Metodología** {#4.-metodología}
 
@@ -279,7 +277,7 @@ En otros casos, el modelo omite: en solidaridad como deber colectivo, Luna dejó
 
 *Nota.* alfa de Krippendorff con intervalos de confianza del 95 % (10.000 remuestreos de fragmentos). Entre paréntesis, el número de fragmentos con el concepto en la referencia. La línea discontinua marca 0,667.
 
-Ya que los modelos no difieren en su concordancia general con la referencia (diferencia en α = 0,01; IC 95 % \[−0,02; 0,04\]), la elección del modelo se basó en su rendimiento en los conceptos centrales de las hipótesis (Figura 2). La diferencia entre modelos fue clara solo en tres de los 15 conceptos evaluables: Luna concordó mejor en necesidad material (Luna: α = 0,66; Haiku: α = 0,55) y en conciencia de costos (Luna: α = 0,64; Haiku: α = 0,52), y Haiku en igualdad y universalismo (Haiku: α = 0,70; Luna: α = 0,54). Con Haiku, la regla de inclusión excluiría necesidad material, concepto central de H1b (IC 95 % \[0,43; 0,66\]). Con Luna se excluyen identidad y pertenencia grupal (α = 0,48; IC 95 % \[0,28; 0,66\]; *n* = 18) y control y responsabilidad individual (α = 0,44; IC 95 % \[0,17; 0,66\]; *n* = 14), que no sostienen hipótesis. Igualdad y universalismo se mantiene con Luna cerca del umbral (α = 0,54; IC 95 % \[0,38; 0,67\]). Por estas razones, GPT-6 Luna se utiliza como modelo principal y Claude Haiku 5.5 se empleará para reproducir los procedimientos centrales como análisis de sensibilidad. En el corpus completo, Haiku asignó un 19 % más conceptos que Luna (3.237 y 2.717 asignaciones). La Tabla S1 del Anexo 3 presenta, por concepto, la precisión, la sensibilidad y los coeficientes de concordancia de cada combinación de codificadores.
+Ya que los modelos no difieren en su concordancia general con la referencia (diferencia en α = 0,01; IC 95 % \[−0,02; 0,04\]), la elección del modelo se basó en su rendimiento en los conceptos centrales de las hipótesis (Figura 2). La diferencia entre modelos fue clara solo en tres de los 15 conceptos evaluables: Luna concordó mejor en necesidad material (Luna: α = 0,66; Haiku: α = 0,55) y en conciencia de costos (Luna: α = 0,64; Haiku: α = 0,52), y Haiku en igualdad y universalismo (Haiku: α = 0,70; Luna: α = 0,54). Con Haiku, la regla de inclusión excluiría necesidad material, concepto central de H3 (IC 95 % \[0,43; 0,66\]). Con Luna se excluyen identidad y pertenencia grupal (α = 0,48; IC 95 % \[0,28; 0,66\]; *n* = 18) y control y responsabilidad individual (α = 0,44; IC 95 % \[0,17; 0,66\]; *n* = 14), que no sostienen hipótesis. Igualdad y universalismo se mantiene con Luna cerca del umbral (α = 0,54; IC 95 % \[0,38; 0,67\]). Por estas razones, GPT-6 Luna se utiliza como modelo principal y Claude Haiku 5.5 se empleará para reproducir los procedimientos centrales como análisis de sensibilidad. En el corpus completo, Haiku asignó un 19 % más conceptos que Luna (3.237 y 2.717 asignaciones). La Tabla S1 del Anexo 3 presenta, por concepto, la precisión, la sensibilidad y los coeficientes de concordancia de cada combinación de codificadores.
 
 **Figura 3**
 
@@ -368,11 +366,25 @@ Los conceptos más característicos de la comunidad 2 son, en cambio, los menos 
 
 ### **5.5 H3: Comparación entre proyectos**
 
-*[Leyes 21.419 y 21.538 agrupadas como debates de la PGU; sensibilidad por separado en el anexo. Densidad normativa: logit multinivel de que una intervención de derecha contenga al menos una justificación normativa (todos los conceptos salvo acuerdos y moderación), PGU frente a reforma, intercepto por actor. Polarización entre coaliciones: a los actores que intervienen en la PGU y en la reforma se les asigna la coalición que tuvieron en la Ley 21.735, y el mismo logit de H1 con coalición × debate estima si su distancia en apoyo y rechazo es mayor en la reforma. Se informa cuántos actores de la PGU quedan fuera por no intervenir en la reforma.]*
+En tercer lugar, se contrasta la hipótesis de comparación entre proyectos (H3), que compara el debate de la Ley N.º 21.735 con los debates de la PGU, que agrupan las leyes N.º 21.419 y 21.538. Primero se examina la presencia y la centralidad de los siete conceptos del repertorio de mercado, es decir, los que H1 atribuye a la derecha. Luego se examina la transversalidad del apoyo a la necesidad material y a la igualdad, medida como la diferencia entre la probabilidad predicha de apoyo de la izquierda y la de la derecha en un modelo logístico multinivel. Las diferencias (Δ) se expresan en puntos porcentuales (pp), con su intervalo de confianza del 95 %.
 
-**Figura 10.** *Polarización y densidad normativa en los debates de la PGU y de la reforma*
+**Figura 9.** *Presencia de los conceptos del repertorio de mercado según postura, debates de la PGU y del sistema mixto*
 
-*[Párrafos: expectativa; resultado de cada componente; veredicto. La presencia de propiedad y capitalización se describe como contraste dependiente de la materia de cada proyecto.]*
+![](output/figures/resultados/figura9_h3_mercado.png)
+
+*Nota.* Proporción de intervenciones sustantivas que mencionan cada concepto, según si solo lo apoyan, solo lo rechazan o hacen ambas cosas. Los debates de la PGU agrupan las leyes N.º 21.419 y 21.538.
+
+Seis de los siete conceptos del repertorio de mercado tienen mayor presencia en el debate del sistema mixto que en los de la PGU (Figura 9). La previsión como mercado aparece en el 53 % de las intervenciones del sistema mixto, frente al 15 % en la PGU (Δ = 38 pp; IC 95 % \[30; 46\]). También aumentan la propiedad de los fondos (30 % frente a 3 %; Δ = 27 pp; IC 95 % \[21; 33\]), la ineficiencia y riesgo estatal (24 % frente a 0,5 %; Δ = 24 pp; IC 95 % \[19; 29\]), la capitalización individual (29 % frente a 9 %; Δ = 20 pp; IC 95 % \[14; 27\]), la reciprocidad contributiva (35 % frente a 20 %; Δ = 15 pp; IC 95 % \[7; 23\]) y la libertad de elección (16 % frente a 3 %; Δ = 13 pp; IC 95 % \[9; 18\]). La conciencia de costos es la excepción: su presencia no cambia entre debates (20 % y 24 %; IC 95 % de la diferencia \[−11; 5\]). La centralidad relativa, por su parte, casi no varía: entre los siete conceptos, solo la propiedad de los fondos concentra una proporción mayor de la fuerza de la red de presencia en el sistema mixto (8,1 % frente a 3,8 %; Δ = 4,3 pp; IC 95 % \[1,3; 7,2\]).
+
+**Figura 10.** *Probabilidad predicha de apoyo a la necesidad material y a la igualdad por bloque político, debates de la PGU y del sistema mixto*
+
+![](output/figures/resultados/figura10_h3_transversalidad.png)
+
+*Nota.* Probabilidad predicha de que una intervención apoye cada concepto, con intervalos de confianza del 95 %. Modelos logísticos multinivel con controles de género y longitud de la intervención. La especificación se presenta en el Anexo 4.
+
+La transversalidad del apoyo sigue patrones distintos en ambos conceptos (Figura 10). En los debates de la PGU, la necesidad material recibe el mismo apoyo en la izquierda y en la derecha: la probabilidad predicha de que una intervención la apoye es de 53 % y 54 %, respectivamente (Δ = −1 pp; IC 95 % \[−18; 17\]). En la derecha, la necesidad justifica un piso de protección para quienes menos tienen: «finalmente es la construcción de aquella sociedad de bienestar, no necesariamente estatal, sino una sociedad que brinda un piso a las personas para que puedan subsistir de manera digna y buena» (diputado, Evópoli). En el debate del sistema mixto, en cambio, se abre una brecha: la probabilidad predicha de apoyo es de 65 % en la izquierda y de 30 % en la derecha (Δ = 36 pp; IC 95 % \[23; 48\]), y el cambio entre debates es de 37 pp (IC 95 % \[15; 57\]).
+
+La igualdad y el universalismo, al contrario de lo esperado, distingue a los bloques en la PGU y no en el sistema mixto. En la PGU, la izquierda la apoya con mayor probabilidad que la derecha (50 % y 32 %; Δ = 18 pp; IC 95 % \[2; 35\]), pero en el sistema mixto la diferencia desaparece (32 % y 27 %; Δ = 5 pp; IC 95 % \[−5; 15\]), porque disminuye el apoyo de la izquierda. El cambio entre debates no es concluyente (Δ = −13 pp; IC 95 % \[−31; 6\]).
 
 ### **5.6 H4: Persistencia**
 
@@ -751,9 +763,23 @@ Las redes de conceptos usan la misma afiliación. En la red de congruencia, el v
 
 donde *m*(*c*) es la raíz cuadrada del número de posiciones registradas sobre el concepto *c*. Ambas redes se dibujan con la misma disposición, calculada sobre la congruencia, y muestran los vínculos con peso de al menos 0,30, la mediana de la red de congruencia. Actitud se omite de las figuras por tener solo dos declaraciones.
 
-#### *4.5 Comparación entre proyectos (H3)*
+#### *4.5 H3: Comparación entre proyectos*
 
-*[Pendiente.]*
+Los debates de las leyes N.º 21.419 y 21.538 se agrupan como debates de la PGU (182 intervenciones sustantivas de 111 actores) y se comparan con el de la Ley N.º 21.735 (358 intervenciones de 187 actores). El repertorio de mercado corresponde a los siete conceptos que H1 atribuye a la derecha: propiedad de los fondos, capitalización individual, reciprocidad contributiva, libertad de elección, conciencia de costos, ineficiencia y riesgo estatal y previsión como mercado.
+
+La presencia de un concepto en un debate es la proporción de intervenciones sustantivas que lo mencionan, con apoyo o con rechazo. Para describir su composición, se distinguen las intervenciones que solo lo apoyan, las que solo lo rechazan y las que hacen ambas cosas.
+
+La centralidad relativa proviene de la red de presencia de cada debate. Para el actor *a* y el concepto *c*, *A*(*a*, *c*) vale 1 si el actor mencionó el concepto en al menos una intervención, con cualquier postura. El vínculo entre dos conceptos es la semejanza coseno entre sus perfiles de actores:
+
+*W*ᴾ(*c*, *d*) = Σ*a* *A*(*a*, *c*) · *A*(*a*, *d*) / (√Σ*a* *A*(*a*, *c*) · √Σ*a* *A*(*a*, *d*))
+
+La fuerza de un concepto es la suma de sus vínculos, y su centralidad relativa, la proporción de la fuerza total de la red que concentra, lo que permite comparar redes de distinto tamaño. El universo es de 13 conceptos (se omite actitud). Los intervalos de confianza del 95 % de la presencia, de la centralidad y de sus diferencias entre debates corresponden a los percentiles 2,5 y 97,5 de 1.000 remuestreos de actores dentro de cada debate, en que se conservan todas las intervenciones del actor sorteado y cada copia de un actor cuenta como un actor distinto.
+
+La transversalidad se estimó con un modelo logístico multinivel por concepto (necesidad material e igualdad y universalismo), sobre las intervenciones de actores de izquierda y de derecha. La probabilidad *p* de que una intervención apoye el concepto se modela como:
+
+logit(*p*) = β₀ + β₁ · derecha + β₂ · sistema mixto + β₃ · derecha × sistema mixto + β₄ · mujer + β₅ · log(palabras) + *u*(actor)
+
+donde *u* es un intercepto aleatorio por actor, que recoge que algunos actores intervienen en ambos debates. Se excluye el centro, que aporta solo 26 intervenciones en la PGU, y el rechazo no se modela, porque la necesidad material no tiene rechazos y la igualdad casi ninguno. Las probabilidades predichas de cada bloque y debate promedian las predicciones sobre todas las intervenciones observadas, con el efecto del actor fijado en cero. La transversalidad se mide como Δ = *p*(izquierda) − *p*(derecha) en cada debate, y el contraste de H3, como la diferencia de Δ entre el sistema mixto y la PGU. Se usa la diferencia con signo y no su valor absoluto, que en el remuestreo no puede tomar valores negativos y aleja los intervalos del cero cuando la diferencia real es pequeña. Los intervalos provienen de 1.000 réplicas en que se sortearon actores con reposición dentro de cada bloque, con todas sus intervenciones en ambos debates, y se reajustó el modelo.
 
 #### *4.6 Persistencia (H4)*
 
