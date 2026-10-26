@@ -2827,7 +2827,7 @@ Figura 4: Alternativa D. Redes de congruencia entre conceptos por fase de la C�
 </section>
 <section id="tabla-para-el-anexo" class="level2">
 <h2 class="anchored" data-anchor-id="tabla-para-el-anexo">Tabla para el anexo</h2>
-<p>El panel A presenta la probabilidad predicha de presencia de cada concepto y del repertorio en cada fase y su cambio; el panel B, las razones de probabilidades (OR) de los controles con intervalos de Wald y la desviación estándar del intercepto por actor. Los coeficientes de concepto, fase y su interacción se omiten porque su contraste está en el panel A.</p>
+<p>La tabla presenta la probabilidad predicha de presencia de cada concepto y del repertorio en cada fase y su cambio. Los coeficientes no se reportan; la especificación está en el Anexo 4.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Código</summary>
@@ -2836,33 +2836,29 @@ Figura 4: Alternativa D. Redes de congruencia entre conceptos por fase de la C�
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">paste0</span>(<span class="fu">dec</span>(est, digits), <span class="st">&quot; [&quot;</span>, <span class="fu">dec</span>(low, digits), <span class="st">&quot;; &quot;</span>, <span class="fu">dec</span>(high, digits), <span class="st">&quot;]&quot;</span>) <span class="sc">|&gt;</span></span>
 <span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_replace_all</span>(<span class="st">&quot;-&quot;</span>, <span class="st">&quot;−&quot;</span>)</span>
 <span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Razones de probabilidades con intervalos de Wald para los términos indicados.</span></span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>or_txt <span class="ot">&lt;-</span> <span class="cf">function</span>(m, terms) {</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># `confint()` devuelve los términos en el orden del modelo: se reordenan.</span></span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  ci <span class="ot">&lt;-</span> <span class="fu">confint</span>(m, <span class="at">parm =</span> terms, <span class="at">method =</span> <span class="st">&quot;Wald&quot;</span>)[terms, , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ic_txt</span>(<span class="fu">exp</span>(<span class="fu">fixef</span>(m)[terms]), <span class="fu">exp</span>(ci[, <span class="dv">1</span>]), <span class="fu">exp</span>(ci[, <span class="dv">2</span>]), <span class="dv">2</span>)</span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>panel_a <span class="ot">&lt;-</span> change_h4 <span class="sc">|&gt;</span></span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">orden =</span> <span class="fu">if_else</span>(concepto <span class="sc">==</span> <span class="st">&quot;repertorio&quot;</span>, <span class="dv">0</span>L, <span class="dv">1</span>L)) <span class="sc">|&gt;</span></span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(predictions_h4 <span class="sc">|&gt;</span></span>
-<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>              <span class="fu">select</span>(concepto, fase, estimate, conf.low, conf.high) <span class="sc">|&gt;</span></span>
-<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>              <span class="fu">mutate</span>(<span class="at">valor =</span> <span class="fu">ic_txt</span>(<span class="dv">100</span> <span class="sc">*</span> estimate, <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="dv">100</span> <span class="sc">*</span> conf.high)) <span class="sc">|&gt;</span></span>
-<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>              <span class="fu">select</span>(concepto, fase, valor) <span class="sc">|&gt;</span></span>
-<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>              <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> fase, <span class="at">values_from =</span> valor),</span>
-<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="st">&quot;concepto&quot;</span>, <span class="at">suffix =</span> <span class="fu">c</span>(<span class="st">&quot;&quot;</span>, <span class="st">&quot;_txt&quot;</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(orden, <span class="fu">desc</span>(estimate)) <span class="sc">|&gt;</span></span>
-<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">fila =</span> etiqueta, <span class="at">c1 =</span> <span class="st">`</span><span class="at">Cámara 2024_txt</span><span class="st">`</span>, <span class="at">c2 =</span> <span class="st">`</span><span class="at">Cámara 2025_txt</span><span class="st">`</span>,</span>
-<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>            <span class="at">c3 =</span> <span class="fu">ic_txt</span>(<span class="dv">100</span> <span class="sc">*</span> estimate, <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="dv">100</span> <span class="sc">*</span> conf.high))</span>
-<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>terms_or <span class="ot">&lt;-</span> <span class="fu">intersect</span>(<span class="fu">c</span>(<span class="st">&quot;bloquecentro&quot;</span>, <span class="st">&quot;bloquederecha&quot;</span>, <span class="st">&quot;bloquenonpartisan&quot;</span>, <span class="st">&quot;generomujer&quot;</span>,</span>
-<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>                        <span class="st">&quot;log_palabras&quot;</span>), <span class="fu">names</span>(<span class="fu">fixef</span>(m_h4)))</span>
-<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>or_labels <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">bloquecentro =</span> <span class="st">&quot;Centro (OR)&quot;</span>, <span class="at">bloquederecha =</span> <span class="st">&quot;Derecha (OR)&quot;</span>,</span>
-<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>               <span class="at">bloquenonpartisan =</span> <span class="st">&quot;No partidista (OR)&quot;</span>, <span class="at">generomujer =</span> <span class="st">&quot;Mujer (OR)&quot;</span>,</span>
-<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>               <span class="at">log_palabras =</span> <span class="st">&quot;Palabras, log estandarizado (OR)&quot;</span>)</span>
-<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>panel_b <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
-<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">fila =</span> <span class="fu">c</span>(<span class="fu">unname</span>(or_labels[terms_or]), <span class="st">&quot;DE del intercepto: actor&quot;</span>,</span>
-<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a>           <span class="st">&quot;Observaciones (intervención × concepto)&quot;</span>, <span class="st">&quot;Actores&quot;</span>),</span>
-<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">c1 =</span> <span class="fu">c</span>(<span class="fu">or_txt</span>(m_h4, terms_or), <span class="fu">dec</span>(<span class="fu">attr</span>(<span class="fu">VarCorr</span>(m_h4)<span class="sc">$</span>speaker_id, <span class="st">&quot;stddev&quot;</span>), <span class="dv">2</span>),</span>
-<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a>         <span class="fu">format</span>(<span class="fu">nobs</span>(m_h4), <span class="at">big.mark =</span> <span class="st">&quot;.&quot;</span>), <span class="fu">as.character</span>(<span class="fu">ngrps</span>(m_h4)[[<span class="st">&quot;speaker_id&quot;</span>]])))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>tabla_h4 <span class="ot">&lt;-</span> change_h4 <span class="sc">|&gt;</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">orden =</span> <span class="fu">if_else</span>(concepto <span class="sc">==</span> <span class="st">&quot;repertorio&quot;</span>, <span class="dv">0</span>L, <span class="dv">1</span>L)) <span class="sc">|&gt;</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(predictions_h4 <span class="sc">|&gt;</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>              <span class="fu">mutate</span>(<span class="at">valor =</span> <span class="fu">ic_txt</span>(<span class="dv">100</span> <span class="sc">*</span> estimate, <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="dv">100</span> <span class="sc">*</span> conf.high)) <span class="sc">|&gt;</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>              <span class="fu">select</span>(concepto, fase, valor) <span class="sc">|&gt;</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>              <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> fase, <span class="at">values_from =</span> valor, <span class="at">names_prefix =</span> <span class="st">&quot;txt_&quot;</span>),</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="st">&quot;concepto&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(orden, <span class="fu">desc</span>(estimate)) <span class="sc">|&gt;</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">fila =</span> etiqueta, <span class="at">c1 =</span> <span class="st">`</span><span class="at">txt_Cámara 2024</span><span class="st">`</span>, <span class="at">c2 =</span> <span class="st">`</span><span class="at">txt_Cámara 2025</span><span class="st">`</span>,</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>            <span class="at">c3 =</span> <span class="fu">ic_txt</span>(<span class="dv">100</span> <span class="sc">*</span> estimate, <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="dv">100</span> <span class="sc">*</span> conf.high))</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="fu">export_apa7_word_table</span>(</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>  tabla_h4, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;anexo_h4_presencia.docx&quot;</span>),</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Probabilidad predicha de presencia de los conceptos del repertorio de mercado por fase de la Cámara, Ley N.º 21.735&quot;</span>,</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">note =</span> <span class="fu">paste0</span>(</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Probabilidad predicha (%) de que una intervención sustantiva mencione cada concepto, con &quot;</span>,</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;apoyo o rechazo, a partir de un modelo logístico multinivel, e intervalos de confianza &quot;</span>,</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;del 95 % entre corchetes, obtenidos con 1.000 remuestreos de actores. El repertorio &quot;</span>,</span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;corresponde al promedio de los siete conceptos. Δ corresponde a 2025 menos 2024, en &quot;</span>,</span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;puntos porcentuales. &quot;</span>, <span class="fu">format</span>(<span class="fu">nobs</span>(m_h4), <span class="at">big.mark =</span> <span class="st">&quot;.&quot;</span>),</span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot; observaciones (intervención × concepto) de &quot;</span>, <span class="fu">nrow</span>(interventions), <span class="st">&quot; intervenciones y &quot;</span>,</span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ngrps</span>(m_h4)[[<span class="st">&quot;speaker_id&quot;</span>]], <span class="st">&quot; actores. La especificación se presenta en el Anexo 4.&quot;</span>),</span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">table_number =</span> <span class="dv">7</span>L, <span class="at">body_font_size =</span> <span class="dv">11</span>,</span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">header_labels =</span> <span class="fu">c</span>(<span class="st">&quot;Concepto&quot;</span>, <span class="st">&quot;Cámara 2024&quot;</span>, <span class="st">&quot;Cámara 2025&quot;</span>, <span class="st">&quot;Δ (pp)&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
@@ -2870,39 +2866,15 @@ Figura 4: Alternativa D. Redes de congruencia entre conceptos por fase de la C�
 </div>
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>section <span class="ot">&lt;-</span> \(label) <span class="fu">tibble</span>(<span class="at">fila =</span> label)</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>tabla_h4 <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">section</span>(<span class="st">&quot;Panel A. Probabilidad predicha de presencia (%) y cambio 2025 − 2024 (pp)&quot;</span>),</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  panel_a,</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">section</span>(<span class="st">&quot;Panel B. Parámetros del modelo&quot;</span>),</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  panel_b) <span class="sc">|&gt;</span></span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), \(x) <span class="fu">coalesce</span>(x, <span class="st">&quot;&quot;</span>)))</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>section_rows <span class="ot">&lt;-</span> <span class="fu">which</span>(tabla_h4<span class="sc">$</span>c1 <span class="sc">==</span> <span class="st">&quot;&quot;</span>)</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>panel_b_rows <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">nrow</span>(tabla_h4) <span class="sc">-</span> <span class="fu">nrow</span>(panel_b) <span class="sc">+</span> <span class="dv">1</span>, <span class="fu">nrow</span>(tabla_h4))</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="fu">export_apa7_word_table</span>(</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>  tabla_h4, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;anexo_h4_presencia.docx&quot;</span>),</span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Presencia del repertorio de mercado en las fases de la Cámara: probabilidades predichas y modelo logístico multinivel, Ley N.º 21.735&quot;</span>,</span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">note =</span> <span class="fu">paste</span>(</span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Panel A: probabilidad predicha (%) de que una intervención sustantiva mencione cada&quot;</span>,</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;concepto, con apoyo o rechazo, e intervalos de confianza del 95 % entre corchetes,&quot;</span>,</span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;obtenidos con 1.000 remuestreos de actores; el repertorio corresponde al promedio de&quot;</span>,</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;los siete conceptos. Panel B: razones de probabilidades (OR) con intervalos de confianza&quot;</span>,</span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;del 95 % de Wald (referencias: izquierda y hombre) y desviación estándar (DE), en escala&quot;</span>,</span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;logit, del intercepto aleatorio por actor. El modelo incluye además el concepto, la fase&quot;</span>,</span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;y su interacción como efectos fijos.&quot;</span>),</span>
-<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">table_number =</span> <span class="dv">7</span>L, <span class="at">body_font_size =</span> <span class="dv">11</span>,</span>
-<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">header_labels =</span> <span class="fu">c</span>(<span class="st">&quot;Concepto&quot;</span>, <span class="st">&quot;Cámara 2024&quot;</span>, <span class="st">&quot;Cámara 2025&quot;</span>, <span class="st">&quot;Cambio (pp)&quot;</span>),</span>
-<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">section_rows =</span> section_rows,</span>
-<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">merge_cells =</span> <span class="fu">list</span>(<span class="fu">list</span>(<span class="at">rows =</span> panel_b_rows, <span class="at">columns =</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>)))</span>
-<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(tabla_h4)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(tabla_h4)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
 <colgroup>
-<col style="width: 57%">
-<col style="width: 14%">
-<col style="width: 14%">
-<col style="width: 14%">
+<col style="width: 35%">
+<col style="width: 21%">
+<col style="width: 21%">
+<col style="width: 21%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -2914,112 +2886,52 @@ Figura 4: Alternativa D. Redes de congruencia entre conceptos por fase de la C�
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">Panel A. Probabilidad predicha de presencia (%) y cambio 2025 − 2024 (pp)</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
 <td style="text-align: left;">Repertorio (promedio)</td>
 <td style="text-align: left;">28,3 [24,7; 32,5]</td>
 <td style="text-align: left;">28,8 [25,5; 32,5]</td>
 <td style="text-align: left;">0,5 [−3,4; 4,3]</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Previsión como mercado</td>
 <td style="text-align: left;">45,3 [36,6; 54,1]</td>
 <td style="text-align: left;">57,9 [48,9; 66,0]</td>
 <td style="text-align: left;">12,7 [0,9; 23,1]</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Propiedad de los fondos</td>
 <td style="text-align: left;">27,7 [19,7; 36,7]</td>
 <td style="text-align: left;">32,2 [24,6; 39,9]</td>
 <td style="text-align: left;">4,5 [−4,6; 13,5]</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Reciprocidad contributiva</td>
 <td style="text-align: left;">35,4 [27,6; 44,1]</td>
 <td style="text-align: left;">34,2 [26,1; 42,3]</td>
 <td style="text-align: left;">−1,1 [−11,2; 8,8]</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Libertad de elección</td>
 <td style="text-align: left;">16,4 [9,7; 23,4]</td>
 <td style="text-align: left;">15,1 [9,4; 21,4]</td>
 <td style="text-align: left;">−1,2 [−10,4; 7,3]</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Conciencia de costos</td>
 <td style="text-align: left;">17,1 [10,2; 25,0]</td>
 <td style="text-align: left;">15,1 [9,6; 21,1]</td>
 <td style="text-align: left;">−2,0 [−10,7; 5,7]</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Ineficiencia y riesgo estatal</td>
 <td style="text-align: left;">27,0 [19,2; 36,0]</td>
 <td style="text-align: left;">22,3 [16,3; 29,7]</td>
 <td style="text-align: left;">−4,7 [−13,9; 5,0]</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Capitalización individual</td>
 <td style="text-align: left;">29,3 [22,2; 37,4]</td>
 <td style="text-align: left;">24,3 [17,8; 31,9]</td>
 <td style="text-align: left;">−5,0 [−13,7; 3,6]</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Panel B. Parámetros del modelo</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Centro (OR)</td>
-<td style="text-align: left;">0,54 [0,31; 0,91]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Derecha (OR)</td>
-<td style="text-align: left;">2,39 [1,83; 3,11]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">No partidista (OR)</td>
-<td style="text-align: left;">0,69 [0,27; 1,75]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Mujer (OR)</td>
-<td style="text-align: left;">1,37 [1,05; 1,78]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Palabras, log estandarizado (OR)</td>
-<td style="text-align: left;">2,26 [1,87; 2,72]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">DE del intercepto: actor</td>
-<td style="text-align: left;">0,33</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Observaciones (intervención × concepto)</td>
-<td style="text-align: left;">2.002</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Actores</td>
-<td style="text-align: left;">145</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
 </tr>
 </tbody>
 </table>

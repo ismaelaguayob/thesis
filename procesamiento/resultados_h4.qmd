@@ -416,11 +416,9 @@ ggsave(file.path(FIGURE_DIR, "figura11_h4_alternativa_d.png"), fig_d,
 
 ## Tabla para el anexo
 
-El panel A presenta la probabilidad predicha de presencia de cada concepto y
-del repertorio en cada fase y su cambio; el panel B, las razones de
-probabilidades (OR) de los controles con intervalos de Wald y la desviación
-estándar del intercepto por actor. Los coeficientes de concepto, fase y su
-interacción se omiten porque su contraste está en el panel A.
+La tabla presenta la probabilidad predicha de presencia de cada concepto y del
+repertorio en cada fase y su cambio. Los coeficientes no se reportan; la
+especificación está en el Anexo 4.
 
 ```{r}
 #| label: tabla-anexo
@@ -429,57 +427,29 @@ ic_txt <- function(est, low, high, digits = 1) {
   paste0(dec(est, digits), " [", dec(low, digits), "; ", dec(high, digits), "]") |>
     str_replace_all("-", "−")
 }
-# Razones de probabilidades con intervalos de Wald para los términos indicados.
-or_txt <- function(m, terms) {
-  # `confint()` devuelve los términos en el orden del modelo: se reordenan.
-  ci <- confint(m, parm = terms, method = "Wald")[terms, , drop = FALSE]
-  ic_txt(exp(fixef(m)[terms]), exp(ci[, 1]), exp(ci[, 2]), 2)
-}
-panel_a <- change_h4 |>
+tabla_h4 <- change_h4 |>
   mutate(orden = if_else(concepto == "repertorio", 0L, 1L)) |>
   left_join(predictions_h4 |>
-              select(concepto, fase, estimate, conf.low, conf.high) |>
               mutate(valor = ic_txt(100 * estimate, 100 * conf.low, 100 * conf.high)) |>
               select(concepto, fase, valor) |>
-              pivot_wider(names_from = fase, values_from = valor),
-            by = "concepto", suffix = c("", "_txt")) |>
+              pivot_wider(names_from = fase, values_from = valor, names_prefix = "txt_"),
+            by = "concepto") |>
   arrange(orden, desc(estimate)) |>
-  transmute(fila = etiqueta, c1 = `Cámara 2024_txt`, c2 = `Cámara 2025_txt`,
+  transmute(fila = etiqueta, c1 = `txt_Cámara 2024`, c2 = `txt_Cámara 2025`,
             c3 = ic_txt(100 * estimate, 100 * conf.low, 100 * conf.high))
-terms_or <- intersect(c("bloquecentro", "bloquederecha", "bloquenonpartisan", "generomujer",
-                        "log_palabras"), names(fixef(m_h4)))
-or_labels <- c(bloquecentro = "Centro (OR)", bloquederecha = "Derecha (OR)",
-               bloquenonpartisan = "No partidista (OR)", generomujer = "Mujer (OR)",
-               log_palabras = "Palabras, log estandarizado (OR)")
-panel_b <- tibble(
-  fila = c(unname(or_labels[terms_or]), "DE del intercepto: actor",
-           "Observaciones (intervención × concepto)", "Actores"),
-  c1 = c(or_txt(m_h4, terms_or), dec(attr(VarCorr(m_h4)$speaker_id, "stddev"), 2),
-         format(nobs(m_h4), big.mark = "."), as.character(ngrps(m_h4)[["speaker_id"]])))
-section <- \(label) tibble(fila = label)
-tabla_h4 <- bind_rows(
-  section("Panel A. Probabilidad predicha de presencia (%) y cambio 2025 − 2024 (pp)"),
-  panel_a,
-  section("Panel B. Parámetros del modelo"),
-  panel_b) |>
-  mutate(across(everything(), \(x) coalesce(x, "")))
-section_rows <- which(tabla_h4$c1 == "")
-panel_b_rows <- seq(nrow(tabla_h4) - nrow(panel_b) + 1, nrow(tabla_h4))
 export_apa7_word_table(
   tabla_h4, file.path(TABLE_DIR, "anexo_h4_presencia.docx"),
-  "Presencia del repertorio de mercado en las fases de la Cámara: probabilidades predichas y modelo logístico multinivel, Ley N.º 21.735",
-  note = paste(
-    "Panel A: probabilidad predicha (%) de que una intervención sustantiva mencione cada",
-    "concepto, con apoyo o rechazo, e intervalos de confianza del 95 % entre corchetes,",
-    "obtenidos con 1.000 remuestreos de actores; el repertorio corresponde al promedio de",
-    "los siete conceptos. Panel B: razones de probabilidades (OR) con intervalos de confianza",
-    "del 95 % de Wald (referencias: izquierda y hombre) y desviación estándar (DE), en escala",
-    "logit, del intercepto aleatorio por actor. El modelo incluye además el concepto, la fase",
-    "y su interacción como efectos fijos."),
+  "Probabilidad predicha de presencia de los conceptos del repertorio de mercado por fase de la Cámara, Ley N.º 21.735",
+  note = paste0(
+    "Probabilidad predicha (%) de que una intervención sustantiva mencione cada concepto, con ",
+    "apoyo o rechazo, a partir de un modelo logístico multinivel, e intervalos de confianza ",
+    "del 95 % entre corchetes, obtenidos con 1.000 remuestreos de actores. El repertorio ",
+    "corresponde al promedio de los siete conceptos. Δ corresponde a 2025 menos 2024, en ",
+    "puntos porcentuales. ", format(nobs(m_h4), big.mark = "."),
+    " observaciones (intervención × concepto) de ", nrow(interventions), " intervenciones y ",
+    ngrps(m_h4)[["speaker_id"]], " actores. La especificación se presenta en el Anexo 4."),
   table_number = 7L, body_font_size = 11,
-  header_labels = c("Concepto", "Cámara 2024", "Cámara 2025", "Cambio (pp)"),
-  section_rows = section_rows,
-  merge_cells = list(list(rows = panel_b_rows, columns = 2:4)))
+  header_labels = c("Concepto", "Cámara 2024", "Cámara 2025", "Δ (pp)"))
 knitr::kable(tabla_h4)
 ```
 

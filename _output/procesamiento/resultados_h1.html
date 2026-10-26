@@ -3197,121 +3197,79 @@ Figura 1: Probabilidad predicha de que una intervención apoye y rechace cada c
 </section>
 <section id="tabla-para-el-anexo" class="level2">
 <h2 class="anchored" data-anchor-id="tabla-para-el-anexo">Tabla para el anexo</h2>
-<p>Una sola tabla reúne el resultado y el modelo. El panel A presenta las probabilidades predichas y las diferencias entre bloques por concepto, que es donde está el contraste de H1. El panel B presenta los controles como razones de probabilidades (<em>odds ratios</em>, OR) con intervalos de Wald y la desviación estándar de cada efecto aleatorio. El efecto fijo del bloque se omite: es la diferencia entre bloques en un concepto promedio, que mezcla diferencias de signo opuesto y no contrasta H1. Se exporta a Word con formato APA 7.</p>
+<p>La tabla presenta las probabilidades predichas y las diferencias entre bloques por concepto, que es donde está el contraste de H1. Los coeficientes no se reportan: con efectos aleatorios e interacciones no son directamente interpretables, y la especificación está en el Anexo 4. Se exporta a Word con formato APA 7.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>dec <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">digits =</span> <span class="dv">2</span>) <span class="fu">formatC</span>(<span class="fu">round</span>(x, digits) <span class="sc">+</span> <span class="dv">0</span>, <span class="at">format =</span> <span class="st">&quot;f&quot;</span>, <span class="at">digits =</span> digits, <span class="at">decimal.mark =</span> <span class="st">&quot;,&quot;</span>)</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>ic_txt <span class="ot">&lt;-</span> <span class="cf">function</span>(est, low, high, <span class="at">digits =</span> <span class="dv">2</span>) {</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>dec <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">digits =</span> <span class="dv">1</span>) <span class="fu">formatC</span>(<span class="fu">round</span>(x, digits) <span class="sc">+</span> <span class="dv">0</span>, <span class="at">format =</span> <span class="st">&quot;f&quot;</span>, <span class="at">digits =</span> digits, <span class="at">decimal.mark =</span> <span class="st">&quot;,&quot;</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>ic_txt <span class="ot">&lt;-</span> <span class="cf">function</span>(est, low, high, <span class="at">digits =</span> <span class="dv">1</span>) {</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">paste0</span>(<span class="fu">dec</span>(est, digits), <span class="st">&quot; [&quot;</span>, <span class="fu">dec</span>(low, digits), <span class="st">&quot;; &quot;</span>, <span class="fu">dec</span>(high, digits), <span class="st">&quot;]&quot;</span>) <span class="sc">|&gt;</span></span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_replace_all</span>(<span class="st">&quot;-&quot;</span>, <span class="st">&quot;−&quot;</span>)</span>
 <span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">setequal</span>(<span class="fu">names</span>(<span class="fu">fixef</span>(m_apoyo)),</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">c</span>(<span class="st">&quot;(Intercept)&quot;</span>, <span class="st">&quot;bloquecentro&quot;</span>, <span class="st">&quot;bloquederecha&quot;</span>, <span class="st">&quot;generomujer&quot;</span>,</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>                     <span class="st">&quot;log_palabras&quot;</span>)))</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>model_rows <span class="ot">&lt;-</span> <span class="cf">function</span>(m) {</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  ci <span class="ot">&lt;-</span> <span class="fu">confint</span>(m, <span class="at">parm =</span> <span class="fu">c</span>(<span class="st">&quot;generomujer&quot;</span>, <span class="st">&quot;log_palabras&quot;</span>), <span class="at">method =</span> <span class="st">&quot;Wald&quot;</span>)</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>  or <span class="ot">&lt;-</span> <span class="fu">exp</span>(<span class="fu">fixef</span>(m)[<span class="fu">c</span>(<span class="st">&quot;generomujer&quot;</span>, <span class="st">&quot;log_palabras&quot;</span>)])</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  sd_re <span class="ot">&lt;-</span> <span class="fu">map_dbl</span>(<span class="fu">VarCorr</span>(m), \(v) <span class="fu">attr</span>(v, <span class="st">&quot;stddev&quot;</span>))</span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="fu">ic_txt</span>(or, <span class="fu">exp</span>(ci[, <span class="dv">1</span>]), <span class="fu">exp</span>(ci[, <span class="dv">2</span>])),</span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">dec</span>(sd_re[<span class="fu">c</span>(<span class="st">&quot;speaker_id&quot;</span>, <span class="st">&quot;concepto&quot;</span>, <span class="st">&quot;concepto:bloque&quot;</span>)]),</span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">format</span>(<span class="fu">nobs</span>(m), <span class="at">big.mark =</span> <span class="st">&quot;.&quot;</span>), <span class="fu">as.character</span>(<span class="fu">ngrps</span>(m)[[<span class="st">&quot;speaker_id&quot;</span>]]))</span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>panel_a <span class="ot">&lt;-</span> predictions_h1 <span class="sc">|&gt;</span></span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bloque <span class="sc">!=</span> <span class="st">&quot;centro&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(postura, concepto, esperado, bloque,</span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>            <span class="at">valor =</span> <span class="fu">ic_txt</span>(<span class="dv">100</span> <span class="sc">*</span> estimate, <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="dv">100</span> <span class="sc">*</span> conf.high, <span class="dv">1</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>(contrasts_h1 <span class="sc">|&gt;</span></span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>              <span class="fu">transmute</span>(postura, concepto, esperado, <span class="at">bloque =</span> <span class="st">&quot;diferencia&quot;</span>,</span>
-<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>                        <span class="at">valor =</span> <span class="fu">ic_txt</span>(<span class="dv">100</span> <span class="sc">*</span> estimate, <span class="dv">100</span> <span class="sc">*</span> conf.low,</span>
-<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>                                       <span class="dv">100</span> <span class="sc">*</span> conf.high, <span class="dv">1</span>))) <span class="sc">|&gt;</span></span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> <span class="fu">c</span>(postura, bloque), <span class="at">values_from =</span> valor) <span class="sc">|&gt;</span></span>
-<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(esperado, <span class="fu">desc</span>(<span class="fu">match</span>(concepto, concept_order)))</span>
-<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>section <span class="ot">&lt;-</span> \(label) <span class="fu">tibble</span>(<span class="at">concepto =</span> label)</span>
-<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>panel_b <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
-<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">concepto =</span> <span class="fu">c</span>(<span class="st">&quot;Mujer (OR)&quot;</span>, <span class="st">&quot;Palabras, log estandarizado (OR)&quot;</span>,</span>
-<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>               <span class="st">&quot;DE del intercepto: actor&quot;</span>, <span class="st">&quot;DE del intercepto: concepto&quot;</span>,</span>
-<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>               <span class="st">&quot;DE del intercepto: concepto × bloque&quot;</span>,</span>
-<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>               <span class="st">&quot;Observaciones (intervención × concepto)&quot;</span>, <span class="st">&quot;Actores&quot;</span>),</span>
-<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">Apoyo_izquierda =</span> <span class="fu">model_rows</span>(m_apoyo),</span>
-<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">Rechazo_izquierda =</span> <span class="fu">model_rows</span>(m_rechazo))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>panel <span class="ot">&lt;-</span> predictions_h1 <span class="sc">|&gt;</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bloque <span class="sc">!=</span> <span class="st">&quot;centro&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(postura, concepto, esperado, bloque,</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">valor =</span> <span class="fu">ic_txt</span>(<span class="dv">100</span> <span class="sc">*</span> estimate, <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="dv">100</span> <span class="sc">*</span> conf.high)) <span class="sc">|&gt;</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>(contrasts_h1 <span class="sc">|&gt;</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>              <span class="fu">transmute</span>(postura, concepto, esperado, <span class="at">bloque =</span> <span class="st">&quot;diferencia&quot;</span>,</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>                        <span class="at">valor =</span> <span class="fu">ic_txt</span>(<span class="dv">100</span> <span class="sc">*</span> estimate, <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="dv">100</span> <span class="sc">*</span> conf.high))) <span class="sc">|&gt;</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> <span class="fu">c</span>(postura, bloque), <span class="at">values_from =</span> valor) <span class="sc">|&gt;</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(esperado, <span class="fu">desc</span>(<span class="fu">match</span>(concepto, concept_order)))</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>section <span class="ot">&lt;-</span> \(label) <span class="fu">tibble</span>(<span class="at">concepto =</span> label)</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>tabla_h1 <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">section</span>(<span class="st">&quot;Conceptos esperados en la derecha&quot;</span>),</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(panel, esperado <span class="sc">==</span> <span class="st">&quot;Esperado: derecha&quot;</span>),</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">section</span>(<span class="st">&quot;Conceptos esperados en la izquierda&quot;</span>),</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(panel, esperado <span class="sc">==</span> <span class="st">&quot;Esperado: izquierda&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(concepto, Apoyo_izquierda, Apoyo_derecha, Apoyo_diferencia,</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>         Rechazo_izquierda, Rechazo_derecha, Rechazo_diferencia) <span class="sc">|&gt;</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), \(x) <span class="fu">coalesce</span>(x, <span class="st">&quot;&quot;</span>)))</span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a><span class="fu">export_apa7_word_table</span>(</span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>  tabla_h1, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;anexo_h1.docx&quot;</span>),</span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Probabilidad predicha de apoyo y rechazo de los conceptos de H1 por bloque político, Ley N.º 21.735&quot;</span>,</span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">note =</span> <span class="fu">paste0</span>(</span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Probabilidad predicha (%) de que una intervención sustantiva apoye o rechace cada &quot;</span>,</span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;concepto, a partir de dos modelos logísticos multinivel (apoyo y rechazo), e intervalos &quot;</span>,</span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;de confianza del 95 % entre corchetes, obtenidos con 1.000 remuestreos de actores dentro &quot;</span>,</span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;de cada bloque. Δ corresponde a derecha menos izquierda, en puntos porcentuales. &quot;</span>,</span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">format</span>(<span class="fu">nobs</span>(m_apoyo), <span class="at">big.mark =</span> <span class="st">&quot;.&quot;</span>), <span class="st">&quot; observaciones (intervención × concepto) de &quot;</span>,</span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">nrow</span>(model_interventions), <span class="st">&quot; intervenciones y &quot;</span>, <span class="fu">ngrps</span>(m_apoyo)[[<span class="st">&quot;speaker_id&quot;</span>]],</span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot; actores. La especificación se presenta en el Anexo 4.&quot;</span>),</span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">table_number =</span> <span class="dv">4</span>L, <span class="at">landscape =</span> <span class="cn">TRUE</span>, <span class="at">body_font_size =</span> <span class="dv">10</span>,</span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">header_labels =</span> <span class="fu">c</span>(<span class="st">&quot;Concepto&quot;</span>, <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">&quot;Izquierda&quot;</span>, <span class="st">&quot;Derecha&quot;</span>, <span class="st">&quot;Δ (pp)&quot;</span>), <span class="dv">2</span>)),</span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">header_groups =</span> <span class="fu">c</span>(<span class="st">&quot; &quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;Apoyo&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot;Rechazo&quot;</span> <span class="ot">=</span> <span class="dv">3</span>),</span>
+<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">section_rows =</span> <span class="fu">which</span>(tabla_h1<span class="sc">$</span>Apoyo_izquierda <span class="sc">==</span> <span class="st">&quot;&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
-&#39;big.mark&#39; and &#39;decimal.mark&#39; are both &#39;.&#39;, which could be confusing
-Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 &#39;big.mark&#39; and &#39;decimal.mark&#39; are both &#39;.&#39;, which could be confusing</code></pre>
 </div>
-<details class="code-fold">
-<summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>tabla_h1 <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">section</span>(<span class="st">&quot;Panel A. Probabilidad predicha (%) y diferencia derecha − izquierda (pp)&quot;</span>),</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">section</span>(<span class="st">&quot;Conceptos esperados en la derecha&quot;</span>),</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(panel_a, esperado <span class="sc">==</span> <span class="st">&quot;Esperado: derecha&quot;</span>),</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">section</span>(<span class="st">&quot;Conceptos esperados en la izquierda&quot;</span>),</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(panel_a, esperado <span class="sc">==</span> <span class="st">&quot;Esperado: izquierda&quot;</span>),</span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">section</span>(<span class="st">&quot;Panel B. Parámetros del modelo&quot;</span>),</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  panel_b) <span class="sc">|&gt;</span></span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(concepto, Apoyo_izquierda, Apoyo_derecha, Apoyo_diferencia,</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>         Rechazo_izquierda, Rechazo_derecha, Rechazo_diferencia) <span class="sc">|&gt;</span></span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), \(x) <span class="fu">coalesce</span>(x, <span class="st">&quot;&quot;</span>)))</span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>section_rows <span class="ot">&lt;-</span> <span class="fu">which</span>(tabla_h1<span class="sc">$</span>Apoyo_izquierda <span class="sc">==</span> <span class="st">&quot;&quot;</span>)</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>panel_b_rows <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">nrow</span>(tabla_h1) <span class="sc">-</span> <span class="fu">nrow</span>(panel_b) <span class="sc">+</span> <span class="dv">1</span>, <span class="fu">nrow</span>(tabla_h1))</span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="fu">export_apa7_word_table</span>(</span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>  tabla_h1, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;anexo_h1.docx&quot;</span>),</span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Apoyo y rechazo de los conceptos de H1 por bloque político: probabilidades predichas y modelos logísticos multinivel, Ley N.º 21.735&quot;</span>,</span>
-<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">note =</span> <span class="fu">paste</span>(</span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Panel A: probabilidad predicha (%) de que una intervención sustantiva apoye&quot;</span>,</span>
-<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;o rechace cada concepto e intervalos de confianza del 95 % entre corchetes,&quot;</span>,</span>
-<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;obtenidos con 1.000 remuestreos de actores dentro de cada bloque; la&quot;</span>,</span>
-<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;diferencia corresponde a derecha menos izquierda, en puntos porcentuales&quot;</span>,</span>
-<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;(pp). Panel B: razones de probabilidades (OR) con intervalos de&quot;</span>,</span>
-<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;confianza del 95 % de Wald (referencia: hombre) y desviaciones estándar&quot;</span>,</span>
-<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;(DE), en escala logit, de los interceptos aleatorios. Ambos modelos&quot;</span>,</span>
-<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;incluyen además el bloque como efecto fijo.&quot;</span>),</span>
-<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">table_number =</span> <span class="dv">4</span>L, <span class="at">landscape =</span> <span class="cn">TRUE</span>, <span class="at">body_font_size =</span> <span class="dv">10</span>,</span>
-<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">header_labels =</span> <span class="fu">c</span>(<span class="st">&quot;Concepto&quot;</span>, <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">&quot;Izquierda&quot;</span>, <span class="st">&quot;Derecha&quot;</span>, <span class="st">&quot;Diferencia (pp)&quot;</span>), <span class="dv">2</span>)),</span>
-<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">header_groups =</span> <span class="fu">c</span>(<span class="st">&quot; &quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;Apoyo&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot;Rechazo&quot;</span> <span class="ot">=</span> <span class="dv">3</span>),</span>
-<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">section_rows =</span> section_rows,</span>
-<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">merge_cells =</span> <span class="fu">list</span>(<span class="fu">list</span>(<span class="at">rows =</span> panel_b_rows, <span class="at">columns =</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>),</span>
-<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a>                     <span class="fu">list</span>(<span class="at">rows =</span> panel_b_rows, <span class="at">columns =</span> <span class="dv">5</span><span class="sc">:</span><span class="dv">7</span>)))</span>
-<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="sc">!</span><span class="fu">any</span>(panel_b_rows <span class="sc">%in%</span> section_rows))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
-</details>
 </div>
 <div class="cell">
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
 <colgroup>
-<col style="width: 39%">
-<col style="width: 9%">
-<col style="width: 9%">
+<col style="width: 24%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 14%">
+<col style="width: 12%">
 <col style="width: 11%">
-<col style="width: 10%">
-<col style="width: 9%">
-<col style="width: 11%">
+<col style="width: 14%">
 </colgroup>
 <thead>
 <tr class="header">
 <th style="text-align: left;">Concepto</th>
 <th style="text-align: left;">Apoyo: izquierda</th>
 <th style="text-align: left;">Apoyo: derecha</th>
-<th style="text-align: left;">Apoyo: diferencia</th>
+<th style="text-align: left;">Apoyo: Δ</th>
 <th style="text-align: left;">Rechazo: izquierda</th>
 <th style="text-align: left;">Rechazo: derecha</th>
-<th style="text-align: left;">Rechazo: diferencia</th>
+<th style="text-align: left;">Rechazo: Δ</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">Panel A. Probabilidad predicha (%) y diferencia derecha − izquierda (pp)</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
 <td style="text-align: left;">Conceptos esperados en la derecha</td>
 <td style="text-align: left;"></td>
 <td style="text-align: left;"></td>
@@ -3320,7 +3278,7 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;"></td>
 <td style="text-align: left;"></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Propiedad de los fondos</td>
 <td style="text-align: left;">9,1 [5,4; 13,7]</td>
 <td style="text-align: left;">56,7 [47,8; 65,7]</td>
@@ -3329,7 +3287,7 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;">0,4 [0,1; 0,4]</td>
 <td style="text-align: left;">−2,6 [−6,2; −0,2]</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Previsión como mercado</td>
 <td style="text-align: left;">20,7 [13,6; 27,9]</td>
 <td style="text-align: left;">42,5 [35,9; 49,5]</td>
@@ -3338,7 +3296,7 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;">9,8 [5,4; 14,4]</td>
 <td style="text-align: left;">−40,5 [−51,4; −30,5]</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Ineficiencia y riesgo estatal</td>
 <td style="text-align: left;">1,7 [0,6; 3,3]</td>
 <td style="text-align: left;">40,9 [31,4; 50,4]</td>
@@ -3347,7 +3305,7 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;">6,6 [2,7; 10,7]</td>
 <td style="text-align: left;">−2,8 [−8,4; 2,8]</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Capitalización individual</td>
 <td style="text-align: left;">1,3 [0,6; 2,5]</td>
 <td style="text-align: left;">38,2 [29,8; 46,0]</td>
@@ -3356,7 +3314,7 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;">1,3 [0,3; 2,8]</td>
 <td style="text-align: left;">−21,5 [−29,6; −15,1]</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Reciprocidad contributiva</td>
 <td style="text-align: left;">35,2 [27,7; 42,8]</td>
 <td style="text-align: left;">35,7 [27,1; 44,6]</td>
@@ -3365,7 +3323,7 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;">0,1 [0,0; 0,1]</td>
 <td style="text-align: left;">0,0 [0,0; 0,0]</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Conciencia de costos</td>
 <td style="text-align: left;">6,9 [2,7; 11,3]</td>
 <td style="text-align: left;">29,3 [22,7; 36,7]</td>
@@ -3374,7 +3332,7 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;">10,6 [6,1; 16,3]</td>
 <td style="text-align: left;">5,6 [0,1; 12,0]</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Libertad de elección</td>
 <td style="text-align: left;">15,0 [9,6; 20,9]</td>
 <td style="text-align: left;">18,9 [13,0; 24,9]</td>
@@ -3383,7 +3341,7 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;">0,7 [0,0; 2,1]</td>
 <td style="text-align: left;">0,1 [−1,0; 1,7]</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Conceptos esperados en la izquierda</td>
 <td style="text-align: left;"></td>
 <td style="text-align: left;"></td>
@@ -3392,7 +3350,7 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;"></td>
 <td style="text-align: left;"></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Necesidad material</td>
 <td style="text-align: left;">60,9 [53,1; 69,7]</td>
 <td style="text-align: left;">31,0 [23,3; 38,9]</td>
@@ -3401,7 +3359,7 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;">0,1 [0,0; 0,1]</td>
 <td style="text-align: left;">0,0 [0,0; 0,0]</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Igualdad y universalismo</td>
 <td style="text-align: left;">32,4 [24,8; 39,9]</td>
 <td style="text-align: left;">27,4 [19,8; 35,2]</td>
@@ -3410,7 +3368,7 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;">0,5 [0,0; 2,2]</td>
 <td style="text-align: left;">0,3 [0,0; 2,0]</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Solidaridad colectiva</td>
 <td style="text-align: left;">13,3 [8,0; 18,7]</td>
 <td style="text-align: left;">3,6 [1,3; 6,2]</td>
@@ -3419,7 +3377,7 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;">1,8 [0,0; 4,6]</td>
 <td style="text-align: left;">1,5 [0,0; 4,4]</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Solidaridad intergeneracional</td>
 <td style="text-align: left;">9,0 [5,2; 13,6]</td>
 <td style="text-align: left;">1,7 [0,7; 3,0]</td>
@@ -3428,7 +3386,7 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;">13,8 [8,0; 19,9]</td>
 <td style="text-align: left;">12,9 [7,2; 19,3]</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Origen dictatorial</td>
 <td style="text-align: left;">27,6 [21,3; 34,9]</td>
 <td style="text-align: left;">1,1 [0,7; 1,3]</td>
@@ -3436,78 +3394,6 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;">0,1 [0,1; 0,1]</td>
 <td style="text-align: left;">0,1 [0,0; 0,1]</td>
 <td style="text-align: left;">0,0 [0,0; 0,0]</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Panel B. Parámetros del modelo</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Mujer (OR)</td>
-<td style="text-align: left;">1,33 [1,08; 1,65]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">1,44 [0,99; 2,10]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Palabras, log estandarizado (OR)</td>
-<td style="text-align: left;">2,61 [2,27; 3,00]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">2,41 [1,90; 3,07]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">DE del intercepto: actor</td>
-<td style="text-align: left;">0,33</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">0,50</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">DE del intercepto: concepto</td>
-<td style="text-align: left;">0,66</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">2,17</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">DE del intercepto: concepto × bloque</td>
-<td style="text-align: left;">1,37</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">1,33</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Observaciones (intervención × concepto)</td>
-<td style="text-align: left;">4.212</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">4.212</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Actores</td>
-<td style="text-align: left;">183</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">183</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
 </tr>
 </tbody>
 </table>

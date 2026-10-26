@@ -3121,7 +3121,7 @@ Figura 2: Probabilidad predicha de apoyo a la necesidad material y a la igualda
 </section>
 <section id="tabla-para-el-anexo" class="level2">
 <h2 class="anchored" data-anchor-id="tabla-para-el-anexo">Tabla para el anexo</h2>
-<p>Una sola tabla reúne los dos modelos de transversalidad. El panel A presenta las probabilidades predichas de apoyo por bloque y debate, la diferencia entre izquierda y derecha en cada debate y su cambio entre debates; el panel B, las razones de probabilidades (OR) de los efectos fijos con intervalos de Wald y la desviación estándar del intercepto por actor.</p>
+<p>Una sola tabla reúne los dos modelos de transversalidad: las probabilidades predichas de apoyo por bloque y debate, la diferencia entre izquierda y derecha en cada debate y su cambio entre debates. Los coeficientes no se reportan; la especificación está en el Anexo 4.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Código</summary>
@@ -3130,88 +3130,49 @@ Figura 2: Probabilidad predicha de apoyo a la necesidad material y a la igualda
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">paste0</span>(<span class="fu">dec</span>(est, digits), <span class="st">&quot; [&quot;</span>, <span class="fu">dec</span>(low, digits), <span class="st">&quot;; &quot;</span>, <span class="fu">dec</span>(high, digits), <span class="st">&quot;]&quot;</span>) <span class="sc">|&gt;</span></span>
 <span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_replace_all</span>(<span class="st">&quot;-&quot;</span>, <span class="st">&quot;−&quot;</span>)</span>
 <span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Razones de probabilidades con intervalos de Wald para los términos indicados.</span></span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>or_txt <span class="ot">&lt;-</span> <span class="cf">function</span>(m, terms) {</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># `confint()` devuelve los términos en el orden del modelo: se reordenan.</span></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  ci <span class="ot">&lt;-</span> <span class="fu">confint</span>(m, <span class="at">parm =</span> terms, <span class="at">method =</span> <span class="st">&quot;Wald&quot;</span>)[terms, , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ic_txt</span>(<span class="fu">exp</span>(<span class="fu">fixef</span>(m)[terms]), <span class="fu">exp</span>(ci[, <span class="dv">1</span>]), <span class="fu">exp</span>(ci[, <span class="dv">2</span>]), <span class="dv">2</span>)</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>pred_wide <span class="ot">&lt;-</span> pred_transversal <span class="sc">|&gt;</span></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(concept_id, <span class="at">col =</span> <span class="fu">paste</span>(debate, bloque),</span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>            <span class="at">valor =</span> <span class="fu">ic_txt</span>(<span class="dv">100</span> <span class="sc">*</span> p, <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="dv">100</span> <span class="sc">*</span> conf.high)) <span class="sc">|&gt;</span></span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> col, <span class="at">values_from =</span> valor)</span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>gap_wide <span class="ot">&lt;-</span> gap_transversal <span class="sc">|&gt;</span></span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(concept_id, <span class="at">col =</span> <span class="fu">paste</span>(<span class="st">&quot;dif&quot;</span>, debate),</span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>            <span class="at">valor =</span> <span class="fu">ic_txt</span>(<span class="dv">100</span> <span class="sc">*</span> estimate, <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="dv">100</span> <span class="sc">*</span> conf.high)) <span class="sc">|&gt;</span></span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> col, <span class="at">values_from =</span> valor)</span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>panel_a <span class="ot">&lt;-</span> pred_wide <span class="sc">|&gt;</span></span>
-<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(gap_wide, <span class="at">by =</span> <span class="st">&quot;concept_id&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">fila =</span> CONCEPT_SHORT[concept_id],</span>
-<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>            <span class="at">c1 =</span> <span class="st">`</span><span class="at">PGU Izquierda</span><span class="st">`</span>, <span class="at">c2 =</span> <span class="st">`</span><span class="at">PGU Derecha</span><span class="st">`</span>, <span class="at">c3 =</span> <span class="st">`</span><span class="at">dif PGU</span><span class="st">`</span>,</span>
-<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>            <span class="at">c4 =</span> <span class="st">`</span><span class="at">Sistema mixto Izquierda</span><span class="st">`</span>, <span class="at">c5 =</span> <span class="st">`</span><span class="at">Sistema mixto Derecha</span><span class="st">`</span>,</span>
-<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>            <span class="at">c6 =</span> <span class="st">`</span><span class="at">dif Sistema mixto</span><span class="st">`</span>, <span class="at">c7 =</span> <span class="st">`</span><span class="at">dif Sistema mixto − PGU</span><span class="st">`</span>)</span>
-<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>terms_or <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;bloqueDerecha&quot;</span>, <span class="st">&quot;debateSistema mixto&quot;</span>, <span class="st">&quot;bloqueDerecha:debateSistema mixto&quot;</span>,</span>
-<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>              <span class="st">&quot;generomujer&quot;</span>, <span class="st">&quot;log_palabras&quot;</span>)</span>
-<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">all</span>(<span class="fu">map_lgl</span>(models_transversal, \(m) <span class="fu">all</span>(terms_or <span class="sc">%in%</span> <span class="fu">names</span>(<span class="fu">fixef</span>(m))))))</span>
-<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>param_rows <span class="ot">&lt;-</span> <span class="cf">function</span>(m) {</span>
-<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(<span class="fu">or_txt</span>(m, terms_or), <span class="fu">dec</span>(<span class="fu">attr</span>(<span class="fu">VarCorr</span>(m)<span class="sc">$</span>speaker_id, <span class="st">&quot;stddev&quot;</span>), <span class="dv">2</span>),</span>
-<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">format</span>(<span class="fu">nobs</span>(m), <span class="at">big.mark =</span> <span class="st">&quot;.&quot;</span>), <span class="fu">as.character</span>(<span class="fu">ngrps</span>(m)[[<span class="st">&quot;speaker_id&quot;</span>]]))</span>
-<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>param_labels <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Derecha (OR)&quot;</span>, <span class="st">&quot;Sistema mixto (OR)&quot;</span>, <span class="st">&quot;Derecha × sistema mixto (OR)&quot;</span>,</span>
-<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a>                  <span class="st">&quot;Mujer (OR)&quot;</span>, <span class="st">&quot;Palabras, log estandarizado (OR)&quot;</span>, <span class="st">&quot;DE del intercepto: actor&quot;</span>,</span>
-<span id="cb18-35"><a href="#cb18-35" aria-hidden="true" tabindex="-1"></a>                  <span class="st">&quot;Intervenciones&quot;</span>, <span class="st">&quot;Actores&quot;</span>)</span>
-<span id="cb18-36"><a href="#cb18-36" aria-hidden="true" tabindex="-1"></a>panel_b <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">fila =</span> param_labels,</span>
-<span id="cb18-37"><a href="#cb18-37" aria-hidden="true" tabindex="-1"></a>                  <span class="at">c1 =</span> <span class="fu">param_rows</span>(models_transversal<span class="sc">$</span>necesidad_material),</span>
-<span id="cb18-38"><a href="#cb18-38" aria-hidden="true" tabindex="-1"></a>                  <span class="at">c4 =</span> <span class="fu">param_rows</span>(models_transversal<span class="sc">$</span>igualdad_universalismo))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
-</details>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
-&#39;big.mark&#39; and &#39;decimal.mark&#39; are both &#39;.&#39;, which could be confusing
-Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
-&#39;big.mark&#39; and &#39;decimal.mark&#39; are both &#39;.&#39;, which could be confusing</code></pre>
-</div>
-<details class="code-fold">
-<summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>section <span class="ot">&lt;-</span> \(label) <span class="fu">tibble</span>(<span class="at">fila =</span> label)</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>tabla_h3 <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">section</span>(<span class="st">&quot;Panel A. Probabilidad predicha de apoyo (%) y diferencia izquierda − derecha (pp)&quot;</span>),</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  panel_a,</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">section</span>(<span class="st">&quot;Panel B. Parámetros de los modelos (columnas: necesidad material | igualdad y universalismo)&quot;</span>),</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  panel_b) <span class="sc">|&gt;</span></span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), \(x) <span class="fu">coalesce</span>(x, <span class="st">&quot;&quot;</span>)))</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>section_rows <span class="ot">&lt;-</span> <span class="fu">which</span>(tabla_h3<span class="sc">$</span>c1 <span class="sc">==</span> <span class="st">&quot;&quot;</span>)</span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>panel_b_rows <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fu">nrow</span>(tabla_h3) <span class="sc">-</span> <span class="fu">nrow</span>(panel_b) <span class="sc">+</span> <span class="dv">1</span>, <span class="fu">nrow</span>(tabla_h3))</span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="fu">export_apa7_word_table</span>(</span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>  tabla_h3, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;anexo_h3_transversalidad.docx&quot;</span>),</span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Apoyo a la necesidad material y a la igualdad por bloque político: probabilidades predichas y modelos logísticos multinivel, debates de la PGU y del sistema mixto&quot;</span>,</span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">note =</span> <span class="fu">paste</span>(</span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Panel A: probabilidad predicha (%) de que una intervención sustantiva apoye el concepto e&quot;</span>,</span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;intervalos de confianza del 95 % entre corchetes, obtenidos con 1.000 remuestreos de&quot;</span>,</span>
-<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;actores dentro de cada bloque; la diferencia corresponde a izquierda menos derecha, en&quot;</span>,</span>
-<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;puntos porcentuales (pp), y la última columna, a su cambio entre el sistema mixto y la PGU.&quot;</span>,</span>
-<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Panel B: razones de probabilidades (OR) con intervalos de confianza del 95 % de Wald&quot;</span>,</span>
-<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;(referencias: izquierda, PGU y hombre) y desviación estándar (DE), en escala logit, del&quot;</span>,</span>
-<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;intercepto aleatorio por actor.&quot;</span>),</span>
-<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">table_number =</span> <span class="dv">6</span>L, <span class="at">landscape =</span> <span class="cn">TRUE</span>, <span class="at">body_font_size =</span> <span class="dv">10</span>,</span>
-<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">header_labels =</span> <span class="fu">c</span>(<span class="st">&quot;Concepto&quot;</span>, <span class="st">&quot;Izquierda&quot;</span>, <span class="st">&quot;Derecha&quot;</span>, <span class="st">&quot;Diferencia&quot;</span>, <span class="st">&quot;Izquierda&quot;</span>, <span class="st">&quot;Derecha&quot;</span>,</span>
-<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Diferencia&quot;</span>, <span class="st">&quot;Cambio de la diferencia&quot;</span>),</span>
-<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">header_groups =</span> <span class="fu">c</span>(<span class="st">&quot; &quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;PGU&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot;Sistema mixto&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot; &quot;</span> <span class="ot">=</span> <span class="dv">1</span>),</span>
-<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">section_rows =</span> section_rows,</span>
-<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">merge_cells =</span> <span class="fu">list</span>(<span class="fu">list</span>(<span class="at">rows =</span> panel_b_rows, <span class="at">columns =</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">4</span>),</span>
-<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a>                     <span class="fu">list</span>(<span class="at">rows =</span> panel_b_rows, <span class="at">columns =</span> <span class="dv">5</span><span class="sc">:</span><span class="dv">8</span>)))</span>
-<span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(tabla_h3)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>pred_wide <span class="ot">&lt;-</span> pred_transversal <span class="sc">|&gt;</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(concept_id, <span class="at">col =</span> <span class="fu">paste</span>(debate, bloque),</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">valor =</span> <span class="fu">ic_txt</span>(<span class="dv">100</span> <span class="sc">*</span> p, <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="dv">100</span> <span class="sc">*</span> conf.high)) <span class="sc">|&gt;</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> col, <span class="at">values_from =</span> valor)</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>gap_wide <span class="ot">&lt;-</span> gap_transversal <span class="sc">|&gt;</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(concept_id, <span class="at">col =</span> <span class="fu">paste</span>(<span class="st">&quot;dif&quot;</span>, debate),</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>            <span class="at">valor =</span> <span class="fu">ic_txt</span>(<span class="dv">100</span> <span class="sc">*</span> estimate, <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="dv">100</span> <span class="sc">*</span> conf.high)) <span class="sc">|&gt;</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> col, <span class="at">values_from =</span> valor)</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>tabla_h3 <span class="ot">&lt;-</span> pred_wide <span class="sc">|&gt;</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(gap_wide, <span class="at">by =</span> <span class="st">&quot;concept_id&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">fila =</span> CONCEPT_SHORT[concept_id],</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>            <span class="at">c1 =</span> <span class="st">`</span><span class="at">PGU Izquierda</span><span class="st">`</span>, <span class="at">c2 =</span> <span class="st">`</span><span class="at">PGU Derecha</span><span class="st">`</span>, <span class="at">c3 =</span> <span class="st">`</span><span class="at">dif PGU</span><span class="st">`</span>,</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>            <span class="at">c4 =</span> <span class="st">`</span><span class="at">Sistema mixto Izquierda</span><span class="st">`</span>, <span class="at">c5 =</span> <span class="st">`</span><span class="at">Sistema mixto Derecha</span><span class="st">`</span>,</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>            <span class="at">c6 =</span> <span class="st">`</span><span class="at">dif Sistema mixto</span><span class="st">`</span>, <span class="at">c7 =</span> <span class="st">`</span><span class="at">dif Sistema mixto − PGU</span><span class="st">`</span>)</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>n_interventions <span class="ot">&lt;-</span> <span class="fu">nobs</span>(models_transversal[[<span class="dv">1</span>]])</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>n_actors <span class="ot">&lt;-</span> <span class="fu">ngrps</span>(models_transversal[[<span class="dv">1</span>]])[[<span class="st">&quot;speaker_id&quot;</span>]]</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a><span class="fu">export_apa7_word_table</span>(</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>  tabla_h3, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;anexo_h3_transversalidad.docx&quot;</span>),</span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Probabilidad predicha de apoyo a la necesidad material y a la igualdad por bloque político, debates de la PGU y del sistema mixto&quot;</span>,</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">note =</span> <span class="fu">paste0</span>(</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Probabilidad predicha (%) de que una intervención sustantiva apoye el concepto, a &quot;</span>,</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;partir de un modelo logístico multinivel por concepto, e intervalos de confianza del &quot;</span>,</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;95 % entre corchetes, obtenidos con 1.000 remuestreos de actores dentro de cada bloque. &quot;</span>,</span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Δ corresponde a izquierda menos derecha, en puntos porcentuales, y la última columna, a &quot;</span>,</span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;su cambio entre el sistema mixto y la PGU. &quot;</span>, n_interventions, <span class="st">&quot; intervenciones de &quot;</span>,</span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>    n_actors, <span class="st">&quot; actores de izquierda y de derecha. La especificación se presenta en el Anexo 4.&quot;</span>),</span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">table_number =</span> <span class="dv">6</span>L, <span class="at">landscape =</span> <span class="cn">TRUE</span>, <span class="at">body_font_size =</span> <span class="dv">10</span>,</span>
+<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">header_labels =</span> <span class="fu">c</span>(<span class="st">&quot;Concepto&quot;</span>, <span class="st">&quot;Izquierda&quot;</span>, <span class="st">&quot;Derecha&quot;</span>, <span class="st">&quot;Δ (pp)&quot;</span>, <span class="st">&quot;Izquierda&quot;</span>, <span class="st">&quot;Derecha&quot;</span>,</span>
+<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Δ (pp)&quot;</span>, <span class="st">&quot;Cambio de Δ (pp)&quot;</span>),</span>
+<span id="cb18-35"><a href="#cb18-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">header_groups =</span> <span class="fu">c</span>(<span class="st">&quot; &quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;PGU&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot;Sistema mixto&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot; &quot;</span> <span class="ot">=</span> <span class="dv">1</span>))</span>
+<span id="cb18-36"><a href="#cb18-36" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(tabla_h3)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
 <colgroup>
-<col style="width: 43%">
-<col style="width: 7%">
-<col style="width: 7%">
-<col style="width: 8%">
-<col style="width: 7%">
-<col style="width: 7%">
-<col style="width: 7%">
-<col style="width: 8%">
+<col style="width: 16%">
+<col style="width: 11%">
+<col style="width: 11%">
+<col style="width: 12%">
+<col style="width: 11%">
+<col style="width: 11%">
+<col style="width: 11%">
+<col style="width: 12%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -3227,16 +3188,6 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">Panel A. Probabilidad predicha de apoyo (%) y diferencia izquierda − derecha (pp)</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
 <td style="text-align: left;">Necesidad material</td>
 <td style="text-align: left;">52,6 [39,5; 67,1]</td>
 <td style="text-align: left;">53,9 [42,6; 65,3]</td>
@@ -3246,7 +3197,7 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;">35,5 [22,6; 48,4]</td>
 <td style="text-align: left;">36,8 [15,4; 56,9]</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Igualdad y universalismo</td>
 <td style="text-align: left;">49,9 [38,5; 61,5]</td>
 <td style="text-align: left;">32,2 [19,6; 45,2]</td>
@@ -3255,96 +3206,6 @@ Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
 <td style="text-align: left;">26,6 [18,9; 34,5]</td>
 <td style="text-align: left;">5,0 [−5,3; 15,3]</td>
 <td style="text-align: left;">−12,7 [−31,1; 6,1]</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Panel B. Parámetros de los modelos (columnas: necesidad material | igualdad y universalismo)</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Derecha (OR)</td>
-<td style="text-align: left;">1,06 [0,48; 2,32]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">0,44 [0,21; 0,92]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Sistema mixto (OR)</td>
-<td style="text-align: left;">1,83 [0,93; 3,61]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">0,43 [0,23; 0,80]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Derecha × sistema mixto (OR)</td>
-<td style="text-align: left;">0,17 [0,07; 0,45]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">1,74 [0,71; 4,27]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Mujer (OR)</td>
-<td style="text-align: left;">1,49 [0,88; 2,51]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">1,50 [0,94; 2,40]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Palabras, log estandarizado (OR)</td>
-<td style="text-align: left;">2,50 [1,83; 3,43]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">2,29 [1,69; 3,10]</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">DE del intercepto: actor</td>
-<td style="text-align: left;">0,76</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">0,51</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Intervenciones</td>
-<td style="text-align: left;">530</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">530</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Actores</td>
-<td style="text-align: left;">221</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;">221</td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
-<td style="text-align: left;"></td>
 </tr>
 </tbody>
 </table>

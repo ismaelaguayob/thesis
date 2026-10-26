@@ -513,82 +513,52 @@ intervalos quedan pegados a cero por construcción.
 
 ## Tabla para el anexo
 
-Una sola tabla reúne el resultado y el modelo. El panel A presenta las
-probabilidades predichas y las diferencias entre bloques por concepto, que es
-donde está el contraste de H1. El panel B presenta los controles como razones
-de probabilidades (*odds ratios*, OR) con intervalos de Wald y la desviación
-estándar de cada efecto aleatorio. El efecto fijo del bloque se omite: es la
-diferencia entre bloques en un concepto promedio, que mezcla diferencias de
-signo opuesto y no contrasta H1. Se exporta a Word con formato APA 7.
+La tabla presenta las probabilidades predichas y las diferencias entre bloques
+por concepto, que es donde está el contraste de H1. Los coeficientes no se
+reportan: con efectos aleatorios e interacciones no son directamente
+interpretables, y la especificación está en el Anexo 4. Se exporta a Word con
+formato APA 7.
 
 ```{r}
 #| label: tabla-anexo
-dec <- function(x, digits = 2) formatC(round(x, digits) + 0, format = "f", digits = digits, decimal.mark = ",")
-ic_txt <- function(est, low, high, digits = 2) {
+dec <- function(x, digits = 1) formatC(round(x, digits) + 0, format = "f", digits = digits, decimal.mark = ",")
+ic_txt <- function(est, low, high, digits = 1) {
   paste0(dec(est, digits), " [", dec(low, digits), "; ", dec(high, digits), "]") |>
     str_replace_all("-", "−")
 }
-stopifnot(setequal(names(fixef(m_apoyo)),
-                   c("(Intercept)", "bloquecentro", "bloquederecha", "generomujer",
-                     "log_palabras")))
-model_rows <- function(m) {
-  ci <- confint(m, parm = c("generomujer", "log_palabras"), method = "Wald")
-  or <- exp(fixef(m)[c("generomujer", "log_palabras")])
-  sd_re <- map_dbl(VarCorr(m), \(v) attr(v, "stddev"))
-  c(ic_txt(or, exp(ci[, 1]), exp(ci[, 2])),
-    dec(sd_re[c("speaker_id", "concepto", "concepto:bloque")]),
-    format(nobs(m), big.mark = "."), as.character(ngrps(m)[["speaker_id"]]))
-}
-panel_a <- predictions_h1 |>
+panel <- predictions_h1 |>
   filter(bloque != "centro") |>
   transmute(postura, concepto, esperado, bloque,
-            valor = ic_txt(100 * estimate, 100 * conf.low, 100 * conf.high, 1)) |>
+            valor = ic_txt(100 * estimate, 100 * conf.low, 100 * conf.high)) |>
   bind_rows(contrasts_h1 |>
               transmute(postura, concepto, esperado, bloque = "diferencia",
-                        valor = ic_txt(100 * estimate, 100 * conf.low,
-                                       100 * conf.high, 1))) |>
+                        valor = ic_txt(100 * estimate, 100 * conf.low, 100 * conf.high))) |>
   pivot_wider(names_from = c(postura, bloque), values_from = valor) |>
   arrange(esperado, desc(match(concepto, concept_order)))
 section <- \(label) tibble(concepto = label)
-panel_b <- tibble(
-  concepto = c("Mujer (OR)", "Palabras, log estandarizado (OR)",
-               "DE del intercepto: actor", "DE del intercepto: concepto",
-               "DE del intercepto: concepto × bloque",
-               "Observaciones (intervención × concepto)", "Actores"),
-  Apoyo_izquierda = model_rows(m_apoyo),
-  Rechazo_izquierda = model_rows(m_rechazo))
 tabla_h1 <- bind_rows(
-  section("Panel A. Probabilidad predicha (%) y diferencia derecha − izquierda (pp)"),
   section("Conceptos esperados en la derecha"),
-  filter(panel_a, esperado == "Esperado: derecha"),
+  filter(panel, esperado == "Esperado: derecha"),
   section("Conceptos esperados en la izquierda"),
-  filter(panel_a, esperado == "Esperado: izquierda"),
-  section("Panel B. Parámetros del modelo"),
-  panel_b) |>
+  filter(panel, esperado == "Esperado: izquierda")) |>
   select(concepto, Apoyo_izquierda, Apoyo_derecha, Apoyo_diferencia,
          Rechazo_izquierda, Rechazo_derecha, Rechazo_diferencia) |>
   mutate(across(everything(), \(x) coalesce(x, "")))
-section_rows <- which(tabla_h1$Apoyo_izquierda == "")
-panel_b_rows <- seq(nrow(tabla_h1) - nrow(panel_b) + 1, nrow(tabla_h1))
 export_apa7_word_table(
   tabla_h1, file.path(TABLE_DIR, "anexo_h1.docx"),
-  "Apoyo y rechazo de los conceptos de H1 por bloque político: probabilidades predichas y modelos logísticos multinivel, Ley N.º 21.735",
-  note = paste(
-    "Panel A: probabilidad predicha (%) de que una intervención sustantiva apoye",
-    "o rechace cada concepto e intervalos de confianza del 95 % entre corchetes,",
-    "obtenidos con 1.000 remuestreos de actores dentro de cada bloque; la",
-    "diferencia corresponde a derecha menos izquierda, en puntos porcentuales",
-    "(pp). Panel B: razones de probabilidades (OR) con intervalos de",
-    "confianza del 95 % de Wald (referencia: hombre) y desviaciones estándar",
-    "(DE), en escala logit, de los interceptos aleatorios. Ambos modelos",
-    "incluyen además el bloque como efecto fijo."),
+  "Probabilidad predicha de apoyo y rechazo de los conceptos de H1 por bloque político, Ley N.º 21.735",
+  note = paste0(
+    "Probabilidad predicha (%) de que una intervención sustantiva apoye o rechace cada ",
+    "concepto, a partir de dos modelos logísticos multinivel (apoyo y rechazo), e intervalos ",
+    "de confianza del 95 % entre corchetes, obtenidos con 1.000 remuestreos de actores dentro ",
+    "de cada bloque. Δ corresponde a derecha menos izquierda, en puntos porcentuales. ",
+    format(nobs(m_apoyo), big.mark = "."), " observaciones (intervención × concepto) de ",
+    nrow(model_interventions), " intervenciones y ", ngrps(m_apoyo)[["speaker_id"]],
+    " actores. La especificación se presenta en el Anexo 4."),
   table_number = 4L, landscape = TRUE, body_font_size = 10,
-  header_labels = c("Concepto", rep(c("Izquierda", "Derecha", "Diferencia (pp)"), 2)),
+  header_labels = c("Concepto", rep(c("Izquierda", "Derecha", "Δ (pp)"), 2)),
   header_groups = c(" " = 1, "Apoyo" = 3, "Rechazo" = 3),
-  section_rows = section_rows,
-  merge_cells = list(list(rows = panel_b_rows, columns = 2:4),
-                     list(rows = panel_b_rows, columns = 5:7)))
-stopifnot(!any(panel_b_rows %in% section_rows))
+  section_rows = which(tabla_h1$Apoyo_izquierda == ""))
 ```
 
 ```{r}
@@ -596,6 +566,6 @@ stopifnot(!any(panel_b_rows %in% section_rows))
 #| echo: false
 # Vista previa en el reporte: la tabla de Word es la versión final.
 knitr::kable(tabla_h1, col.names = c("Concepto", "Apoyo: izquierda", "Apoyo: derecha",
-                                     "Apoyo: diferencia", "Rechazo: izquierda",
-                                     "Rechazo: derecha", "Rechazo: diferencia"))
+                                     "Apoyo: Δ", "Rechazo: izquierda",
+                                     "Rechazo: derecha", "Rechazo: Δ"))
 ```
