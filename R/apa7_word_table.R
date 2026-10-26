@@ -45,12 +45,15 @@ export_apa7_word_table <- function(data, path, title, note = NULL,
     flextable::padding(padding = cell_padding, part = "all") |>
     flextable::align(align = "center", part = "header") |>
     flextable::align(j = seq_len(left_columns), align = "left", part = "body") |>
-    flextable::align(j = seq.int(left_columns + 1L, ncol(data)),
-                     align = "center", part = "body") |>
     flextable::autofit() |>
     flextable::set_table_properties(
       opts_word = list(split = FALSE, repeat_headers = TRUE)
     )
+
+  if (left_columns < ncol(data)) {
+    ft <- flextable::align(ft, j = seq.int(left_columns + 1L, ncol(data)),
+                           align = "center", part = "body")
+  }
 
   if (!is.null(header_groups)) {
     # Línea corta bajo cada etiqueta de grupo con más de una columna.

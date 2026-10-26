@@ -279,7 +279,7 @@ En otros casos, el modelo omite: en solidaridad como deber colectivo, Luna dejó
 
 *Nota.* alfa de Krippendorff con intervalos de confianza del 95 % (10.000 remuestreos de fragmentos). Entre paréntesis, el número de fragmentos con el concepto en la referencia. La línea discontinua marca 0,667.
 
-Dado que los modelos no difieren en su concordancia general con la referencia (diferencia en α = 0,01; IC 95 % \[−0,02; 0,04\]), la elección del modelo se basó en su rendimiento en los conceptos centrales de las hipótesis (Figura 2). La diferencia entre modelos fue clara solo en tres de los 15 conceptos evaluables: Luna concordó mejor en necesidad material (Luna: α = 0,66; Haiku: α = 0,55) y en conciencia de costos (Luna: α = 0,64; Haiku: α = 0,52), y Haiku en igualdad y universalismo (Haiku: α = 0,70; Luna: α = 0,54). Con Haiku, la regla de inclusión excluiría necesidad material, concepto central de H3 (IC 95 % \[0,43; 0,66\]). Con Luna se excluyen identidad y pertenencia grupal (α = 0,48; IC 95 % \[0,28; 0,66\]; *n* = 18) y control y responsabilidad individual (α = 0,44; IC 95 % \[0,17; 0,66\]; *n* = 14), que no sostienen hipótesis. Igualdad y universalismo se mantiene con Luna cerca del umbral (α = 0,54; IC 95 % \[0,38; 0,67\]). Por estas razones, GPT-6 Luna se utiliza como modelo principal. En el corpus completo, Haiku asignó un 19 % más conceptos que Luna (3.237 y 2.717 asignaciones). La Tabla 3 del Anexo 3 presenta, por concepto, la precisión, la sensibilidad y el *F*1 de Luna, y el alfa de cada modelo con la referencia y entre modelos.
+Dado que los modelos no difieren en su concordancia general con la referencia (diferencia en α = 0,01; IC 95 % \[−0,02; 0,04\]), la elección del modelo se basó en su rendimiento en los conceptos centrales de las hipótesis (Figura 2). La diferencia entre modelos fue clara solo en tres de los 15 conceptos evaluables: Luna concordó mejor en necesidad material (Luna: α = 0,66; Haiku: α = 0,55) y en conciencia de costos (Luna: α = 0,64; Haiku: α = 0,52), y Haiku en igualdad y universalismo (Haiku: α = 0,70; Luna: α = 0,54). Con Haiku, la regla de inclusión excluiría necesidad material, concepto central de H3 (IC 95 % \[0,43; 0,66\]). Con Luna se excluyen identidad y pertenencia grupal (α = 0,48; IC 95 % \[0,28; 0,66\]; *n* = 18) y control y responsabilidad individual (α = 0,44; IC 95 % \[0,17; 0,66\]; *n* = 14), que no sostienen hipótesis. Igualdad y universalismo se mantiene con Luna cerca del umbral (α = 0,54; IC 95 % \[0,38; 0,67\]). Por estas razones, GPT-6 Luna se utiliza como modelo principal. En el corpus completo, Haiku asignó un 19 % más conceptos que Luna (3.237 y 2.717 asignaciones). La Tabla 4 del Anexo 3 presenta, por concepto, la precisión, la sensibilidad y el *F*1 de Luna, y el alfa de cada modelo con la referencia y entre modelos.
 
 **Figura 3**
 
@@ -313,7 +313,7 @@ En primer lugar, se contrasta la hipótesis de bloques políticos (H1), que comp
 
 ![](output/figures/resultados/figura5_h1_probabilidades.png)
 
-*Nota.* Probabilidad predicha de que una intervención apoye o rechace cada concepto, con intervalos de confianza del 95 %. Los conceptos se agrupan según el bloque que, de acuerdo con H1, los apoyaría más. La escala horizontal difiere entre paneles. La especificación de los modelos se presenta en el Anexo 4, y las estimaciones, en la Tabla 4 del Anexo 3\.
+*Nota.* Probabilidad predicha de que una intervención apoye o rechace cada concepto, con intervalos de confianza del 95 %. Los conceptos se agrupan según el bloque que, de acuerdo con H1, los apoyaría más. La escala horizontal difiere entre paneles. La especificación de los modelos se presenta en el Anexo 4, y las estimaciones, en la Tabla 5 del Anexo 3\.
 
 La derecha apoya con mayor probabilidad que la izquierda cinco de los siete conceptos que se hipotetizaron. La mayor diferencia corresponde a la propiedad de los fondos: la probabilidad predicha de que una intervención la apoye es de 57 % en la derecha y de 9 % en la izquierda (Δ \= 48 pp; IC 95 % \[38; 58\]). Le siguen la ineficiencia y riesgo estatal (Δ \= 39 pp; IC 95 % \[30; 49\]) y la capitalización individual (Δ \= 37 pp; IC 95 % \[29; 45\]), que la izquierda casi no apoya, y la previsión como mercado y la conciencia de costos (Δ \= 22 pp en ambos casos; IC 95 % \[14; 31\] y \[15; 30\]). La izquierda, por su parte, apoyó con mayor probabilidad cuatro de los cinco conceptos esperados. En la necesidad material, la probabilidad predicha de apoyo es de 61 % en la izquierda y de 31 % en la derecha (Δ \= 30 pp; IC 95 % \[19; 42\]), y le siguen la ilegitimidad del origen dictatorial (Δ \= 27 pp; IC 95 % \[20; 34\]), casi ausente en la derecha, la solidaridad como deber colectivo (Δ \= 10 pp; IC 95 % \[4; 16\]) y la solidaridad intergeneracional (Δ \= 7 pp; IC 95 % \[3,5; 12\]).
 
@@ -337,7 +337,7 @@ En segundo lugar, se contrasta la hipótesis de coaliciones (H2), según la cual
 
 ![](output/figures/resultados/figura6_h2_red_actores.png)
 
-*Nota.* Cada nodo es un actor con al menos una declaración, coloreado según su bloque político; los contornos delimitan las comunidades detectadas. Se muestran los tres vínculos positivos más fuertes de cada actor. Cada actor pertenece a una sola comunidad: la superposición de los contornos se debe a que algunos actores, por sus vínculos con miembros de la otra comunidad, quedan dibujados entre ellos. La especificación de la red se presenta en el Anexo 4, y la composición de las comunidades, en la Tabla 5 del Anexo 3.
+*Nota.* Cada nodo es un actor con al menos una declaración, coloreado según su bloque político; los contornos delimitan las comunidades detectadas. Se muestran los tres vínculos positivos más fuertes de cada actor. Cada actor pertenece a una sola comunidad: la superposición de los contornos se debe a que algunos actores, por sus vínculos con miembros de la otra comunidad, quedan dibujados entre ellos. La especificación de la red se presenta en el Anexo 4, y la composición de las comunidades, en la Tabla 6 del Anexo 3.
 
 El algoritmo identifica dos comunidades en las 50 ejecuciones realizadas con distintas semillas, y las particiones son prácticamente idénticas entre sí. Una reúne 85 actores, 73 de ellos de derecha, y la otra, 101 actores, 79 de izquierda y 13 de centro. Por los conceptos que distinguen a cada una (Figura 7), la primera se denomina en adelante coalición de preservación, y la segunda, coalición de transformación. Las coaliciones se aproximan a los bloques políticos, pero no los reproducen: siete actores de izquierda quedan en la coalición de preservación y seis de derecha, en la de transformación. De estos 13 actores, doce intervienen en la última fase del debate, y su presencia es mayor en el Senado.
 
@@ -379,7 +379,7 @@ Seis de los siete conceptos del repertorio de mercado tienen mayor presencia en 
 
 ![](output/figures/resultados/figura10_h3_transversalidad.png)
 
-*Nota.* Probabilidad predicha de que una intervención apoye cada concepto, con intervalos de confianza del 95 %. Modelos logísticos multinivel con controles de género y longitud de la intervención. La especificación se presenta en el Anexo 4.
+*Nota.* Probabilidad predicha de que una intervención apoye cada concepto, con intervalos de confianza del 95 %. Modelos logísticos multinivel con controles de género y longitud de la intervención. La especificación se presenta en el Anexo 4, y las estimaciones, en la Tabla 7 del Anexo 3.
 
 La transversalidad del apoyo sigue patrones distintos en ambos conceptos (Figura 10). En los debates de la PGU, la necesidad material recibe el mismo apoyo en la izquierda y en la derecha: la probabilidad predicha de que una intervención la apoye es de 53 % y 54 %, respectivamente (Δ = −1 pp; IC 95 % \[−18; 17\]). En la derecha, la necesidad justifica un piso de protección para quienes menos tienen: «finalmente es la construcción de aquella sociedad de bienestar, no necesariamente estatal, sino una sociedad que brinda un piso a las personas para que puedan subsistir de manera digna y buena» (diputado, Evópoli). En el debate del sistema mixto, en cambio, se abre una brecha: la probabilidad predicha de apoyo es de 65 % en la izquierda y de 30 % en la derecha (Δ = 36 pp; IC 95 % \[23; 48\]), y el cambio entre debates es de 37 pp (IC 95 % \[15; 57\]).
 
@@ -393,7 +393,7 @@ En cuarto lugar, se contrasta la hipótesis de persistencia (H4), que compara la
 
 ![](output/figures/resultados/figura11_h4_presencia.png)
 
-*Nota.* Probabilidad predicha de presencia, con apoyo o rechazo, e intervalos de confianza del 95 %. El repertorio corresponde al promedio de los siete conceptos. Modelo logístico multinivel con controles de bloque político, género y longitud de la intervención. La especificación se presenta en el Anexo 4, y las estimaciones, en la Tabla 7 del Anexo 3.
+*Nota.* Probabilidad predicha de presencia, con apoyo o rechazo, e intervalos de confianza del 95 %. El repertorio corresponde al promedio de los siete conceptos. Modelo logístico multinivel con controles de bloque político, género y longitud de la intervención. La especificación se presenta en el Anexo 4, y las estimaciones, en la Tabla 8 del Anexo 3.
 
 La presencia del repertorio de mercado se mantiene en ambas fases. En promedio, la probabilidad predicha de que una intervención mencione uno de sus siete conceptos es de 28 % en 2024 y de 29 % en 2025 (Δ = 0,5 pp; IC 95 % \[−3,4; 4,3\]), de modo que la mayor disminución compatible con los datos es de 3,4 pp. Ningún concepto disminuye con un intervalo que excluya el cero. La capitalización individual y la ineficiencia y riesgo estatal bajan levemente (de 29 % a 24 % y de 27 % a 22 %, respectivamente), pero sus intervalos incluyen el cero, y la previsión como mercado aumenta de 45 % a 58 % (Δ = 13 pp; IC 95 % \[0,9; 23\]).
 
@@ -587,6 +587,10 @@ Wiß, T., Fernández, J. J., & Anderson, K. M. (2025). Attitudes towards the pub
 
 ### **8.1 Anexo 1: Libro de códigos** {#8.1-anexo-1:-libro-de-códigos}
 
+**Tabla 3.** *Conceptos del libro de códigos*
+
+*[Insertar `output/tables/anexo_libro_codigos.docx`.]*
+
 ### [**codebook_v5.xlsm**](https://drive.google.com/file/d/1-9Bvil-coVsMPeXySK8YQeBqLWXRXXEb/view?usp=sharing) {#codebook_v5.xlsm}
 
 ### **8.2 Anexo 2: Prompt utilizado** {#8.2-anexo-2:-prompt-utilizado}
@@ -698,23 +702,23 @@ Entrega únicamente un objeto JSON válido, sin Markdown, comentarios, preámbul
 
 ### **8.3 Anexo 3: Tablas complementarias**
 
-**Tabla 3.** *Concordancia entre la referencia humana y los modelos por concepto*
+**Tabla 4.** *Concordancia entre la referencia humana y los modelos por concepto*
 
 *[Insertar `output/tables/validation/tS1_concordancia_por_concepto.docx`.]*
 
-**Tabla 4.** *Probabilidad predicha de apoyo y rechazo de los conceptos de H1 por bloque político, Ley N.º 21.735*
+**Tabla 5.** *Probabilidad predicha de apoyo y rechazo de los conceptos de H1 por bloque político, Ley N.º 21.735*
 
 *[Insertar `output/tables/resultados/anexo_h1.docx`.]*
 
-**Tabla 5.** *Composición y estabilidad de las comunidades detectadas, Ley N.º 21.735*
+**Tabla 6.** *Composición y estabilidad de las comunidades detectadas, Ley N.º 21.735*
 
 *[Insertar `output/tables/resultados/anexo_h2_comunidades.docx`.]*
 
-**Tabla 6.** *Probabilidad predicha de apoyo a la necesidad material y a la igualdad por bloque político, debates de la PGU y del sistema mixto*
+**Tabla 7.** *Probabilidad predicha de apoyo a la necesidad material y a la igualdad por bloque político, debates de la PGU y del sistema mixto*
 
 *[Insertar `output/tables/resultados/anexo_h3_transversalidad.docx`.]*
 
-**Tabla 7.** *Probabilidad predicha de presencia de los conceptos del repertorio de mercado por fase de la Cámara, Ley N.º 21.735*
+**Tabla 8.** *Probabilidad predicha de presencia de los conceptos del repertorio de mercado por fase de la Cámara, Ley N.º 21.735*
 
 *[Insertar `output/tables/resultados/anexo_h4_presencia.docx`.]*
 
@@ -722,11 +726,37 @@ Entrega únicamente un objeto JSON válido, sin Markdown, comentarios, preámbul
 
 #### *4.1 Validación de la codificación*
 
-*[Pendiente: unidad de comparación (bloque, bloque × concepto y bloque × concepto × postura), alfa de Krippendorff y F1, remuestreo de fragmentos (10.000 réplicas) y regla de inclusión de conceptos, asignación de postura cuándo hay diferencias.]*
+Antes de la validación, el libro de códigos y el prompt se ajustaron en dos etapas. Primero, en cinco sesiones de codificación manual independiente, sin el modelo, el investigador codificó 105 unidades de las tres leyes (10 intervenciones, 40 párrafos y 55 fragmentos), con lo que el libro pasó de 10 a 14 conceptos y se fijó el fragmento como unidad. Luego, en tres pilotos con GPT-5.6 Luna sobre muestras de 418, 361 y 361 fragmentos, el investigador revisó una parte de sus codificaciones de forma abierta, viendo las anotaciones del modelo. Estas revisiones cerraron el libro en 16 conceptos y fijaron el prompt. Como el codificador veía la salida del modelo o ajustaba el libro con los mismos casos, ninguna de estas rondas se usa para estimar la concordancia, y el instrumento no se modificó después.
+
+La referencia humana ciega se construyó en una interfaz web desarrollada para este estudio (Figura 13). Para cada fragmento de la muestra, la interfaz muestra el fragmento que se codifica junto con el anterior y el siguiente, que sirven solo como contexto. El codificador selecciona con el cursor el pasaje que contiene la declaración, elige el concepto del libro de códigos y su postura (apoyo o rechazo) y puede registrar una nota sobre el criterio aplicado. Si el fragmento no contiene declaraciones, lo marca como tal, y si no puede decidir, como no resoluble. La interfaz no muestra el nombre, el partido ni el género del hablante, ni las anotaciones de los modelos. De los 360 fragmentos de la muestra, uno quedó como no resoluble y se excluyó, por lo que las métricas se calculan sobre 359.
+
+**Figura 13.** *Interfaz de codificación de la referencia humana*
+
+*[Insertar captura de pantalla de la interfaz de codificación.]*
+
+La concordancia se calcula en tres niveles: la detección, en que la unidad es el fragmento y se compara si tiene al menos una declaración; el concepto, en que la unidad es la combinación de fragmento y concepto (16 por fragmento) y se compara si el codificador asignó el concepto, con cualquier postura; y el concepto con su postura, en que la unidad es la combinación de fragmento, concepto y postura. No se compara la coincidencia de los pasajes citados.
+
+Para cada concepto, con la referencia humana como término de comparación, *VP* es el número de fragmentos en que la referencia y el modelo asignan el concepto; *FP*, aquellos en que solo el modelo lo asigna; y *FN*, aquellos en que solo la referencia lo asigna:
+
+Precisión = *VP* / (*VP* + *FP*)
+
+Sensibilidad = *VP* / (*VP* + *FN*)
+
+*F*1 = 2 · *VP* / (2 · *VP* + *FP* + *FN*)
+
+La precisión indica qué parte de lo que asigna el modelo coincide con la referencia, y la sensibilidad, qué parte de lo que asigna la referencia recupera el modelo. El *F*1 combina ambas y equivale al acuerdo sobre las presencias: no considera los fragmentos en que ninguno asigna el concepto. El alfa de Krippendorff para datos nominales es:
+
+α = 1 − *D*ₒ / *D*ₑ
+
+donde *D*ₒ es el desacuerdo observado, es decir, la proporción de pares de codificaciones de una misma unidad que no coinciden, y *D*ₑ es el desacuerdo esperado si los valores se asignaran al azar según su distribución en el conjunto de codificaciones. Un α de 1 indica acuerdo perfecto, y uno de 0, un acuerdo igual al esperado por azar. El α global se calcula sobre todas las combinaciones de fragmento y concepto, y el α de cada concepto, sobre los 359 fragmentos. Las métricas se calcularon en R con `irr` (α) y `yardstick` (precisión, sensibilidad y *F*1), sin ponderar.
+
+Los intervalos de confianza del 95 % corresponden a los percentiles 2,5 y 97,5 de 10.000 réplicas en que se sortearon fragmentos con reposición y se recalculó el α de cada modelo; la diferencia entre modelos se calculó en las mismas réplicas. En la comparación por grupo (Figura 3), el remuestreo se hizo dentro de cada grupo, con 1.000 réplicas. Un concepto se excluye de los análisis si todo su intervalo con el modelo principal queda bajo 0,667.
+
+Las posturas del modelo principal se corrigieron mediante una adjudicación humana acotada. Al estimar H1 se observó que GPT-6 Luna invertía la postura en algunos casos de ineficiencia y riesgo estatal, cuya proposición de orientación es negativa («la administración estatal amenaza el resguardo legítimo de las cotizaciones por ineficiencia, uso indebido o riesgo de apropiación»): registraba como rechazo declaraciones que la afirman. Para identificar estos errores, se usó a Claude Haiku 5.5 como segundo codificador y se aplicó una regla fija. Se adjudicaron todas las combinaciones de fragmento y concepto en que ambos modelos asignaron el concepto con posturas distintas y, en los conceptos con más de 5 % de desacuerdo de postura entre modelos (ineficiencia y riesgo estatal y conciencia de costos), los rechazos de Luna que Haiku no codificó. Se excluyeron identidad y control individual, que no se analizan. La regla produjo 60 casos, que se fijaron antes de adjudicar: 24 de conciencia de costos, 16 de ineficiencia y riesgo estatal, 13 de previsión como mercado y 7 de otros conceptos. En la interfaz de adjudicación, el investigador vio el fragmento con su contexto, el concepto con su proposición de orientación y las dos codificaciones, identificadas como A y B sin indicar qué modelo produjo cada una, y decidió si el fragmento apoya el concepto, lo rechaza, hace ambas cosas o no corresponde al concepto. La decisión cambió la postura de Luna o eliminó la anotación en 40 de los 60 casos. Las anotaciones originales se conservan, y los análisis aplican las decisiones sobre ellas.
 
 #### *4.2 Base de análisis y reglas de conteo*
 
-Un bloque se considera sustantivo si contiene al menos una declaración codificada o si el modelo no lo marcó como votación o contenido procedimental; una intervención es sustantiva si tiene al menos un bloque sustantivo. Así, un bloque que justifica un voto con razones normativas se conserva. Las menciones repetidas de un concepto dentro de una intervención cuentan una sola vez por postura. *[Pendiente: adjudicación de postura (regla de selección de casos y procedimiento).]*
+Un bloque se considera sustantivo si contiene al menos una declaración codificada o si el modelo no lo marcó como votación o contenido procedimental; una intervención es sustantiva si tiene al menos un bloque sustantivo. Así, un bloque que justifica un voto con razones normativas se conserva. Las menciones repetidas de un concepto dentro de una intervención cuentan una sola vez por postura. Las posturas incorporan la adjudicación descrita en la sección 4.1.
 
 #### *4.3 H1: Modelos logísticos multinivel*
 

@@ -11,6 +11,8 @@ aparecen.
 
 - Definir como conclusión exploratoria una economía moral de la defensa y crítica a las pensiones en Chile.
 
+- Tener cuidado con codificaciones de conceptos negativos o de crítica, ya que el modelo suele equivocarse con la postura en DNA.
+
 ## Criterios de merecimiento en el debate legislativo
 
 - **CARIN como justificación positiva, no como condicionalidad.** En el debate
