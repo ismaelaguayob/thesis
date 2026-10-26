@@ -115,7 +115,9 @@ meta <- map_dfr(c("21419", "21538", "21735"), \(law) read_parquet(
   inner_join(select(blocks, unit_id, law_number), by = "unit_id") |>
   transmute(
     unit_id,
-    ley = factor(paste0("Ley ", substr(law_number, 1, 2), ".", substr(law_number, 3, 5))),
+    # Las leyes 21.419 y 21.538 se agrupan como debates de la PGU, como en los resultados.
+    ley = factor(if_else(law_number == "21735", "Sistema mixto", "PGU"),
+                 levels = c("PGU", "Sistema mixto")),
     genero = factor(gender, levels = c("hombre", "mujer"), labels = c("Hombre", "Mujer")),
     alineacion = factor(political_alignment, levels = c("izquierda", "centro", "derecha", "nonpartisan"),
                         labels = c("Izquierda", "Centro", "Derecha", "No partidista"))
@@ -437,14 +439,14 @@ grupos <- concept_grid |>
          inf = map_dbl(boot, \(b) quantile(b$luna, 0.025, na.rm = TRUE)),
          sup = map_dbl(boot, \(b) quantile(b$luna, 0.975, na.rm = TRUE))) |>
   transmute(variable = factor(variable, levels = c("ley", "genero", "alineacion"),
-                              labels = c("Ley", "Género", "Alineación política")),
+                              labels = c("Debate", "Género", "Alineación política")),
             grupo = factor(grupo, levels = group_levels), bloques, alfa, inf, sup)
 arrow::write_parquet(grupos, file.path(TABLE_DIR, "concordancia_por_grupo.parquet"))
 ```
 
 ```{r}
 #| label: fig-grupos
-#| fig-cap: "Concordancia entre la referencia humana y Luna-6 (α de Krippendorff) por ley, género y alineación política, con intervalos de confianza del 95 %. La línea punteada marca la concordancia global."
+#| fig-cap: "Concordancia entre la referencia humana y Luna-6 (α de Krippendorff) por debate, género y alineación política, con intervalos de confianza del 95 %. La línea punteada marca la concordancia global."
 #| fig-alt: "Tres paneles con puntos e intervalos del alfa humano–Luna para cada grupo de ley, de género y de alineación política."
 #| fig-width: 6.3
 #| fig-height: 4.6
@@ -457,7 +459,7 @@ figura_grupos <- grupos |>
   ggplot(aes(x = alfa, xmin = inf, xmax = sup, y = etiqueta)) +
   geom_vline(xintercept = alfa_global, linetype = "dotted", colour = "#1b6ca8") +
   # Label the overall line once, in the top panel only.
-  geom_text(data = tibble(variable = factor("Ley", levels = levels(grupos$variable))),
+  geom_text(data = tibble(variable = factor("Debate", levels = levels(grupos$variable))),
             aes(x = alfa_global, y = Inf,
                 label = paste("Global:", format(round(alfa_global, 2), nsmall = 2, decimal.mark = ","))),
             inherit.aes = FALSE, hjust = -0.08, vjust = 1.4, size = 3, colour = "#1b6ca8") +
@@ -477,13 +479,13 @@ La concordancia es similar entre izquierda y derecha
 (`r val(grupos, grupo == "Izquierda", col = "alfa")` y
 `r val(grupos, grupo == "Derecha", col = "alfa")`) y entre hombres y mujeres
 (`r val(grupos, grupo == "Hombre", col = "alfa")` y
-`r val(grupos, grupo == "Mujer", col = "alfa")`). Es menor en la Ley 21.419
-(`r val(grupos, grupo == "Ley 21.419", col = "alfa")`, frente a
-`r val(grupos, grupo == "Ley 21.735", col = "alfa")` en la Ley 21.735) y en el
-centro político (`r val(grupos, grupo == "Centro", col = "alfa")`), pero sus
-intervalos se solapan con los de los demás grupos. No hay evidencia de que los
-errores se concentren de forma sistemática en un grupo político. Los grupos
-pequeños (Ley 21.538 y no partidistas) tienen intervalos demasiado amplios
+`r val(grupos, grupo == "Mujer", col = "alfa")`). Es menor en los debates de
+la PGU (`r val(grupos, grupo == "PGU", col = "alfa")`, frente a
+`r val(grupos, grupo == "Sistema mixto", col = "alfa")` en el sistema mixto) y
+en el centro político (`r val(grupos, grupo == "Centro", col = "alfa")`), pero
+sus intervalos se solapan con los de los demás grupos. No hay evidencia de que los
+errores se concentren de forma sistemática en un grupo político. El grupo
+de no partidistas tiene un intervalo demasiado amplio
 para interpretarlos.
 
 ## Material suplementario
@@ -491,32 +493,65 @@ para interpretarlos.
 ### Concordancia por concepto
 
 La tabla reúne, por concepto, las métricas del par humano–Luna (precisión,
-sensibilidad, F1 y kappa de Cohen), el α humano–Luna y humano–Haiku con su
-intervalo del 95 %, el α entre modelos y el α de los tres codificadores.
+sensibilidad y F1), el α humano–Luna y humano–Haiku con su intervalo del 95 %
+y el α entre modelos. El kappa de Cohen y el α de los tres codificadores se
+omiten: el primero es casi idéntico al α humano–Luna, y el segundo no se usa en
+el manuscrito.
 Muestra a la vez la sensibilidad de α a la combinación de codificadores y la
 comparación que justifica elegir Luna.
 
 ```{r}
 #| label: tabla-suplementaria
-por_concepto |>
-  transmute(Concepto = if_else(incluido_luna, abreviatura, paste0(abreviatura, "*")),
-            n, P = precision, S = sensibilidad, F1 = f1, `κ` = kappa,
-            `α H–L [IC 95 %]` = ic(alfa_luna, luna_inf, luna_sup),
-            `α H–Hk [IC 95 %]` = ic(alfa_haiku, haiku_inf, haiku_sup),
-            `α L–Hk` = alfa_modelos, `α tres` = alfa_tres) |>
-  tabla("tS1_concordancia_por_concepto.docx", "S1",
-        "Concordancia entre la referencia humana y los modelos por concepto",
-        paste("n: bloques con el concepto en la referencia (359 evaluados). P, S, F1 y κ (Cohen):",
-              "par humano–Luna. H: humano; L: Luna-6; Hk: Haiku 5.5; tres: los tres codificadores.",
-              "IC 95 %: remuestreo de bloques (10.000). * Excluido: todo su intervalo con Luna queda",
-              "bajo 0,667. Actitud no aparece porque la referencia no lo asigna. Nombres abreviados."),
-        landscape = TRUE)
+# Nombres completos, como en las figuras de resultados (CONCEPT_SHORT en R/analysis_base.R).
+nombres <- c(
+  capitalizacion_individual = "Capitalización individual",
+  propiedad_individual_fondos = "Propiedad de los fondos",
+  reciprocidad_contributiva = "Reciprocidad contributiva",
+  control_responsabilidad_individual = "Control individual",
+  identidad = "Identidad", necesidad_material = "Necesidad material",
+  igualdad_universalismo = "Igualdad y universalismo",
+  conciencia_costos = "Conciencia de costos",
+  solidaridad_previsional_colectiva = "Solidaridad colectiva",
+  solidaridad_intergeneracional = "Solidaridad intergeneracional",
+  libertad_eleccion_previsional = "Libertad de elección",
+  ineficiencia_estado = "Ineficiencia y riesgo estatal",
+  prevision_como_mercado = "Previsión como mercado",
+  ilegitimidad_origen_dictatorial = "Origen dictatorial",
+  acuerdos_moderacion = "Acuerdos y moderación"
+)
+# Intervalos con punto y coma, como en el texto de resultados.
+ic_tabla <- function(estimate, inf, sup) paste0(num(estimate), " [", num(inf), "; ", num(sup), "]")
+tabla_s1 <- por_concepto |>
+  arrange(desc(n)) |>
+  transmute(Concepto = if_else(incluido_luna, nombres[concept_id],
+                               paste0(nombres[concept_id], "*")),
+            n = formatC(n, format = "d"),
+            P = num(precision), S = num(sensibilidad), F1 = num(f1),
+            alfa_luna = ic_tabla(alfa_luna, luna_inf, luna_sup),
+            alfa_haiku = ic_tabla(alfa_haiku, haiku_inf, haiku_sup),
+            alfa_modelos = num(alfa_modelos))
+stopifnot(!anyNA(tabla_s1$Concepto))
+export_apa7_word_table(
+  tabla_s1, file.path(TABLE_DIR, "tS1_concordancia_por_concepto.docx"),
+  "Concordancia entre la referencia humana y los modelos por concepto",
+  note = paste(
+    "n: fragmentos con el concepto en la referencia humana, de 359 evaluados.",
+    "La precisión, la sensibilidad y el F1 comparan las asignaciones de GPT-6 Luna con la",
+    "referencia humana; no se calculan para Claude Haiku 5.5. α: alfa de Krippendorff, con",
+    "intervalos de confianza del 95 % entre corchetes (10.000 remuestreos de fragmentos).",
+    "* Concepto excluido de los análisis, porque todo su intervalo con GPT-6 Luna queda bajo",
+    "0,667. Actitud no aparece porque la referencia humana no lo asigna."),
+  table_number = 3L, landscape = TRUE, body_font_size = 11,
+  header_labels = c("Concepto", "n", "Precisión", "Sensibilidad", "F1",
+                    "α [IC 95 %]", "α [IC 95 %]", "α"),
+  header_groups = c(" " = 2, "Referencia humana y GPT-6 Luna" = 4,
+                    "Referencia humana y Haiku 5.5" = 1, "Entre modelos" = 1))
+knitr::kable(tabla_s1, col.names = c("Concepto", "n", "Precisión", "Sensibilidad", "F1",
+                                     "α humano–Luna", "α humano–Haiku", "α Luna–Haiku"))
 ```
 
 Las columnas de α muestran que el coeficiente depende de quiénes se comparan.
-El α entre modelos supera al α humano–modelo en casi todos los conceptos, y el α
-de los tres codificadores queda entre ambos, elevado por el acuerdo entre
-modelos. Las columnas humano–Luna y humano–Haiku resumen la elección del modelo: sus
+El α entre modelos supera al α humano–modelo en casi todos los conceptos. Las columnas humano–Luna y humano–Haiku resumen la elección del modelo: sus
 intervalos se solapan en todos los conceptos, y el intervalo de la diferencia
 entre ambos, que se estima en las mismas réplicas, excluye el cero solo en
 necesidad, costos e igualdad. Precisión y sensibilidad separan dos patrones de error que F1 y α

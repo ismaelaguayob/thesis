@@ -202,6 +202,11 @@ right_share <- tapply(actors$bloque[match(names(best$membership), actors$speaker
                       best$membership, mean)
 relabel <- setNames(seq_along(right_share), names(sort(right_share, decreasing = TRUE)))
 membership_main <- setNames(relabel[as.character(best$membership)], names(best$membership))
+# Nombres de las coaliciones según su repertorio (sección 5.4): la comunidad con
+# más actores de derecha es la de preservación.
+COMMUNITY_NAMES <- c("Preservación", "Transformación")
+stopifnot(n_distinct(membership_main) == length(COMMUNITY_NAMES))
+community_name <- \(k) factor(COMMUNITY_NAMES[k], levels = COMMUNITY_NAMES)
 stability <- tibble(
   semilla = map_int(runs_main, "seed"),
   comunidades = map_int(runs_main, \(r) n_distinct(r$membership)),
@@ -311,7 +316,7 @@ concept_order <- repertoire |>
 plot_repertoire <- repertoire |>
   filter(concept_id != "actitud") |>
   mutate(concepto = factor(concepto, levels = concept_order),
-         comunidad = factor(paste("Comunidad", comunidad))) |>
+         comunidad = community_name(comunidad)) |>
   group_by(concepto, postura) |>
   mutate(solapa = diff(range(proporcion)) < 0.015,
          y = as.numeric(concepto) +
@@ -325,7 +330,7 @@ fig_repertoire <- ggplot(plot_repertoire, aes(x = proporcion, y = y, color = com
                      expand = expansion(add = 0.6)) +
   scale_x_continuous(labels = label_percent(accuracy = 1, suffix = " %"), limits = c(0, 1)) +
   scale_color_manual(values = COMMUNITY_COLORS) +
-  labs(x = "Proporción de actores de la comunidad", y = NULL, color = NULL) +
+  labs(x = "Proporción de actores de la coalición", y = NULL, color = NULL) +
   theme(legend.position = "top", panel.grid.major.y = element_blank(),
         strip.text = element_text(face = "bold"), panel.spacing.x = unit(1.5, "lines"))
 print(fig_repertoire)
@@ -368,8 +373,8 @@ hulls <- nodes |>
   group_by(comunidad) |>
   slice(chull(x, y)) |>
   ungroup() |>
-  mutate(comunidad = factor(paste("Comunidad", comunidad)))
-community_levels <- paste("Comunidad", sort(unique(nodes$comunidad)))
+  mutate(comunidad = community_name(comunidad))
+community_levels <- COMMUNITY_NAMES
 community_palette <- setNames(COMMUNITY_COLORS[seq_along(community_levels)], community_levels)
 fig_actors <- ggplot() +
   geom_shape(data = hulls, aes(x = x, y = y, group = comunidad, fill = comunidad,
@@ -383,7 +388,7 @@ fig_actors <- ggplot() +
   scale_fill_manual(values = c(BLOC_COLORS, community_palette),
                     breaks = names(BLOC_COLORS), name = "Bloque",
                     guide = guide_legend(override.aes = list(shape = 21, size = 3))) +
-  scale_color_manual(values = community_palette, name = "Contorno",
+  scale_color_manual(values = community_palette, name = "Coalición",
                      guide = guide_legend(override.aes = list(fill = NA))) +
   coord_equal() +
   theme_void() +
@@ -458,7 +463,7 @@ concept_nodes <- tibble(concept_id = network_concepts, x = concept_layout[, 1],
                         actores = colSums((aff$support + aff$oppose) > 0)[network_concepts]) |>
   left_join(dominant, by = "concept_id") |>
   mutate(concepto = unname(CONCEPT_SHORT[concept_id]),
-         comunidad = factor(paste("Comunidad", comunidad))) |>
+         comunidad = community_name(comunidad)) |>
   tidyr::crossing(red = c("Congruencia", "Conflicto"))
 concept_edges <- concept_pairs |>
   filter(weight >= EDGE_MIN) |>
@@ -538,7 +543,7 @@ knitr::kable(sensitivity, digits = 2)
 #| label: tabla-word
 pct <- \(x) paste0(round(100 * x), " %")
 tabla_h2 <- composition |>
-  transmute(Comunidad = paste("Comunidad", comunidad),
+  transmute(Coalición = COMMUNITY_NAMES[comunidad],
             Actores = as.character(actores),
             Izquierda = pct(Izquierda), Centro = pct(Centro), Derecha = pct(Derecha),
             `No partidista` = pct(`No partidista`),

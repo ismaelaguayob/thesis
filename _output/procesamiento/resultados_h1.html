@@ -3210,35 +3210,37 @@ Figura 1: Probabilidad predicha de que una intervención apoye y rechace cada c
 <span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(bloque <span class="sc">!=</span> <span class="st">&quot;centro&quot;</span>) <span class="sc">|&gt;</span></span>
 <span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(postura, concepto, esperado, bloque,</span>
 <span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">valor =</span> <span class="fu">ic_txt</span>(<span class="dv">100</span> <span class="sc">*</span> estimate, <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="dv">100</span> <span class="sc">*</span> conf.high)) <span class="sc">|&gt;</span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>(contrasts_h1 <span class="sc">|&gt;</span></span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>              <span class="fu">transmute</span>(postura, concepto, esperado, <span class="at">bloque =</span> <span class="st">&quot;diferencia&quot;</span>,</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>                        <span class="at">valor =</span> <span class="fu">ic_txt</span>(<span class="dv">100</span> <span class="sc">*</span> estimate, <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="dv">100</span> <span class="sc">*</span> conf.high))) <span class="sc">|&gt;</span></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> <span class="fu">c</span>(postura, bloque), <span class="at">values_from =</span> valor) <span class="sc">|&gt;</span></span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(esperado, <span class="fu">desc</span>(<span class="fu">match</span>(concepto, concept_order)))</span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>section <span class="ot">&lt;-</span> \(label) <span class="fu">tibble</span>(<span class="at">concepto =</span> label)</span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>tabla_h1 <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">section</span>(<span class="st">&quot;Conceptos esperados en la derecha&quot;</span>),</span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(panel, esperado <span class="sc">==</span> <span class="st">&quot;Esperado: derecha&quot;</span>),</span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">section</span>(<span class="st">&quot;Conceptos esperados en la izquierda&quot;</span>),</span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(panel, esperado <span class="sc">==</span> <span class="st">&quot;Esperado: izquierda&quot;</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(concepto, Apoyo_izquierda, Apoyo_derecha, Apoyo_diferencia,</span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>         Rechazo_izquierda, Rechazo_derecha, Rechazo_diferencia) <span class="sc">|&gt;</span></span>
-<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), \(x) <span class="fu">coalesce</span>(x, <span class="st">&quot;&quot;</span>)))</span>
-<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a><span class="fu">export_apa7_word_table</span>(</span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>  tabla_h1, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;anexo_h1.docx&quot;</span>),</span>
-<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Probabilidad predicha de apoyo y rechazo de los conceptos de H1 por bloque político, Ley N.º 21.735&quot;</span>,</span>
-<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">note =</span> <span class="fu">paste0</span>(</span>
-<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Probabilidad predicha (%) de que una intervención sustantiva apoye o rechace cada &quot;</span>,</span>
-<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;concepto, a partir de dos modelos logísticos multinivel (apoyo y rechazo), e intervalos &quot;</span>,</span>
-<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;de confianza del 95 % entre corchetes, obtenidos con 1.000 remuestreos de actores dentro &quot;</span>,</span>
-<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;de cada bloque. Δ corresponde a derecha menos izquierda, en puntos porcentuales. &quot;</span>,</span>
-<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">format</span>(<span class="fu">nobs</span>(m_apoyo), <span class="at">big.mark =</span> <span class="st">&quot;.&quot;</span>), <span class="st">&quot; observaciones (intervención × concepto) de &quot;</span>,</span>
-<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">nrow</span>(model_interventions), <span class="st">&quot; intervenciones y &quot;</span>, <span class="fu">ngrps</span>(m_apoyo)[[<span class="st">&quot;speaker_id&quot;</span>]],</span>
-<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot; actores. La especificación se presenta en el Anexo 4.&quot;</span>),</span>
-<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>  <span class="at">table_number =</span> <span class="dv">4</span>L, <span class="at">landscape =</span> <span class="cn">TRUE</span>, <span class="at">body_font_size =</span> <span class="dv">10</span>,</span>
-<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>  <span class="at">header_labels =</span> <span class="fu">c</span>(<span class="st">&quot;Concepto&quot;</span>, <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">&quot;Izquierda&quot;</span>, <span class="st">&quot;Derecha&quot;</span>, <span class="st">&quot;Δ (pp)&quot;</span>), <span class="dv">2</span>)),</span>
-<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">header_groups =</span> <span class="fu">c</span>(<span class="st">&quot; &quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;Apoyo&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot;Rechazo&quot;</span> <span class="ot">=</span> <span class="dv">3</span>),</span>
-<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">section_rows =</span> <span class="fu">which</span>(tabla_h1<span class="sc">$</span>Apoyo_izquierda <span class="sc">==</span> <span class="st">&quot;&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># En la tabla, Δ = izquierda − derecha, como en H3: se invierte el signo del</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># contraste (derecha − izquierda) y se intercambian los límites del intervalo.</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>(contrasts_h1 <span class="sc">|&gt;</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>              <span class="fu">transmute</span>(postura, concepto, esperado, <span class="at">bloque =</span> <span class="st">&quot;diferencia&quot;</span>,</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>                        <span class="at">valor =</span> <span class="fu">ic_txt</span>(<span class="sc">-</span><span class="dv">100</span> <span class="sc">*</span> estimate, <span class="sc">-</span><span class="dv">100</span> <span class="sc">*</span> conf.high, <span class="sc">-</span><span class="dv">100</span> <span class="sc">*</span> conf.low))) <span class="sc">|&gt;</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> <span class="fu">c</span>(postura, bloque), <span class="at">values_from =</span> valor) <span class="sc">|&gt;</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(esperado, <span class="fu">desc</span>(<span class="fu">match</span>(concepto, concept_order)))</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>section <span class="ot">&lt;-</span> \(label) <span class="fu">tibble</span>(<span class="at">concepto =</span> label)</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>tabla_h1 <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">section</span>(<span class="st">&quot;Conceptos esperados en la derecha&quot;</span>),</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(panel, esperado <span class="sc">==</span> <span class="st">&quot;Esperado: derecha&quot;</span>),</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">section</span>(<span class="st">&quot;Conceptos esperados en la izquierda&quot;</span>),</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(panel, esperado <span class="sc">==</span> <span class="st">&quot;Esperado: izquierda&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(concepto, Apoyo_izquierda, Apoyo_derecha, Apoyo_diferencia,</span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>         Rechazo_izquierda, Rechazo_derecha, Rechazo_diferencia) <span class="sc">|&gt;</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), \(x) <span class="fu">coalesce</span>(x, <span class="st">&quot;&quot;</span>)))</span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a><span class="fu">export_apa7_word_table</span>(</span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>  tabla_h1, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;anexo_h1.docx&quot;</span>),</span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Probabilidad predicha de apoyo y rechazo de los conceptos de H1 por bloque político, Ley N.º 21.735&quot;</span>,</span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">note =</span> <span class="fu">paste0</span>(</span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;Probabilidad predicha (%) de que una intervención sustantiva apoye o rechace cada &quot;</span>,</span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;concepto, a partir de dos modelos logísticos multinivel (apoyo y rechazo), e intervalos &quot;</span>,</span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;de confianza del 95 % entre corchetes, obtenidos con 1.000 remuestreos de actores dentro &quot;</span>,</span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;de cada bloque. Δ corresponde a izquierda menos derecha, en puntos porcentuales. &quot;</span>,</span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">format</span>(<span class="fu">nobs</span>(m_apoyo), <span class="at">big.mark =</span> <span class="st">&quot;.&quot;</span>), <span class="st">&quot; observaciones (intervención × concepto) de &quot;</span>,</span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">nrow</span>(model_interventions), <span class="st">&quot; intervenciones y &quot;</span>, <span class="fu">ngrps</span>(m_apoyo)[[<span class="st">&quot;speaker_id&quot;</span>]],</span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot; actores. La especificación se presenta en el Anexo 4.&quot;</span>),</span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">table_number =</span> <span class="dv">4</span>L, <span class="at">landscape =</span> <span class="cn">TRUE</span>, <span class="at">body_font_size =</span> <span class="dv">10</span>,</span>
+<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">header_labels =</span> <span class="fu">c</span>(<span class="st">&quot;Concepto&quot;</span>, <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">&quot;Izquierda&quot;</span>, <span class="st">&quot;Derecha&quot;</span>, <span class="st">&quot;Δ (pp)&quot;</span>), <span class="dv">2</span>)),</span>
+<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">header_groups =</span> <span class="fu">c</span>(<span class="st">&quot; &quot;</span> <span class="ot">=</span> <span class="dv">1</span>, <span class="st">&quot;Apoyo&quot;</span> <span class="ot">=</span> <span class="dv">3</span>, <span class="st">&quot;Rechazo&quot;</span> <span class="ot">=</span> <span class="dv">3</span>),</span>
+<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">section_rows =</span> <span class="fu">which</span>(tabla_h1<span class="sc">$</span>Apoyo_izquierda <span class="sc">==</span> <span class="st">&quot;&quot;</span>))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning in prettyNum(.Internal(format(x, trim, digits, nsmall, width, 3L, :
@@ -3255,7 +3257,7 @@ Figura 1: Probabilidad predicha de que una intervención apoye y rechace cada c
 <col style="width: 14%">
 <col style="width: 12%">
 <col style="width: 11%">
-<col style="width: 14%">
+<col style="width: 13%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -3282,43 +3284,43 @@ Figura 1: Probabilidad predicha de que una intervención apoye y rechace cada c
 <td style="text-align: left;">Propiedad de los fondos</td>
 <td style="text-align: left;">9,1 [5,4; 13,7]</td>
 <td style="text-align: left;">56,7 [47,8; 65,7]</td>
-<td style="text-align: left;">47,6 [37,8; 57,6]</td>
+<td style="text-align: left;">−47,6 [−57,6; −37,8]</td>
 <td style="text-align: left;">3,0 [0,4; 6,5]</td>
 <td style="text-align: left;">0,4 [0,1; 0,4]</td>
-<td style="text-align: left;">−2,6 [−6,2; −0,2]</td>
+<td style="text-align: left;">2,6 [0,2; 6,2]</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Previsión como mercado</td>
 <td style="text-align: left;">20,7 [13,6; 27,9]</td>
 <td style="text-align: left;">42,5 [35,9; 49,5]</td>
-<td style="text-align: left;">21,9 [13,6; 30,6]</td>
+<td style="text-align: left;">−21,9 [−30,6; −13,6]</td>
 <td style="text-align: left;">50,3 [41,2; 59,7]</td>
 <td style="text-align: left;">9,8 [5,4; 14,4]</td>
-<td style="text-align: left;">−40,5 [−51,4; −30,5]</td>
+<td style="text-align: left;">40,5 [30,5; 51,4]</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Ineficiencia y riesgo estatal</td>
 <td style="text-align: left;">1,7 [0,6; 3,3]</td>
 <td style="text-align: left;">40,9 [31,4; 50,4]</td>
-<td style="text-align: left;">39,2 [29,7; 48,9]</td>
+<td style="text-align: left;">−39,2 [−48,9; −29,7]</td>
 <td style="text-align: left;">9,4 [5,2; 13,6]</td>
 <td style="text-align: left;">6,6 [2,7; 10,7]</td>
-<td style="text-align: left;">−2,8 [−8,4; 2,8]</td>
+<td style="text-align: left;">2,8 [−2,8; 8,4]</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Capitalización individual</td>
 <td style="text-align: left;">1,3 [0,6; 2,5]</td>
 <td style="text-align: left;">38,2 [29,8; 46,0]</td>
-<td style="text-align: left;">36,9 [28,5; 44,9]</td>
+<td style="text-align: left;">−36,9 [−44,9; −28,5]</td>
 <td style="text-align: left;">22,9 [16,3; 30,2]</td>
 <td style="text-align: left;">1,3 [0,3; 2,8]</td>
-<td style="text-align: left;">−21,5 [−29,6; −15,1]</td>
+<td style="text-align: left;">21,5 [15,1; 29,6]</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Reciprocidad contributiva</td>
 <td style="text-align: left;">35,2 [27,7; 42,8]</td>
 <td style="text-align: left;">35,7 [27,1; 44,6]</td>
-<td style="text-align: left;">0,5 [−10,8; 12,5]</td>
+<td style="text-align: left;">−0,5 [−12,5; 10,8]</td>
 <td style="text-align: left;">0,1 [0,1; 0,1]</td>
 <td style="text-align: left;">0,1 [0,0; 0,1]</td>
 <td style="text-align: left;">0,0 [0,0; 0,0]</td>
@@ -3327,19 +3329,19 @@ Figura 1: Probabilidad predicha de que una intervención apoye y rechace cada c
 <td style="text-align: left;">Conciencia de costos</td>
 <td style="text-align: left;">6,9 [2,7; 11,3]</td>
 <td style="text-align: left;">29,3 [22,7; 36,7]</td>
-<td style="text-align: left;">22,4 [15,2; 30,1]</td>
+<td style="text-align: left;">−22,4 [−30,1; −15,2]</td>
 <td style="text-align: left;">5,1 [1,5; 8,7]</td>
 <td style="text-align: left;">10,6 [6,1; 16,3]</td>
-<td style="text-align: left;">5,6 [0,1; 12,0]</td>
+<td style="text-align: left;">−5,6 [−12,0; −0,1]</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Libertad de elección</td>
 <td style="text-align: left;">15,0 [9,6; 20,9]</td>
 <td style="text-align: left;">18,9 [13,0; 24,9]</td>
-<td style="text-align: left;">3,9 [−4,0; 11,6]</td>
+<td style="text-align: left;">−3,9 [−11,6; 4,0]</td>
 <td style="text-align: left;">0,6 [0,1; 1,6]</td>
 <td style="text-align: left;">0,7 [0,0; 2,1]</td>
-<td style="text-align: left;">0,1 [−1,0; 1,7]</td>
+<td style="text-align: left;">−0,1 [−1,7; 1,0]</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Conceptos esperados en la izquierda</td>
@@ -3354,7 +3356,7 @@ Figura 1: Probabilidad predicha de que una intervención apoye y rechace cada c
 <td style="text-align: left;">Necesidad material</td>
 <td style="text-align: left;">60,9 [53,1; 69,7]</td>
 <td style="text-align: left;">31,0 [23,3; 38,9]</td>
-<td style="text-align: left;">−29,9 [−41,6; −19,2]</td>
+<td style="text-align: left;">29,9 [19,2; 41,6]</td>
 <td style="text-align: left;">0,1 [0,1; 0,1]</td>
 <td style="text-align: left;">0,1 [0,0; 0,1]</td>
 <td style="text-align: left;">0,0 [0,0; 0,0]</td>
@@ -3363,34 +3365,34 @@ Figura 1: Probabilidad predicha de que una intervención apoye y rechace cada c
 <td style="text-align: left;">Igualdad y universalismo</td>
 <td style="text-align: left;">32,4 [24,8; 39,9]</td>
 <td style="text-align: left;">27,4 [19,8; 35,2]</td>
-<td style="text-align: left;">−4,9 [−14,2; 4,6]</td>
+<td style="text-align: left;">4,9 [−4,6; 14,2]</td>
 <td style="text-align: left;">0,2 [0,1; 0,3]</td>
 <td style="text-align: left;">0,5 [0,0; 2,2]</td>
-<td style="text-align: left;">0,3 [0,0; 2,0]</td>
+<td style="text-align: left;">−0,3 [−2,0; 0,0]</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Solidaridad colectiva</td>
 <td style="text-align: left;">13,3 [8,0; 18,7]</td>
 <td style="text-align: left;">3,6 [1,3; 6,2]</td>
-<td style="text-align: left;">−9,7 [−16,0; −3,9]</td>
+<td style="text-align: left;">9,7 [3,9; 16,0]</td>
 <td style="text-align: left;">0,3 [0,1; 0,3]</td>
 <td style="text-align: left;">1,8 [0,0; 4,6]</td>
-<td style="text-align: left;">1,5 [0,0; 4,4]</td>
+<td style="text-align: left;">−1,5 [−4,4; 0,0]</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Solidaridad intergeneracional</td>
 <td style="text-align: left;">9,0 [5,2; 13,6]</td>
 <td style="text-align: left;">1,7 [0,7; 3,0]</td>
-<td style="text-align: left;">−7,3 [−12,1; −3,5]</td>
+<td style="text-align: left;">7,3 [3,5; 12,1]</td>
 <td style="text-align: left;">0,9 [0,2; 2,1]</td>
 <td style="text-align: left;">13,8 [8,0; 19,9]</td>
-<td style="text-align: left;">12,9 [7,2; 19,3]</td>
+<td style="text-align: left;">−12,9 [−19,3; −7,2]</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Origen dictatorial</td>
 <td style="text-align: left;">27,6 [21,3; 34,9]</td>
 <td style="text-align: left;">1,1 [0,7; 1,3]</td>
-<td style="text-align: left;">−26,5 [−34,0; −20,3]</td>
+<td style="text-align: left;">26,5 [20,3; 34,0]</td>
 <td style="text-align: left;">0,1 [0,1; 0,1]</td>
 <td style="text-align: left;">0,1 [0,0; 0,1]</td>
 <td style="text-align: left;">0,0 [0,0; 0,0]</td>

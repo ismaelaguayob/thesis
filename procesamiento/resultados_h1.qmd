@@ -530,9 +530,11 @@ panel <- predictions_h1 |>
   filter(bloque != "centro") |>
   transmute(postura, concepto, esperado, bloque,
             valor = ic_txt(100 * estimate, 100 * conf.low, 100 * conf.high)) |>
+  # En la tabla, Δ = izquierda − derecha, como en H3: se invierte el signo del
+  # contraste (derecha − izquierda) y se intercambian los límites del intervalo.
   bind_rows(contrasts_h1 |>
               transmute(postura, concepto, esperado, bloque = "diferencia",
-                        valor = ic_txt(100 * estimate, 100 * conf.low, 100 * conf.high))) |>
+                        valor = ic_txt(-100 * estimate, -100 * conf.high, -100 * conf.low))) |>
   pivot_wider(names_from = c(postura, bloque), values_from = valor) |>
   arrange(esperado, desc(match(concepto, concept_order)))
 section <- \(label) tibble(concepto = label)
@@ -551,7 +553,7 @@ export_apa7_word_table(
     "Probabilidad predicha (%) de que una intervención sustantiva apoye o rechace cada ",
     "concepto, a partir de dos modelos logísticos multinivel (apoyo y rechazo), e intervalos ",
     "de confianza del 95 % entre corchetes, obtenidos con 1.000 remuestreos de actores dentro ",
-    "de cada bloque. Δ corresponde a derecha menos izquierda, en puntos porcentuales. ",
+    "de cada bloque. Δ corresponde a izquierda menos derecha, en puntos porcentuales. ",
     format(nobs(m_apoyo), big.mark = "."), " observaciones (intervención × concepto) de ",
     nrow(model_interventions), " intervenciones y ", ngrps(m_apoyo)[["speaker_id"]],
     " actores. La especificación se presenta en el Anexo 4."),

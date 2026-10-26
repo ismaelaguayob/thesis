@@ -3,7 +3,13 @@
 Ideas que pertenecen a la discusión y no a resultados. Se agregan a medida que
 aparecen.
 
-- La coalición transformadora se organiza más en torno al rechazo que la de continuidad. Esta, en vez de articular de forma fuerte la igualdad y la solidaridad como principios, se ve obligada a utilizar criterios de condicionalidad basados en la contribución y la vulnerabilidad, en vez de articular el apoyo cómo un derecho.
+- La coalición transformadora se organiza más en torno al rechazo que la de continuidad. Esta, en vez de articular de forma fuerte la igualdad y la solidaridad como principios, se ve obligada a utilizar criterios de condicionalidad basados en la contribución y la vulnerabilidad, en vez de articular el apoyo cómo un derecho, y ocupa más intervenciones en cuestionar los argumentos de los rivales.
+
+- Que GPT-6 haya sido el modelo seleccionado no indica una mejor performance general, ya que los instrumentos se evaluaron en principio utilizandolo. Quizás Haiku necesitaba otras estrategias para funcionar mejor en los conceptos centrales de las hipótesis, y, tiene mejor recall que Luna, que presenta mayor precisión.
+
+- Previsión como mercado al final fue un código demasiado amplio. En una siguiente investigación, sería interesante dividirlo entre competitividad y rentabilidad, y previsión como negocio e incentivos, o incluso categorías más específicas. En el análisis, se descubrió que los parlamentarios suelen apoyar ciertos mecanismos de mercado en la previsión y otros no.
+
+- Definir como conclusión exploratoria una economía moral de la defensa y crítica a las pensiones en Chile.
 
 ## Criterios de merecimiento en el debate legislativo
 

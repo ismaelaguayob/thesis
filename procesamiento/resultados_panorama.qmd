@@ -14,9 +14,9 @@ execute:
 ---
 
 Este reporte respalda la sección 5.2 del manuscrito. Describe qué conceptos
-del libro de códigos aparecen en cada ley, con qué postura y cuáles concentran
-la disputa. Usa las anotaciones de GPT-6 Luna, el modelo principal; la réplica
-con Claude Haiku 5.5 se reporta al final.
+del libro de códigos aparecen en los debates de la PGU (leyes 21.419 y 21.538)
+y del sistema mixto (Ley 21.735), con qué postura y cuáles concentran la
+disputa. Usa las anotaciones de GPT-6 Luna, el modelo principal.
 
 La unidad de los porcentajes es la **intervención sustantiva**. Una
 intervención cuenta una vez por concepto y postura aunque lo exprese en varios
@@ -64,11 +64,14 @@ Tabla 1 del manuscrito.
 ```{r}
 #| label: base
 base <- load_analysis_base(LUNA_RUN_DIR)
-interventions <- base$interventions
+# Las leyes 21.419 y 21.538 se agrupan como debates de la PGU, como en H3.
+interventions <- base$interventions |>
+  mutate(debate = factor(if_else(debate == "PGU", "PGU", "Sistema mixto"),
+                         levels = c("PGU", "Sistema mixto")))
 claims <- base$claims |>
   left_join(interventions |>
-              select(law_number, document_uri, utterance_id, law, phase,
-                     speaker_id),
+              select(law_number, document_uri, utterance_id, law, debate,
+                     phase, speaker_id),
             by = c("law_number", "document_uri", "utterance_id"))
 concepts <- read_codebook_concepts() |> filter(analyzed)
 
@@ -184,38 +187,39 @@ actores en las leyes de la PGU. Las proporciones de la Ley 21.538 descansan en
 Las fases de la reforma también difieren: el Senado aporta solo
 `r denominators$actores_perfil[5]` actores con perfil.
 
-## Apoyo y rechazo por concepto y ley
+## Apoyo y rechazo por concepto y debate
 
-Para cada ley calculamos la proporción de intervenciones sustantivas que
+Para cada debate (PGU, que agrupa las leyes 21.419 y 21.538, y sistema mixto)
+calculamos la proporción de intervenciones sustantivas que
 apoyan cada concepto y la proporción que lo rechaza ($f_{cts}$ en el material
 suplementario). El denominador incluye las intervenciones sustantivas sin
 declaraciones, de modo que las proporciones son comparables entre conceptos y
-leyes aunque estas difieran en tamaño.
+debates aunque estos difieran en tamaño.
 
 ```{r}
 #| label: prevalencia
-law_sizes <- interventions |>
+debate_sizes <- interventions |>
   filter(substantive) |>
-  count(law, name = "sustantivas")
+  count(debate, name = "sustantivas")
 prevalence <- claims |>
-  count(law, concept_id, stance) |>
-  complete(law, concept_id = concepts$concept_id,
+  count(debate, concept_id, stance) |>
+  complete(debate, concept_id = concepts$concept_id,
            stance = c("support", "oppose"), fill = list(n = 0L)) |>
-  left_join(law_sizes, by = "law") |>
+  left_join(debate_sizes, by = "debate") |>
   mutate(proporcion = n / sustantivas) |>
   left_join(concepts, by = "concept_id")
 stopifnot(all(prevalence$proporcion <= 1))
-write_parquet(prevalence, file.path(TABLE_DIR, "prevalencia_postura_ley.parquet"))
+write_parquet(prevalence, file.path(TABLE_DIR, "prevalencia_postura_debate.parquet"))
 
 # Para citar proporciones en el texto.
-pct <- function(l, c, s = "support") {
-  percent(prevalence$proporcion[prevalence$law == l & prevalence$concept_id == c &
+pct <- function(d, c, s = "support") {
+  percent(prevalence$proporcion[prevalence$debate == d & prevalence$concept_id == c &
                                   prevalence$stance == s], accuracy = 1)
 }
 ```
 
 La figura ordena los conceptos por familia del libro de códigos y, dentro de
-cada familia, por su presencia en la reforma. El apoyo se dibuja a la derecha
+cada familia, por su presencia en el sistema mixto. El apoyo se dibuja a la derecha
 del cero y el rechazo a la izquierda; la posición y el color codifican la
 postura. Cada barra de al menos 3 % lleva su porcentaje. Los espacios entre
 grupos de conceptos corresponden a las familias del libro, sin rotular. Actitud se omite de la
@@ -224,8 +228,8 @@ interpretación.
 
 ```{r}
 #| label: fig-prevalencia
-#| fig-cap: "Proporción de intervenciones sustantivas que apoyan o rechazan cada concepto, por ley"
-#| fig-alt: "Barras divergentes para 13 conceptos agrupados por familia en tres paneles, uno por ley; el apoyo hacia la derecha y el rechazo hacia la izquierda."
+#| fig-cap: "Proporción de intervenciones sustantivas que apoyan o rechazan cada concepto, por debate"
+#| fig-alt: "Barras divergentes para 13 conceptos agrupados por familia en dos paneles, PGU y sistema mixto; el apoyo hacia la derecha y el rechazo hacia la izquierda."
 #| fig-width: 9
 #| fig-height: 6
 family_short <- c(
@@ -235,7 +239,7 @@ family_short <- c(
   "Justificación procedimental del caso" = "Procedimental"
 )
 concept_order <- prevalence |>
-  filter(law == "Ley 21.735") |>
+  filter(debate == "Sistema mixto") |>
   group_by(concept) |>
   summarise(total = sum(proporcion)) |>
   arrange(total) |>
@@ -260,7 +264,7 @@ fig_prevalencia <- ggplot(plot_data, aes(x = valor, y = concept, fill = postura)
             aes(label = etiqueta, hjust = if_else(valor > 0, -0.15, 1.15)),
             color = "grey25", size = 2.6) +
   # Las familias del libro separan los grupos de conceptos sin rotularse.
-  facet_grid(familia ~ law, scales = "free_y", space = "free_y") +
+  facet_grid(familia ~ debate, scales = "free_y", space = "free_y") +
   scale_x_continuous(labels = \(x) paste0(round(100 * abs(x)), " %"),
                      breaks = seq(-0.2, 0.4, 0.2),
                      expand = expansion(mult = c(0.1, 0.06))) +
@@ -276,60 +280,51 @@ ggsave(file.path(FIGURE_DIR, "figura4_prevalencia_postura.png"), fig_prevalencia
        width = 9, height = 6, dpi = 300, bg = "white")
 ```
 
-La necesidad material es el concepto con más apoyo en las tres leyes
-(`r pct("Ley 21.419", "necesidad_material")`,
-`r pct("Ley 21.538", "necesidad_material")` y
-`r pct("Ley 21.735", "necesidad_material")` de las intervenciones
-sustantivas) y nunca recibe rechazo. La reciprocidad contributiva sigue el mismo patrón:
-apoyo en todas las leyes, mayor en la reforma
-(`r pct("Ley 21.735", "reciprocidad_contributiva")`), y ningún rechazo. En los
-debates de la PGU destaca la igualdad y el universalismo
-(`r pct("Ley 21.419", "igualdad_universalismo")` en la Ley 21.419 y
-`r pct("Ley 21.538", "igualdad_universalismo")` en la 21.538, donde es el
-segundo concepto más apoyado), en coherencia con una discusión centrada en el acceso a
-una pensión no contributiva.
+La necesidad material es el concepto con más apoyo en ambos debates
+(`r pct("PGU", "necesidad_material")` y
+`r pct("Sistema mixto", "necesidad_material")` de las intervenciones
+sustantivas) y nunca recibe rechazo. La reciprocidad contributiva sigue el
+mismo patrón: apoyo en ambos debates, mayor en el sistema mixto
+(`r pct("PGU", "reciprocidad_contributiva")` y
+`r pct("Sistema mixto", "reciprocidad_contributiva")`), y ningún rechazo. En
+los debates de la PGU destaca la igualdad y el universalismo
+(`r pct("PGU", "igualdad_universalismo")`, frente a
+`r pct("Sistema mixto", "igualdad_universalismo")` en el sistema mixto).
 
-La reforma amplía el repertorio. Los conceptos distributivos e institucionales
-del caso son escasos en los debates de la PGU, salvo solidaridad colectiva y
-previsión como mercado en la Ley 21.419, y alcanzan en la Ley 21.735
-proporciones de apoyo de entre
-`r pct("Ley 21.735", "solidaridad_intergeneracional")` (solidaridad
-intergeneracional) y `r pct("Ley 21.735", "prevision_como_mercado")`
-(previsión como mercado); previsión como mercado es el más presente de ellos y,
-junto con la solidaridad intergeneracional, el único cuyo rechazo
-(`r pct("Ley 21.735", "prevision_como_mercado", "oppose")`) supera a su
-apoyo. Esta diferencia responde en parte a la materia de cada proyecto: la PGU
-no alteraba la cuenta individual. Acuerdos y moderación, la justificación
-procedimental, aparece en `r pct("Ley 21.735", "acuerdos_moderacion")` de las
-intervenciones de la reforma con apoyo, una presencia comparable a la de los
-criterios de justicia más frecuentes.
+El sistema mixto amplía el repertorio. Los conceptos distributivos e
+institucionales del caso, escasos en los debates de la PGU, alcanzan en el
+sistema mixto proporciones de apoyo de entre
+`r pct("Sistema mixto", "solidaridad_intergeneracional")` (solidaridad
+intergeneracional) y `r pct("Sistema mixto", "prevision_como_mercado")`
+(previsión como mercado; `r pct("PGU", "prevision_como_mercado")` en la PGU).
+El rechazo de la previsión como mercado
+(`r pct("Sistema mixto", "prevision_como_mercado", "oppose")`) supera a su
+apoyo. Acuerdos y moderación aparece con apoyo en
+`r pct("Sistema mixto", "acuerdos_moderacion")` de las intervenciones del
+sistema mixto (`r pct("PGU", "acuerdos_moderacion")` en la PGU).
 
-Actitud, el criterio CARIN que condiciona el apoyo al comportamiento o la
-gratitud de quien lo recibe, no aparece en las leyes de la PGU y registra
-`r sum(prevalence$n[prevalence$concept_id == "actitud"])` declaraciones en
-toda la reforma. Su ausencia es en sí un resultado: los criterios de
-merecimiento presentes (necesidad y reciprocidad) se invocan para justificar
-el apoyo a las personas mayores, no para condicionarlo.
+Actitud registra `r sum(prevalence$n[prevalence$concept_id == "actitud"])`
+declaraciones en todo el corpus.
 
 ## Conceptos consensuales y disputados
 
 La proporción minoritaria de un concepto es la parte de sus declaraciones con
 postura que está en la postura menos frecuente,
 $m_{cL} = \min(n^+, n^-)/(n^+ + n^-)$. Vale 0 cuando el concepto recibe una
-sola postura y 50 % cuando se divide por mitades. Se calcula por ley; con
+sola postura y 50 % cuando se divide por mitades. Se calcula por debate; con
 menos de 10 declaraciones la proporción se marca con † porque es inestable.
 Actitud se omite, como en la figura.
 
 ```{r}
 #| label: tbl-disputa
-#| tbl-cap: "Declaraciones de apoyo y rechazo y proporción minoritaria por concepto y ley"
+#| tbl-cap: "Declaraciones de apoyo y rechazo y proporción minoritaria por concepto y debate"
 dispute <- prevalence |>
-  select(law, concept_id, concept, family, stance, n) |>
+  select(debate, concept_id, concept, family, stance, n) |>
   pivot_wider(names_from = stance, values_from = n) |>
   mutate(total = support + oppose,
          minoritaria = if_else(total > 0, pmin(support, oppose) / total,
                                NA_real_))
-write_parquet(dispute, file.path(TABLE_DIR, "disputa_concepto_ley.parquet"))
+write_parquet(dispute, file.path(TABLE_DIR, "disputa_concepto_debate.parquet"))
 
 dispute_cells <- dispute |>
   filter(concept_id != "actitud") |>
@@ -337,93 +332,18 @@ dispute_cells <- dispute |>
     total == 0 ~ "—",
     TRUE ~ sprintf("%d / %d (%s %%)%s", support, oppose,
                    round(100 * minoritaria), if_else(total < 10, "†", "")))) |>
-  select(concept_id, concept, law, cell) |>
-  pivot_wider(names_from = law, values_from = cell) |>
+  select(concept_id, concept, debate, cell) |>
+  pivot_wider(names_from = debate, values_from = cell) |>
   left_join(dispute |>
-              filter(law == "Ley 21.735") |>
+              filter(debate == "Sistema mixto") |>
               select(concept_id, orden = minoritaria, n_reforma = total),
             by = "concept_id") |>
   arrange(desc(orden), desc(n_reforma)) |>
   select(-concept_id, -orden, -n_reforma) |>
   rename(Concepto = concept)
-knitr::kable(dispute_cells, align = c("l", "c", "c", "c"))
+knitr::kable(dispute_cells, align = c("l", "c", "c"))
 ```
 
 
-La tabla, de respaldo para el texto, separa dos grupos de conceptos. Los
-disputados se concentran en la dimensión institucional y distributiva propia de
-la reforma: capitalización individual, previsión como mercado y solidaridad
-intergeneracional se dividen casi por mitades en la Ley 21.735 (proporción
-minoritaria de 44 % a 49 %), e ineficiencia y riesgo estatal y conciencia de
-costos reciben cerca de un rechazo por cada dos apoyos (31 % en ambos); costos
-se disputa además en las tres leyes. Los consensuales son, sobre todo,
-criterios de merecimiento y justicia: necesidad material y reciprocidad
-contributiva no registran ningún rechazo, igualdad y universalismo apenas uno,
-y el origen dictatorial ninguno en la reforma. Propiedad de los fondos y
-libertad de elección, pese a ser justificaciones del arreglo vigente, reciben
-muy pocos rechazos en la reforma (proporción minoritaria de 7 % y 3 %).
-
-El patrón sugiere que el conflicto de la reforma se libra sobre la
-organización institucional de la previsión más que sobre los criterios de
-merecimiento, que se comparten. Este resultado es descriptivo: no muestra
-quiénes sostienen cada postura, lo que examinan H1 y H2a, ni si el consenso
-sobre un criterio encubre desacuerdos sobre el arreglo que justifica. La
-ausencia de rechazo también tiene una lectura metodológica: el libro registra
-justificaciones normativas, y negar que la necesidad de los pensionados
-importe es poco probable en un debate parlamentario, de modo que el desacuerdo
-puede expresarse por otros conceptos.
-
-## Réplica con Claude Haiku 5.5
-
-Repetimos la proporción de apoyo y rechazo y la proporción minoritaria con las
-anotaciones de Haiku. Comparamos la Ley 21.735, donde se concentran los
-análisis posteriores, mediante la correlación entre modelos de las
-proporciones por concepto y la coincidencia en qué conceptos no reciben
-ningún rechazo.
-
-```{r}
-#| label: replica-haiku
-base_haiku <- load_analysis_base(HAIKU_RUN_DIR)
-haiku_sizes <- base_haiku$interventions |>
-  filter(substantive) |>
-  count(law, name = "sustantivas")
-prevalence_haiku <- base_haiku$claims |>
-  left_join(base_haiku$interventions |>
-              select(law_number, document_uri, utterance_id, law),
-            by = c("law_number", "document_uri", "utterance_id")) |>
-  count(law, concept_id, stance) |>
-  complete(law, concept_id = concepts$concept_id,
-           stance = c("support", "oppose"), fill = list(n = 0L)) |>
-  left_join(haiku_sizes, by = "law") |>
-  mutate(proporcion = n / sustantivas)
-
-comparison <- prevalence |>
-  select(law, concept_id, concept, stance, luna_n = n, luna = proporcion) |>
-  inner_join(prevalence_haiku |>
-               select(law, concept_id, stance, haiku_n = n, haiku = proporcion),
-             by = c("law", "concept_id", "stance"))
-write_parquet(comparison, file.path(TABLE_DIR, "prevalencia_luna_haiku.parquet"))
-
-reform <- filter(comparison, law == "Ley 21.735")
-replica <- reform |>
-  group_by(postura = if_else(stance == "support", "Apoyo", "Rechazo")) |>
-  summarise(correlacion = cor(luna, haiku),
-            media_luna = mean(luna), media_haiku = mean(haiku),
-            .groups = "drop")
-sin_rechazo <- reform |>
-  filter(stance == "oppose") |>
-  transmute(concept, luna_n, haiku_n)
-knitr::kable(replica, digits = 3,
-             col.names = c("Postura", "Correlación Luna–Haiku",
-                           "Media Luna", "Media Haiku"))
-knitr::kable(sin_rechazo |> filter(luna_n == 0 | haiku_n == 0),
-             col.names = c("Concepto", "Rechazos Luna", "Rechazos Haiku"))
-```
-
-Las proporciones por concepto de Haiku están muy correlacionadas con las de
-Luna en la reforma (r = `r number(replica$correlacion[1], accuracy = 0.01, decimal.mark = ",")`
-para el apoyo y `r number(replica$correlacion[2], accuracy = 0.01, decimal.mark = ",")`
-para el rechazo), aunque Haiku asigna más declaraciones en promedio, como se
-observó en la validación. Con ambos modelos, necesidad material y reciprocidad
-contributiva no reciben ningún rechazo en la Ley 21.735. El panorama
-descriptivo no depende, por tanto, del modelo elegido.
+La tabla respalda el texto de la sección 5.2: los conceptos se ordenan por su
+proporción minoritaria en el sistema mixto.
