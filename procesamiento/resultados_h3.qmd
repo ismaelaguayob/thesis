@@ -1,6 +1,6 @@
 ---
 title: "H3: Comparación entre proyectos"
-subtitle: "Sección 5.5: presencia y centralidad del repertorio de mercado y transversalidad de la necesidad y la igualdad, PGU frente al sistema mixto"
+subtitle: "Sección 5.5: presencia del repertorio de mercado y transversalidad de la necesidad y la igualdad, PGU frente al sistema mixto"
 lang: es
 format:
   html:
@@ -15,7 +15,7 @@ execute:
 
 Este reporte respalda la sección 5.5 del manuscrito. H3 sostiene que los
 conceptos relacionados con la justicia de mercado y la capitalización
-individual tendrán mayor presencia y centralidad relativa en el debate de la
+individual tendrán mayor presencia en el debate de la
 Ley 21.735 que en los debates de la PGU, y que en estos últimos la necesidad
 material y la igualdad o el universalismo alcanzarán un apoyo más transversal
 entre grupos políticos.
@@ -96,45 +96,29 @@ interventions |>
   knitr::kable()
 ```
 
-## (a) Presencia y centralidad del repertorio de mercado
+## (a) Presencia del repertorio de mercado
 
 La presencia de un concepto es la proporción de intervenciones que lo
 mencionan, con apoyo o con rechazo (suplemento, sección 4.2). Para mostrar de
 dónde viene cada cambio, la presencia se descompone en intervenciones que solo
 lo apoyan, que solo lo rechazan o que hacen ambas cosas.
 
-La centralidad relativa proviene de la red de presencia de cada debate
-(suplemento, sección 6.1). Dos conceptos se vinculan cuando los usan los mismos
-actores, con cualquier postura; el vínculo es la semejanza coseno entre sus
-perfiles de actores, con afiliación binaria como en H2. La fuerza de un
-concepto es la suma de sus vínculos, y su centralidad relativa, la proporción
-de la fuerza total de la red que concentra. Esta proporción permite comparar
-redes de distinto tamaño.
-
 Los intervalos del 95 % provienen de `r N_BOOT` remuestreos de actores dentro de
 cada debate: se sortean actores con reposición, se conservan todas sus
-intervenciones y se recalculan las medidas.
+intervenciones y se recalculan las proporciones.
 
 ```{r}
 #| label: funciones-presencia
-# Medidas de un conjunto de intervenciones; `actor` identifica a quién pertenece
-# cada fila (en el remuestreo, cada copia de un actor cuenta como un actor).
-presence_measures <- function(rows, actor = interventions$speaker_id[rows]) {
+# Presencia de cada concepto en un conjunto de intervenciones, total y por postura.
+presence_measures <- function(rows) {
   pres <- PRES[rows, , drop = FALSE]
   sup <- SUP[rows, , drop = FALSE]
   opp <- OPP[rows, , drop = FALSE]
-  aff <- rowsum(pres, actor) > 0
-  norm <- sqrt(colSums(aff))
-  w <- crossprod(aff) / outer(norm, norm)
-  w[!is.finite(w)] <- 0
-  diag(w) <- 0
-  strength <- rowSums(w)
   tibble(concept_id = concepts,
          presencia = colMeans(pres),
          solo_apoyo = colMeans(sup * (1 - opp)),
          solo_rechazo = colMeans(opp * (1 - sup)),
-         ambas = colMeans(sup * opp),
-         centralidad = strength / sum(strength))
+         ambas = colMeans(sup * opp))
 }
 # Remuestrea actores dentro del debate y conserva todas sus intervenciones.
 presence_boot <- function(rows, seed) {
@@ -142,9 +126,8 @@ presence_boot <- function(rows, seed) {
   by_actor <- split(rows, interventions$speaker_id[rows])
   map_dfr(seq_len(N_BOOT), \(i) {
     sampled <- sample(length(by_actor), replace = TRUE)
-    presence_measures(unlist(by_actor[sampled], use.names = FALSE),
-                      actor = rep(seq_along(sampled), lengths(by_actor[sampled]))) |>
-      select(concept_id, presencia, centralidad) |>
+    presence_measures(unlist(by_actor[sampled], use.names = FALSE)) |>
+      select(concept_id, presencia) |>
       mutate(replica = i)
   })
 }
@@ -164,17 +147,17 @@ presence_reps <- imap_dfr(debate_rows, \(rows, d)
 #| label: presencia-resumen
 ci <- \(x) tibble(conf.low = quantile(x, 0.025), conf.high = quantile(x, 0.975))
 presence_ci <- presence_reps |>
-  pivot_longer(c(presencia, centralidad), names_to = "medida") |>
+  pivot_longer(presencia, names_to = "medida") |>
   group_by(debate, concept_id, medida) |>
   reframe(ci(value))
 presence_diff <- presence_reps |>
-  pivot_longer(c(presencia, centralidad), names_to = "medida") |>
+  pivot_longer(presencia, names_to = "medida") |>
   pivot_wider(names_from = debate, values_from = value) |>
   mutate(diferencia = `Sistema mixto` - PGU) |>
   group_by(concept_id, medida) |>
   reframe(ci(diferencia)) |>
   left_join(presence_point |>
-              pivot_longer(c(presencia, centralidad), names_to = "medida") |>
+              pivot_longer(presencia, names_to = "medida") |>
               select(debate, concept_id, medida, value) |>
               pivot_wider(names_from = debate, values_from = value) |>
               mutate(estimate = `Sistema mixto` - PGU),
@@ -182,10 +165,10 @@ presence_diff <- presence_reps |>
   mutate(concepto = unname(CONCEPT_SHORT[concept_id]),
          mercado = concept_id %in% MARKET)
 presence_table <- presence_point |>
-  pivot_longer(c(presencia, centralidad), names_to = "medida", values_to = "estimate") |>
+  pivot_longer(presencia, names_to = "medida", values_to = "estimate") |>
   left_join(presence_ci, by = c("debate", "concept_id", "medida")) |>
   mutate(concepto = unname(CONCEPT_SHORT[concept_id]), mercado = concept_id %in% MARKET)
-write_parquet(presence_table, file.path(TABLE_DIR, "h3_presencia_centralidad.parquet"))
+write_parquet(presence_table, file.path(TABLE_DIR, "h3_presencia.parquet"))
 write_parquet(presence_diff, file.path(TABLE_DIR, "h3_presencia_diferencias.parquet"))
 
 presence_diff |>
@@ -193,17 +176,7 @@ presence_diff |>
   transmute(concepto, medida, PGU = 100 * PGU, `Sistema mixto` = 100 * `Sistema mixto`,
             diferencia = 100 * estimate, ic_inf = 100 * conf.low, ic_sup = 100 * conf.high) |>
   arrange(medida, desc(diferencia)) |>
-  knitr::kable(digits = 1, caption = "Repertorio de mercado: presencia y centralidad (%) y diferencia sistema mixto − PGU (pp)")
-
-# Rango de centralidad entre los 13 conceptos de cada debate.
-presence_point |>
-  group_by(debate) |>
-  mutate(rango = rank(-centralidad, ties.method = "min")) |>
-  ungroup() |>
-  filter(concept_id %in% MARKET) |>
-  transmute(concepto = CONCEPT_SHORT[concept_id], debate, rango) |>
-  pivot_wider(names_from = debate, values_from = rango) |>
-  knitr::kable(caption = "Posición en el ranking de centralidad (1 = más central)")
+  knitr::kable(digits = 1, caption = "Repertorio de mercado: presencia (%) y diferencia sistema mixto − PGU (pp)")
 
 presence_point |>
   filter(concept_id %in% MARKET) |>
@@ -245,9 +218,6 @@ print(fig_market)
 ggsave(file.path(FIGURE_DIR, "figura9_h3_mercado.png"), fig_market,
        width = 7.5, height = 5.5, dpi = 300, bg = "white")
 ```
-
-La centralidad relativa se reporta solo en las tablas: casi no cambia entre
-debates, salvo en la propiedad de los fondos.
 
 ## (b) Transversalidad de la necesidad material y la igualdad
 

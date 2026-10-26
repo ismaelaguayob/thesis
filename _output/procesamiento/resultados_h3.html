@@ -2209,7 +2209,7 @@ vertical-align: -.125em;
   <ul class="collapse">
   <li><a href="#seteo-de-la-sesión" id="toc-seteo-de-la-sesión" class="nav-link active" data-scroll-target="#seteo-de-la-sesión">Seteo de la sesión</a></li>
   <li><a href="#datos" id="toc-datos" class="nav-link" data-scroll-target="#datos">Datos</a></li>
-  <li><a href="#a-presencia-y-centralidad-del-repertorio-de-mercado" id="toc-a-presencia-y-centralidad-del-repertorio-de-mercado" class="nav-link" data-scroll-target="#a-presencia-y-centralidad-del-repertorio-de-mercado">(a) Presencia y centralidad del repertorio de mercado</a></li>
+  <li><a href="#a-presencia-del-repertorio-de-mercado" id="toc-a-presencia-del-repertorio-de-mercado" class="nav-link" data-scroll-target="#a-presencia-del-repertorio-de-mercado">(a) Presencia del repertorio de mercado</a></li>
   <li><a href="#b-transversalidad-de-la-necesidad-material-y-la-igualdad" id="toc-b-transversalidad-de-la-necesidad-material-y-la-igualdad" class="nav-link" data-scroll-target="#b-transversalidad-de-la-necesidad-material-y-la-igualdad">(b) Transversalidad de la necesidad material y la igualdad</a></li>
   </ul>
 </nav>
@@ -2219,7 +2219,7 @@ vertical-align: -.125em;
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
 <h1 class="title">H3: Comparación entre proyectos</h1>
-<p class="subtitle lead">Sección 5.5: presencia y centralidad del repertorio de mercado y transversalidad de la necesidad y la igualdad, PGU frente al sistema mixto</p>
+<p class="subtitle lead">Sección 5.5: presencia del repertorio de mercado y transversalidad de la necesidad y la igualdad, PGU frente al sistema mixto</p>
 </div>
 
 
@@ -2236,7 +2236,7 @@ vertical-align: -.125em;
 </header>
 
 
-<p>Este reporte respalda la sección 5.5 del manuscrito. H3 sostiene que los conceptos relacionados con la justicia de mercado y la capitalización individual tendrán mayor presencia y centralidad relativa en el debate de la Ley 21.735 que en los debates de la PGU, y que en estos últimos la necesidad material y la igualdad o el universalismo alcanzarán un apoyo más transversal entre grupos políticos.</p>
+<p>Este reporte respalda la sección 5.5 del manuscrito. H3 sostiene que los conceptos relacionados con la justicia de mercado y la capitalización individual tendrán mayor presencia en el debate de la Ley 21.735 que en los debates de la PGU, y que en estos últimos la necesidad material y la igualdad o el universalismo alcanzarán un apoyo más transversal entre grupos políticos.</p>
 <p>Las leyes 21.419 y 21.538 se agrupan como debates de la PGU. El repertorio de mercado son los siete conceptos que H1 atribuye a la derecha: propiedad de los fondos, capitalización individual, reciprocidad contributiva, libertad de elección, conciencia de costos, ineficiencia y riesgo estatal y previsión como mercado.</p>
 <section id="seteo-de-la-sesión" class="level2">
 <h2 class="anchored" data-anchor-id="seteo-de-la-sesión">Seteo de la sesión</h2>
@@ -2333,45 +2333,35 @@ vertical-align: -.125em;
 </div>
 </div>
 </section>
-<section id="a-presencia-y-centralidad-del-repertorio-de-mercado" class="level2">
-<h2 class="anchored" data-anchor-id="a-presencia-y-centralidad-del-repertorio-de-mercado">(a) Presencia y centralidad del repertorio de mercado</h2>
+<section id="a-presencia-del-repertorio-de-mercado" class="level2">
+<h2 class="anchored" data-anchor-id="a-presencia-del-repertorio-de-mercado">(a) Presencia del repertorio de mercado</h2>
 <p>La presencia de un concepto es la proporción de intervenciones que lo mencionan, con apoyo o con rechazo (suplemento, sección 4.2). Para mostrar de dónde viene cada cambio, la presencia se descompone en intervenciones que solo lo apoyan, que solo lo rechazan o que hacen ambas cosas.</p>
-<p>La centralidad relativa proviene de la red de presencia de cada debate (suplemento, sección 6.1). Dos conceptos se vinculan cuando los usan los mismos actores, con cualquier postura; el vínculo es la semejanza coseno entre sus perfiles de actores, con afiliación binaria como en H2. La fuerza de un concepto es la suma de sus vínculos, y su centralidad relativa, la proporción de la fuerza total de la red que concentra. Esta proporción permite comparar redes de distinto tamaño.</p>
-<p>Los intervalos del 95 % provienen de 1000 remuestreos de actores dentro de cada debate: se sortean actores con reposición, se conservan todas sus intervenciones y se recalculan las medidas.</p>
+<p>Los intervalos del 95 % provienen de 1000 remuestreos de actores dentro de cada debate: se sortean actores con reposición, se conservan todas sus intervenciones y se recalculan las proporciones.</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Medidas de un conjunto de intervenciones; `actor` identifica a quién pertenece</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># cada fila (en el remuestreo, cada copia de un actor cuenta como un actor).</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>presence_measures <span class="ot">&lt;-</span> <span class="cf">function</span>(rows, <span class="at">actor =</span> interventions<span class="sc">$</span>speaker_id[rows]) {</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  pres <span class="ot">&lt;-</span> PRES[rows, , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  sup <span class="ot">&lt;-</span> SUP[rows, , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  opp <span class="ot">&lt;-</span> OPP[rows, , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  aff <span class="ot">&lt;-</span> <span class="fu">rowsum</span>(pres, actor) <span class="sc">&gt;</span> <span class="dv">0</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  norm <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(<span class="fu">colSums</span>(aff))</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  w <span class="ot">&lt;-</span> <span class="fu">crossprod</span>(aff) <span class="sc">/</span> <span class="fu">outer</span>(norm, norm)</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  w[<span class="sc">!</span><span class="fu">is.finite</span>(w)] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">diag</span>(w) <span class="ot">&lt;-</span> <span class="dv">0</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  strength <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(w)</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(<span class="at">concept_id =</span> concepts,</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>         <span class="at">presencia =</span> <span class="fu">colMeans</span>(pres),</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>         <span class="at">solo_apoyo =</span> <span class="fu">colMeans</span>(sup <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> opp)),</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>         <span class="at">solo_rechazo =</span> <span class="fu">colMeans</span>(opp <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> sup)),</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>         <span class="at">ambas =</span> <span class="fu">colMeans</span>(sup <span class="sc">*</span> opp),</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>         <span class="at">centralidad =</span> strength <span class="sc">/</span> <span class="fu">sum</span>(strength))</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Remuestrea actores dentro del debate y conserva todas sus intervenciones.</span></span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>presence_boot <span class="ot">&lt;-</span> <span class="cf">function</span>(rows, seed) {</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(seed)</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>  by_actor <span class="ot">&lt;-</span> <span class="fu">split</span>(rows, interventions<span class="sc">$</span>speaker_id[rows])</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map_dfr</span>(<span class="fu">seq_len</span>(N_BOOT), \(i) {</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    sampled <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">length</span>(by_actor), <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">presence_measures</span>(<span class="fu">unlist</span>(by_actor[sampled], <span class="at">use.names =</span> <span class="cn">FALSE</span>),</span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>                      <span class="at">actor =</span> <span class="fu">rep</span>(<span class="fu">seq_along</span>(sampled), <span class="fu">lengths</span>(by_actor[sampled]))) <span class="sc">|&gt;</span></span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(concept_id, presencia, centralidad) <span class="sc">|&gt;</span></span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">replica =</span> i)</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Presencia de cada concepto en un conjunto de intervenciones, total y por postura.</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>presence_measures <span class="ot">&lt;-</span> <span class="cf">function</span>(rows) {</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  pres <span class="ot">&lt;-</span> PRES[rows, , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  sup <span class="ot">&lt;-</span> SUP[rows, , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  opp <span class="ot">&lt;-</span> OPP[rows, , drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(<span class="at">concept_id =</span> concepts,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">presencia =</span> <span class="fu">colMeans</span>(pres),</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>         <span class="at">solo_apoyo =</span> <span class="fu">colMeans</span>(sup <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> opp)),</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>         <span class="at">solo_rechazo =</span> <span class="fu">colMeans</span>(opp <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> sup)),</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">ambas =</span> <span class="fu">colMeans</span>(sup <span class="sc">*</span> opp))</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Remuestrea actores dentro del debate y conserva todas sus intervenciones.</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>presence_boot <span class="ot">&lt;-</span> <span class="cf">function</span>(rows, seed) {</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(seed)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  by_actor <span class="ot">&lt;-</span> <span class="fu">split</span>(rows, interventions<span class="sc">$</span>speaker_id[rows])</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">map_dfr</span>(<span class="fu">seq_len</span>(N_BOOT), \(i) {</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    sampled <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">length</span>(by_actor), <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">presence_measures</span>(<span class="fu">unlist</span>(by_actor[sampled], <span class="at">use.names =</span> <span class="cn">FALSE</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(concept_id, presencia) <span class="sc">|&gt;</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">replica =</span> i)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 <div class="cell">
@@ -2389,17 +2379,17 @@ vertical-align: -.125em;
 <summary>Código</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>ci <span class="ot">&lt;-</span> \(x) <span class="fu">tibble</span>(<span class="at">conf.low =</span> <span class="fu">quantile</span>(x, <span class="fl">0.025</span>), <span class="at">conf.high =</span> <span class="fu">quantile</span>(x, <span class="fl">0.975</span>))</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>presence_ci <span class="ot">&lt;-</span> presence_reps <span class="sc">|&gt;</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="fu">c</span>(presencia, centralidad), <span class="at">names_to =</span> <span class="st">&quot;medida&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(presencia, <span class="at">names_to =</span> <span class="st">&quot;medida&quot;</span>) <span class="sc">|&gt;</span></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(debate, concept_id, medida) <span class="sc">|&gt;</span></span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">reframe</span>(<span class="fu">ci</span>(value))</span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>presence_diff <span class="ot">&lt;-</span> presence_reps <span class="sc">|&gt;</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="fu">c</span>(presencia, centralidad), <span class="at">names_to =</span> <span class="st">&quot;medida&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(presencia, <span class="at">names_to =</span> <span class="st">&quot;medida&quot;</span>) <span class="sc">|&gt;</span></span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> debate, <span class="at">values_from =</span> value) <span class="sc">|&gt;</span></span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">diferencia =</span> <span class="st">`</span><span class="at">Sistema mixto</span><span class="st">`</span> <span class="sc">-</span> PGU) <span class="sc">|&gt;</span></span>
 <span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(concept_id, medida) <span class="sc">|&gt;</span></span>
 <span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">reframe</span>(<span class="fu">ci</span>(diferencia)) <span class="sc">|&gt;</span></span>
 <span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(presence_point <span class="sc">|&gt;</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>              <span class="fu">pivot_longer</span>(<span class="fu">c</span>(presencia, centralidad), <span class="at">names_to =</span> <span class="st">&quot;medida&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>              <span class="fu">pivot_longer</span>(presencia, <span class="at">names_to =</span> <span class="st">&quot;medida&quot;</span>) <span class="sc">|&gt;</span></span>
 <span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>              <span class="fu">select</span>(debate, concept_id, medida, value) <span class="sc">|&gt;</span></span>
 <span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>              <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> debate, <span class="at">values_from =</span> value) <span class="sc">|&gt;</span></span>
 <span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>              <span class="fu">mutate</span>(<span class="at">estimate =</span> <span class="st">`</span><span class="at">Sistema mixto</span><span class="st">`</span> <span class="sc">-</span> PGU),</span>
@@ -2407,10 +2397,10 @@ vertical-align: -.125em;
 <span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">concepto =</span> <span class="fu">unname</span>(CONCEPT_SHORT[concept_id]),</span>
 <span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>         <span class="at">mercado =</span> concept_id <span class="sc">%in%</span> MARKET)</span>
 <span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>presence_table <span class="ot">&lt;-</span> presence_point <span class="sc">|&gt;</span></span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="fu">c</span>(presencia, centralidad), <span class="at">names_to =</span> <span class="st">&quot;medida&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;estimate&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(presencia, <span class="at">names_to =</span> <span class="st">&quot;medida&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;estimate&quot;</span>) <span class="sc">|&gt;</span></span>
 <span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(presence_ci, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;debate&quot;</span>, <span class="st">&quot;concept_id&quot;</span>, <span class="st">&quot;medida&quot;</span>)) <span class="sc">|&gt;</span></span>
 <span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">concepto =</span> <span class="fu">unname</span>(CONCEPT_SHORT[concept_id]), <span class="at">mercado =</span> concept_id <span class="sc">%in%</span> MARKET)</span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="fu">write_parquet</span>(presence_table, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;h3_presencia_centralidad.parquet&quot;</span>))</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="fu">write_parquet</span>(presence_table, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;h3_presencia.parquet&quot;</span>))</span>
 <span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="fu">write_parquet</span>(presence_diff, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;h3_presencia_diferencias.parquet&quot;</span>))</span>
 <span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>presence_diff <span class="sc">|&gt;</span></span>
@@ -2418,17 +2408,17 @@ vertical-align: -.125em;
 <span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(concepto, medida, <span class="at">PGU =</span> <span class="dv">100</span> <span class="sc">*</span> PGU, <span class="st">`</span><span class="at">Sistema mixto</span><span class="st">`</span> <span class="ot">=</span> <span class="dv">100</span> <span class="sc">*</span> <span class="st">`</span><span class="at">Sistema mixto</span><span class="st">`</span>,</span>
 <span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>            <span class="at">diferencia =</span> <span class="dv">100</span> <span class="sc">*</span> estimate, <span class="at">ic_inf =</span> <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="at">ic_sup =</span> <span class="dv">100</span> <span class="sc">*</span> conf.high) <span class="sc">|&gt;</span></span>
 <span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(medida, <span class="fu">desc</span>(diferencia)) <span class="sc">|&gt;</span></span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">1</span>, <span class="at">caption =</span> <span class="st">&quot;Repertorio de mercado: presencia y centralidad (%) y diferencia sistema mixto − PGU (pp)&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">1</span>, <span class="at">caption =</span> <span class="st">&quot;Repertorio de mercado: presencia (%) y diferencia sistema mixto − PGU (pp)&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
-<caption>Repertorio de mercado: presencia y centralidad (%) y diferencia sistema mixto − PGU (pp)</caption>
+<caption>Repertorio de mercado: presencia (%) y diferencia sistema mixto − PGU (pp)</caption>
 <colgroup>
-<col style="width: 34%">
-<col style="width: 13%">
+<col style="width: 35%">
+<col style="width: 11%">
 <col style="width: 5%">
 <col style="width: 16%">
-<col style="width: 12%">
+<col style="width: 13%">
 <col style="width: 8%">
 <col style="width: 8%">
 </colgroup>
@@ -2445,69 +2435,6 @@ vertical-align: -.125em;
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">Propiedad de los fondos</td>
-<td style="text-align: left;">centralidad</td>
-<td style="text-align: right;">3.8</td>
-<td style="text-align: right;">8.1</td>
-<td style="text-align: right;">4.3</td>
-<td style="text-align: right;">1.3</td>
-<td style="text-align: right;">7.2</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Libertad de elección</td>
-<td style="text-align: left;">centralidad</td>
-<td style="text-align: right;">4.4</td>
-<td style="text-align: right;">6.4</td>
-<td style="text-align: right;">2.0</td>
-<td style="text-align: right;">-1.1</td>
-<td style="text-align: right;">5.2</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Ineficiencia y riesgo estatal</td>
-<td style="text-align: left;">centralidad</td>
-<td style="text-align: right;">5.7</td>
-<td style="text-align: right;">7.7</td>
-<td style="text-align: right;">1.9</td>
-<td style="text-align: right;">-0.4</td>
-<td style="text-align: right;">8.1</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Previsión como mercado</td>
-<td style="text-align: left;">centralidad</td>
-<td style="text-align: right;">9.0</td>
-<td style="text-align: right;">9.9</td>
-<td style="text-align: right;">0.9</td>
-<td style="text-align: right;">-1.1</td>
-<td style="text-align: right;">2.4</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Capitalización individual</td>
-<td style="text-align: left;">centralidad</td>
-<td style="text-align: right;">7.8</td>
-<td style="text-align: right;">8.6</td>
-<td style="text-align: right;">0.9</td>
-<td style="text-align: right;">-2.4</td>
-<td style="text-align: right;">3.1</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Reciprocidad contributiva</td>
-<td style="text-align: left;">centralidad</td>
-<td style="text-align: right;">9.2</td>
-<td style="text-align: right;">8.5</td>
-<td style="text-align: right;">-0.7</td>
-<td style="text-align: right;">-4.5</td>
-<td style="text-align: right;">1.6</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Conciencia de costos</td>
-<td style="text-align: left;">centralidad</td>
-<td style="text-align: right;">8.7</td>
-<td style="text-align: right;">7.5</td>
-<td style="text-align: right;">-1.2</td>
-<td style="text-align: right;">-4.5</td>
-<td style="text-align: right;">0.8</td>
-</tr>
-<tr class="even">
 <td style="text-align: left;">Previsión como mercado</td>
 <td style="text-align: left;">presencia</td>
 <td style="text-align: right;">15.4</td>
@@ -2516,7 +2443,7 @@ vertical-align: -.125em;
 <td style="text-align: right;">29.9</td>
 <td style="text-align: right;">45.6</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Propiedad de los fondos</td>
 <td style="text-align: left;">presencia</td>
 <td style="text-align: right;">3.3</td>
@@ -2525,7 +2452,7 @@ vertical-align: -.125em;
 <td style="text-align: right;">20.6</td>
 <td style="text-align: right;">32.6</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Ineficiencia y riesgo estatal</td>
 <td style="text-align: left;">presencia</td>
 <td style="text-align: right;">0.5</td>
@@ -2534,7 +2461,7 @@ vertical-align: -.125em;
 <td style="text-align: right;">19.0</td>
 <td style="text-align: right;">28.7</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Capitalización individual</td>
 <td style="text-align: left;">presencia</td>
 <td style="text-align: right;">8.8</td>
@@ -2543,7 +2470,7 @@ vertical-align: -.125em;
 <td style="text-align: right;">14.0</td>
 <td style="text-align: right;">26.8</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Reciprocidad contributiva</td>
 <td style="text-align: left;">presencia</td>
 <td style="text-align: right;">19.8</td>
@@ -2552,7 +2479,7 @@ vertical-align: -.125em;
 <td style="text-align: right;">7.3</td>
 <td style="text-align: right;">22.9</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">Libertad de elección</td>
 <td style="text-align: left;">presencia</td>
 <td style="text-align: right;">2.7</td>
@@ -2561,7 +2488,7 @@ vertical-align: -.125em;
 <td style="text-align: right;">8.5</td>
 <td style="text-align: right;">17.9</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Conciencia de costos</td>
 <td style="text-align: left;">presencia</td>
 <td style="text-align: right;">23.6</td>
@@ -2575,72 +2502,11 @@ vertical-align: -.125em;
 </div>
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Rango de centralidad entre los 13 conceptos de cada debate.</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>presence_point <span class="sc">|&gt;</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(debate) <span class="sc">|&gt;</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">rango =</span> <span class="fu">rank</span>(<span class="sc">-</span>centralidad, <span class="at">ties.method =</span> <span class="st">&quot;min&quot;</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(concept_id <span class="sc">%in%</span> MARKET) <span class="sc">|&gt;</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">concepto =</span> CONCEPT_SHORT[concept_id], debate, rango) <span class="sc">|&gt;</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> debate, <span class="at">values_from =</span> rango) <span class="sc">|&gt;</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">&quot;Posición en el ranking de centralidad (1 = más central)&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
-</details>
-<div class="cell-output-display">
-<table class="caption-top table table-sm table-striped small">
-<caption>Posición en el ranking de centralidad (1 = más central)</caption>
-<thead>
-<tr class="header">
-<th style="text-align: left;">concepto</th>
-<th style="text-align: right;">PGU</th>
-<th style="text-align: right;">Sistema mixto</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td style="text-align: left;">Capitalización individual</td>
-<td style="text-align: right;">8</td>
-<td style="text-align: right;">4</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Conciencia de costos</td>
-<td style="text-align: right;">6</td>
-<td style="text-align: right;">9</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Ineficiencia y riesgo estatal</td>
-<td style="text-align: right;">10</td>
-<td style="text-align: right;">8</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Libertad de elección</td>
-<td style="text-align: right;">12</td>
-<td style="text-align: right;">10</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Previsión como mercado</td>
-<td style="text-align: right;">5</td>
-<td style="text-align: right;">1</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Propiedad de los fondos</td>
-<td style="text-align: right;">13</td>
-<td style="text-align: right;">7</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">Reciprocidad contributiva</td>
-<td style="text-align: right;">4</td>
-<td style="text-align: right;">5</td>
-</tr>
-</tbody>
-</table>
-</div>
-<details class="code-fold">
-<summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>presence_point <span class="sc">|&gt;</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(concept_id <span class="sc">%in%</span> MARKET) <span class="sc">|&gt;</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">concepto =</span> CONCEPT_SHORT[concept_id], debate,</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>            <span class="fu">across</span>(<span class="fu">c</span>(presencia, solo_apoyo, solo_rechazo, ambas), \(x) <span class="dv">100</span> <span class="sc">*</span> x)) <span class="sc">|&gt;</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">1</span>, <span class="at">caption =</span> <span class="st">&quot;Descomposición de la presencia por postura (%)&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>presence_point <span class="sc">|&gt;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(concept_id <span class="sc">%in%</span> MARKET) <span class="sc">|&gt;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">concepto =</span> CONCEPT_SHORT[concept_id], debate,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>            <span class="fu">across</span>(<span class="fu">c</span>(presencia, solo_apoyo, solo_rechazo, ambas), \(x) <span class="dv">100</span> <span class="sc">*</span> x)) <span class="sc">|&gt;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">1</span>, <span class="at">caption =</span> <span class="st">&quot;Descomposición de la presencia por postura (%)&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
@@ -2783,32 +2649,32 @@ vertical-align: -.125em;
 <div class="cell">
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>market_order <span class="ot">&lt;-</span> presence_point <span class="sc">|&gt;</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(debate <span class="sc">==</span> <span class="st">&quot;Sistema mixto&quot;</span>, concept_id <span class="sc">%in%</span> MARKET) <span class="sc">|&gt;</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(presencia) <span class="sc">|&gt;</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(concept_id)</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>bars <span class="ot">&lt;-</span> presence_point <span class="sc">|&gt;</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(concept_id <span class="sc">%in%</span> MARKET) <span class="sc">|&gt;</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="fu">c</span>(solo_apoyo, ambas, solo_rechazo), <span class="at">names_to =</span> <span class="st">&quot;postura&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;valor&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">postura =</span> <span class="fu">factor</span>(<span class="fu">recode</span>(postura, <span class="at">solo_apoyo =</span> <span class="st">&quot;Solo apoyo&quot;</span>, <span class="at">ambas =</span> <span class="st">&quot;Apoyo y rechazo&quot;</span>,</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">solo_rechazo =</span> <span class="st">&quot;Solo rechazo&quot;</span>),</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                          <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;Solo rechazo&quot;</span>, <span class="st">&quot;Apoyo y rechazo&quot;</span>, <span class="st">&quot;Solo apoyo&quot;</span>)),</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>         <span class="at">concepto =</span> <span class="fu">factor</span>(CONCEPT_SHORT[concept_id], <span class="at">levels =</span> CONCEPT_SHORT[market_order]),</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>         <span class="at">debate =</span> <span class="fu">factor</span>(debate, <span class="at">levels =</span> <span class="fu">rev</span>(<span class="fu">names</span>(DEBATE_COLORS))))</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>panel_presence <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(bars, <span class="fu">aes</span>(<span class="at">x =</span> valor, <span class="at">y =</span> debate, <span class="at">fill =</span> postura)) <span class="sc">+</span></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">width =</span> <span class="fl">0.75</span>) <span class="sc">+</span></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_grid</span>(concepto <span class="sc">~</span> ., <span class="at">switch =</span> <span class="st">&quot;y&quot;</span>) <span class="sc">+</span></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> pct, <span class="at">expand =</span> <span class="fu">expansion</span>(<span class="at">mult =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.05</span>))) <span class="sc">+</span></span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">`</span><span class="at">Solo apoyo</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;#2f6fa3&quot;</span>, <span class="st">`</span><span class="at">Apoyo y rechazo</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;#9fb7cf&quot;</span>,</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>                               <span class="st">`</span><span class="at">Solo rechazo</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;#c9772f&quot;</span>),</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>                    <span class="at">breaks =</span> <span class="fu">c</span>(<span class="st">&quot;Solo apoyo&quot;</span>, <span class="st">&quot;Apoyo y rechazo&quot;</span>, <span class="st">&quot;Solo rechazo&quot;</span>)) <span class="sc">+</span></span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;Proporción de intervenciones&quot;</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">fill =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">strip.placement =</span> <span class="st">&quot;outside&quot;</span>, <span class="at">strip.text.y.left =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">0</span>, <span class="at">hjust =</span> <span class="dv">1</span>),</span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.position =</span> <span class="st">&quot;bottom&quot;</span>, <span class="at">panel.spacing.y =</span> <span class="fu">unit</span>(<span class="fl">0.3</span>, <span class="st">&quot;lines&quot;</span>))</span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>fig_market <span class="ot">&lt;-</span> panel_presence</span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fig_market)</span>
-<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">file.path</span>(FIGURE_DIR, <span class="st">&quot;figura9_h3_mercado.png&quot;</span>), fig_market,</span>
-<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>       <span class="at">width =</span> <span class="fl">7.5</span>, <span class="at">height =</span> <span class="fl">5.5</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">bg =</span> <span class="st">&quot;white&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>market_order <span class="ot">&lt;-</span> presence_point <span class="sc">|&gt;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(debate <span class="sc">==</span> <span class="st">&quot;Sistema mixto&quot;</span>, concept_id <span class="sc">%in%</span> MARKET) <span class="sc">|&gt;</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(presencia) <span class="sc">|&gt;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(concept_id)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>bars <span class="ot">&lt;-</span> presence_point <span class="sc">|&gt;</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(concept_id <span class="sc">%in%</span> MARKET) <span class="sc">|&gt;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="fu">c</span>(solo_apoyo, ambas, solo_rechazo), <span class="at">names_to =</span> <span class="st">&quot;postura&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;valor&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">postura =</span> <span class="fu">factor</span>(<span class="fu">recode</span>(postura, <span class="at">solo_apoyo =</span> <span class="st">&quot;Solo apoyo&quot;</span>, <span class="at">ambas =</span> <span class="st">&quot;Apoyo y rechazo&quot;</span>,</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>                                 <span class="at">solo_rechazo =</span> <span class="st">&quot;Solo rechazo&quot;</span>),</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>                          <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;Solo rechazo&quot;</span>, <span class="st">&quot;Apoyo y rechazo&quot;</span>, <span class="st">&quot;Solo apoyo&quot;</span>)),</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>         <span class="at">concepto =</span> <span class="fu">factor</span>(CONCEPT_SHORT[concept_id], <span class="at">levels =</span> CONCEPT_SHORT[market_order]),</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>         <span class="at">debate =</span> <span class="fu">factor</span>(debate, <span class="at">levels =</span> <span class="fu">rev</span>(<span class="fu">names</span>(DEBATE_COLORS))))</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>panel_presence <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(bars, <span class="fu">aes</span>(<span class="at">x =</span> valor, <span class="at">y =</span> debate, <span class="at">fill =</span> postura)) <span class="sc">+</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">width =</span> <span class="fl">0.75</span>) <span class="sc">+</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_grid</span>(concepto <span class="sc">~</span> ., <span class="at">switch =</span> <span class="st">&quot;y&quot;</span>) <span class="sc">+</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> pct, <span class="at">expand =</span> <span class="fu">expansion</span>(<span class="at">mult =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.05</span>))) <span class="sc">+</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">`</span><span class="at">Solo apoyo</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;#2f6fa3&quot;</span>, <span class="st">`</span><span class="at">Apoyo y rechazo</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;#9fb7cf&quot;</span>,</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>                               <span class="st">`</span><span class="at">Solo rechazo</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;#c9772f&quot;</span>),</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>                    <span class="at">breaks =</span> <span class="fu">c</span>(<span class="st">&quot;Solo apoyo&quot;</span>, <span class="st">&quot;Apoyo y rechazo&quot;</span>, <span class="st">&quot;Solo rechazo&quot;</span>)) <span class="sc">+</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;Proporción de intervenciones&quot;</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">fill =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">strip.placement =</span> <span class="st">&quot;outside&quot;</span>, <span class="at">strip.text.y.left =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">0</span>, <span class="at">hjust =</span> <span class="dv">1</span>),</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.position =</span> <span class="st">&quot;bottom&quot;</span>, <span class="at">panel.spacing.y =</span> <span class="fu">unit</span>(<span class="fl">0.3</span>, <span class="st">&quot;lines&quot;</span>))</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>fig_market <span class="ot">&lt;-</span> panel_presence</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fig_market)</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">file.path</span>(FIGURE_DIR, <span class="st">&quot;figura9_h3_mercado.png&quot;</span>), fig_market,</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>       <span class="at">width =</span> <span class="fl">7.5</span>, <span class="at">height =</span> <span class="fl">5.5</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">bg =</span> <span class="st">&quot;white&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div id="fig-h3-mercado" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Barras apiladas con la proporción de intervenciones que solo apoyan, solo rechazan o hacen ambas cosas con cada concepto, en la PGU y en el sistema mixto.">
@@ -2823,7 +2689,6 @@ Figura 1: Presencia de los conceptos del repertorio de mercado por postura, PGU
 </div>
 </div>
 </div>
-<p>La centralidad relativa se reporta solo en las tablas: casi no cambia entre debates, salvo en la propiedad de los fondos.</p>
 </section>
 <section id="b-transversalidad-de-la-necesidad-material-y-la-igualdad" class="level2">
 <h2 class="anchored" data-anchor-id="b-transversalidad-de-la-necesidad-material-y-la-igualdad">(b) Transversalidad de la necesidad material y la igualdad</h2>
@@ -2831,17 +2696,17 @@ Figura 1: Presencia de los conceptos del repertorio de mercado por postura, PGU
 <div class="cell">
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>model_data <span class="ot">&lt;-</span> interventions <span class="sc">|&gt;</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(alignment <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;izquierda&quot;</span>, <span class="st">&quot;derecha&quot;</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">bloque =</span> <span class="fu">factor</span>(<span class="fu">str_to_title</span>(alignment), <span class="at">levels =</span> <span class="fu">names</span>(BLOC_COLORS)),</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">genero =</span> <span class="fu">factor</span>(gender, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;hombre&quot;</span>, <span class="st">&quot;mujer&quot;</span>)),</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">log_palabras =</span> <span class="fu">as.numeric</span>(<span class="fu">scale</span>(<span class="fu">log</span>(utterance_words))),</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>         <span class="at">necesidad_material =</span> SUP[row, <span class="st">&quot;necesidad_material&quot;</span>],</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">igualdad_universalismo =</span> SUP[row, <span class="st">&quot;igualdad_universalismo&quot;</span>])</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>model_data <span class="sc">|&gt;</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(debate, bloque) <span class="sc">|&gt;</span></span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> bloque, <span class="at">values_from =</span> n) <span class="sc">|&gt;</span></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">&quot;Intervenciones por debate y bloque&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>model_data <span class="ot">&lt;-</span> interventions <span class="sc">|&gt;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(alignment <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;izquierda&quot;</span>, <span class="st">&quot;derecha&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">bloque =</span> <span class="fu">factor</span>(<span class="fu">str_to_title</span>(alignment), <span class="at">levels =</span> <span class="fu">names</span>(BLOC_COLORS)),</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">genero =</span> <span class="fu">factor</span>(gender, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;hombre&quot;</span>, <span class="st">&quot;mujer&quot;</span>)),</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">log_palabras =</span> <span class="fu">as.numeric</span>(<span class="fu">scale</span>(<span class="fu">log</span>(utterance_words))),</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>         <span class="at">necesidad_material =</span> SUP[row, <span class="st">&quot;necesidad_material&quot;</span>],</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">igualdad_universalismo =</span> SUP[row, <span class="st">&quot;igualdad_universalismo&quot;</span>])</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>model_data <span class="sc">|&gt;</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(debate, bloque) <span class="sc">|&gt;</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> bloque, <span class="at">values_from =</span> n) <span class="sc">|&gt;</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">caption =</span> <span class="st">&quot;Intervenciones por debate y bloque&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
@@ -2869,10 +2734,10 @@ Figura 1: Presencia de los conceptos del repertorio de mercado por postura, PGU
 </div>
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>model_data <span class="sc">|&gt;</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(debate, bloque) <span class="sc">|&gt;</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">all_of</span>(TRANSVERSAL), mean), <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">2</span>, <span class="at">caption =</span> <span class="st">&quot;Proporción observada de intervenciones que apoyan cada concepto&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>model_data <span class="sc">|&gt;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(debate, bloque) <span class="sc">|&gt;</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">all_of</span>(TRANSVERSAL), mean), <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">2</span>, <span class="at">caption =</span> <span class="st">&quot;Proporción observada de intervenciones que apoyan cada concepto&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
@@ -2917,64 +2782,64 @@ Figura 1: Presencia de los conceptos del repertorio de mercado por postura, PGU
 <div class="cell">
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>control <span class="ot">&lt;-</span> <span class="fu">glmerControl</span>(<span class="at">optimizer =</span> <span class="st">&quot;bobyqa&quot;</span>, <span class="at">optCtrl =</span> <span class="fu">list</span>(<span class="at">maxfun =</span> <span class="fl">1e5</span>))</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>fit_transversal <span class="ot">&lt;-</span> <span class="cf">function</span>(data, y) {</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">glmer</span>(<span class="fu">as.formula</span>(<span class="fu">paste</span>(y, <span class="st">&quot;~ bloque * debate + genero + log_palabras + (1 | speaker_id)&quot;</span>)),</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">data =</span> data, <span class="at">family =</span> binomial, <span class="at">control =</span> control)</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>predict_transversal <span class="ot">&lt;-</span> <span class="cf">function</span>(m, data) {</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  grid <span class="ot">&lt;-</span> tidyr<span class="sc">::</span><span class="fu">crossing</span>(<span class="at">bloque =</span> <span class="fu">levels</span>(data<span class="sc">$</span>bloque), <span class="at">debate =</span> <span class="fu">levels</span>(data<span class="sc">$</span>debate))</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pmap_dfr</span>(grid, \(bloque, debate) {</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    b <span class="ot">&lt;-</span> bloque</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    d <span class="ot">&lt;-</span> debate</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    nd <span class="ot">&lt;-</span> <span class="fu">mutate</span>(data, <span class="at">bloque =</span> <span class="fu">factor</span>(b, <span class="at">levels =</span> <span class="fu">levels</span>(data<span class="sc">$</span>bloque)),</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>                 <span class="at">debate =</span> <span class="fu">factor</span>(d, <span class="at">levels =</span> <span class="fu">levels</span>(data<span class="sc">$</span>debate)))</span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tibble</span>(<span class="at">bloque =</span> b, <span class="at">debate =</span> d,</span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>           <span class="at">p =</span> <span class="fu">mean</span>(<span class="fu">predict</span>(m, nd, <span class="at">type =</span> <span class="st">&quot;response&quot;</span>, <span class="at">re.form =</span> <span class="cn">NA</span>)))</span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>gaps <span class="ot">&lt;-</span> <span class="cf">function</span>(pred) {</span>
-<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>  pred <span class="sc">|&gt;</span></span>
-<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(debate) <span class="sc">|&gt;</span></span>
-<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="co"># Con signo para no inflar la brecha con el ruido del remuestreo.</span></span>
-<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>              <span class="at">izq_menos_der =</span> p[bloque <span class="sc">==</span> <span class="st">&quot;Izquierda&quot;</span>] <span class="sc">-</span> p[bloque <span class="sc">==</span> <span class="st">&quot;Derecha&quot;</span>],</span>
-<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>              <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>)</span>
-<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Remuestrea actores dentro de cada bloque, con todas sus intervenciones en ambos debates.</span></span>
-<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>boot_transversal <span class="ot">&lt;-</span> <span class="cf">function</span>(data, y) {</span>
-<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>  actors <span class="ot">&lt;-</span> <span class="fu">distinct</span>(data, speaker_id, bloque)</span>
-<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mclapply</span>(<span class="fu">seq_len</span>(N_BOOT), \(i) {</span>
-<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set.seed</span>(SEED <span class="sc">+</span> i)</span>
-<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>    boot_data <span class="ot">&lt;-</span> actors <span class="sc">|&gt;</span></span>
-<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>      <span class="fu">slice_sample</span>(<span class="at">prop =</span> <span class="dv">1</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>, <span class="at">by =</span> bloque) <span class="sc">|&gt;</span></span>
-<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">boot_id =</span> <span class="fu">paste0</span>(<span class="st">&quot;a&quot;</span>, <span class="fu">row_number</span>())) <span class="sc">|&gt;</span></span>
-<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(speaker_id, boot_id) <span class="sc">|&gt;</span></span>
-<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>      <span class="fu">inner_join</span>(data, <span class="at">by =</span> <span class="st">&quot;speaker_id&quot;</span>, <span class="at">relationship =</span> <span class="st">&quot;many-to-many&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">speaker_id =</span> boot_id)</span>
-<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>    m <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>(<span class="fu">suppressMessages</span>(<span class="fu">suppressWarnings</span>(<span class="fu">fit_transversal</span>(boot_data, y))),</span>
-<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a>                  <span class="at">error =</span> \(e) <span class="cn">NULL</span>)</span>
-<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">is.null</span>(m)) <span class="fu">return</span>(<span class="cn">NULL</span>)</span>
-<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">predict_transversal</span>(m, boot_data) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">replica =</span> i)</span>
-<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>  }, <span class="at">mc.cores =</span> N_CORES) <span class="sc">|&gt;</span></span>
-<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list_rbind</span>()</span>
-<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>control <span class="ot">&lt;-</span> <span class="fu">glmerControl</span>(<span class="at">optimizer =</span> <span class="st">&quot;bobyqa&quot;</span>, <span class="at">optCtrl =</span> <span class="fu">list</span>(<span class="at">maxfun =</span> <span class="fl">1e5</span>))</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>fit_transversal <span class="ot">&lt;-</span> <span class="cf">function</span>(data, y) {</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">glmer</span>(<span class="fu">as.formula</span>(<span class="fu">paste</span>(y, <span class="st">&quot;~ bloque * debate + genero + log_palabras + (1 | speaker_id)&quot;</span>)),</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">data =</span> data, <span class="at">family =</span> binomial, <span class="at">control =</span> control)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>predict_transversal <span class="ot">&lt;-</span> <span class="cf">function</span>(m, data) {</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  grid <span class="ot">&lt;-</span> tidyr<span class="sc">::</span><span class="fu">crossing</span>(<span class="at">bloque =</span> <span class="fu">levels</span>(data<span class="sc">$</span>bloque), <span class="at">debate =</span> <span class="fu">levels</span>(data<span class="sc">$</span>debate))</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pmap_dfr</span>(grid, \(bloque, debate) {</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    b <span class="ot">&lt;-</span> bloque</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    d <span class="ot">&lt;-</span> debate</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    nd <span class="ot">&lt;-</span> <span class="fu">mutate</span>(data, <span class="at">bloque =</span> <span class="fu">factor</span>(b, <span class="at">levels =</span> <span class="fu">levels</span>(data<span class="sc">$</span>bloque)),</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>                 <span class="at">debate =</span> <span class="fu">factor</span>(d, <span class="at">levels =</span> <span class="fu">levels</span>(data<span class="sc">$</span>debate)))</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tibble</span>(<span class="at">bloque =</span> b, <span class="at">debate =</span> d,</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>           <span class="at">p =</span> <span class="fu">mean</span>(<span class="fu">predict</span>(m, nd, <span class="at">type =</span> <span class="st">&quot;response&quot;</span>, <span class="at">re.form =</span> <span class="cn">NA</span>)))</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>gaps <span class="ot">&lt;-</span> <span class="cf">function</span>(pred) {</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>  pred <span class="sc">|&gt;</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(debate) <span class="sc">|&gt;</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="co"># Con signo para no inflar la brecha con el ruido del remuestreo.</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>              <span class="at">izq_menos_der =</span> p[bloque <span class="sc">==</span> <span class="st">&quot;Izquierda&quot;</span>] <span class="sc">-</span> p[bloque <span class="sc">==</span> <span class="st">&quot;Derecha&quot;</span>],</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>              <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>)</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Remuestrea actores dentro de cada bloque, con todas sus intervenciones en ambos debates.</span></span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>boot_transversal <span class="ot">&lt;-</span> <span class="cf">function</span>(data, y) {</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>  actors <span class="ot">&lt;-</span> <span class="fu">distinct</span>(data, speaker_id, bloque)</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mclapply</span>(<span class="fu">seq_len</span>(N_BOOT), \(i) {</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set.seed</span>(SEED <span class="sc">+</span> i)</span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>    boot_data <span class="ot">&lt;-</span> actors <span class="sc">|&gt;</span></span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>      <span class="fu">slice_sample</span>(<span class="at">prop =</span> <span class="dv">1</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>, <span class="at">by =</span> bloque) <span class="sc">|&gt;</span></span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">boot_id =</span> <span class="fu">paste0</span>(<span class="st">&quot;a&quot;</span>, <span class="fu">row_number</span>())) <span class="sc">|&gt;</span></span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(speaker_id, boot_id) <span class="sc">|&gt;</span></span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>      <span class="fu">inner_join</span>(data, <span class="at">by =</span> <span class="st">&quot;speaker_id&quot;</span>, <span class="at">relationship =</span> <span class="st">&quot;many-to-many&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">speaker_id =</span> boot_id)</span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>    m <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>(<span class="fu">suppressMessages</span>(<span class="fu">suppressWarnings</span>(<span class="fu">fit_transversal</span>(boot_data, y))),</span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a>                  <span class="at">error =</span> \(e) <span class="cn">NULL</span>)</span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">is.null</span>(m)) <span class="fu">return</span>(<span class="cn">NULL</span>)</span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">predict_transversal</span>(m, boot_data) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">replica =</span> i)</span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a>  }, <span class="at">mc.cores =</span> N_CORES) <span class="sc">|&gt;</span></span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a>    <span class="fu">list_rbind</span>()</span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 <div class="cell">
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>models_transversal <span class="ot">&lt;-</span> <span class="fu">map</span>(<span class="fu">set_names</span>(TRANSVERSAL), \(y) <span class="fu">fit_transversal</span>(model_data, y))</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>boot_reps <span class="ot">&lt;-</span> <span class="fu">map</span>(<span class="fu">set_names</span>(TRANSVERSAL), \(y) <span class="fu">boot_transversal</span>(model_data, y))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>models_transversal <span class="ot">&lt;-</span> <span class="fu">map</span>(<span class="fu">set_names</span>(TRANSVERSAL), \(y) <span class="fu">fit_transversal</span>(model_data, y))</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>boot_reps <span class="ot">&lt;-</span> <span class="fu">map</span>(<span class="fu">set_names</span>(TRANSVERSAL), \(y) <span class="fu">boot_transversal</span>(model_data, y))</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 <div class="cell">
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">map_dfr</span>(models_transversal, \(m) <span class="fu">tibble</span>(<span class="at">singular =</span> <span class="fu">isSingular</span>(m),</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                                        <span class="at">avisos =</span> <span class="fu">length</span>(m<span class="sc">@</span>optinfo<span class="sc">$</span>conv<span class="sc">$</span>lme4<span class="sc">$</span>messages),</span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                                        <span class="at">de_actor =</span> <span class="fu">attr</span>(<span class="fu">VarCorr</span>(m)<span class="sc">$</span>speaker_id, <span class="st">&quot;stddev&quot;</span>)),</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">.id =</span> <span class="st">&quot;concepto&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">map_dfr</span>(models_transversal, \(m) <span class="fu">tibble</span>(<span class="at">singular =</span> <span class="fu">isSingular</span>(m),</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                        <span class="at">avisos =</span> <span class="fu">length</span>(m<span class="sc">@</span>optinfo<span class="sc">$</span>conv<span class="sc">$</span>lme4<span class="sc">$</span>messages),</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                        <span class="at">de_actor =</span> <span class="fu">attr</span>(<span class="fu">VarCorr</span>(m)<span class="sc">$</span>speaker_id, <span class="st">&quot;stddev&quot;</span>)),</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">.id =</span> <span class="st">&quot;concepto&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
@@ -3004,47 +2869,47 @@ Figura 1: Presencia de los conceptos del repertorio de mercado por postura, PGU
 </div>
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>pred_transversal <span class="ot">&lt;-</span> <span class="fu">imap_dfr</span>(models_transversal, \(m, y) {</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  point <span class="ot">&lt;-</span> <span class="fu">predict_transversal</span>(m, model_data)</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  reps <span class="ot">&lt;-</span> boot_reps[[y]]</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  point <span class="sc">|&gt;</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(reps <span class="sc">|&gt;</span> <span class="fu">group_by</span>(bloque, debate) <span class="sc">|&gt;</span> <span class="fu">reframe</span>(<span class="fu">ci</span>(p)), <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;bloque&quot;</span>, <span class="st">&quot;debate&quot;</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">concept_id =</span> y)</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>gap_transversal <span class="ot">&lt;-</span> <span class="fu">imap_dfr</span>(models_transversal, \(m, y) {</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  point <span class="ot">&lt;-</span> <span class="fu">gaps</span>(<span class="fu">predict_transversal</span>(m, model_data)) <span class="sc">|&gt;</span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(<span class="sc">-</span>debate, <span class="at">names_to =</span> <span class="st">&quot;medida&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;estimate&quot;</span>)</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  reps <span class="ot">&lt;-</span> boot_reps[[y]] <span class="sc">|&gt;</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(replica) <span class="sc">|&gt;</span></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_modify</span>(\(d, k) <span class="fu">gaps</span>(d)) <span class="sc">|&gt;</span></span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(izq_menos_der, <span class="at">names_to =</span> <span class="st">&quot;medida&quot;</span>)</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>  by_debate <span class="ot">&lt;-</span> point <span class="sc">|&gt;</span></span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(reps <span class="sc">|&gt;</span> <span class="fu">group_by</span>(debate, medida) <span class="sc">|&gt;</span> <span class="fu">reframe</span>(<span class="fu">ci</span>(value)),</span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>              <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;debate&quot;</span>, <span class="st">&quot;medida&quot;</span>))</span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>  change <span class="ot">&lt;-</span> reps <span class="sc">|&gt;</span></span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> debate, <span class="at">values_from =</span> value) <span class="sc">|&gt;</span></span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">diferencia =</span> <span class="st">`</span><span class="at">Sistema mixto</span><span class="st">`</span> <span class="sc">-</span> PGU) <span class="sc">|&gt;</span></span>
-<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(medida) <span class="sc">|&gt;</span></span>
-<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">reframe</span>(<span class="fu">ci</span>(diferencia)) <span class="sc">|&gt;</span></span>
-<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(point <span class="sc">|&gt;</span> <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> debate, <span class="at">values_from =</span> estimate) <span class="sc">|&gt;</span></span>
-<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>                <span class="fu">transmute</span>(medida, <span class="at">estimate =</span> <span class="st">`</span><span class="at">Sistema mixto</span><span class="st">`</span> <span class="sc">-</span> PGU), <span class="at">by =</span> <span class="st">&quot;medida&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">debate =</span> <span class="st">&quot;Sistema mixto − PGU&quot;</span>)</span>
-<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>(by_debate, change) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">concept_id =</span> y)</span>
-<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a><span class="fu">write_parquet</span>(pred_transversal, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;h3_transversalidad_predicciones.parquet&quot;</span>))</span>
-<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a><span class="fu">write_parquet</span>(gap_transversal, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;h3_transversalidad_brechas.parquet&quot;</span>))</span>
-<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Réplicas completadas:&quot;</span>, <span class="fu">map_int</span>(boot_reps, \(r) <span class="fu">n_distinct</span>(r<span class="sc">$</span>replica)), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>pred_transversal <span class="ot">&lt;-</span> <span class="fu">imap_dfr</span>(models_transversal, \(m, y) {</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  point <span class="ot">&lt;-</span> <span class="fu">predict_transversal</span>(m, model_data)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  reps <span class="ot">&lt;-</span> boot_reps[[y]]</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  point <span class="sc">|&gt;</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(reps <span class="sc">|&gt;</span> <span class="fu">group_by</span>(bloque, debate) <span class="sc">|&gt;</span> <span class="fu">reframe</span>(<span class="fu">ci</span>(p)), <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;bloque&quot;</span>, <span class="st">&quot;debate&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">concept_id =</span> y)</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>gap_transversal <span class="ot">&lt;-</span> <span class="fu">imap_dfr</span>(models_transversal, \(m, y) {</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>  point <span class="ot">&lt;-</span> <span class="fu">gaps</span>(<span class="fu">predict_transversal</span>(m, model_data)) <span class="sc">|&gt;</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(<span class="sc">-</span>debate, <span class="at">names_to =</span> <span class="st">&quot;medida&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;estimate&quot;</span>)</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>  reps <span class="ot">&lt;-</span> boot_reps[[y]] <span class="sc">|&gt;</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(replica) <span class="sc">|&gt;</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_modify</span>(\(d, k) <span class="fu">gaps</span>(d)) <span class="sc">|&gt;</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(izq_menos_der, <span class="at">names_to =</span> <span class="st">&quot;medida&quot;</span>)</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>  by_debate <span class="ot">&lt;-</span> point <span class="sc">|&gt;</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(reps <span class="sc">|&gt;</span> <span class="fu">group_by</span>(debate, medida) <span class="sc">|&gt;</span> <span class="fu">reframe</span>(<span class="fu">ci</span>(value)),</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>              <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;debate&quot;</span>, <span class="st">&quot;medida&quot;</span>))</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>  change <span class="ot">&lt;-</span> reps <span class="sc">|&gt;</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> debate, <span class="at">values_from =</span> value) <span class="sc">|&gt;</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">diferencia =</span> <span class="st">`</span><span class="at">Sistema mixto</span><span class="st">`</span> <span class="sc">-</span> PGU) <span class="sc">|&gt;</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(medida) <span class="sc">|&gt;</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">reframe</span>(<span class="fu">ci</span>(diferencia)) <span class="sc">|&gt;</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(point <span class="sc">|&gt;</span> <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> debate, <span class="at">values_from =</span> estimate) <span class="sc">|&gt;</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>                <span class="fu">transmute</span>(medida, <span class="at">estimate =</span> <span class="st">`</span><span class="at">Sistema mixto</span><span class="st">`</span> <span class="sc">-</span> PGU), <span class="at">by =</span> <span class="st">&quot;medida&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">debate =</span> <span class="st">&quot;Sistema mixto − PGU&quot;</span>)</span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>(by_debate, change) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">concept_id =</span> y)</span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a><span class="fu">write_parquet</span>(pred_transversal, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;h3_transversalidad_predicciones.parquet&quot;</span>))</span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a><span class="fu">write_parquet</span>(gap_transversal, <span class="fu">file.path</span>(TABLE_DIR, <span class="st">&quot;h3_transversalidad_brechas.parquet&quot;</span>))</span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Réplicas completadas:&quot;</span>, <span class="fu">map_int</span>(boot_reps, \(r) <span class="fu">n_distinct</span>(r<span class="sc">$</span>replica)), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>Réplicas completadas: 1000 1000 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>pred_transversal <span class="sc">|&gt;</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">concepto =</span> CONCEPT_SHORT[concept_id], debate, bloque,</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">p =</span> <span class="dv">100</span> <span class="sc">*</span> p, <span class="at">ic_inf =</span> <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="at">ic_sup =</span> <span class="dv">100</span> <span class="sc">*</span> conf.high) <span class="sc">|&gt;</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">1</span>, <span class="at">caption =</span> <span class="st">&quot;Probabilidad predicha de apoyo (%)&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>pred_transversal <span class="sc">|&gt;</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">concepto =</span> CONCEPT_SHORT[concept_id], debate, bloque,</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">p =</span> <span class="dv">100</span> <span class="sc">*</span> p, <span class="at">ic_inf =</span> <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="at">ic_sup =</span> <span class="dv">100</span> <span class="sc">*</span> conf.high) <span class="sc">|&gt;</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">1</span>, <span class="at">caption =</span> <span class="st">&quot;Probabilidad predicha de apoyo (%)&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
@@ -3137,10 +3002,10 @@ Figura 1: Presencia de los conceptos del repertorio de mercado por postura, PGU
 </div>
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>gap_transversal <span class="sc">|&gt;</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">concepto =</span> CONCEPT_SHORT[concept_id], medida, debate,</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">brecha =</span> <span class="dv">100</span> <span class="sc">*</span> estimate, <span class="at">ic_inf =</span> <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="at">ic_sup =</span> <span class="dv">100</span> <span class="sc">*</span> conf.high) <span class="sc">|&gt;</span></span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">1</span>, <span class="at">caption =</span> <span class="st">&quot;Diferencia izquierda − derecha en la probabilidad de apoyo (pp)&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>gap_transversal <span class="sc">|&gt;</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">concepto =</span> CONCEPT_SHORT[concept_id], medida, debate,</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">brecha =</span> <span class="dv">100</span> <span class="sc">*</span> estimate, <span class="at">ic_inf =</span> <span class="dv">100</span> <span class="sc">*</span> conf.low, <span class="at">ic_sup =</span> <span class="dv">100</span> <span class="sc">*</span> conf.high) <span class="sc">|&gt;</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">1</span>, <span class="at">caption =</span> <span class="st">&quot;Diferencia izquierda − derecha en la probabilidad de apoyo (pp)&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
@@ -3219,24 +3084,24 @@ Figura 1: Presencia de los conceptos del repertorio de mercado por postura, PGU
 <div class="cell">
 <details class="code-fold">
 <summary>Código</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>fig_transversal <span class="ot">&lt;-</span> pred_transversal <span class="sc">|&gt;</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">concepto =</span> <span class="fu">factor</span>(CONCEPT_SHORT[concept_id], <span class="at">levels =</span> CONCEPT_SHORT[TRANSVERSAL]),</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">debate =</span> <span class="fu">factor</span>(debate, <span class="at">levels =</span> <span class="fu">rev</span>(<span class="fu">names</span>(DEBATE_COLORS))),</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">bloque =</span> <span class="fu">factor</span>(bloque, <span class="at">levels =</span> <span class="fu">names</span>(BLOC_COLORS))) <span class="sc">|&gt;</span></span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> p, <span class="at">y =</span> debate)) <span class="sc">+</span></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_errorbar</span>(<span class="fu">aes</span>(<span class="at">xmin =</span> conf.low, <span class="at">xmax =</span> conf.high, <span class="at">color =</span> bloque), <span class="at">width =</span> <span class="dv">0</span>,</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>                <span class="at">orientation =</span> <span class="st">&quot;y&quot;</span>, <span class="at">linewidth =</span> <span class="fl">0.5</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>,</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>                <span class="at">position =</span> <span class="fu">position_dodge</span>(<span class="at">width =</span> <span class="fl">0.45</span>)) <span class="sc">+</span></span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> bloque), <span class="at">size =</span> <span class="fl">2.6</span>, <span class="at">position =</span> <span class="fu">position_dodge</span>(<span class="at">width =</span> <span class="fl">0.45</span>)) <span class="sc">+</span></span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> concepto) <span class="sc">+</span></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> pct, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="cn">NA</span>), <span class="at">expand =</span> <span class="fu">expansion</span>(<span class="at">mult =</span> <span class="fu">c</span>(<span class="fl">0.02</span>, <span class="fl">0.05</span>))) <span class="sc">+</span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> BLOC_COLORS) <span class="sc">+</span></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;Probabilidad predicha de apoyo&quot;</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">&quot;top&quot;</span>, <span class="at">strip.text =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">&quot;bold&quot;</span>),</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.spacing.x =</span> <span class="fu">unit</span>(<span class="fl">1.5</span>, <span class="st">&quot;lines&quot;</span>))</span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fig_transversal)</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">file.path</span>(FIGURE_DIR, <span class="st">&quot;figura10_h3_transversalidad.png&quot;</span>), fig_transversal,</span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>       <span class="at">width =</span> <span class="dv">9</span>, <span class="at">height =</span> <span class="dv">4</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">bg =</span> <span class="st">&quot;white&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>fig_transversal <span class="ot">&lt;-</span> pred_transversal <span class="sc">|&gt;</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">concepto =</span> <span class="fu">factor</span>(CONCEPT_SHORT[concept_id], <span class="at">levels =</span> CONCEPT_SHORT[TRANSVERSAL]),</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">debate =</span> <span class="fu">factor</span>(debate, <span class="at">levels =</span> <span class="fu">rev</span>(<span class="fu">names</span>(DEBATE_COLORS))),</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">bloque =</span> <span class="fu">factor</span>(bloque, <span class="at">levels =</span> <span class="fu">names</span>(BLOC_COLORS))) <span class="sc">|&gt;</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> p, <span class="at">y =</span> debate)) <span class="sc">+</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_errorbar</span>(<span class="fu">aes</span>(<span class="at">xmin =</span> conf.low, <span class="at">xmax =</span> conf.high, <span class="at">color =</span> bloque), <span class="at">width =</span> <span class="dv">0</span>,</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>                <span class="at">orientation =</span> <span class="st">&quot;y&quot;</span>, <span class="at">linewidth =</span> <span class="fl">0.5</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>                <span class="at">position =</span> <span class="fu">position_dodge</span>(<span class="at">width =</span> <span class="fl">0.45</span>)) <span class="sc">+</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> bloque), <span class="at">size =</span> <span class="fl">2.6</span>, <span class="at">position =</span> <span class="fu">position_dodge</span>(<span class="at">width =</span> <span class="fl">0.45</span>)) <span class="sc">+</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> concepto) <span class="sc">+</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> pct, <span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="cn">NA</span>), <span class="at">expand =</span> <span class="fu">expansion</span>(<span class="at">mult =</span> <span class="fu">c</span>(<span class="fl">0.02</span>, <span class="fl">0.05</span>))) <span class="sc">+</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> BLOC_COLORS) <span class="sc">+</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;Probabilidad predicha de apoyo&quot;</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">color =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">&quot;top&quot;</span>, <span class="at">strip.text =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">&quot;bold&quot;</span>),</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">panel.spacing.x =</span> <span class="fu">unit</span>(<span class="fl">1.5</span>, <span class="st">&quot;lines&quot;</span>))</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fig_transversal)</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">file.path</span>(FIGURE_DIR, <span class="st">&quot;figura10_h3_transversalidad.png&quot;</span>), fig_transversal,</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>       <span class="at">width =</span> <span class="dv">9</span>, <span class="at">height =</span> <span class="dv">4</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">bg =</span> <span class="st">&quot;white&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <div id="fig-h3-transversalidad" class="quarto-float quarto-figure quarto-figure-center anchored" alt="Dos paneles, uno por concepto; para cada debate, dos puntos con la probabilidad predicha de apoyo de izquierda y derecha, con su intervalo.">
