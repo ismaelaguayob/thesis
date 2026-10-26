@@ -155,7 +155,7 @@ La comparación entre proyectos permite examinar cómo cambia la relevancia de e
 
 - *H3. Comparación entre proyectos:* Los conceptos relacionados con la justicia de mercado y la capitalización individual tendrán mayor presencia en el debate de la Ley N.º 21.735 que en los debates de PGU. En estos últimos, la necesidad material y la igualdad o el universalismo alcanzarán un apoyo más transversal entre grupos políticos.
 
-- *H4. Persistencia:* Durante las fases observadas de la Ley N.º 21.735, el repertorio asociado a la capitalización individual mantendrá su cobertura de apoyo entre actores. Se examinarán por separado propiedad individual, capitalización individual, reciprocidad contributiva, conciencia de costos, ineficiencia y riesgo estatal, libertad de elección, libertad de elección, y previsión como mercado, así como las relaciones que los articulan.
+- *H4. Persistencia:* Durante las fases observadas de la Ley N.º 21.735, el repertorio asociado a la capitalización individual mantendrá su presencia en el debate. Se examinarán por separado la propiedad individual, la capitalización individual, la reciprocidad contributiva, la conciencia de costos, la ineficiencia y riesgo estatal, la libertad de elección y la previsión como mercado.
 
 ## **4. Metodología** {#4.-metodología}
 
@@ -388,17 +388,27 @@ La igualdad y el universalismo, al contrario de lo esperado, distingue a los blo
 
 ### **5.6 H4: Persistencia**
 
-*[Seis conceptos del repertorio en Cámara 2024, Senado 2025 y Cámara 2025. Logit multinivel concepto × fase con intercepto por actor; contraste principal entre las dos fases de la Cámara (78 diputados intervienen en ambas). Senado descrito aparte. Indicar los actores con perfil por fase al presentar las ventanas: 94 en la Cámara 2024, 44 en el Senado 2025 y 123 en la Cámara 2025, porque el Senado limita la comparación. Fuerza y rango de cada concepto en la red de presencia por fase.]*
+En cuarto lugar, se contrasta la hipótesis de persistencia (H4), que compara la presencia del repertorio de mercado entre las dos fases del debate de la Ley N.º 21.735 en la Cámara de Diputados, en enero de 2024 y en enero de 2025. El Senado no se incluye en la comparación, porque sus actores son distintos y sus intervenciones duplican en extensión a las de la Cámara. A diferencia de H1 y H3, la medida es la presencia de cada concepto, con apoyo o con rechazo, porque la persistencia de un repertorio se expresa en que los actores sigan argumentando en sus términos, aunque sea para oponerse. Se estimó un modelo logístico multinivel de la probabilidad de que una intervención mencione cada concepto (Figura 11); H4 se contradice si esa probabilidad disminuye entre fases.
 
-**Figura 11.** *Apoyo, rechazo y centralidad del repertorio de capitalización individual por fase*
+**Figura 11.** *Probabilidad predicha de que una intervención mencione cada concepto del repertorio de mercado, fases de la Cámara, Ley N.º 21.735*
 
-*[Párrafos: continuidad del apoyo; continuidad de la centralidad; relaciones entre los seis conceptos; veredicto por componente.]*
+![](output/figures/resultados/figura11_h4_presencia.png)
 
-### **5.8 Alcance del repertorio de capitalización individual**
+*Nota.* Probabilidad predicha de presencia, con apoyo o rechazo, e intervalos de confianza del 95 %. El repertorio corresponde al promedio de los siete conceptos. Modelo logístico multinivel con controles de bloque político, género y longitud de la intervención. La especificación se presenta en el Anexo 4, y las estimaciones, en la Tabla 7 del Anexo 3.
 
-*[Proporción de actores de cada bloque y coalición que apoya los conceptos del repertorio. Reúne los resultados no anticipados de H1–H4 como evidencia de estructuración: premisas del repertorio reconocidas por actores reformistas. Pasajes que muestran ese reconocimiento y casos discrepantes.]*
+La presencia del repertorio de mercado se mantiene en ambas fases. En promedio, la probabilidad predicha de que una intervención mencione uno de sus siete conceptos es de 28 % en 2024 y de 29 % en 2025 (Δ = 0,5 pp; IC 95 % \[−3,4; 4,3\]), de modo que la mayor disminución compatible con los datos es de 3,4 pp. Ningún concepto disminuye con un intervalo que excluya el cero. La capitalización individual y la ineficiencia y riesgo estatal bajan levemente (de 29 % a 24 % y de 27 % a 22 %, respectivamente), pero sus intervalos incluyen el cero, y la previsión como mercado aumenta de 45 % a 58 % (Δ = 13 pp; IC 95 % \[0,9; 23\]).
 
-**Figura 12.** *Apoyo a los conceptos del repertorio de capitalización individual por bloque y coalición*
+**Figura 12.** *Proporción de intervenciones que mencionan cada concepto del repertorio de mercado, por bloque político y fase de la Cámara, Ley N.º 21.735*
+
+![](output/figures/resultados/figura12_h4_bloques.png)
+
+*Nota.* Proporción observada de intervenciones sustantivas que mencionan cada concepto, con apoyo o rechazo.
+
+La presencia del repertorio no proviene solo de la derecha (Figura 12). La izquierda menciona la previsión como mercado en el 55 % de sus intervenciones en 2024 y en el 72 % en 2025, casi siempre para rechazarla, y mantiene una presencia estable de la ineficiencia y riesgo estatal (11 % en ambas fases), la propiedad de los fondos (13 % y 14 %) y la libertad de elección (20 % y 14 %). Ambos bloques, sin embargo, usan estos conceptos de forma distinta. La derecha los invoca para defender los principios que, a su juicio, rigen el sistema vigente:
+
+> \[...\] priva a los trabajadores de la libertad de elegir, creando actores monopólicos y un gran administrador estatal a cargo de la mayor parte de los ahorros previsionales, a cargo de los políticos de turno nombrados por el Presidente de la República. \[...\] No vamos a aprobar el manotazo y defendemos la propiedad de los fondos de los trabajadores. (diputado, RN, 2024)
+
+La izquierda, en cambio, los usa para responder a esas críticas: rechaza la ineficiencia y riesgo estatal y apoya la propiedad de los fondos y la libertad de elección para mostrar que su propuesta las respeta. «Republicanos han dicho, por lo bajo, que esta plata prácticamente es para el gobierno y que la gente va a perder su ahorro individual, lo cual es absolutamente falso», sostiene una diputada del Frente Amplio en 2025, que valora a la vez «la apertura de la industria a mayor competencia, lo que les va a quitar a las AFP el monopolio que tienen hoy día respecto de la administración de fondos». En 2025, algunos actores de izquierda defienden el acuerdo en los mismos términos del repertorio: «no se mete con la plata de los trabajadores. Por lo tanto, la plata sigue siendo de los trabajadores \[...\] las personas deben seguir teniendo la libertad de decidir en qué fondo estar y asumir ese riesgo» (diputado, Partido Liberal, 2025).
 
 ## **Referencias** {#referencias}
 
@@ -719,6 +729,14 @@ Entrega únicamente un objeto JSON válido, sin Markdown, comentarios, preámbul
 
 *[Insertar `output/tables/resultados/anexo_h2_comunidades.docx`.]*
 
+**Tabla 6.** *Apoyo a la necesidad material y a la igualdad por bloque político: probabilidades predichas y modelos logísticos multinivel, debates de la PGU y del sistema mixto*
+
+*[Insertar `output/tables/resultados/anexo_h3_transversalidad.docx`.]*
+
+**Tabla 7.** *Presencia del repertorio de mercado en las fases de la Cámara: probabilidades predichas y modelo logístico multinivel, Ley N.º 21.735*
+
+*[Insertar `output/tables/resultados/anexo_h4_presencia.docx`.]*
+
 ### **8.4 Anexo 4: Suplemento metodológico**
 
 #### *4.1 Validación de la codificación*
@@ -777,6 +795,15 @@ logit(*p*) = β₀ + β₁ · derecha + β₂ · sistema mixto + β₃ · derech
 
 donde *u* es un intercepto aleatorio por actor, que recoge que algunos actores intervienen en ambos debates. Se excluye el centro, que aporta solo 26 intervenciones en la PGU, y el rechazo no se modela, porque la necesidad material no tiene rechazos y la igualdad casi ninguno. Las probabilidades predichas de cada bloque y debate promedian las predicciones sobre todas las intervenciones observadas, con el efecto del actor fijado en cero. La transversalidad se mide como Δ = *p*(izquierda) − *p*(derecha) en cada debate, y el contraste de H3, como la diferencia de Δ entre el sistema mixto y la PGU. Se usa la diferencia con signo y no su valor absoluto, que en el remuestreo no puede tomar valores negativos y aleja los intervalos del cero cuando la diferencia real es pequeña. Los intervalos provienen de 1.000 réplicas en que se sortearon actores con reposición dentro de cada bloque, con todas sus intervenciones en ambos debates, y se reajustó el modelo.
 
-#### *4.6 Persistencia (H4)*
+#### *4.6 H4: Persistencia*
 
-*[Pendiente.]*
+La comparación incluye las intervenciones sustantivas de las dos fases de la Ley N.º 21.735 en la Cámara de Diputados: enero de 2024 (137 intervenciones de 108 actores) y enero de 2025 (149 intervenciones de 131 actores); 94 actores intervienen en ambas, incluidos los ministros de Hacienda y del Trabajo. El Senado no se incluye: solo los dos ministros intervienen también en la Cámara, y sus intervenciones tienen una mediana de 952 palabras, frente a 424 y 438 en las fases de la Cámara.
+
+La unidad es la combinación de intervención y concepto del repertorio de mercado (los siete conceptos de H3), y la variable dependiente indica si la intervención menciona el concepto, con apoyo o con rechazo. La probabilidad *p* se modela como:
+
+logit(*p*) = β₀ + β(concepto) + β₁ · 2025 + β(concepto × 2025) + β(bloque) + β₂ · mujer + β₃ · log(palabras) + *u*(actor)
+
+donde *u* es un intercepto aleatorio por actor. A diferencia de H1, el concepto y su interacción con la fase son efectos fijos: todos los conceptos aparecen en ambas fases, por lo que no hay combinaciones sin casos que estabilizar, y con solo siete conceptos la varianza de un efecto aleatorio concepto × fase se estima cercana a cero y encoge los cambios de cada concepto hacia el promedio. El bloque político (izquierda, centro, derecha y no partidista) se incluye como control, porque la composición de los actores cambia entre fases.
+
+Las probabilidades predichas de cada concepto y fase promedian las predicciones sobre todas las intervenciones observadas, conservando su bloque, género y longitud, con el efecto del actor fijado en cero; la presencia del repertorio es el promedio de los siete conceptos. Los intervalos de confianza del 95 % corresponden a 1.000 réplicas en que se sortearon actores con reposición, con todas sus intervenciones en ambas fases, y se reajustó el modelo. H4 se contradice si la presencia disminuye con un intervalo que excluye el cero; como no se fijó un margen de equivalencia, cuando no disminuye se informa la mayor disminución compatible con los datos, que corresponde al límite inferior del intervalo de la diferencia.
+

@@ -1,0 +1,524 @@
+---
+title: "H4: Persistencia"
+subtitle: "Sección 5.6: presencia del repertorio de mercado en las fases de la Cámara, Ley 21.735"
+lang: es
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: true
+  message: false
+---
+
+Este reporte respalda la sección 5.6 del manuscrito. H4 sostiene que, durante
+las fases observadas de la Ley 21.735, el repertorio asociado a la
+capitalización individual mantendrá su presencia en el debate. Se examinan por
+separado los siete conceptos del repertorio de mercado: propiedad de los
+fondos, capitalización individual, reciprocidad contributiva, libertad de
+elección, conciencia de costos, ineficiencia y riesgo estatal y previsión como
+mercado.
+
+La comparación es entre las dos fases de la Cámara: enero de 2024 y enero de
+2025. El Senado no se compara: sus actores son otros (solo Jara y Marcel
+intervienen en ambas cámaras) y sus intervenciones duplican en longitud a las
+de la Cámara.
+
+Se usa la presencia, es decir, que una intervención mencione el concepto con
+apoyo o con rechazo, porque la estructuración se manifiesta cuando un
+repertorio fija los términos en que todos los actores deben argumentar, aunque
+sea para oponerse.
+
+H4 se contradice si la presencia disminuye entre fases con un intervalo que
+excluye el cero. Si no disminuye, se informa la mayor disminución compatible
+con los datos (el límite inferior del intervalo), ya que no se fijó un margen
+de equivalencia.
+
+## Seteo de la sesión
+
+```{r}
+#| label: paquetes
+pacman::p_load(arrow, dplyr, tidyr, purrr, stringr, ggplot2, scales, lme4,
+               parallel, igraph, ggrepel)
+source("R/analysis_base.R")
+source("R/apa7_word_table.R")
+
+TABLE_DIR <- "output/tables/resultados"
+FIGURE_DIR <- "output/figures/resultados"
+dir.create(TABLE_DIR, recursive = TRUE, showWarnings = FALSE)
+dir.create(FIGURE_DIR, recursive = TRUE, showWarnings = FALSE)
+SEED <- 20261026
+N_BOOT <- 1000L
+N_CORES <- max(1L, detectCores() - 1L)
+knitr::opts_chunk$set(cache.extra = list(tools::md5sum(c(
+  "R/analysis_base.R",
+  file.path(LUNA_RUN_DIR, c("annotations.parquet", "results.parquet")),
+  sprintf("data/proc_data/ley_%s/coding_chunks_long.parquet", names(LAW_LABELS)),
+  Sys.glob(file.path(STANCE_ADJUDICATION_DIR, "*", "decisions", "*.json")))),
+  SEED, N_BOOT))
+
+MARKET <- c("propiedad_individual_fondos", "capitalizacion_individual",
+            "reciprocidad_contributiva", "libertad_eleccion_previsional",
+            "conciencia_costos", "ineficiencia_estado", "prevision_como_mercado")
+PHASES <- c("Cámara 2024", "Cámara 2025")
+PHASE_COLORS <- setNames(c("#8c8c8c", "#2f6fa3"), PHASES)
+BLOC_COLORS <- c(Izquierda = "#b03a7a", Derecha = "#12866f")
+theme_set(theme_minimal(base_size = 11) +
+            theme(panel.grid.minor = element_blank(),
+                  panel.grid.major.y = element_blank()))
+pct <- \(x) label_percent(accuracy = 1, suffix = " %")(x)
+ci <- \(x) tibble(conf.low = quantile(x, 0.025, na.rm = TRUE),
+                  conf.high = quantile(x, 0.975, na.rm = TRUE))
+```
+
+## Datos
+
+La unidad es la combinación intervención sustantiva × concepto del repertorio,
+en las dos fases de la Cámara. La variable dependiente vale 1 si la
+intervención menciona el concepto, con cualquier postura.
+
+```{r}
+#| label: datos
+key <- c("law_number", "document_uri", "utterance_id")
+base <- load_analysis_base(LUNA_RUN_DIR)
+interventions <- base$interventions |>
+  filter(substantive, law_number == "21735", phase %in% PHASES) |>
+  mutate(fase = factor(as.character(phase), levels = PHASES),
+         bloque = factor(alignment, levels = c("izquierda", "centro", "derecha", "nonpartisan")),
+         genero = factor(gender, levels = c("hombre", "mujer")),
+         log_palabras = as.numeric(scale(log(utterance_words))))
+claims <- base$claims |>
+  filter(concept_id %in% MARKET) |>
+  inner_join(interventions |> select(all_of(key)), by = key)
+presence <- claims |> distinct(across(all_of(key)), concept_id) |> mutate(presencia = 1L)
+model_data <- interventions |>
+  select(all_of(key), speaker_id, fase, bloque, genero, log_palabras) |>
+  tidyr::crossing(concept_id = MARKET) |>
+  left_join(presence, by = c(key, "concept_id")) |>
+  mutate(presencia = coalesce(presencia, 0L),
+         concepto = factor(concept_id, levels = MARKET))
+stopifnot(!anyNA(model_data$genero), !anyNA(model_data$bloque))
+both_phases <- interventions |>
+  distinct(speaker_id, fase) |>
+  count(speaker_id) |>
+  filter(n == 2) |>
+  nrow()
+interventions |>
+  group_by(fase) |>
+  summarise(intervenciones = n(), actores = n_distinct(speaker_id),
+            palabras_mediana = median(utterance_words)) |>
+  knitr::kable()
+```
+
+`r both_phases` actores intervienen en ambas fases de la Cámara, incluidos los
+ministros Jara y Marcel.
+
+```{r}
+#| label: descriptivos
+observed <- model_data |>
+  group_by(fase, concept_id) |>
+  summarise(presencia = mean(presencia), .groups = "drop") |>
+  pivot_wider(names_from = fase, values_from = presencia) |>
+  mutate(concepto = CONCEPT_SHORT[concept_id])
+observed |>
+  transmute(concepto, across(all_of(PHASES), \(x) 100 * x)) |>
+  knitr::kable(digits = 1, caption = "Presencia observada (% de intervenciones)")
+```
+
+## Modelo
+
+Un logit multinivel con el concepto, la fase y su interacción como efectos
+fijos:
+
+```
+presencia ~ concepto * fase + bloque + genero + log_palabras + (1 | actor)
+```
+
+A diferencia de H1, la interacción concepto × fase no se trata como efecto
+aleatorio. Todos los conceptos aparecen en ambas fases, de modo que no hay
+celdas sin casos que estabilizar, y con solo siete conceptos la varianza de ese
+efecto se estima casi nula, lo que encoge los cambios de cada concepto hacia el
+promedio (en una primera estimación, la previsión como mercado pasaba de un
+cambio observado de 15 pp a uno estimado de 3 pp).
+El bloque entra solo como control: la proporción de actores de cada bloque
+cambia entre fases, y sin el control un cambio en quién habla se confundiría
+con un cambio en el repertorio. El intercepto por actor recoge que muchos
+actores intervienen en ambas fases.
+
+```{r}
+#| label: modelo
+#| cache: true
+control <- glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 1e5))
+formula_h4 <- presencia ~ concepto * fase + bloque + genero + log_palabras + (1 | speaker_id)
+fit_h4 <- function(data) glmer(formula_h4, data = data, family = binomial, control = control)
+m_h4 <- fit_h4(model_data)
+```
+
+```{r}
+#| label: diagnostico
+sd_re <- map_dbl(VarCorr(m_h4), \(v) attr(v, "stddev"))
+tibble(observaciones = nobs(m_h4), singular = isSingular(m_h4),
+       avisos = length(m_h4@optinfo$conv$lme4$messages),
+       de_actor = sd_re[["speaker_id"]]) |>
+  knitr::kable(digits = 2)
+```
+
+## Probabilidades predichas e intervalos
+
+Para cada concepto y fase, la probabilidad predicha promedia las predicciones
+sobre todas las intervenciones observadas, asignadas a esa fase y conservando
+su bloque, género y longitud, con el efecto del actor en cero. La presencia del
+repertorio es el promedio de los siete conceptos. Los intervalos provienen de
+`r N_BOOT` remuestreos de actores con todas sus intervenciones de ambas fases y
+reajuste del modelo.
+
+```{r}
+#| label: funciones-prediccion
+predict_h4 <- function(m, data) {
+  by_concept <- map(PHASES, \(f) {
+    nd <- mutate(data, fase = factor(f, levels = PHASES))
+    tibble(concepto = nd$concepto,
+           p = predict(m, nd, type = "response", re.form = NA)) |>
+      group_by(concepto) |>
+      summarise(estimate = mean(p), .groups = "drop") |>
+      mutate(fase = f)
+  }) |>
+    list_rbind() |>
+    mutate(concepto = as.character(concepto))
+  # La presencia del repertorio es el promedio de los siete conceptos.
+  repertoire <- by_concept |>
+    group_by(fase) |>
+    summarise(estimate = mean(estimate)) |>
+    mutate(concepto = "repertorio")
+  bind_rows(by_concept, repertoire)
+}
+boot_h4 <- function(data) {
+  actors <- distinct(data, speaker_id)
+  mclapply(seq_len(N_BOOT), \(i) {
+    set.seed(SEED + i)
+    boot_data <- actors |>
+      slice_sample(prop = 1, replace = TRUE) |>
+      mutate(boot_id = paste0("a", row_number())) |>
+      inner_join(data, by = "speaker_id", relationship = "many-to-many") |>
+      mutate(speaker_id = boot_id)
+    m <- tryCatch(suppressMessages(suppressWarnings(fit_h4(boot_data))), error = \(e) NULL)
+    if (is.null(m)) return(NULL)
+    predict_h4(m, boot_data) |> mutate(replica = i)
+  }, mc.cores = N_CORES) |>
+    list_rbind()
+}
+```
+
+```{r}
+#| label: bootstrap
+#| cache: true
+#| dependson: modelo
+boot_reps <- boot_h4(model_data)
+```
+
+```{r}
+#| label: resumen
+point <- predict_h4(m_h4, model_data)
+predictions_h4 <- point |>
+  left_join(boot_reps |> group_by(concepto, fase) |> reframe(ci(estimate)),
+            by = c("concepto", "fase"))
+change_h4 <- boot_reps |>
+  pivot_wider(names_from = fase, values_from = estimate) |>
+  mutate(diferencia = `Cámara 2025` - `Cámara 2024`) |>
+  group_by(concepto) |>
+  reframe(ci(diferencia)) |>
+  left_join(point |> pivot_wider(names_from = fase, values_from = estimate) |>
+              mutate(estimate = `Cámara 2025` - `Cámara 2024`), by = "concepto")
+label_h4 <- \(d) d |>
+  mutate(etiqueta = if_else(concepto == "repertorio", "Repertorio (promedio)",
+                            unname(CONCEPT_SHORT[concepto])))
+predictions_h4 <- label_h4(predictions_h4)
+change_h4 <- label_h4(change_h4)
+write_parquet(predictions_h4, file.path(TABLE_DIR, "h4_predicciones.parquet"))
+write_parquet(change_h4, file.path(TABLE_DIR, "h4_cambios.parquet"))
+cat("Réplicas completadas:", n_distinct(boot_reps$replica), "\n")
+change_h4 |>
+  transmute(etiqueta, `Cámara 2024` = 100 * `Cámara 2024`, `Cámara 2025` = 100 * `Cámara 2025`,
+            diferencia = 100 * estimate, ic_inf = 100 * conf.low, ic_sup = 100 * conf.high) |>
+  arrange(desc(etiqueta == "Repertorio (promedio)"), diferencia) |>
+  knitr::kable(digits = 1, caption = "Probabilidad predicha de presencia (%) y cambio 2025 − 2024 (pp)")
+```
+
+## Alternativas de visualización
+
+### A. Puntos unidos por concepto, como las figuras de H1 y H2
+
+```{r}
+#| label: fig-h4-a
+#| fig-cap: "Alternativa A. Probabilidad predicha de que una intervención mencione cada concepto del repertorio de mercado, fases de la Cámara"
+#| fig-alt: "Para cada concepto y el promedio del repertorio, dos puntos con la probabilidad predicha de presencia en 2024 y 2025, unidos por una línea, con sus intervalos."
+#| fig-width: 8
+#| fig-height: 4.5
+order_a <- predictions_h4 |>
+  filter(fase == "Cámara 2024", concepto != "repertorio") |>
+  arrange(estimate) |>
+  pull(etiqueta)
+plot_a <- predictions_h4 |>
+  mutate(etiqueta = factor(etiqueta, levels = c("Repertorio (promedio)", order_a)),
+         fase = factor(fase, levels = PHASES))
+fig_a <- ggplot(plot_a, aes(x = estimate, y = etiqueta, color = fase)) +
+  geom_line(aes(group = etiqueta), color = "grey80", linewidth = 0.6) +
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = 0, orientation = "y",
+                linewidth = 0.5, alpha = 0.6, position = position_dodge(width = 0.45)) +
+  geom_point(size = 2.5, position = position_dodge(width = 0.45)) +
+  geom_hline(yintercept = 1.5, color = "grey70", linewidth = 0.3) +
+  scale_x_continuous(labels = pct, limits = c(0, NA), expand = expansion(mult = c(0, 0.05))) +
+  scale_color_manual(values = PHASE_COLORS) +
+  labs(x = "Probabilidad predicha de presencia", y = NULL, color = NULL) +
+  theme(legend.position = "top")
+print(fig_a)
+ggsave(file.path(FIGURE_DIR, "figura11_h4_presencia.png"), fig_a,
+       width = 8, height = 4.5, dpi = 300, bg = "white")
+```
+
+### B. Cambio entre fases con su intervalo
+
+Muestra directamente el contraste de H4: una disminución con un intervalo bajo
+cero contradice la hipótesis.
+
+```{r}
+#| label: fig-h4-b
+#| fig-cap: "Alternativa B. Cambio en la probabilidad predicha de presencia entre la Cámara de 2024 y la de 2025"
+#| fig-alt: "Para cada concepto y el promedio del repertorio, la diferencia 2025 menos 2024 en puntos porcentuales con su intervalo, alrededor de una línea vertical en cero."
+#| fig-width: 7
+#| fig-height: 4
+plot_b <- change_h4 |>
+  mutate(etiqueta = factor(etiqueta, levels = c("Repertorio (promedio)", order_a)),
+         across(c(estimate, conf.low, conf.high), \(x) 100 * x))
+fig_b <- ggplot(plot_b, aes(x = estimate, y = etiqueta)) +
+  geom_vline(xintercept = 0, color = "grey50", linewidth = 0.3) +
+  geom_errorbar(aes(xmin = conf.low, xmax = conf.high), width = 0, orientation = "y",
+                linewidth = 0.6, color = "#2f6fa3") +
+  geom_point(size = 2.5, color = "#2f6fa3") +
+  geom_hline(yintercept = 1.5, color = "grey70", linewidth = 0.3) +
+  labs(x = "Cambio 2025 − 2024 (puntos porcentuales)", y = NULL)
+print(fig_b)
+ggsave(file.path(FIGURE_DIR, "figura11_h4_alternativa_b.png"), fig_b,
+       width = 7, height = 4, dpi = 300, bg = "white")
+```
+
+### C. Presencia observada por bloque
+
+Descriptiva, sin modelo: muestra si la izquierda y la derecha usan el
+repertorio en proporciones parecidas en ambas fases. Sirve para los pasajes de
+estructuración, porque permite ver si la izquierda sigue debatiendo en los
+términos del repertorio.
+
+```{r}
+#| label: fig-h4-c
+#| fig-cap: "Alternativa C. Proporción observada de intervenciones que mencionan cada concepto, por bloque y fase de la Cámara"
+#| fig-alt: "Dos paneles, izquierda y derecha; para cada concepto, dos puntos con la proporción de intervenciones que lo mencionan en 2024 y 2025."
+#| fig-width: 9
+#| fig-height: 4.5
+plot_c <- model_data |>
+  filter(bloque %in% c("izquierda", "derecha")) |>
+  group_by(bloque, fase, concept_id) |>
+  summarise(presencia = mean(presencia), .groups = "drop") |>
+  mutate(bloque = factor(str_to_title(as.character(bloque)), levels = names(BLOC_COLORS)),
+         etiqueta = factor(CONCEPT_SHORT[concept_id], levels = order_a))
+fig_c <- ggplot(plot_c, aes(x = presencia, y = etiqueta, color = fase)) +
+  geom_line(aes(group = etiqueta), color = "grey80", linewidth = 0.6) +
+  geom_point(size = 2.4) +
+  facet_wrap(~ bloque) +
+  scale_x_continuous(labels = pct, limits = c(0, NA), expand = expansion(mult = c(0, 0.05))) +
+  scale_color_manual(values = PHASE_COLORS) +
+  labs(x = "Proporción de intervenciones", y = NULL, color = NULL) +
+  theme(legend.position = "top", strip.text = element_text(face = "bold"),
+        panel.spacing.x = unit(1.5, "lines"))
+print(fig_c)
+ggsave(file.path(FIGURE_DIR, "figura12_h4_bloques.png"), fig_c,
+       width = 9, height = 4.5, dpi = 300, bg = "white")
+```
+
+### D. Redes de congruencia de conceptos por fase
+
+Como la Figura 8, pero una red por fase con la misma disposición. Incluye los
+13 conceptos analizados (sin actitud), destaca los del repertorio de mercado y
+muestra los vínculos con peso de al menos 0,30. Permite ver si el repertorio
+cambia de posición respecto de los demás conceptos.
+
+```{r}
+#| label: fig-h4-d
+#| fig-cap: "Alternativa D. Redes de congruencia entre conceptos por fase de la Cámara"
+#| fig-alt: "Dos paneles con los mismos conceptos en la misma posición, uno por fase; los conceptos del repertorio de mercado se destacan y los vínculos indican uso conjunto con la misma postura."
+#| fig-width: 12
+#| fig-height: 6.5
+all_concepts <- setdiff(sort(unique(base$claims$concept_id)), "actitud")
+phase_claims <- base$claims |>
+  filter(concept_id %in% all_concepts) |>
+  inner_join(interventions |> select(all_of(key), speaker_id, fase), by = key) |>
+  distinct(fase, speaker_id, concept_id, stance)
+congruence_of <- function(cl) {
+  ids <- sort(unique(cl$speaker_id))
+  build <- function(s) {
+    m <- matrix(0, length(ids), length(all_concepts), dimnames = list(ids, all_concepts))
+    r <- filter(cl, stance == s)
+    m[cbind(match(r$speaker_id, ids), match(r$concept_id, all_concepts))] <- 1
+    m
+  }
+  sup <- build("support")
+  opp <- build("oppose")
+  norm <- sqrt(colSums(sup^2 + opp^2))
+  w <- (crossprod(sup) + crossprod(opp)) / outer(norm, norm)
+  w[!is.finite(w)] <- 0
+  diag(w) <- 0
+  w
+}
+weights_by_phase <- map(set_names(PHASES), \(f) congruence_of(filter(phase_claims, fase == f)))
+pairs_by_phase <- imap_dfr(weights_by_phase, \(w, f) {
+  as_tibble(t(combn(all_concepts, 2)), .name_repair = "minimal") |>
+    setNames(c("from", "to")) |>
+    mutate(weight = w[cbind(from, to)], fase = f)
+})
+layout_graph <- graph_from_data_frame(
+  pairs_by_phase |> group_by(from, to) |> summarise(weight = mean(weight), .groups = "drop") |>
+    filter(weight > 0),
+  directed = FALSE, vertices = tibble(name = all_concepts))
+set.seed(SEED)
+layout_d <- layout_with_fr(layout_graph, weights = E(layout_graph)$weight, niter = 3000)
+nodes_d <- tibble(concept_id = all_concepts, x = layout_d[, 1], y = layout_d[, 2]) |>
+  mutate(concepto = unname(CONCEPT_SHORT[concept_id]),
+         grupo = if_else(concept_id %in% MARKET, "Repertorio de mercado", "Otros conceptos")) |>
+  tidyr::crossing(fase = PHASES)
+edges_d <- pairs_by_phase |>
+  filter(weight >= 0.30) |>
+  mutate(x = layout_d[match(from, all_concepts), 1], y = layout_d[match(from, all_concepts), 2],
+         xend = layout_d[match(to, all_concepts), 1], yend = layout_d[match(to, all_concepts), 2])
+fig_d <- ggplot() +
+  geom_segment(data = edges_d, aes(x = x, y = y, xend = xend, yend = yend, linewidth = weight),
+               color = "grey55", alpha = 0.6) +
+  geom_point(data = nodes_d, aes(x = x, y = y, color = grupo), size = 4) +
+  geom_label_repel(data = nodes_d, aes(x = x, y = y, label = concepto), size = 2.8, seed = SEED,
+                   box.padding = 0.5, point.padding = 0.4, label.size = 0.15,
+                   min.segment.length = 0, segment.color = "grey55", segment.size = 0.3,
+                   max.overlaps = Inf) +
+  facet_wrap(~ fase) +
+  scale_linewidth(range = c(0.3, 2.2), limits = c(0.30, NA), name = "Congruencia") +
+  scale_color_manual(values = c(`Repertorio de mercado` = "#2f6fa3", `Otros conceptos` = "#bdbdbd"),
+                     name = NULL) +
+  coord_equal(clip = "off") +
+  theme_void() +
+  theme(legend.position = "bottom", strip.text = element_text(face = "bold", size = 12),
+        panel.spacing = unit(2, "lines"),
+        plot.background = element_rect(fill = "white", color = NA),
+        plot.margin = margin(10, 20, 10, 20))
+print(fig_d)
+ggsave(file.path(FIGURE_DIR, "figura11_h4_alternativa_d.png"), fig_d,
+       width = 12, height = 6.5, dpi = 300, bg = "white")
+```
+
+## Tabla para el anexo
+
+El panel A presenta la probabilidad predicha de presencia de cada concepto y
+del repertorio en cada fase y su cambio; el panel B, las razones de
+probabilidades (OR) de los controles con intervalos de Wald y la desviación
+estándar del intercepto por actor. Los coeficientes de concepto, fase y su
+interacción se omiten porque su contraste está en el panel A.
+
+```{r}
+#| label: tabla-anexo
+dec <- function(x, digits = 1) formatC(round(x, digits) + 0, format = "f", digits = digits, decimal.mark = ",")
+ic_txt <- function(est, low, high, digits = 1) {
+  paste0(dec(est, digits), " [", dec(low, digits), "; ", dec(high, digits), "]") |>
+    str_replace_all("-", "−")
+}
+# Razones de probabilidades con intervalos de Wald para los términos indicados.
+or_txt <- function(m, terms) {
+  # `confint()` devuelve los términos en el orden del modelo: se reordenan.
+  ci <- confint(m, parm = terms, method = "Wald")[terms, , drop = FALSE]
+  ic_txt(exp(fixef(m)[terms]), exp(ci[, 1]), exp(ci[, 2]), 2)
+}
+panel_a <- change_h4 |>
+  mutate(orden = if_else(concepto == "repertorio", 0L, 1L)) |>
+  left_join(predictions_h4 |>
+              select(concepto, fase, estimate, conf.low, conf.high) |>
+              mutate(valor = ic_txt(100 * estimate, 100 * conf.low, 100 * conf.high)) |>
+              select(concepto, fase, valor) |>
+              pivot_wider(names_from = fase, values_from = valor),
+            by = "concepto", suffix = c("", "_txt")) |>
+  arrange(orden, desc(estimate)) |>
+  transmute(fila = etiqueta, c1 = `Cámara 2024_txt`, c2 = `Cámara 2025_txt`,
+            c3 = ic_txt(100 * estimate, 100 * conf.low, 100 * conf.high))
+terms_or <- intersect(c("bloquecentro", "bloquederecha", "bloquenonpartisan", "generomujer",
+                        "log_palabras"), names(fixef(m_h4)))
+or_labels <- c(bloquecentro = "Centro (OR)", bloquederecha = "Derecha (OR)",
+               bloquenonpartisan = "No partidista (OR)", generomujer = "Mujer (OR)",
+               log_palabras = "Palabras, log estandarizado (OR)")
+panel_b <- tibble(
+  fila = c(unname(or_labels[terms_or]), "DE del intercepto: actor",
+           "Observaciones (intervención × concepto)", "Actores"),
+  c1 = c(or_txt(m_h4, terms_or), dec(attr(VarCorr(m_h4)$speaker_id, "stddev"), 2),
+         format(nobs(m_h4), big.mark = "."), as.character(ngrps(m_h4)[["speaker_id"]])))
+section <- \(label) tibble(fila = label)
+tabla_h4 <- bind_rows(
+  section("Panel A. Probabilidad predicha de presencia (%) y cambio 2025 − 2024 (pp)"),
+  panel_a,
+  section("Panel B. Parámetros del modelo"),
+  panel_b) |>
+  mutate(across(everything(), \(x) coalesce(x, "")))
+section_rows <- which(tabla_h4$c1 == "")
+panel_b_rows <- seq(nrow(tabla_h4) - nrow(panel_b) + 1, nrow(tabla_h4))
+export_apa7_word_table(
+  tabla_h4, file.path(TABLE_DIR, "anexo_h4_presencia.docx"),
+  "Presencia del repertorio de mercado en las fases de la Cámara: probabilidades predichas y modelo logístico multinivel, Ley N.º 21.735",
+  note = paste(
+    "Panel A: probabilidad predicha (%) de que una intervención sustantiva mencione cada",
+    "concepto, con apoyo o rechazo, e intervalos de confianza del 95 % entre corchetes,",
+    "obtenidos con 1.000 remuestreos de actores; el repertorio corresponde al promedio de",
+    "los siete conceptos. Panel B: razones de probabilidades (OR) con intervalos de confianza",
+    "del 95 % de Wald (referencias: izquierda y hombre) y desviación estándar (DE), en escala",
+    "logit, del intercepto aleatorio por actor. El modelo incluye además el concepto, la fase",
+    "y su interacción como efectos fijos."),
+  table_number = 7L, body_font_size = 11,
+  header_labels = c("Concepto", "Cámara 2024", "Cámara 2025", "Cambio (pp)"),
+  section_rows = section_rows,
+  merge_cells = list(list(rows = panel_b_rows, columns = 2:4)))
+knitr::kable(tabla_h4)
+```
+
+## Declaraciones de la izquierda sobre el repertorio
+
+Para seleccionar los pasajes de estructuración, se listan las declaraciones de
+actores de izquierda sobre conceptos del repertorio en cada fase de la Cámara,
+con su postura y la cita del modelo.
+
+```{r}
+#| label: pasajes-izquierda
+#| results: asis
+raw <- arrow::read_parquet(file.path(LUNA_RUN_DIR, "annotations.parquet"))
+left_blocks <- base$blocks |>
+  filter(substantive, law_number == "21735", alignment == "izquierda",
+         unit_id %in% raw$unit_id) |>
+  mutate(fase = PHASE_LABELS[date]) |>
+  filter(fase %in% PHASES) |>
+  select(unit_id, utterance_id, party, role, fase)
+left_statements <- raw |>
+  filter(concept_id %in% MARKET) |>
+  inner_join(left_blocks, by = c("unit_id", "utterance_id")) |>
+  semi_join(claims, by = c("utterance_id", "concept_id", "stance")) |>
+  transmute(fase, partido = party, concepto = CONCEPT_SHORT[concept_id],
+            postura = if_else(stance == "support", "Apoyo", "Rechazo"), cita = evidence_text) |>
+  arrange(fase, concepto, postura)
+left_statements |> count(fase, concepto, postura) |>
+  pivot_wider(names_from = c(fase, postura), values_from = n, values_fill = 0) |>
+  knitr::kable(caption = "Declaraciones de izquierda sobre el repertorio, por fase y postura") |>
+  print()
+write_parquet(left_statements, file.path(TABLE_DIR, "h4_declaraciones_izquierda.parquet"))
+# Las citas largas rompen una tabla: se listan por concepto, postura y fase, y se
+# guardan también en un Markdown aparte para leerlas.
+listing <- left_statements |>
+  group_by(concepto, postura, fase) |>
+  group_map(\(d, k) c(sprintf("\n### %s · %s · %s (%d)\n", k$concepto, k$postura, k$fase, nrow(d)),
+                      sprintf("- «%s» (%s)", str_squish(d$cita), d$partido))) |>
+  unlist()
+cat(listing, sep = "\n")
+writeLines(c("# Declaraciones de izquierda sobre el repertorio de mercado, fases de la Cámara",
+             listing), file.path(TABLE_DIR, "h4_declaraciones_izquierda.md"))
+```

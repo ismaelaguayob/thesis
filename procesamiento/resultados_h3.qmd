@@ -33,6 +33,7 @@ mercado.
 pacman::p_load(arrow, dplyr, tidyr, purrr, stringr, ggplot2, scales, lme4,
                parallel)
 source("R/analysis_base.R")
+source("R/apa7_word_table.R")
 
 TABLE_DIR <- "output/tables/resultados"
 FIGURE_DIR <- "output/figures/resultados"
@@ -379,4 +380,82 @@ fig_transversal <- pred_transversal |>
 print(fig_transversal)
 ggsave(file.path(FIGURE_DIR, "figura10_h3_transversalidad.png"), fig_transversal,
        width = 9, height = 4, dpi = 300, bg = "white")
+```
+
+## Tabla para el anexo
+
+Una sola tabla reúne los dos modelos de transversalidad. El panel A presenta
+las probabilidades predichas de apoyo por bloque y debate, la diferencia entre
+izquierda y derecha en cada debate y su cambio entre debates; el panel B, las
+razones de probabilidades (OR) de los efectos fijos con intervalos de Wald y la
+desviación estándar del intercepto por actor.
+
+```{r}
+#| label: tabla-anexo
+dec <- function(x, digits = 1) formatC(round(x, digits) + 0, format = "f", digits = digits, decimal.mark = ",")
+ic_txt <- function(est, low, high, digits = 1) {
+  paste0(dec(est, digits), " [", dec(low, digits), "; ", dec(high, digits), "]") |>
+    str_replace_all("-", "−")
+}
+# Razones de probabilidades con intervalos de Wald para los términos indicados.
+or_txt <- function(m, terms) {
+  # `confint()` devuelve los términos en el orden del modelo: se reordenan.
+  ci <- confint(m, parm = terms, method = "Wald")[terms, , drop = FALSE]
+  ic_txt(exp(fixef(m)[terms]), exp(ci[, 1]), exp(ci[, 2]), 2)
+}
+pred_wide <- pred_transversal |>
+  transmute(concept_id, col = paste(debate, bloque),
+            valor = ic_txt(100 * p, 100 * conf.low, 100 * conf.high)) |>
+  pivot_wider(names_from = col, values_from = valor)
+gap_wide <- gap_transversal |>
+  transmute(concept_id, col = paste("dif", debate),
+            valor = ic_txt(100 * estimate, 100 * conf.low, 100 * conf.high)) |>
+  pivot_wider(names_from = col, values_from = valor)
+panel_a <- pred_wide |>
+  left_join(gap_wide, by = "concept_id") |>
+  transmute(fila = CONCEPT_SHORT[concept_id],
+            c1 = `PGU Izquierda`, c2 = `PGU Derecha`, c3 = `dif PGU`,
+            c4 = `Sistema mixto Izquierda`, c5 = `Sistema mixto Derecha`,
+            c6 = `dif Sistema mixto`, c7 = `dif Sistema mixto − PGU`)
+terms_or <- c("bloqueDerecha", "debateSistema mixto", "bloqueDerecha:debateSistema mixto",
+              "generomujer", "log_palabras")
+stopifnot(all(map_lgl(models_transversal, \(m) all(terms_or %in% names(fixef(m))))))
+param_rows <- function(m) {
+  c(or_txt(m, terms_or), dec(attr(VarCorr(m)$speaker_id, "stddev"), 2),
+    format(nobs(m), big.mark = "."), as.character(ngrps(m)[["speaker_id"]]))
+}
+param_labels <- c("Derecha (OR)", "Sistema mixto (OR)", "Derecha × sistema mixto (OR)",
+                  "Mujer (OR)", "Palabras, log estandarizado (OR)", "DE del intercepto: actor",
+                  "Intervenciones", "Actores")
+panel_b <- tibble(fila = param_labels,
+                  c1 = param_rows(models_transversal$necesidad_material),
+                  c4 = param_rows(models_transversal$igualdad_universalismo))
+section <- \(label) tibble(fila = label)
+tabla_h3 <- bind_rows(
+  section("Panel A. Probabilidad predicha de apoyo (%) y diferencia izquierda − derecha (pp)"),
+  panel_a,
+  section("Panel B. Parámetros de los modelos (columnas: necesidad material | igualdad y universalismo)"),
+  panel_b) |>
+  mutate(across(everything(), \(x) coalesce(x, "")))
+section_rows <- which(tabla_h3$c1 == "")
+panel_b_rows <- seq(nrow(tabla_h3) - nrow(panel_b) + 1, nrow(tabla_h3))
+export_apa7_word_table(
+  tabla_h3, file.path(TABLE_DIR, "anexo_h3_transversalidad.docx"),
+  "Apoyo a la necesidad material y a la igualdad por bloque político: probabilidades predichas y modelos logísticos multinivel, debates de la PGU y del sistema mixto",
+  note = paste(
+    "Panel A: probabilidad predicha (%) de que una intervención sustantiva apoye el concepto e",
+    "intervalos de confianza del 95 % entre corchetes, obtenidos con 1.000 remuestreos de",
+    "actores dentro de cada bloque; la diferencia corresponde a izquierda menos derecha, en",
+    "puntos porcentuales (pp), y la última columna, a su cambio entre el sistema mixto y la PGU.",
+    "Panel B: razones de probabilidades (OR) con intervalos de confianza del 95 % de Wald",
+    "(referencias: izquierda, PGU y hombre) y desviación estándar (DE), en escala logit, del",
+    "intercepto aleatorio por actor."),
+  table_number = 6L, landscape = TRUE, body_font_size = 10,
+  header_labels = c("Concepto", "Izquierda", "Derecha", "Diferencia", "Izquierda", "Derecha",
+                    "Diferencia", "Cambio de la diferencia"),
+  header_groups = c(" " = 1, "PGU" = 3, "Sistema mixto" = 3, " " = 1),
+  section_rows = section_rows,
+  merge_cells = list(list(rows = panel_b_rows, columns = 2:4),
+                     list(rows = panel_b_rows, columns = 5:8)))
+knitr::kable(tabla_h3)
 ```
