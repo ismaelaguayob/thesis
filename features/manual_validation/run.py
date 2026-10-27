@@ -91,7 +91,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--stance-dir", type=Path,
                         default=PROJECT_ROOT / "output" / "stance_adjudication")
     parser.add_argument(
-        "--stance-round", type=int, default=2, choices=(1, 2),
+        "--stance-round", type=int, default=1, choices=(1, 2),
         help="Ronda de adjudicación de postura (docs/decisiones-validacion.md, sección 5).",
     )
     return parser.parse_args()
