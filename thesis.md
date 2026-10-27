@@ -161,7 +161,7 @@ La comparación entre proyectos permite examinar cómo cambia la relevancia de e
 
 ### **4.1 Datos** {#4.1-datos}
 
-El corpus reúne las discusiones en Sala de tres procesos legislativos: la creación de la Pensión Garantizada Universal, Ley N.º 21.419 (boletín 14588-13); la ampliación de su universo de focalización, Ley N.º 21.538 (boletín 15625-13); y la reforma previsional, Ley N.º 21.735 (boletín 15480-13). El diseño es asimétrico; la reforma previsional constituye el caso principal para analizar coaliciones, y persistencia del repertorio, mientras que la creación de la PGU y la ampliación de su focalización constituyen dos casos separados para comparar proyectos.
+El corpus reúne las discusiones en Sala de tres procesos legislativos: la creación de la Pensión Garantizada Universal (PGU), Ley N.º 21.419 (boletín 14588-13); la ampliación de su universo de focalización, Ley N.º 21.538 (boletín 15625-13); y la creación del sistema mixto de pensiones, Ley N.º 21.735 (boletín 15480-13). El diseño es asimétrico: la Ley N.º 21.735 es el caso principal para analizar los bloques políticos, las coaliciones y la persistencia del repertorio, mientras que los debates de las dos leyes de la PGU se agrupan como caso de comparación.
 
 **Tabla 1.** *Discusiones en Sala, intervenciones y fragmentos del corpus textual*
 

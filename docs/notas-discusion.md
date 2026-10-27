@@ -124,3 +124,12 @@ aparecen.
   identificó alguna. Sacado de resultados (5.1) porque cerraba mal el párrafo de
   solidaridad, que trata de omisiones; puede servir para dimensionar la
   sobreasignación en la discusión.
+- **Límite de la validación ciega con codificación asistida (27 oct 2026).** La
+  regla de adjudicación solo detecta errores de postura cuando los modelos
+  discrepan; los errores que ambos comparten pasan inadvertidos, salvo que
+  aparezcan al leer los resultados. Corregirlos caso a caso al leer los
+  resultados rompería la ciega: las correcciones dependerían de lo que el
+  investigador ve. Reflexión para la discusión: qué significa delegar la
+  codificación en LLM cuando la validación es una muestra ciega y la
+  adjudicación se restringe a desacuerdos; qué errores quedan fuera del alcance
+  del diseño y por qué aceptarlos es preferible a corregir según los resultados.
