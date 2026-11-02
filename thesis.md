@@ -4,6 +4,19 @@
 
 **Título: Robustez ideacional de la capitalización individual: coaliciones discursivas de justicia social en el debate previsional chileno**
 
+Te propongo tres opciones, de la más cercana a la actual a la más distinta:
+
+1. **La economía moral de la capitalización individual: merecimiento y coaliciones discursivas en el debate previsional chileno (2022–2025)**
+   Es la que recomiendo. Recoge el concepto central de las conclusiones, el diálogo con la literatura de merecimiento y H2.
+2. **Robustez ideacional de la capitalización individual: merecimiento y estructuración discursiva en el debate previsional chileno (2022–2025)**
+   Conserva tu inicio, pero cambia la segunda parte por lo que la tesis efectivamente muestra.
+3. **¿Quién merece y quién administra? Economías morales y estructuración discursiva en el debate previsional chileno (2022–2025)**
+   Más llamativa. Resume el hallazgo principal: hay consenso sobre el merecimiento y la disputa es sobre la organización de la previsión. En una tesis de pregrado puede funcionar, aunque es menos convencional.
+
+En las tres, «debate previsional chileno» se puede precisar como «debate legislativo previsional chileno», a costa de un título más largo.
+
+¿Te gusta alguna, o prefieres combinar partes?
+
 **Tesis para optar al Título de Sociología**
 
 **Autor Ismael Aguayo**\
@@ -65,9 +78,9 @@ En la elaboración de esta tesis se utilizaron las siguientes herramientas de in
 
 ## **Abstract** {#abstract}
 
-El sistema chileno de pensiones de capitalización individual ha persistido pese a crisis de legitimidad, alta conflictividad social y sucesivos intentos de reforma estructural. Esta investigación analiza las economías morales en disputa en el debate legislativo previsional chileno y examina en qué medida el repertorio asociado a la capitalización individual mantiene su centralidad y alcanza a actores reformistas. Se comparan tres procesos: la creación de la Pensión Garantizada Universal (PGU), Ley N.º 21.419; la ampliación de su universo de focalización, Ley N.º 21.538; y la reforma previsional, Ley N.º 21.735. Esta última constituye el caso principal para estudiar la persistencia y difusión del repertorio durante las discusiones en Sala de 2024 y 2025. Se espera encontrar dos polos discursivos vinculados con la justicia de mercado y la justicia política, junto con posiciones de intermediación de actores de centroizquierda. El primero articularía la propiedad y la capitalización individual con la reciprocidad contributiva, las restricciones de gasto y las justificaciones de la organización privada y mercantil de la previsión; el segundo, la igualdad o el universalismo con la solidaridad intergeneracional. Se espera que la necesidad material actúe como puente entre los repertorios de ambos polos. Las hipótesis comparan la centralidad de estos conceptos entre proyectos y examinan la persistencia del repertorio de capitalización individual. Metodológicamente, el estudio aplica análisis de redes discursivas (DNA) a nueve discusiones en Sala de la Cámara de Diputadas y Diputados y del Senado, que reúnen 1.096 intervenciones elegibles, segmentadas en 3.609 fragmentos. Se combina codificación asistida por grandes modelos de lenguaje y validación manual con análisis de frecuencias, cobertura de actores, redes y modelos logísticos con intercepto por actor. La lectura dirigida de argumentos permite interpretar conjuntamente estos resultados como evidencia sobre la estructuración del debate. Con ello, la investigación busca aportar evidencia sobre el rol de las ideas y la justicia social en la estructuración del debate previsional chileno.
+Los sistemas de pensiones organizan la distribución de recursos en la vejez y cristalizan concepciones sobre quién merece protección y bajo qué condiciones. En Chile, desde 1981, las personas ahorran obligatoriamente en cuentas individuales administradas por privados para financiar su previsión, un sistema cuestionado por sus bajas pensiones y objeto de sucesivos intentos de reforma estructural. Este estudio examina la persistencia de ese arreglo en los debates legislativos previsionales chilenos de 2022–2025: cómo se articulan los criterios de merecimiento y las justificaciones de mercado, y en qué medida el repertorio de la capitalización individual estructura la discusión. Se argumenta que este repertorio puede persistir a través de la presencia sostenida de sus justificaciones y de su reconocimiento por actores reformistas. Se analizan 1.096 intervenciones de nueve discusiones en Sala de las leyes N.º 21.419, 21.538 y 21.735, codificadas con modelos de lenguaje de gran escala (LLM) y validadas con una referencia humana ciega, mediante análisis de redes discursivas y modelos logísticos multinivel. Los bloques políticos se distinguen sobre todo por justificaciones propias del caso, como la propiedad de los fondos, y comparten los criterios de merecimiento de necesidad y reciprocidad, que nadie rechaza. El debate de la reforma se organiza en dos coaliciones: una de preservación, coherente con la defensa del sistema, y otra de transformación, definida más por la necesidad y el rechazo del mercado que por principios universalistas. El repertorio de mercado gana presencia cuando se disputa la base del sistema, la mantiene entre las fases del debate y es usado por actores reformistas para mostrar que respetan sus premisas. Se concluye que el conflicto previsional se libra sobre la organización de la previsión más que sobre el merecimiento, y que la economía moral de la capitalización individual estructura el debate incluso entre quienes buscan reformarla: la persistencia de los sistemas privatizados se sostiene también en premisas normativas que sus adversarios reconocen.
 
-**Palabras clave:** economías morales; capitalización individual; coaliciones discursivas; justicia social; análisis de redes discursivas.
+**Palabras clave:** economías morales; capitalización individual; merecimiento; coaliciones discursivas; análisis de redes discursivas; modelos de lenguaje de gran escala.
 
 ## **Introducción** {#introducción}
 
