@@ -403,25 +403,39 @@ izquierda y derecha y sus intervalos son muy amplios.
 ```{r}
 #| label: fig-h1
 #| fig-cap: "Probabilidad predicha de que una intervención apoye y rechace cada concepto, por bloque político, Ley 21.735"
-#| fig-alt: "Dos paneles, apoyo y rechazo, con 12 conceptos agrupados según el bloque esperado; cada punto es la probabilidad predicha en la izquierda o en la derecha, con su intervalo del 95 %."
+#| fig-alt: "Dos paneles, apoyo y rechazo, con 12 conceptos agrupados por tipo de justificación; cada punto es la probabilidad predicha en la izquierda o en la derecha, con su intervalo del 95 %. Una letra entre paréntesis indica el bloque esperado."
 #| fig-width: 9
 #| fig-height: 5.5
-concept_order <- predictions_h1 |>
+# Los conceptos se agrupan por tipo de justificación (H1a y H1b). La letra entre
+# paréntesis indica el bloque que, según H1, apoyaría más el concepto.
+DISTRIBUTION <- c("reciprocidad_contributiva", "necesidad_material",
+                  "igualdad_universalismo")
+TYPE_LEVELS <- c("Criterios de\ndistribución", "Organización de\nla previsión")
+label_h1 <- function(d) {
+  mutate(d, etiqueta = paste0(concepto, if_else(esperado == "Esperado: derecha",
+                                                " (D)", " (I)")))
+}
+# Dentro de cada tipo: primero los conceptos esperados en la derecha.
+ordered_h1 <- predictions_h1 |>
   filter(postura == "Apoyo", bloque == "derecha") |>
-  arrange(estimate) |>
-  pull(concepto)
+  label_h1() |>
+  arrange(desc(esperado == "Esperado: izquierda"), estimate)
+concept_order <- ordered_h1$concepto  # lo usan las tablas que siguen
+label_order <- ordered_h1$etiqueta
 plot_h1 <- predictions_h1 |>
   filter(bloque != "centro") |>
+  label_h1() |>
   mutate(bloque = factor(str_to_title(bloque), levels = names(BLOC_COLORS)),
-         concepto = factor(concepto, levels = concept_order))
-fig_h1 <- ggplot(plot_h1, aes(x = estimate, y = concepto)) +
+         etiqueta = factor(etiqueta, levels = label_order),
+         tipo = factor(if_else(concept_id %in% DISTRIBUTION, TYPE_LEVELS[1],
+                               TYPE_LEVELS[2]), levels = TYPE_LEVELS))
+fig_h1 <- ggplot(plot_h1, aes(x = estimate, y = etiqueta)) +
   geom_errorbar(aes(xmin = conf.low, xmax = conf.high, color = bloque),
                 orientation = "y", width = 0, linewidth = 0.5, alpha = 0.7,
                 position = position_dodge(width = 0.5)) +
   geom_point(aes(color = bloque, shape = bloque), size = 2.4,
              position = position_dodge(width = 0.5)) +
-  facet_grid(esperado ~ postura, scales = "free", space = "free_y",
-             switch = "y") +
+  facet_grid(tipo ~ postura, scales = "free", space = "free_y") +
   # El margen bajo cero evita que se corten los puntos con probabilidad cercana a 0.
   scale_x_continuous(labels = \(x) paste0(round(100 * x), " %"),
                      expand = expansion(mult = c(0.03, 0.08))) +
@@ -430,10 +444,10 @@ fig_h1 <- ggplot(plot_h1, aes(x = estimate, y = concepto)) +
   scale_shape_manual(values = c(Izquierda = 16, Derecha = 17)) +
   labs(x = "Probabilidad predicha", y = NULL, color = NULL, shape = NULL) +
   theme(legend.position = "top",
-        strip.placement = "outside",
-        strip.text.y.left = element_text(angle = 90, face = "bold"),
+        strip.text.y = element_text(angle = 0, hjust = 0, face = "bold", size = 9),
         strip.text.x = element_text(face = "bold"),
-        panel.spacing.x = unit(1.2, "lines"))
+        panel.spacing.x = unit(1.2, "lines"),
+        panel.spacing.y = unit(0.9, "lines"))
 print(fig_h1)
 ggsave(file.path(FIGURE_DIR, "figura5_h1_probabilidades.png"), fig_h1,
        width = 9, height = 5.5, dpi = 300, bg = "white")

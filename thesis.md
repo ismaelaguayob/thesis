@@ -321,7 +321,7 @@ En primer lugar, se contrasta la hipótesis de bloques políticos, que compara l
 
 ![][image5]
 
-*Nota.* Elaboración propia. Probabilidades predichas con intervalos de confianza del 95 %. Los conceptos se agrupan según el bloque que los apoyaría más de acuerdo con H1. La escala horizontal difiere entre paneles. Las estimaciones se presentan en la Tabla 6 del Anexo III.
+*Nota.* Elaboración propia. Probabilidades predichas con intervalos de confianza del 95 %. Los conceptos se agrupan por tipo de justificación; (D) e (I) indican el bloque que, según H1, apoyaría más el concepto: derecha o izquierda. La escala horizontal difiere entre paneles. Las estimaciones se presentan en la Tabla 6 del Anexo III.
 
 #### *H1a. Criterios de distribución* {#h1a.-criterios-de-distribución}
 
