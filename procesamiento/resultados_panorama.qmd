@@ -218,26 +218,26 @@ pct <- function(d, c, s = "support") {
 }
 ```
 
-La figura ordena los conceptos por familia del libro de códigos y, dentro de
-cada familia, por su presencia en el sistema mixto. El apoyo se dibuja a la derecha
+La figura agrupa los conceptos según los dos tipos de justificaciones de las
+hipótesis (criterios de distribución y organización de la previsión), con
+acuerdos y moderación aparte, y dentro de cada grupo los ordena por su
+presencia en el sistema mixto. El apoyo se dibuja a la derecha
 del cero y el rechazo a la izquierda; la posición y el color codifican la
-postura. Cada barra de al menos 3 % lleva su porcentaje. Los espacios entre
-grupos de conceptos corresponden a las familias del libro, sin rotular. Actitud se omite de la
+postura. Cada barra de al menos 3 % lleva su porcentaje. Actitud se omite de la
 figura porque prácticamente no se registra; su ausencia se comenta en la
 interpretación.
 
 ```{r}
 #| label: fig-prevalencia
 #| fig-cap: "Proporción de intervenciones sustantivas que apoyan o rechazan cada concepto, por debate"
-#| fig-alt: "Barras divergentes para 13 conceptos agrupados por familia en dos paneles, PGU y sistema mixto; el apoyo hacia la derecha y el rechazo hacia la izquierda."
+#| fig-alt: "Barras divergentes para 13 conceptos agrupados por tipo de justificación en dos paneles, PGU y sistema mixto; el apoyo hacia la derecha y el rechazo hacia la izquierda."
 #| fig-width: 9
 #| fig-height: 6
-family_short <- c(
-  "CARIN" = "CARIN", "Criterio contextual" = "Contextual",
-  "Justificación distributiva del caso" = "Distributiva\ndel caso",
-  "Justificación institucional del caso" = "Institucional\ndel caso",
-  "Justificación procedimental del caso" = "Procedimental"
-)
+# Tipos de justificación de las hipótesis (sección 3 del manuscrito).
+DISTRIBUTION <- c("necesidad_material", "reciprocidad_contributiva",
+                  "igualdad_universalismo")
+TYPE_LEVELS <- c("Criterios de\ndistribución", "Organización de\nla previsión",
+                 "Procedimental")
 concept_order <- prevalence |>
   filter(debate == "Sistema mixto") |>
   group_by(concept) |>
@@ -249,7 +249,10 @@ plot_data <- prevalence |>
   mutate(valor = if_else(stance == "support", proporcion, -proporcion),
          postura = if_else(stance == "support", "Apoyo", "Rechazo"),
          concept = factor(concept, levels = concept_order),
-         familia = factor(family_short[family], levels = family_short),
+         tipo = factor(case_when(concept_id %in% DISTRIBUTION ~ TYPE_LEVELS[1],
+                                 concept_id == "acuerdos_moderacion" ~ TYPE_LEVELS[3],
+                                 TRUE ~ TYPE_LEVELS[2]),
+                       levels = TYPE_LEVELS),
          etiqueta = paste0(round(100 * abs(valor)), " %"))
 
 fig_prevalencia <- ggplot(plot_data, aes(x = valor, y = concept, fill = postura)) +
@@ -263,15 +266,15 @@ fig_prevalencia <- ggplot(plot_data, aes(x = valor, y = concept, fill = postura)
   geom_text(data = \(d) filter(d, abs(valor) >= 0.03, abs(valor) < 0.08),
             aes(label = etiqueta, hjust = if_else(valor > 0, -0.15, 1.15)),
             color = "grey25", size = 2.6) +
-  # Las familias del libro separan los grupos de conceptos sin rotularse.
-  facet_grid(familia ~ debate, scales = "free_y", space = "free_y") +
+  # Los tipos de justificación separan y rotulan los grupos de conceptos.
+  facet_grid(tipo ~ debate, scales = "free_y", space = "free_y") +
   scale_x_continuous(labels = \(x) paste0(round(100 * abs(x)), " %"),
                      breaks = seq(-0.2, 0.4, 0.2),
                      expand = expansion(mult = c(0.1, 0.06))) +
   scale_fill_manual(values = STANCE_COLORS) +
   labs(x = "Proporción de intervenciones sustantivas", y = NULL, fill = NULL) +
   theme(legend.position = "top",
-        strip.text.y = element_blank(),
+        strip.text.y = element_text(angle = 0, hjust = 0, face = "bold", size = 9),
         strip.text.x = element_text(face = "bold"),
         panel.spacing.x = unit(1.2, "lines"),
         panel.spacing.y = unit(0.8, "lines"))

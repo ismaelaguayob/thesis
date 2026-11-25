@@ -428,3 +428,35 @@ export_apa7_word_table(
   header_groups = c(" " = 1, "PGU" = 3, "Sistema mixto" = 3, " " = 1))
 knitr::kable(tabla_h3)
 ```
+
+Una segunda tabla reúne la presencia de los siete conceptos del repertorio de
+mercado en cada debate y su diferencia, que el texto de la sección 5.5 resume.
+
+```{r}
+#| label: tabla-anexo-presencia
+tabla_presencia <- presence_table |>
+  filter(mercado) |>
+  transmute(concept_id, debate,
+            valor = ic_txt(100 * estimate, 100 * conf.low, 100 * conf.high)) |>
+  pivot_wider(names_from = debate, values_from = valor) |>
+  left_join(presence_diff |>
+              filter(mercado) |>
+              transmute(concept_id, orden = estimate,
+                        dif = ic_txt(100 * estimate, 100 * conf.low, 100 * conf.high)),
+            by = "concept_id") |>
+  arrange(desc(orden)) |>
+  transmute(fila = CONCEPT_SHORT[concept_id], c1 = PGU, c2 = `Sistema mixto`, c3 = dif)
+export_apa7_word_table(
+  tabla_presencia, file.path(TABLE_DIR, "anexo_h3_presencia.docx"),
+  "Presencia de los conceptos del repertorio de mercado, debates de la PGU y del sistema mixto",
+  note = paste0(
+    "Porcentaje de intervenciones sustantivas que mencionan el concepto, con apoyo o con ",
+    "rechazo, e intervalos de confianza del 95 % entre corchetes, obtenidos con 1.000 ",
+    "remuestreos de actores dentro de cada debate. Δ corresponde al sistema mixto menos la ",
+    "PGU, en puntos porcentuales. ", sum(interventions$debate == "PGU"), " intervenciones en ",
+    "los debates de la PGU y ", sum(interventions$debate == "Sistema mixto"),
+    " en el del sistema mixto."),
+  table_number = 8L,
+  header_labels = c("Concepto", "PGU", "Sistema mixto", "Δ (pp)"))
+knitr::kable(tabla_presencia)
+```
