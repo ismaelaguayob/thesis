@@ -1,0 +1,12 @@
+- Explicar el corpus de cada hipótesis
+- La economía moral no queda tan clara como marco teórico: sacar de la pregunta y del titulo (si la carrera me deja). Se sugiere algo relacionado con cómo se articulan los criterios distributivos y de organización
+- Darle más tiempo a la tabla de los conceptos (en la presentación).
+- Los gráficos son muy densos y difíciles de entender. Deben estar ordenados los conceptos igual, y tener una organización mejor (como el grafico de h1).
+- Gráfico H2 poner conceptos esperados por coalición.
+- Gráfico h1 no se habló tanto de rechazos (comentario presentación)
+- Que vayan apareciendo punto a punto y que vayan cambiando las diapos
+- Tercera fila de diapo 7 suena muy contextual, quizás si era buena idea dividir las diapos.
+- Cambiar de nombre las coaliciones para justicia de mercado y justicia política. Unificar el lenguaje, nada más de polos de transformación y preservación. Asi se entiende mejor.
+- Última diapo: volver a la pregunta y 3 mensajes para la casa (aprox)
+- Antes de presentar los gráficos decir como se va a presentar
+- Al final decir claramente cuáles son los conceptos donde se esta dando la pelea, en donde se esperaba conflicto y no hubo y donde no se esperaba conflicto y si hubo.

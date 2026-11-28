@@ -1,83 +1,130 @@
 # Plan de correcciones finales
 
-Última ronda antes de la entrega oficial. Fuente: informe de evaluación de JC (19-11-2026), reuniones con el profesor guía y trabajo sobre `thesis.md`.
+Estado al 27-11-2026, después de la presentación al profesor guía y a un integrante de la comisión. **Entrega: lunes 30-11-2026.**
 
-Estado al 25-11-2026. Presentación al profesor guía y a un posible integrante de la comisión: 27-11-2026 (20 minutos). Entrega de la versión final: cinco días después.
+Fuentes: informe de JC (19-11), reuniones con el profesor guía, comentarios de la presentación (`comentarios presentacion.md`) y trabajo sobre `thesis.md`.
+
+## Con qué debe quedarse el lector
+
+> En el debate previsional chileno no se disputa quién merece una pensión, sino cómo se organiza la previsión, y el debate se da en los términos del sistema incluso en actores reformistas.
+
+Tres mensajes, en orden de importancia:
+
+1. **Se comparte quién merece.** Nadie rechaza la necesidad ni la reciprocidad, y la reciprocidad la usan por igual derecha e izquierda.
+2. **Se disputa cómo se organiza.** El conflicto se concentra en la propiedad de los fondos, el mercado y el rol del Estado.
+3. **La reforma se defiende en los términos del sistema que quiere cambiar.** La izquierda no rechaza la propiedad de los fondos: la reclama para su propuesta.
+
+Todo lo demás (detalle de las coaliciones, igualdad en la PGU, codificación con LLM) queda subordinado. Cada sección debe servir a uno de los tres mensajes.
+
+## Preguntas para JC
+
+Mostrarle el párrafo del argumento de la introducción y preguntar:
+
+1. ¿Está bien que el argumento central sea la tensión entre justicia de mercado y justicia política en ambos tipos de justificaciones, sabiendo que los resultados la confirman solo en la organización de la previsión?
+2. ¿Sirve como argumento secundario que el repertorio de justicia de mercado predomina cuando se discute la organización de la previsión y puede fijar los términos de la discusión incluso para quienes impulsan la reforma, aunque esto último no tenga hipótesis propia desde que salió H4?
+3. ¿Le parece bien el título nuevo y la pregunta sin "economías morales"?
+4. "Predomina" en el argumento secundario: H3a mide mayor presencia en el sistema mixto que en la PGU, no predominio sobre otros repertorios. ¿Prefiere "gana presencia"?
 
 ## Decisiones tomadas
 
-- **Marco del estudio:** dos tipos de justificaciones. "Criterios de distribución" (quién merece) y "organización de la previsión" (quién administra). La palabra "bloques" se reserva para los bloques políticos.
-- **Hipótesis:** H1a (criterios de distribución), H1b (organización de la previsión), H2 (coaliciones), H3a (presencia del repertorio de mercado), H3b (transversalidad). H4 eliminada.
-- **"Persistencia" pasa a "estructuración"** donde el texto afirme algo temporal. La persistencia institucional queda solo como contexto.
-- **Libro de códigos y prompt no se tocan.** Los dos tipos de justificaciones son una capa analítica que cruza las familias del libro.
-- **CARIN:** se codifican los cinco criterios; las hipótesis usan necesidad y reciprocidad. Control e identidad se excluyen por baja concordancia; actitud casi no aparece.
-- **Migone et al. (2024) y la robustez ideacional:** eliminados.
-- **Figuras eliminadas:** redes de congruencia y conflicto entre conceptos, y las dos de H4.
-- **Intervalos de confianza:** en el texto solo para la diferencia principal de cada hipótesis y para los resultados nulos o al límite; el resto, en las tablas del anexo.
-- **Título de la tesis:** no cambia.
+- **Lenguaje unificado:** justicia de mercado y justicia política. Desaparecen "polos", "preservación" y "transformación".
 
-## Hecho
+  | Antes | Ahora |
+  |---|---|
+  | Polo de preservación | Justicia de mercado |
+  | Polo de transformación | Justicia política |
+  | Coalición de preservación | Coalición de justicia de mercado |
+  | Coalición de transformación | Coalición de justicia política |
+  | Repertorio de mercado | Repertorio de justicia de mercado |
 
-- [x] **Hipótesis (sección 3):** reformuladas; párrafo de los dos tipos de justificaciones y párrafo de expectativas rivales (literatura comparada frente a evidencia chilena).
-- [x] **Introducción:** párrafo de hipótesis reescrito como expectativas.
-- [x] **Sección 1.2:** CARIN recortado; cierre con los cinco criterios codificados y las dos expectativas.
-- [x] **Sección 2:** una sola sección sin subsecciones, título "Ideas y estructuración discursiva"; Tabla 1 con cuatro filas.
-- [x] **Sección 3:** literatura nacional para propiedad de los fondos, previsión como mercado, riesgo estatal, restricción de gasto y origen dictatorial, verificada contra los textos completos.
-- [x] **Metodología:** ítem "Conceptos" de 4.2 con nota al pie para los cuatro conceptos no usados; texto de 4.3 alineado con la Figura 2; párrafo de H4 y redes de conceptos eliminados.
-- [x] **Resultados 5.1:** reducido a un párrafo; detalle y Figuras 3 y 4 en el Anexo IV.
-- [x] **Resultados 5.2:** reescrito en torno al contraste entre los dos tipos de justificaciones; figura regenerada y agrupada por tipo.
-- [x] **Resultados 5.3:** dividido en H1a y H1b con veredictos; figura regenerada, agrupada por tipo y con (D)/(I) para el bloque esperado.
-- [x] **Resultados 5.4:** sin redes de conceptos; veredicto de H2.
-- [x] **Resultados 5.5:** H3a y H3b con veredictos; pasajes de H4 trasladados; citas de Convergencia Social y Partido Ecologista Verde sobre propiedad de los fondos; tabla nueva de H3a en el Anexo III.
-- [x] **Sección 5.6 (H4):** eliminada, con su tabla del Anexo III y su apartado del Anexo IV.
-- [x] **Notas de figuras:** acortadas; la fuente se declara una vez al inicio de resultados.
-- [x] **Discusión:** parte por la pregunta, recuerda cada hipótesis, párrafo de contribución teórica, párrafo de lectura alternativa (costo político y discurso comunicativo de Schmidt), LLM en un párrafo al final.
+  La distinción sigue siendo una clave interpretativa de nivel superior: no se codifica, y las coaliciones se nombran por los conceptos que las distinguen. "Bloques" queda reservado para los bloques políticos; "previsión como mercado" sigue siendo el nombre del concepto.
+- **Economía moral sale de la pregunta y del título.** Se mantiene como concepto de encuadre en el primer párrafo de la introducción y en 1.1.
+- **Argumento (opción C):** un argumento central y uno secundario, previos a los resultados y coherentes con las hipótesis. Central: el debate se organiza en torno a la tensión entre justicia de mercado y justicia política, en los criterios de distribución y en la organización de la previsión (H1a, H1b, H2). Secundario: el repertorio de justicia de mercado predomina cuando se discute la organización de la previsión y puede fijar los términos de la discusión incluso para quienes impulsan la reforma (H3a, H3b, pasajes).
+- **Los resultados no van en la introducción** (guía de escritura de JC). El hallazgo principal se dice en el resumen, la discusión y las conclusiones. El resumen sí incluye el argumento, antes de los métodos.
+- **Dos tipos de justificaciones:** criterios de distribución (quién merece) y organización de la previsión (quién administra).
+- **Hipótesis:** H1a, H1b, H2, H3a, H3b. Sin H4.
+- **"Persistencia" pasa a "estructuración"** donde el texto afirme algo temporal.
+- **Síntesis del conflicto en la discusión, en prosa y sin tabla:** solo los conceptos más llamativos de cada caso (dónde se esperaba conflicto y lo hubo, dónde se esperaba y no lo hubo, dónde no se esperaba y apareció).
+- **Un solo orden de conceptos en todas las figuras,** agrupado por tipo de justificación, como en la figura de H1.
+- **Libro de códigos y prompt no se tocan.**
 
 ## Pendiente antes de la entrega
 
-### Texto
+### 1. Mensaje principal
 
-- [ ] **Resumen:** acortar; quitar "la mantiene entre las fases del debate"; cambiar la última oración, que se lee como afirmación causal sobre la persistencia institucional; reflejar los dos tipos de justificaciones.
-- [ ] **Introducción, argumento:** todavía dice que el repertorio "puede persistir en el debate a través de la presencia sostenida…". Reformular hacia estructuración.
-- [ ] **Introducción, contribuciones:** revisar las cuatro; la segunda (persistencia de las privatizaciones) es la más cercana a una afirmación causal. Alinear con el párrafo de contribución de la discusión.
-- [ ] **Introducción, párrafo de estructura del manuscrito:** revisar que describa las secciones como quedaron.
-- [ ] **Conclusiones:** quitar las menciones a fases y a persistencia (3 y 3); quitar de limitaciones "la persistencia se evaluó solo en dos fases de la Cámara"; ajustar a los dos tipos de justificaciones; vincular la limitación de usar solo Sala con la lectura alternativa de la discusión; revisar las cuatro contribuciones.
-- [ ] **"Persistencia" y "polos" en el resto del texto:** quedan menciones en las secciones 1, 2, 3 y 4. Revisar una por una: las que hablan de la persistencia institucional como contexto están bien; las que prometen medirla, no. En la sección 3 "polos" convive con "coaliciones" de H2; decidir si se mantiene la distinción (polos como expectativa, coaliciones como resultado).
-- [ ] **Título de 5.3:** sigue siendo "H1: Bloques políticos y criterios de justicia".
-- [ ] **Incorporar los comentarios de la presentación del 27-11.**
+- [x] **Título nuevo:** *¿Quién merece y quién administra? Justicia de mercado y justicia política en el debate legislativo sobre pensiones en Chile (2022–2025)*. Aplicado en `thesis.md`; falta en Google Docs y en la presentación.
+- [x] **Pregunta nueva** (aplicada en la introducción, la discusión y las conclusiones de `thesis.md`): *¿Cómo se articulan los criterios de distribución y las justificaciones sobre la organización de la previsión en los debates legislativos previsionales chilenos de 2022–2025, y en qué medida el repertorio de justicia de mercado estructura el debate y alcanza a actores reformistas?* Cambiarla en la introducción, la discusión y las conclusiones.
+- [x] **Resumen:** incluye el argumento, abre los hallazgos con la oración principal y cierra con su segunda mitad; sin fases, persistencia ni la oración causal. Quedó en 305 palabras (la guía pide 250 a 300).
+- [x] **Introducción, argumento:** reescrito según la opción C. Pendiente el visto bueno de JC.
+- [x] **Introducción, contribuciones:** tres contribuciones, sin anunciar resultados; "persistencia" pasó a "continuidad"; la metodológica va al final.
+- [ ] **Discusión:** abrir con la oración principal y agregar el párrafo de síntesis del conflicto (ver decisiones).
+- [ ] **Conclusiones:** el primer párrafo responde la pregunta con los tres mensajes. Quitar las menciones a fases y a persistencia (3 y 3) y la limitación de H4. Vincular la limitación de usar solo Sala con la lectura alternativa.
 
-### Figuras y tablas
+### 2. Renombrar a justicia de mercado y justicia política
 
-- [ ] **Figura 2:** borrar la línea "H4: Persistencia (logit por fase)" del esquema.
-- [ ] **Reemplazar en Google Docs** las dos figuras regeneradas: `figura4_prevalencia_postura.png` y `figura5_h1_probabilidades.png`. Revisar que la tipografía coincida con la del resto; si no, renderizar los `.qmd` en la máquina propia.
-- [ ] **Pegar la tabla nueva** `output/tables/resultados/anexo_h3_presencia.docx` en el Anexo III.
-- [ ] **Renumerar figuras.** Orden actual en el texto: 1, 2, 5, 6, 7, 8, 10, 11 y, en anexos, 14, 3, 4. Deben quedar correlativas, con sus referencias en el texto y en las notas.
-- [ ] **Renumerar tablas** y sus referencias. Hoy van de la 1 a la 9, con la nueva de H3a como Tabla 8 y la de transversalidad como Tabla 9; verificar que las notas de figuras y el texto apunten al número correcto.
-- [ ] **Actualizar el índice** en Google Docs.
+- [x] **`thesis.md`:** había menciones de "preservación" y "transformación" en todas las secciones (unas 20 en resultados, 9 en la sección 3) y 9 de "polos" en la sección 3. Reemplazar según la tabla de arriba y revisar la redacción resultante.
+- [x] **"Repertorio de mercado" → "repertorio de justicia de mercado"** (unas 15 menciones).
+- [x] **Frase de resguardo** en la sección 3: la distinción opera como clave interpretativa, no se codifica y sirve para nombrar las coaliciones según los conceptos que las distinguen.
+- [x] **Hipótesis H2 y H3a** en la sección 3 y en la introducción.
+- [x] **Tabla 1**, nota de la Figura 1 y título de la sección 3 (ahora "justificaciones en disputa y bloques políticos").
+- [ ] **Economía moral** sigue en el resumen, el argumento de la introducción y las conclusiones; sale al reescribirlos.
+- [ ] **Código:** `COMMUNITY_NAMES` en `procesamiento/resultados_h2.qmd` y los textos de ese archivo.
 
-### Referencias
+### 3. Figuras
 
-- [ ] **Verificar que estén insertadas con Zotero** las citas agregadas en esta ronda: Alemparte (2025), Vela (2025), Kay y Borzutzky (2022), Campos-Rojas y González-Arias (2022), López-González y Vélez-Maya (2025), Lane (1986), Laenen et al. (2019), Schmidt (2008).
-- [ ] **Castiglioni (2018):** el artículo citado para la restricción de gasto es "Explaining Uneven Social Policy Expansion in Democratic Chile", distinto del que ya se citaba. Deben distinguirse como 2018a y 2018b.
-- [ ] **Referencias que ya no se citan:** Migone et al. (2024); Sachweh et al. (2006), Gaffney (2025), Kuhlmann y Blum (2022) y Wiggan (2012), eliminadas de 1.2. Confirmar que salgan de la lista.
-- [ ] **Schmidt (2008):** confirmar en el texto completo la distinción entre discurso coordinativo y comunicativo tal como se usa en la discusión.
+- [ ] **Coaliciones (H2):** regenerar agrupada por tipo de justificación, con los nombres nuevos y el concepto esperado marcado, igual que en H1.
+- [ ] **Red de actores (H2):** nombres nuevos en los contornos o la leyenda, si los lleva.
+- [ ] **H3a:** reordenar los conceptos con el mismo orden que las demás.
+- [ ] **Repertorio (5.2) y H1:** verificar que usen el mismo orden.
+- [ ] **Diagrama de hipótesis** (drawio): cambiar los rótulos de los recuadros a justicia de mercado y justicia política.
+- [ ] **Figura 2:** borrar la línea de H4.
+- [ ] **Reemplazar en Google Docs** todas las figuras regeneradas y revisar la tipografía.
 
-### Entorno de R (solo si hay que volver a renderizar)
+### 4. Otros ajustes de texto
 
-- [ ] Instalar en R 4.6 los paquetes que faltan: `nloptr` y `lme4` (requieren `NLopt-devel` y `cmake` del sistema), `flextable`, `officer`, `forcats`, `readr`.
-- [ ] El bloque `tabla-anexo-presencia` de `procesamiento/resultados_h3.qmd` y los bloques de figura modificados en `resultados_panorama.qmd` y `resultados_h1.qmd` se probaron por separado con los resultados guardados; el render completo de esos archivos no se ha probado.
+- [ ] **Corpus de cada hipótesis:** decir en la metodología, de forma explícita, qué debates y cuántas intervenciones usa cada una (H1 y H2: solo la Ley N.º 21.735; H3: esa ley frente a las dos de la PGU).
+- [ ] **Rechazos en H1:** revisar que 5.3 les dé suficiente espacio; en la presentación quedaron poco tratados.
+- [ ] **Economía moral en 1.1 y en la introducción:** una definición breve y conectada con la sociología de la justicia, como en la lámina de introducción.
+- [ ] **"Persistencia"** en las secciones 1, 2 y 4: conservar solo donde es contexto.
+- [ ] **Título de 5.3.**
 
-### Cierre
+### 5. Cierre
 
-- [ ] Lectura completa de corrido en Google Docs.
-- [ ] Revisar el formato exigido por la escuela (por ejemplo, si cada figura debe indicar la fuente de los datos).
+- [ ] **Renumerar figuras:** hoy van 1, 2, 5, 6, 7, 8, 10, 11 en el texto y 14, 3, 4 en anexos.
+- [ ] **Renumerar tablas** (1 a 9) y revisar todas las referencias cruzadas.
+- [ ] **Referencias:** Castiglioni 2018a y 2018b; confirmar que salieron las que ya no se citan (Migone et al.; Sachweh et al. 2006; Gaffney; Kuhlmann y Blum; Wiggan 2012).
+- [ ] **Índice** en Google Docs.
+- [ ] **Formato de la escuela** (por ejemplo, fuente de los datos en cada figura).
+- [ ] **Lectura completa de corrido.**
 
-## Orden sugerido
+## Orden para los tres días
 
-| Días | Tarea |
+| Día | Tarea |
 |---|---|
-| 25 y 26-11 | Preparar la presentación |
-| 27-11 | Presentar y anotar comentarios |
-| Día 1 después | Resumen, argumento y contribuciones de la introducción, conclusiones; incorporar comentarios |
-| Día 2 después | Figuras, tabla nueva, renumeración, referencias |
-| Día 3 después | Lectura completa y formato |
+| Viernes 27 | Título y pregunta; renombre en `thesis.md`; resumen, argumento y contribuciones |
+| Sábado 28 | Figuras regeneradas; discusión y conclusiones; corpus por hipótesis |
+| Domingo 29 | Traspaso a Google Docs, renumeración, referencias, índice |
+| Lunes 30 | Lectura completa y entrega |
+
+## Para la defensa (no afecta la entrega)
+
+Comentarios que son solo de la presentación:
+
+- [ ] Hacer que las viñetas aparezcan una a una.
+- [ ] Dar más tiempo a la tabla de conceptos.
+- [ ] Anunciar cómo se lee cada gráfico antes de mostrarlo.
+- [ ] Hablar de los rechazos en la lámina de H1.
+- [ ] Dividir la tercera fila del marco conceptual (la literatura chilena sonó muy contextual).
+- [ ] Última lámina: volver a la pregunta y cerrar con los tres mensajes.
+- [ ] Actualizar los nombres a justicia de mercado y justicia política, el título y la pregunta.
+
+## Hecho
+
+- Hipótesis reformuladas (H1a, H1b, H2, H3a, H3b) y H4 eliminada del texto, las tablas y los anexos.
+- Antecedentes: 1.2 recortada, sección 2 unificada, literatura nacional verificada contra los textos completos, Tabla 1 con cuatro filas.
+- Metodología: ítem de conceptos, texto de 4.3, sin redes de conceptos.
+- Resultados: 5.1 en un párrafo con el detalle en el Anexo IV; 5.2 reescrita; 5.3 dividida en H1a y H1b; 5.4 sin redes de conceptos; 5.5 con H3a y H3b; veredictos al cierre de cada apartado; tabla nueva de H3a en el Anexo III.
+- Figuras del repertorio y de H1 regeneradas y agrupadas por tipo de justificación.
+- Discusión reescrita: parte por la pregunta, recuerda cada hipótesis, contribución teórica, lectura alternativa y LLM al final.
+- Citas insertadas con Zotero y figuras y tabla reemplazadas en Google Docs (versión anterior al renombre).
+- Presentación en `conferencias/presentacion-tesis.qmd`.
