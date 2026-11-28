@@ -1,6 +1,6 @@
 # Plan de correcciones finales
 
-Estado al 27-11-2026, después de la presentación al profesor guía y a un integrante de la comisión. **Entrega: lunes 30-11-2026.**
+Estado al 28-11-2026. **Entrega: lunes 30-11-2026.**
 
 Fuentes: informe de JC (19-11), reuniones con el profesor guía, comentarios de la presentación (`comentarios presentacion.md`) y trabajo sobre `thesis.md`.
 
@@ -67,7 +67,7 @@ Mostrarle el párrafo del argumento de la introducción y preguntar:
 - [x] **Frase de resguardo** en la sección 3: la distinción opera como clave interpretativa, no se codifica y sirve para nombrar las coaliciones según los conceptos que las distinguen.
 - [x] **Hipótesis H2 y H3a** en la sección 3 y en la introducción.
 - [x] **Tabla 1**, nota de la Figura 1 y título de la sección 3 (ahora "justificaciones en disputa y bloques políticos").
-- [ ] **Economía moral** sigue en el resumen, el argumento de la introducción y las conclusiones; sale al reescribirlos.
+- [x] **Economía moral** salió del resumen y del argumento. Quedan dos menciones en las conclusiones, que salen al reescribirlas.
 - [ ] **Código:** `COMMUNITY_NAMES` en `procesamiento/resultados_h2.qmd` y los textos de ese archivo.
 
 ### 3. Figuras
@@ -75,9 +75,10 @@ Mostrarle el párrafo del argumento de la introducción y preguntar:
 - [ ] **Coaliciones (H2):** regenerar agrupada por tipo de justificación, con los nombres nuevos y el concepto esperado marcado, igual que en H1.
 - [ ] **Red de actores (H2):** nombres nuevos en los contornos o la leyenda, si los lleva.
 - [ ] **H3a:** reordenar los conceptos con el mismo orden que las demás.
-- [ ] **Repertorio (5.2) y H1:** verificar que usen el mismo orden.
-- [ ] **Diagrama de hipótesis** (drawio): cambiar los rótulos de los recuadros a justicia de mercado y justicia política.
-- [ ] **Figura 2:** borrar la línea de H4.
+- [ ] **Orden único de conceptos:** el repertorio (5.2) y H1 están agrupados por tipo, pero dentro de cada tipo ordenan distinto (el repertorio por presencia total en el sistema mixto; H1 por bloque esperado y apoyo de la derecha). Definir un orden fijo en `R/analysis_base.R` y usarlo en las cuatro figuras: dentro de cada tipo, primero los conceptos de justicia de mercado y después los de justicia política. Implica regenerar también el repertorio y H1.
+- [x] **Diagrama de hipótesis** (drawio): rótulos de justicia de mercado y justicia política.
+- [x] **Figura 2:** sin H4.
+- [ ] **Nota de la Figura 1:** decía "propiedad individual" en vez de "propiedad de los fondos" y "flechas discontinuas" en vez de "punteadas". Corregido en `thesis.md`, sin stagear; falta en Google Docs.
 - [ ] **Reemplazar en Google Docs** todas las figuras regeneradas y revisar la tipografía.
 
 ### 4. Otros ajustes de texto
@@ -92,7 +93,7 @@ Mostrarle el párrafo del argumento de la introducción y preguntar:
 
 - [ ] **Renumerar figuras:** hoy van 1, 2, 5, 6, 7, 8, 10, 11 en el texto y 14, 3, 4 en anexos.
 - [ ] **Renumerar tablas** (1 a 9) y revisar todas las referencias cruzadas.
-- [ ] **Referencias:** Castiglioni 2018a y 2018b; confirmar que salieron las que ya no se citan (Migone et al.; Sachweh et al. 2006; Gaffney; Kuhlmann y Blum; Wiggan 2012).
+- [x] **Referencias** actualizadas.
 - [ ] **Índice** en Google Docs.
 - [ ] **Formato de la escuela** (por ejemplo, fuente de los datos en cada figura).
 - [ ] **Lectura completa de corrido.**
@@ -101,8 +102,8 @@ Mostrarle el párrafo del argumento de la introducción y preguntar:
 
 | Día | Tarea |
 |---|---|
-| Viernes 27 | Título y pregunta; renombre en `thesis.md`; resumen, argumento y contribuciones |
-| Sábado 28 | Figuras regeneradas; discusión y conclusiones; corpus por hipótesis |
+| Viernes 27 | Hecho: título y pregunta, renombre, resumen, argumento, contribuciones y diagramas |
+| Sábado 28 | Discusión y conclusiones; orden único y figuras regeneradas; corpus por hipótesis y ajustes menores de texto |
 | Domingo 29 | Traspaso a Google Docs, renumeración, referencias, índice |
 | Lunes 30 | Lectura completa y entrega |
 
@@ -128,3 +129,5 @@ Comentarios que son solo de la presentación:
 - Discusión reescrita: parte por la pregunta, recuerda cada hipótesis, contribución teórica, lectura alternativa y LLM al final.
 - Citas insertadas con Zotero y figuras y tabla reemplazadas en Google Docs (versión anterior al renombre).
 - Presentación en `conferencias/presentacion-tesis.qmd`.
+- Título, pregunta, resumen, argumento (opción C) y contribuciones; renombre a justicia de mercado y justicia política en todo `thesis.md`.
+- Diagramas de hipótesis y de metodología actualizados; referencias al día.

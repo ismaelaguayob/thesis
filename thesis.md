@@ -218,7 +218,7 @@ La Figura 1 sintetiza las hipótesis del estudio.
 
 *![][image2]*
 
-*Nota.* Elaboración propia. La justicia de mercado agrupa la propiedad individual, la capitalización individual, la reciprocidad contributiva, la libertad de elección, la conciencia de costos, la ineficiencia y riesgo estatal y la previsión como mercado. La justicia política agrupa la necesidad material, la igualdad o el universalismo, la solidaridad intergeneracional, la solidaridad como deber colectivo y la ilegitimidad del origen dictatorial. H1 comprende H1a, referida a los criterios de distribución, y H1b, referida a las justificaciones sobre la organización de la previsión. H1 y H2 se refieren al debate de la Ley N.º 21.735. Las flechas discontinuas indican rechazo.
+*Nota.* Elaboración propia. La justicia de mercado agrupa la propiedad de los fondos, la capitalización individual, la reciprocidad contributiva, la libertad de elección, la conciencia de costos, la ineficiencia y riesgo estatal y la previsión como mercado. La justicia política agrupa la necesidad material, la igualdad o el universalismo, la solidaridad intergeneracional, la solidaridad como deber colectivo y la ilegitimidad del origen dictatorial. H1 comprende H1a, referida a los criterios de distribución, y H1b, referida a las justificaciones sobre la organización de la previsión. H1 y H2 se refieren al debate de la Ley N.º 21.735. Las flechas punteadas indican rechazo.
 
 ## **4\. Metodología** {#4.-metodología}
 
